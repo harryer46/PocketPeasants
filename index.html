@@ -669,7 +669,7 @@ function th(x,y){return((x*73856093)^(y*19349663))>>>0}
 const SAVE_KEY='discountmon-v1';
 let G=null,RUN=null,B=null,T=0;
 const P={x:30,y:24,fx:30,fy:24,d:'down',moving:false,mt:0,sx:0,sy:0,tx:0,ty:0,ph:0,steps:0,fol:{x:30,y:24,tx:30,ty:24}};
-function save(){if(!G)return;G.run=RUN;if(RUN&&RUN.free)G.freeRun=RUN;try{localStorage.setItem(SAVE_KEY,JSON.stringify(G))}catch(e){}}
+function save(){if(!G)return;G.run=RUN;G.t=Date.now();if(RUN&&RUN.free)G.freeRun=RUN;try{localStorage.setItem(SAVE_KEY,JSON.stringify(G))}catch(e){}}
 function loadSave(){try{const s=localStorage.getItem(SAVE_KEY);if(s){const g=JSON.parse(s);if(g&&g.name){g.dex=g.dex||{};g.tro=g.tro||0;return g}}}catch(e){}return null}
 
 /* ===================== START ===================== */
@@ -685,9 +685,14 @@ function buildStart(){
 }
 function begin(){
   $('#start').classList.add('off');
-  RUN=G.run||G.freeRun||null;if(RUN){RUN.beat=RUN.beat||{};RUN.leg=RUN.leg||{}}
-  if(RUN&&RUN.phase==='train'&&Date.now()>=RUN.end){RUN.phase='arena_pending'}
-  if(RUN&&RUN.phase==='arena'){RUN.res=RUN.res||[];if(RUN.st==='duel'){RUN.res.push([RUN.r,RUN.dopp||'?',0]);RUN.r++;RUN.st=RUN.r>cfgOf().rounds?'done':'wait'}if(RUN.st==='pick')RUN.st='wait'}
+  RUN=G.run||G.freeRun||null;
+  // a lobby game saved long ago is dead (its players are gone) → back to free play instead of a lonely arena
+  if(RUN&&!RUN.free){const age=Date.now()-(G.t||0),over=RUN.phase!=='lobby'&&RUN.end&&Date.now()-RUN.end>20*60000;if(age>30*60000||over){RUN=G.freeRun||null;G.run=RUN;setTimeout(()=>sysChat('Your old lobby game has ended — back to free play.'),500)}}
+  if(RUN){RUN.beat=RUN.beat||{};RUN.leg=RUN.leg||{}}
+  // free play has no timer and no arena (also repairs saves broken by an older version)
+  if(RUN&&RUN.free){RUN.phase='train';RUN.st='free';RUN.r=1;RUN.res=[];$('#arena').classList.remove('on')}
+  if(RUN&&!RUN.free&&RUN.phase==='train'&&Date.now()>=RUN.end){RUN.phase='arena_pending'}
+  if(RUN&&!RUN.free&&RUN.phase==='arena'){RUN.res=RUN.res||[];if(RUN.st==='duel'){RUN.res.push([RUN.r,RUN.dopp||'?',0]);RUN.r++;RUN.st=RUN.r>cfgOf().rounds?'done':'wait'}if(RUN.st==='pick')RUN.st='wait'}
   P.x=P.fx=G.x;P.y=P.fy=G.y;P.d=G.d||'down';if(!walkable(P.x,P.y)){P.x=P.fx=30;P.y=P.fy=24}
   P.fol={x:P.x,y:P.y,tx:P.x,ty:P.y};
   renderTeam();updateHud();pushFull();sysChat(`Welcome to Pocket Peasants (Budget Edition), ${G.name}! Batteries not included.`);
@@ -1178,6 +1183,7 @@ function confirmEarlyArena(){
   $('#mno').onclick=closeModal;$('#myes').onclick=()=>{closeModal();enterArena(true)};
 }
 function enterArena(early){
+  if(!RUN||RUN.free)return;
   if(B&&B.mode==='wild')endWild('Time is up!');
   if(B&&(B.spar||B.mode==='trainer'))closeBattle();
   if(myCh)cancelCh();if(incoming){closeModal();incoming=null}
@@ -1216,7 +1222,7 @@ function pairRound(parts,r){
   return pairs;
 }
 function arenaTick(){
-  if(!RUN||RUN.phase!=='arena')return;
+  if(!RUN||RUN.free||RUN.phase!=='arena')return;
   if(!B)showArena();
   if(B||RUN.st!=='wait')return;
   const parts=participants();
@@ -1282,6 +1288,8 @@ function checkChallenges(){
   if(!ROOM||!MYPEER||!G)return;
   for(const p of others()){const ch=p.presence.ch;
     if(ch&&typeof ch==='object'&&ch.to===MYPEER&&typeof ch.id==='string'&&ch.id.length<40&&!handledCh.has(ch.id)){handledCh.add(ch.id);
+      // both challenged each other at the same moment → just fight (the lower id accepts the other's request)
+      if(myCh&&myCh.to===p.peer&&canSpar()){if((MYPEER||'')<p.peer){myCh=null;pres({ch:null});startDuel(p.peer,ch.id,true)}continue}
       if(!canSpar()||modalOpen()||myCh)pres({dec:ch.id});else showChallenge(p.peer,ch.id,cleanName(p.presence.n))}}
   if(incoming){const p=findPeer(incoming.peer);if(!p||!p.presence.ch||p.presence.ch.id!==incoming.id||!canSpar()){closeModal();incoming=null}}
   if(myCh){const tp=findPeer(myCh.to);
@@ -1552,7 +1560,7 @@ function tbUpdate(dt,now){
 // PvP: both pick, actions exchanged via presence, resolved with the same seeded rng on both sides
 function tbDuelSync(du){
   if(!du){const op=findPeer(B.opp);du=op&&op.presence.du;if(!du||du.id!==B.id)return}
-  if(!B.foe){const ot=sanitizeTeam(du.team),mt=sanitizeTeam(B.raw);if(!ot||!mt)return;const left=B.me.side==='L';B.me=mkFighter(B.me.side,mt,left?XL:XR,'local');B.me.y=102;B.foe=mkFighter(left?'R':'L',ot,left?XR:XL,'remote');B.foe.y=102;
+  if(!B.foe){let ot=sanitizeTeam(du.team);const mt=sanitizeTeam(B.raw);if(!ot||!mt)return;if(!B.spar)ot=ot.slice(0,cfgOf().team);const left=B.me.side==='L';B.me=mkFighter(B.me.side,mt,left?XL:XR,'local');B.me.y=102;B.foe=mkFighter(left?'R':'L',ot,left?XR:XL,'remote');B.foe.y=102;
     const now=performance.now();B.me.spawnT=now;B.foe.spawnT=now+200;B.state='tbChoose';say(`${B.oppName} enters the arena!`);buildBattleUI();return}
   if(B.state!=='tbWait')return;
   const mine=B.tbActs['t'+B.turn],th=du.ta&&du.ta['t'+B.turn];if(!mine||!th)return;
@@ -1666,7 +1674,7 @@ function duelSync(dt){
   if(!du||du.id!==B.id){if(B.state==='wait'){if(performance.now()-B.t0>25000)duelResult(true,`${B.oppName} never showed up.`)}else{B.missing+=dt;if(B.missing>6)duelResult(true,`${B.oppName} left the arena.`)}return}
   B.missing=0;
   if(B.tb){tbDuelSync(du);return}
-  if(!B.foe){const ot=sanitizeTeam(du.team);if(!ot)return;const left=B.me.side==='L';B.foe=mkFighter(left?'R':'L',ot,left?XR:XL,'remote');B.foe.x=clamp(+du.x||B.foe.x,AX0,AX1);B.foe.y=clamp(+du.y||102,AY0,AY1);
+  if(!B.foe){let ot=sanitizeTeam(du.team);if(!ot)return;if(!B.spar)ot=ot.slice(0,cfgOf().team);const left=B.me.side==='L';B.foe=mkFighter(left?'R':'L',ot,left?XR:XL,'remote');B.foe.x=clamp(+du.x||B.foe.x,AX0,AX1);B.foe.y=clamp(+du.y||102,AY0,AY1);
     if(Array.isArray(du.sh))du.sh.forEach(e=>Array.isArray(e)&&B.seen.add(String(e[0])));B.state='count';B.cntEnd=performance.now()+3000;say(`${B.oppName} enters the arena!`);return}
   const F=B.foe;const tx=clamp(+du.x||F.x,AX0,AX1),ty=clamp(+du.y||F.y,AY0,AY1);const k=Math.min(1,dt*14);F.x+=(tx-F.x)*k;F.y+=(ty-F.y)*k;F.face=B.me.x<F.x?-1:1;
   const a=Math.floor(+du.a);if(a>=0&&a<F.team.length&&a!==F.a){F.a=a;say(`${B.oppName} sends out ${SPECIES[act(F).s].n}!`)}
