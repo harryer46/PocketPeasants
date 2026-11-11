@@ -66,7 +66,7 @@ Im Tab *Players* steht bei jedem Mitspieler der **Ping** (grün < 80 ms, gelb < 
 
 ## Spielablauf
 
-1. **Match erstellen:** Name, Trainingszeit (1–60 Min.), Arena-Runden, Monster pro Kampf, Kapseln, EP-Bonus, Begegnungsrate, Legendäre an/aus.
+1. **Match erstellen:** Kampfstil (Echtzeit oder rundenbasiert), Name, Trainingszeit (1–60 Min.), Arena-Runden, Monster pro Kampf, Kapseln, EP-Bonus, Begegnungsrate, Legendäre an/aus.
    Die Arena startet, wenn der Timer abläuft – oder sobald alle Spieler in die Arena gegangen sind.
    Turnier im **Schweizer System** mit Rangliste (Punkte, Buchholz). Ungerade Spielerzahl → Arena Bot.
 2. **Free Play:** Ohne Match einfach losspielen – dein Free-Play-Team wird gespeichert.
@@ -79,6 +79,8 @@ Im Tab *Players* steht bei jedem Mitspieler der **Ping** (grün < 80 ms, gelb < 
 
 **Karte (M):** Biome, Level-Ringe, Trainer, Schreine, Spieler.
 **Biome:** Nordwiese (hohes Gras), Ostwald (Farne), Südufer (Schilf), Westhügel (Geröll) – jedes mit eigenen Monstern. Je weiter vom Dorf, desto stärker.
+
+**Fangen:** Kapsel-Taste gedrückt halten → Ziellinie schwingt → loslassen zum Werfen. Ring am Ziel klein = Bonus. Bis zu 3 Wackler – wenig KP und schwaches Monster = hohe Chance.
 
 **Steuerung:** WASD/Pfeile laufen · M Karte · im Kampf 1–4 Attacken, Leertaste Ausweichen,
 Q Wechseln, C Kapsel, R Flucht · am Handy: auf dem Kampffeld gedrückt halten zum Laufen.
