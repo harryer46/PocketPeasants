@@ -68,5 +68,8 @@ Im Tab *Players* steht bei jedem Mitspieler der **Ping** (grün < 80 ms, gelb < 
 3. **Arena:** Wenn der Timer abläuft, K.-o.-Turnier in Echtzeit. Ungerade Spielerzahl → Champion Bot.
 4. **Rematch:** Danach „NEW MATCH · 10 MIN“ – die anderen sehen „JOIN REMATCH“.
 
-**Steuerung:** WASD/Pfeile laufen · im Kampf 1–4 Attacken, Leertaste Ausweichen,
+**Karte (M):** Biome, Level-Ringe, Trainer, Schreine, Spieler.
+**Biome:** Nordwiese (hohes Gras), Ostwald (Farne), Südufer (Schilf), Westhügel (Geröll) – jedes mit eigenen Monstern. Je weiter vom Dorf, desto stärker.
+
+**Steuerung:** WASD/Pfeile laufen · M Karte · im Kampf 1–4 Attacken, Leertaste Ausweichen,
 Q Wechseln, C Kapsel, R Flucht · am Handy: auf dem Kampffeld gedrückt halten zum Laufen.
