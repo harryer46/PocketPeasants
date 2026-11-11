@@ -1,0 +1,1202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pocket Peasants — Budget Edition</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#10121c;--panel:#1b1f30;--panel2:#252a40;--line:#3b4263;--text:#f1f2f8;--muted:#9aa1bd;--accent:#ffcb3d;--red:#ef4444;--green:#3ddc6b;--blue:#4aa3ff}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:VT323,monospace;font-size:20px;overflow:hidden}
+button{font-family:inherit;cursor:pointer}
+canvas{image-rendering:pixelated;image-rendering:crisp-edges}
+.px{font-family:'Press Start 2P',monospace}
+#app{display:flex;height:100vh;width:100vw}
+#stage{position:relative;flex:1;min-width:0;background:#0a0c14;overflow:hidden}
+#world{position:absolute;left:0;top:0;display:block}
+#side{width:340px;flex-shrink:0;background:var(--panel);border-left:3px solid #000;display:flex;flex-direction:column;min-height:0}
+.brand{padding:12px 14px;border-bottom:3px solid #000;background:#151829}
+.brand h1{font-family:'Press Start 2P';font-size:12px;margin:0;color:var(--accent);line-height:1.6;text-shadow:2px 2px 0 #9a5b00}
+.brand .sub{color:var(--muted);font-size:17px;display:flex;gap:12px}
+.tabs{display:flex;border-bottom:3px solid #000}
+.tabs button{flex:1;background:var(--panel);border:0;border-right:2px solid #000;color:var(--muted);padding:9px 2px;font-family:'Press Start 2P';font-size:9px}
+.tabs button:last-child{border-right:0}
+.tabs button.act{background:var(--panel2);color:var(--accent)}
+.badge{background:var(--red);color:#fff;padding:1px 4px;font-size:8px;margin-left:3px}
+.pane{flex:1;overflow:auto;padding:10px;display:none;min-height:0}
+.pane.act{display:block}
+#pane-chat.act{display:flex;flex-direction:column;padding:0}
+.card{background:var(--panel2);border:2px solid #000;box-shadow:3px 3px 0 #000;padding:6px;margin-bottom:9px;display:flex;gap:8px;align-items:center}
+.card canvas{background:#353c5c;width:56px;height:56px;flex-shrink:0;border:2px solid #000}
+.card .info{flex:1;min-width:0;line-height:1}
+.nm{display:flex;justify-content:space-between;font-size:20px}
+.lv{color:var(--muted)}
+.tb{display:inline-block;font-family:'Press Start 2P';font-size:7px;padding:3px 4px;color:#fff;border:1px solid #000;margin:2px 0}
+.bar{height:6px;background:#0b0d16;border:1px solid #000;margin-top:3px}
+.bar>i{display:block;height:100%;background:var(--green)}
+.bar.xp>i{background:var(--blue)}
+.small{font-size:17px;color:var(--muted)}
+.mini{background:#353c5c;border:2px solid #000;color:var(--text);font-size:16px;padding:1px 6px;margin:4px 4px 0 0}
+.mini:disabled{opacity:.4;cursor:default}
+.sec{font-family:'Press Start 2P';font-size:8px;color:var(--muted);margin:14px 0 8px}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.stat{background:var(--panel2);border:2px solid #000;padding:4px 8px;font-size:16px;color:var(--muted)}
+.stat b{display:block;font-size:22px;color:var(--text);font-weight:normal}
+.btn{background:var(--accent);color:#1b1300;border:2px solid #000;box-shadow:3px 3px 0 #000;font-family:'Press Start 2P';font-size:9px;padding:9px 10px;line-height:1.3}
+.btn:active{transform:translate(2px,2px);box-shadow:1px 1px 0 #000}
+.btn:disabled{opacity:.4;cursor:default}
+.btn.ghost{background:#353c5c;color:var(--text)}
+.btn.red{background:var(--red);color:#fff}
+.btn.green{background:var(--green);color:#002b0e}
+.plr{display:flex;align-items:center;gap:8px;background:var(--panel2);border:2px solid #000;padding:5px 8px;margin-bottom:6px}
+.plr .sw{width:12px;height:12px;flex-shrink:0;border:2px solid #000}
+.plr .who{flex:1;min-width:0;line-height:1}
+.plr .who b{display:block;font-weight:normal;font-size:20px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#chatlog{flex:1;overflow:auto;padding:8px 10px;font-size:19px;line-height:1.15}
+#chatlog .m{margin-bottom:3px;word-wrap:break-word}
+#chatlog .sys{color:var(--muted)}
+#chatform{display:flex;gap:6px;padding:8px;border-top:3px solid #000}
+#chatin{flex:1;background:#0b0d16;border:2px solid #000;color:var(--text);padding:4px 8px;font-size:19px;font-family:inherit;min-width:0}
+.hud{position:absolute;top:8px;left:8px;display:flex;gap:6px;flex-wrap:wrap;pointer-events:none;z-index:2}
+.chip{background:#0b0d16e0;border:2px solid #000;box-shadow:2px 2px 0 #000;padding:3px 9px;font-size:19px}
+.chip.timer{font-family:'Press Start 2P';font-size:10px;padding:6px 9px;color:var(--accent)}
+.chip.timer.hot{color:#fff;background:var(--red)}
+.dot{display:inline-block;width:8px;height:8px;background:#6b7280;margin-right:5px;border:1px solid #000}
+.dot.on{background:var(--green)}
+#toast{position:absolute;top:48px;left:50%;transform:translateX(-50%);background:#0b0d16f0;border:2px solid var(--accent);color:var(--text);padding:6px 14px;font-size:20px;opacity:0;transition:opacity .25s;pointer-events:none;text-align:center;max-width:92%;z-index:6}
+#toast.show{opacity:1}
+#help{position:absolute;bottom:8px;left:8px;font-size:17px;background:#0b0d16d0;padding:3px 9px;border:2px solid #000;pointer-events:none}
+#dpad{position:absolute;right:12px;bottom:12px;display:none;grid-template-columns:repeat(3,var(--dp,50px));grid-template-rows:repeat(3,var(--dp,50px));gap:4px;user-select:none;-webkit-user-select:none;touch-action:none;z-index:3}
+#dpad button{background:#ffffff30;border:2px solid #000;color:#fff;font-size:18px;touch-action:none}
+body.mob #dpad{display:grid}body.mob #help{display:none}body.mob .keys{display:none}body.mob.left #dpad{right:auto;left:12px}body.mob #lobby{bottom:auto;top:46px}
+#hset{pointer-events:auto;cursor:pointer;color:var(--text);font-family:inherit}
+#bctl{display:flex;gap:8px;align-items:flex-start}
+#bctl #bact{flex:1}
+#bpad{display:none}
+body.mob #bpad{display:block}
+body.mob:not(.left) #bpad{order:2}
+#bpad #dpad{position:static;display:grid}
+body.mob #bact{grid-template-columns:repeat(2,1fr)}
+body.mob .mv{padding:10px 8px;font-size:20px}
+body.mob .brow .btn{padding:12px 4px}
+.seg{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 12px}
+.seg .btn{flex:1}
+.seg .btn.sel{background:var(--accent);color:#1b1300}
+.seg .btn:not(.sel){background:#353c5c;color:var(--text)}
+.krow{display:flex;justify-content:space-between;align-items:center;background:var(--panel2);border:2px solid #000;padding:3px 8px;margin-bottom:4px;font-size:19px}
+.krow .btn{min-width:90px}
+.lbl2{font-family:'Press Start 2P';font-size:8px;color:var(--muted);text-align:left;margin-top:6px}
+#lobby{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);background:var(--panel);border:3px solid #000;box-shadow:4px 4px 0 #000;padding:12px 14px;z-index:4;width:min(440px,92%);display:none}
+#lobby.on{display:block}
+#lobby h3{font-family:'Press Start 2P';font-size:10px;margin:0 0 8px;color:var(--accent)}
+#lobby p{margin:0 0 10px;font-size:18px;color:var(--muted);line-height:1.1}
+.lrow{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+select{background:#0b0d16;color:var(--text);border:2px solid #000;font-family:inherit;font-size:18px;padding:3px 6px}
+/* battle */
+#battle{position:absolute;inset:0;background:#0a0c14;display:none;flex-direction:column;align-items:center;justify-content:center;padding:10px;z-index:5}
+#battle.on{display:flex}
+#bwrap{width:100%;max-width:900px;display:flex;flex-direction:column;gap:8px}
+#bcv{width:100%;aspect-ratio:16/9;border:3px solid #000;box-shadow:4px 4px 0 #000;display:block;touch-action:none;background:#222}
+#bact{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.mv{position:relative;overflow:hidden;border:2px solid #000;box-shadow:3px 3px 0 #000;padding:6px 7px;text-align:left;color:#fff;font-size:19px;line-height:1}
+.mv small{display:block;font-size:15px;opacity:.9}
+.mv .k{font-family:'Press Start 2P';font-size:8px;opacity:.8}
+.mv .cd{position:absolute;left:0;top:0;bottom:0;background:#000a;pointer-events:none}
+.brow{grid-column:1/-1;display:flex;gap:6px;flex-wrap:wrap}
+.brow .btn{flex:1;font-size:8px;padding:8px 4px}
+.keys{grid-column:1/-1;font-size:16px;color:var(--muted);text-align:center}
+/* arena */
+#arena{position:absolute;inset:0;background:#141022f4;display:none;align-items:center;justify-content:center;z-index:4;padding:14px}
+#arena.on{display:flex}
+.abox{background:var(--panel);border:3px solid #000;box-shadow:5px 5px 0 #000;padding:16px;width:min(520px,100%);max-height:100%;overflow:auto}
+.abox h2{font-family:'Press Start 2P';font-size:14px;color:var(--accent);margin:0 0 4px;text-shadow:2px 2px 0 #9a5b00}
+.abox .st{font-size:21px;margin:8px 0 12px}
+.arow{display:flex;justify-content:space-between;align-items:center;gap:8px;background:var(--panel2);border:2px solid #000;padding:4px 8px;margin-bottom:5px;font-size:19px}
+.tag{font-family:'Press Start 2P';font-size:7px;padding:3px 5px;border:1px solid #000}
+/* modal & start */
+#modal{position:absolute;inset:0;background:#05070cb0;display:none;align-items:center;justify-content:center;z-index:7}
+#modal.on{display:flex}
+.box{background:var(--panel);border:3px solid #000;box-shadow:5px 5px 0 #000;padding:16px;max-width:520px;width:92%;text-align:center}
+.box h3{font-family:'Press Start 2P';font-size:11px;margin:0 0 10px;color:var(--accent);line-height:1.5}
+.box p{color:var(--muted);font-size:19px;margin:0 0 14px;line-height:1.1}
+.box .acts{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.starters{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:6px 0 14px}
+.stc{background:var(--panel2);border:3px solid #000;padding:6px 4px;color:var(--text);font-size:20px}
+.stc canvas{width:100%;max-width:112px;aspect-ratio:1}
+.stc:hover{border-color:var(--accent)}
+#start{position:fixed;inset:0;background:#10121c;display:flex;align-items:center;justify-content:center;z-index:10;overflow:auto;padding:20px}
+#start.off{display:none}
+.sbox{max-width:520px;width:100%;text-align:center}
+.sbox h1{font-family:'Press Start 2P';color:var(--accent);font-size:22px;line-height:1.5;margin:0 0 8px;text-shadow:3px 3px 0 #9a5b00}
+.sbox .tag2{color:var(--muted);margin-bottom:22px;font-size:21px;line-height:1.1}
+.field{margin:0 auto 18px;max-width:340px;text-align:left}
+.field label{font-family:'Press Start 2P';font-size:8px;color:var(--muted)}
+.field input{width:100%;margin-top:6px;background:#0b0d16;border:3px solid #000;padding:6px 10px;color:var(--text);font-size:22px;font-family:inherit}
+.colors{display:flex;gap:8px;margin-top:8px}
+.colors button{width:32px;height:32px;border:3px solid #000}
+.colors button.sel{outline:3px solid #fff}
+#sprev{width:96px;height:102px;margin:0 auto 14px;display:block}
+@media (max-width:820px){
+  #app{flex-direction:column}
+  #stage{flex:none;height:60vh}
+  #side{width:100%;flex:1;border-left:0;border-top:3px solid #000}
+  .brand{display:none}
+  #bact{grid-template-columns:repeat(2,1fr)}
+  .keys{display:none}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="stage">
+    <canvas id="world"></canvas>
+    <div class="hud"><span class="chip timer" id="htimer">LOBBY</span><span class="chip" id="hzone">Town</span><span class="chip" id="hkap">Capsules -</span><span class="chip" id="hon"><span class="dot"></span>Solo</span><button class="chip" id="hset">⚙ CONTROLS</button></div>
+    <div id="toast"></div>
+    <div id="help">Arrows/WASD: walk · Tall grass: wild monsters · Red roof: Heal Center · Trainers fight on sight · Enter: chat</div>
+    <div id="dpad"><span></span><button data-d="up">▲</button><span></span><button data-d="left">◀</button><span></span><button data-d="right">▶</button><span></span><button data-d="down">▼</button><span></span></div>
+    <div id="lobby"></div>
+    <div id="arena"><div class="abox" id="abox"></div></div>
+    <div id="battle"><div id="bwrap"><canvas id="bcv" width="320" height="180"></canvas><div id="bctl"><div id="bpad"></div><div id="bact"></div></div></div></div>
+    <div id="modal"><div class="box" id="mbox"></div></div>
+  </div>
+  <aside id="side">
+    <div class="brand"><h1>POCKET<br>PEASANTS<br><span style="font-size:7px;color:#9aa1bd">BUDGET EDITION™</span></h1><div class="sub"><span id="sdex">Dex 0/14</span><span id="stro">Trophies 0</span></div></div>
+    <div class="tabs"><button data-t="team" class="act">TEAM</button><button data-t="players">PLAYERS<span id="pcount"></span></button><button data-t="chat">CHAT<span id="cbadge"></span></button></div>
+    <div class="pane act" id="pane-team"></div>
+    <div class="pane" id="pane-players"></div>
+    <div class="pane" id="pane-chat"><div id="chatlog"></div><form id="chatform"><input id="chatin" maxlength="120" placeholder="Message everyone…" autocomplete="off"><button class="btn">SEND</button></form></div>
+  </aside>
+</div>
+
+<div id="start">
+  <div class="sbox">
+    <h1>POCKET<br>PEASANTS</h1>
+    <div class="tag2" style="font-family:'Press Start 2P';font-size:9px;color:#ef4444;margin:-4px 0 14px">BUDGET EDITION™ · NOW 70% LESS MONSTER!</div>
+    <div class="tag2">Gotta catch… whatever fits in your pocket. Train for 10 minutes, catch monsters, then battle everyone in the Arena — in real time.</div>
+    <canvas id="sprev" width="16" height="17"></canvas>
+    <div class="field"><label>YOUR NAME</label><input id="sname" maxlength="16" placeholder="e.g. Harald"></div>
+    <div class="field"><label>YOUR COLOR</label><div class="colors" id="scolors"></div></div>
+    <button class="btn" id="sgo" style="font-size:12px;padding:13px 22px">PLAY</button>
+  </div>
+</div>
+
+<script>
+(()=>{var fo=Object.defineProperty;var uo=(e,n,t)=>n in e?fo(e,n,{enumerable:!0,configurable:!0,writable:!0,value:t}):e[n]=t;var ae=(e,n,t)=>uo(e,typeof n!="symbol"?n+"":n,t);var _n=Object.freeze,He=0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2fn,Ye=0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141n,Ot=0x79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798n,Lt=0x483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8n,mo=_n({p:He,n:Ye,h:1n,a:0n,b:7n,Gx:Ot,Gy:Lt}),be=32,Tt=e=>e instanceof Uint8Array||ArrayBuffer.isView(e)&&e.constructor.name==="Uint8Array"&&e.BYTES_PER_ELEMENT===1,ge=(e,n,t="")=>{if(Tt(e)&&(n===void 0||e.length===n))return e;let o=Tt(e),i=n!==void 0?` of length ${n}`:"",s=o?`length=${e.length}`:`type=${typeof e}`,r=(t?`"${t}" `:"")+"expected Uint8Array"+i+", got "+s;throw o?new RangeError(r):new TypeError(r)},yo=e=>Uint8Array.from(e),go=(e,n,t)=>yo(ge(e,t,n)),xt=(e,n)=>e.toString(16).padStart(n,"0"),Ut=e=>{let n="";for(let t of ge(e))n+=xt(t,2);return n},Ht=e=>{let n="hex invalid";if(typeof e!="string")throw new TypeError(n);if(e.length%2||!/^[\da-f]*$/i.test(e))throw new RangeError(n);let t=new Uint8Array(e.length/2);for(let o=0,i=0;o<t.length;o++,i+=2){let s=e.charCodeAt(i),r=e.charCodeAt(i+1);t[o]=((s&15)+(s>>6)*9)*16+(r&15)+(r>>6)*9}return t},At=()=>{let e=globalThis?.crypto?.subtle;if(e)return e;throw new Error("crypto.subtle must be defined, consider polyfill")},Ve=(...e)=>{let n=0;for(let i of e)n+=ge(i).length;let t=new Uint8Array(n),o=0;for(let i of e)t.set(i,o),o+=i.length;return t},zn=(e=be)=>{let n=globalThis?.crypto;if(typeof n?.getRandomValues!="function")throw new Error("crypto.getRandomValues must be defined, consider polyfill");return n.getRandomValues(new Uint8Array(e))},po=BigInt,Qe=(e,n,t,o="bad number: out of range")=>{if(typeof e!="bigint")throw new TypeError(o);if(n<=e&&e<t)return e;throw new RangeError(o)},O=(e,n=He)=>(e%=n)>=0n?e:n+e,pn=e=>O(e,Ye),ho=(e,n)=>{if(e===0n)throw new Error("invert: expected non-zero number");if(n<=1n)throw new Error("invert: expected modulus > 1, got "+n);let t=O(e,n),o=n,i=0n,s=1n;for(;t!==0n;){let f=o/t,c=o-t*f,d=i-s*f;o=t,t=c,i=s,s=d}if(o!==1n)throw new Error("invert: does not exist");return O(i,n)},It=e=>{let n=bo[e];if(typeof n!="function")throw new Error("hashes."+e+" not set");return n},Rt=(e,n,t)=>ge(It(e)(n,t),be,"digest"),Et=async(e,n,t)=>ge(await It(e)(n,t),be,"digest");var Hn=e=>{if(e instanceof Ie)return e;throw new TypeError("Point expected")},In="bad point: not on curve",qt=e=>O(O(e*e)*e+7n),Mt=e=>Qe(e,0n,He),Ze=e=>Qe(e,1n,He),Nt=e=>Qe(e,1n,Ye),hn=e=>!(e&1n),wo=e=>Uint8Array.of(hn(e)?2:3),_t=e=>{let n=qt(Ze(e)),t=1n;for(let o=n,i=(He+1n)/4n;i>0n;i>>=1n)i&1n&&(t=t*o%He),o=o*o%He;if(O(t*t)!==n)throw new Error("sqrt invalid");return new Ie(e,hn(t)?t:O(-t),1n)},De=class De{constructor(n,t,o){ae(this,"X");ae(this,"Y");ae(this,"Z");this.X=Mt(n),this.Y=Ze(t),this.Z=Mt(o),_n(this)}static CURVE(){return mo}static fromAffine(n){let{x:t,y:o}=n;return t===0n&&o===0n?Xe:new De(t,o,1n)}static fromBytes(n){ge(n);let t=n.length,o=n[0],i=gn(n,1,33);try{if(t===33&&(o===2||o===3)){let s=_t(i);return o===3?s.negate():s}if(t===65&&o===4)return new De(i,gn(n,33,65),1n).assertValidity()}catch{throw new Error(In)}throw new Error(In)}static fromHex(n){return De.fromBytes(Ht(n))}get x(){return this.toAffine().x}get y(){return this.toAffine().y}equals(n){let{X:t,Y:o,Z:i}=this,{X:s,Y:r,Z:f}=Hn(n);return O(t*f)===O(s*i)&&O(o*f)===O(r*i)}is0(){return this.Z===0n}negate(){return new De(this.X,O(-this.Y),this.Z)}double(){return this.add(this)}add(n){let{X:t,Y:o,Z:i}=this,{X:s,Y:r,Z:f}=Hn(n),c=0n,d=7n,v=0n,y=0n,h=0n,R=O(d*3n),P=O(t*s),S=O(o*r),u=O(i*f),m=O(t+o),l=O(s+r);m=O(m*l),l=O(P+S),m=O(m-l),l=O(t+i);let w=O(s+f);return l=O(l*w),w=O(P+u),l=O(l-w),w=O(o+i),v=O(r+f),w=O(w*v),v=O(S+u),w=O(w-v),h=O(c*l),v=O(R*u),h=O(v+h),v=O(S-h),h=O(S+h),y=O(v*h),S=O(P+P),S=O(S+P),u=O(c*u),l=O(R*l),S=O(S+u),u=O(P-u),u=O(c*u),l=O(l+u),P=O(S*l),y=O(y+P),P=O(w*l),v=O(m*v),v=O(v-P),P=O(m*S),h=O(w*h),h=O(h+P),new De(v,y,h)}subtract(n){return this.add(Hn(n).negate())}multiply(n,t=!0){if(!t&&n===0n)return Xe;if(Nt(n),n===1n)return this;if(this.equals(Fe))return Do(n).p;let o=Xe,i=Fe,s=this;for(let r=0;t?r<256:n>0n;r++)n&1n?o=o.add(s):t&&(i=i.add(s)),s=s.double(),n>>=1n;return o}multiplyUnsafe(n){return this.multiply(n,!1)}toAffine(){let{X:n,Y:t,Z:o}=this;if(o===0n)return{x:0n,y:0n};if(o===1n)return{x:n,y:t};let i=ho(o,He);if(O(o*i)!==1n)throw new Error("inverse invalid");return{x:O(n*i),y:O(t*i)}}assertValidity(){let{x:n,y:t}=this.toAffine();if(Ze(n),Ze(t),O(t*t)!==qt(n))throw new Error(In);return this}toBytes(n=!0){let{x:t,y:o}=this.assertValidity().toAffine(),i=Be(t);return n?Ve(wo(o),i):Ve(Uint8Array.of(4),i,Be(o))}toHex(n){return Ut(this.toBytes(n))}};ae(De,"BASE"),ae(De,"ZERO");var Ie=De,Fe=new Ie(Ot,Lt,1n),Xe=new Ie(0n,1n,0n);Ie.BASE=Fe;Ie.ZERO=Xe;var vo=(e,n,t)=>Fe.multiply(n,!1).add(e.multiply(t,!1)).assertValidity(),We=e=>po("0x"+(Ut(e)||"0")),gn=(e,n,t)=>We(e.subarray(n,t)),Be=e=>Ht(xt(Qe(e,0n,2n**256n),be*2)),ko=e=>{let n=We(ge(e,be,"secret key"));return Qe(n,1n,Ye,"invalid secret key: outside of range")};var Dt="SHA-256",bo={hmacSha256Async:async(e,n)=>{let t=At(),o=await t.importKey("raw",e,{name:"HMAC",hash:Dt},!1,["sign"]);return new Uint8Array(await t.sign("HMAC",o,n))},hmacSha256:void 0,sha256Async:async e=>new Uint8Array(await At().digest(Dt,e)),sha256:void 0};var Po=e=>{if(e=e===void 0?zn(48):e,ge(e),e.length<48||e.length>1024)throw new RangeError("expected 48-1024b");let n=O(We(e),Ye-1n);return Be(n+1n)},So=e=>n=>{let t=Po(n);return{secretKey:t,publicKey:e(t)}};var zt=e=>Uint8Array.from("BIP0340/"+e,n=>n.charCodeAt(0)),qn=(e,...n)=>{let t=Rt("sha256",zt(e));return Rt("sha256",Ve(t,t,...n))},Nn=(e,...n)=>Et("sha256Async",zt(e)).then(t=>Et("sha256Async",Ve(t,t,...n))),jn=e=>{let n=ko(e),t=Fe.multiply(n),{x:o,y:i}=t.assertValidity().toAffine(),s=hn(i)?n:pn(-n),r=Be(o);return{d:s,px:r}},$n=e=>pn(We(e)),jt=(...e)=>$n(qn("challenge",...e)),$t=async(...e)=>$n(await Nn("challenge",...e)),Ft=e=>jn(e).px,To=So(Ft),Wt=(e,n,t)=>{let o=go(e,"message"),{px:i,d:s}=jn(n);return{m:o,px:i,d:s,a:ge(t,be)}},Kt=e=>{let n=$n(e);if(n===0n)throw new Error("sign failed: k is zero");let{px:t,d:o}=jn(Be(n));return{rx:t,k:o}},Jt=(e,n,t,o)=>Ve(n,Be(pn(e+t*o))),Vt="invalid signature produced",Ao=(e,n,t=zn(be))=>{let{m:o,px:i,d:s,a:r}=Wt(e,n,t),f=Be(s^We(qn("aux",r))),{rx:c,k:d}=Kt(qn("nonce",f,i,o)),v=Jt(d,c,jt(c,i,o),s);if(!Zt(v,o,i))throw new Error(Vt);return v},Ro=async(e,n,t=zn(be))=>{let{m:o,px:i,d:s,a:r}=Wt(e,n,t),f=Be(s^We(await Nn("aux",r))),{rx:c,k:d}=Kt(await Nn("nonce",f,i,o)),v=Jt(d,c,await $t(c,i,o),s);if(!await Xt(v,o,i))throw new Error(Vt);return v},Eo=(e,n)=>e instanceof Promise?e.then(n):n(e),Gt=(e,n,t,o)=>{let i=ge(e,64,"signature"),s=ge(n,void 0,"message"),r=ge(t,be,"publicKey"),f,c,d,v;try{let y=We(r);f=_t(y),c=Ze(gn(i,0,be)),d=Nt(gn(i,be,64)),v=Ve(Be(c),r,s)}catch{return!1}return Eo(o(v),y=>{try{let{x:h,y:R}=vo(f,d,pn(-y)).toAffine();return!(!hn(R)||h!==c)}catch{return!1}})},Zt=(e,n,t)=>Gt(e,n,t,jt),Xt=async(e,n,t)=>Gt(e,n,t,$t),Fn=_n({keygen:To,getPublicKey:Ft,sign:Ao,verify:Zt,signAsync:Ro,verifyAsync:Xt}),Mo=()=>{let e=[],n=Fe,t=n;for(let o=0;o<33;o++){t=n,e.push(t);for(let i=1;i<128;i++)t=t.add(n),e.push(t);n=t.double()}return e},Bt,Ct=(e,n)=>{let t=n.negate();return e?t:n},Do=e=>{let n=Bt||(Bt=Mo()),t=Xe,o=Fe;for(let i=0;i<33;i++){let s=Number(e&255n);e>>=8n,s>128&&(s-=256,e+=1n);let r=i*128,f=r+Math.abs(s)-1,c=i%2!==0,d=s<0;s===0?o=o.add(Ct(c,n[r])):t=t.add(Ct(d,n[f]))}if(e!==0n)throw new Error("invalid wnaf");return{p:t,f:o}};var{floor:Wn,min:Bo,sin:Co}=Math,Z="Trystero",tn=(e,n)=>Array(e).fill(void 0).map(n),Oo="0123456789AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz",de=e=>tn(e,()=>Oo[Wn(Math.random()*62)]??"").join(""),te=de(20),le=Promise.all.bind(Promise),Jn=typeof window<"u",{entries:Se,fromEntries:Vn,keys:ce,values:pe}=Object,X=()=>{},wn="candidate",H=e=>(e!==null&&clearTimeout(e),null),x=e=>new Error(`${Z}: ${e}`),Ce=(e,n)=>e instanceof Error&&e.message?e.message:typeof e=="string"&&e?e:re(e??n),he=(e,n)=>e instanceof Error?e:x(Ce(e,n)),Lo=new TextEncoder,xo=new TextDecoder,ue=e=>Lo.encode(e),we=e=>xo.decode(e),Oe=e=>e.reduce((n,t)=>n+t.toString(16).padStart(2,"0"),""),qe=(...e)=>e.join("@"),Uo=(e,n)=>{let t=[...e],o=()=>{let s=Co(n++)*1e4;return s-Wn(s)},i=t.length;for(;i;){let s=Wn(o()*i--),r=t[i];t[i]=t[s],t[s]=r}return t},Gn=(e,n,t,o=!1)=>e.relayConfig?.urls||(o?Uo(n,vn(e.appId)):n).slice(0,e.relayConfig?.redundancy??t),re=JSON.stringify,Te=e=>{try{return JSON.parse(e)}catch{throw x(`failed to parse JSON: ${e}`)}},vn=(e,n=Number.MAX_SAFE_INTEGER)=>e.split("").reduce((t,o)=>t+o.charCodeAt(0),0)%n,Yt=3333,Ho=6e4,en={},nn=null,Kn=null,Zn=()=>{nn||(nn=new Promise(e=>{Kn=e}).finally(()=>{Kn=null,nn=null}))},Xn=()=>{Kn?.()},Yn=(e,n,t)=>{let o={},i=!1,s=!1,r,f=X;o.isClosed=!1,o.ready=new Promise(d=>f=d);let c=()=>{if(o.isClosed)return;r=void 0,s=!1;let d=new WebSocket(e);d.onclose=()=>{if(o.isClosed||s)return;if(s=!0,nn){nn.then(c);return}let v=en[e]??(en[e]=Yt);r=setTimeout(c,Math.random()*v),en[e]=Bo(v*2,Ho)},d.onmessage=v=>n(String(v.data)),o.socket=d,o.url=d.url,d.onopen=()=>{let v=i;i=!0,f(o),en[e]=Yt,v&&t?.()},o.send=v=>{d.readyState===1&&d.send(v)}};return o.close=()=>{o.isClosed=!0,r!==void 0&&(clearTimeout(r),r=void 0),o.socket.close()},c(),o};var Qn=e=>{let n={},t=new WeakMap,o=r=>{let f=t.get(r);if(!f)throw x("relay bookkeeping missing registration for relay client");return f},i=()=>{let r={},f=c=>r[c]??(r[c]={});return{forKey:f,forRelay:c=>f(o(c))}},s=(r,f)=>(n[r]=f,t.set(f,r),f);return{register:(r,f)=>{let c=n[r];return c||s(r,f())},keyOf:o,scoped:i,getSockets:()=>Vn(Se(n).flatMap(([r,f])=>{let c=e(f);return c?[[r,c]]:[]}))}},Qt=()=>{if(Jn){let e=new AbortController;return addEventListener("online",Xn,{signal:e.signal}),addEventListener("offline",Zn,{signal:e.signal}),()=>e.abort()}return X};var nt="AES-GCM",et={},Io=e=>btoa(String.fromCharCode.apply(null,Array.from(new Uint8Array(e)))),qo=e=>{let n=atob(e);return new Uint8Array(n.length).map((t,o)=>n.charCodeAt(o)).buffer},Ke=async(e,n)=>new Uint8Array(await crypto.subtle.digest(e,ue(n))),Le=async e=>et[e]??(et[e]=Array.from(await Ke("SHA-1",e)).map(n=>n.toString(36)).join("")),er=async(e,n,t)=>crypto.subtle.importKey("raw",await crypto.subtle.digest({name:"SHA-256"},ue(`${e}:${n}:${t}`)),{name:nt},!1,["encrypt","decrypt"]),nr=async(e,n)=>Oe(await Ke("SHA-256",`${Z}:${e}:${n}`)),tr="$",rr=",",or=async(e,n)=>{let t=crypto.getRandomValues(new Uint8Array(16));return t.join(rr)+tr+Io(await crypto.subtle.encrypt({name:nt,iv:t},await e,ue(n)))},sr=async(e,n)=>{let[t,o]=n.split(tr);return we(await crypto.subtle.decrypt({name:nt,iv:new Uint8Array(t?.split(rr).map(Number)??[])},await e,qo(o??"")))};var No=18e4,ir=class{constructor(e){ae(this,"makeOffer");ae(this,"leased",new Map);ae(this,"destroyed",!1);this.makeOffer=e}claimLeased(e){let n=this.leased.get(e);n&&(H(n),this.leased.delete(e))}reclaimLeased(e){this.leased.has(e)&&(this.claimLeased(e),e.destroy())}checkout(e,n,t){let o=async(i=!1)=>{if(this.destroyed)throw x("room left while preparing offer");let s=this.makeOffer();try{let r=await t(s);if(this.destroyed)throw x("room left while preparing offer");return n?(this.leased.set(s,setTimeout(()=>{this.leased.delete(s),s.destroy()},No)),{peer:s,offer:r,claim:()=>this.claimLeased(s),reclaim:()=>this.reclaimLeased(s)}):{peer:s,offer:r}}catch(r){if(s.destroy(),!i&&!this.destroyed)return o(!0);throw r}};return le(tn(e,()=>o()))}getOffers(e,n){return this.checkout(e,!0,n)}destroy(){this.destroyed=!0,this.leased.forEach((e,n)=>{H(e),n.destroy()}),this.leased.clear()}};var tt=x("incorrect password for overlapping room"),ar=(e,n,t)=>{let o=r=>Ke("SHA-256",`${r}:${e}:${n}:${t}`).then(Oe),i=async(r,f,c)=>{if(!e)return;if(c){let v=de(36);await r({__trystero_pw:"challenge",c:v});let{data:y}=await f();if(!y||typeof y!="object"||y.__trystero_pw!=="response"||typeof y.h!="string")throw tt;let h=await o(v);if(y.h!==h)throw tt;return}let{data:d}=await f();if(!d||typeof d!="object"||d.__trystero_pw!=="challenge"||typeof d.c!="string")throw tt;await r({__trystero_pw:"response",h:await o(d.c)})};return{run:i,compose:r=>e||r?async(f,c,d,v)=>{await i(c,d,v),await r?.(f,c,d,v)}:void 0}},_o=e=>{let n=Ce(e,"unknown error");return n.startsWith("handshake ")?n:`handshake failed: ${n}`},cr=({onPeerHandshake:e,onHandshakeError:n,handshakeTimeoutMs:t,sendHandshakeData:o,sendHandshakeReady:i,onActivate:s,onFailure:r})=>{let f={},c=(y,h)=>{let R=f[y];!R||h&&R.peer!==h||R.isActive||!R.didLocalHandshakePass||!R.didReceiveRemoteReady||(R.isActive=!0,R.handshakeTimer=H(R.handshakeTimer),s(y,R.peer))},d=(y,h,R)=>{let P=f[y];if(!P||P.peer!==h)return;let S=_o(R);n?.(y,S),r(y,h,x(S))},v=(y,h)=>{let R=f[y];!R||R.peer!==h||R.isActive||(R.didLocalHandshakePass=!0,i("",y).catch(P=>d(y,h,x(`failed sending handshake readiness: ${Ce(P,"unknown send failure")}`))),c(y,h))};return{addPeer:(y,h)=>{f[y]={peer:h,isActive:!1,didLocalHandshakePass:!1,didReceiveRemoteReady:!1,handshakeTimer:null,pendingHandshakePayloads:[],handshakeWaiters:[]}},clearPeer:(y,h)=>{let R=f[y];R&&(R.handshakeTimer=H(R.handshakeTimer),R.pendingHandshakePayloads.length=0,R.handshakeWaiters.splice(0).forEach(P=>P.reject(h)),delete f[y])},canReceiveFromPeer:(y,h)=>{let R=f[y];return!!(R&&(R.isActive||h))},start:(y,h)=>{let R=f[y];if(!R||R.peer!==h)return;R.handshakeTimer=setTimeout(()=>d(y,h,x(`handshake timed out after ${t}ms`)),t);let P=async(m,l)=>{await o(m,y,l)},S=()=>new Promise((m,l)=>{let w=f[y];if(!w||w.peer!==h){l(x("peer disconnected during handshake"));return}let D=w.pendingHandshakePayloads.shift();if(D){m(D);return}w.handshakeWaiters.push({resolve:m,reject:E=>l(E)})}),u=te<y;Promise.resolve(e?.(y,P,S,u)).then(()=>v(y,h)).catch(m=>d(y,h,he(m,"handshake failed")))},receiveHandshakeData:(y,h,R)=>{let P=f[h];if(!P||P.isActive)return;let S=R===void 0?{data:y}:{data:y,metadata:R},u=P.handshakeWaiters.shift();if(u){u.resolve(S);return}if(P.pendingHandshakePayloads.length>=16){d(h,P.peer,x("too many pending handshake messages"));return}P.pendingHandshakePayloads.push(S)},receiveHandshakeReady:y=>{let h=f[y];!h||h.isActive||(h.didReceiveRemoteReady=!0,c(y))}}};var zo=15e3,jo=150,$o=5e3,lr="icecandidate",fr="icegatheringstatechange",Fo="iceconnectionstatechange",rn="offer",Wo="answer",Ko=/out of range/i,Jo=128,Vo=8192,dr=e=>e.replace(/ (\S+\.local) (\d+) typ host/g," 127.0.0.1 $2 typ host"),rt=(e,{trickleIce:n,rtcConfig:t,rtcPolyfill:o,turnConfig:i,_test_only_mdnsHostFallbackToLoopback:s})=>{let r=new(o??RTCPeerConnection)({iceServers:ur.concat(i??[]),...t}),f={},c=new Set,d=[],v=[],y=null,h=n!==!1,R=[],P=[],S,u=!1,m=!1,l=null,w=null,D=!1,E=b=>{S&&(S(b),S=void 0)},U=()=>w=H(w),$=()=>{D||(D=!0,c.forEach(b=>b()),y=H(y),v.length=0,U(),f.close?.())},N=b=>{b.type===rn&&(E(b),!f.signal&&!r.remoteDescription)||(f.signal?f.signal(b):d.push(b))},K=b=>{let B=f.signal;f.signal=q=>{B?.(q),b(q)},d.length>0&&d.splice(0).forEach(q=>f.signal?.(q))},G=b=>s?dr(b):b,Y=b=>{if(!s||typeof b.candidate!="string")return b;let B=dr(b.candidate);return B===b.candidate?b:{...b,candidate:B}},oe=b=>({type:b.localDescription?.type??rn,sdp:G(b.localDescription?.sdp??"")}),a=()=>{let b=r.remoteDescription?.sdp;return b?b.match(/a=ice-ufrag:([^\s]+)/)?.[1]??null:null},k=()=>(r.remoteDescription?.sdp?.match(/^m=/gm)??[]).length,A=b=>{if(!r.remoteDescription)return!1;let B=k();if(typeof b.sdpMLineIndex=="number"&&B>0&&b.sdpMLineIndex>=B)return!1;let q=a();return!(q&&b.usernameFragment&&b.usernameFragment!==q)},T=async b=>{try{return await r.addIceCandidate(b),!0}catch(B){if(B instanceof Error&&Ko.test(B.message)&&typeof b.sdpMLineIndex=="number")return!1;throw B}},L=b=>{R.length>=Jo&&R.shift(),R.push(b)},M=async()=>{if(!r.remoteDescription||R.length===0)return;let b=a(),B=R.splice(0),q=[];for(let F of B)if(!(b&&F.usernameFragment&&F.usernameFragment!==b)){if(!A(F)){q.push(F);continue}await T(F)||q.push(F)}q.forEach(L)},p=async b=>{if(A(b)){await T(b)||L(b);return}L(b)},g=b=>{b.binaryType="arraybuffer",b.bufferedAmountLowThreshold=65535;let B=()=>{console.warn(`${Z}: invalid or excessive data before handler registration; disconnecting peer`),b.close(),r.close(),$()};b.onmessage=q=>{let F=q.data;if(!D){if(!(F instanceof ArrayBuffer)&&!ArrayBuffer.isView(F)||F.byteLength>16515){B();return}if(f.data)f.data(F);else{if(v.length>=64){B();return}y||(y=setTimeout(B,1e4)),v.push(F)}}},b.onopen=()=>f.connect?.(),b.onclose=$,b.onerror=({error:q})=>{D||q?.errorDetail==="sctp-failure"&&(q.sctpCauseCode===12||/^User-Initiated Abort\b/.test(q.message))||f.error?.(he(q,"data channel error"))}},C=t?.iceServers??ur.concat(i??[]),_=b=>C.some(({urls:B})=>(Array.isArray(B)?B:[B]).some(q=>b.test(q))),W=_(/^turns?:/i),I=!W&&_(/^stuns?:/i),se=W?/\btyp relay\b/:I?/\btyp (?:srflx|relay|prflx)\b/:/\btyp (?:host|srflx|relay|prflx)\b/,ee=async b=>(await new Promise(B=>{let q=null,F=null,ne=()=>{H(q),H(F),b.removeEventListener(fr,Ue),b.removeEventListener(lr,Me),c.delete(ne),B()},Ee=(J="")=>{let Q=`${b.localDescription?.sdp??""}
+${J}`;se.test(Q)&&(H(F),F=setTimeout(ne,jo))},Ue=()=>{b.iceGatheringState==="complete"||D?ne():Ee()},Me=J=>{let{candidate:Q}=J;Q?Ee(Q.candidate):ne()};c.add(ne),q=setTimeout(ne,zo),b.addEventListener(fr,Ue),b.addEventListener(lr,Me),Ue()}),oe(b)),fe=async()=>{let b=h?oe(r):await ee(r);return D||N(b),b};e?(l=r.createDataChannel("data"),g(l)):r.ondatachannel=({channel:b})=>{l=b,g(b)};let Ae=async(b=!1)=>{if(r.connectionState==="closed"||!b&&(u||r.signalingState!=="stable")){r.connectionState==="closed"&&E();return}try{return u=!0,b&&(r.remoteDescription&&r.signalingState!=="stable"&&r.signalingState!=="closed"&&r.localDescription?.type===rn&&await r.setLocalDescription({type:"rollback"}),typeof r.restartIce=="function"&&r.restartIce()),await r.setLocalDescription(b?await r.createOffer({iceRestart:!0}):void 0),await fe()}catch(B){b||E(),f.error?.(he(B,"failed to create local offer"))}finally{u=!1}};r.onnegotiationneeded=async()=>Ae(!1),r.onicecandidate=({candidate:b})=>{if(!h||!b)return;let B=Y(typeof b.toJSON=="function"?b.toJSON():{candidate:b.candidate,sdpMid:b.sdpMid,sdpMLineIndex:b.sdpMLineIndex,usernameFragment:b.usernameFragment});N({type:wn,sdp:JSON.stringify(B)})};let Re=()=>{if(r.connectionState==="failed"||r.connectionState==="closed"||r.iceConnectionState==="failed"||r.iceConnectionState==="closed"){$();return}if(r.connectionState==="connected"||r.connectionState==="connecting"||r.iceConnectionState==="connected"||r.iceConnectionState==="completed"||r.iceConnectionState==="checking"){U();return}if(r.connectionState==="disconnected"||r.iceConnectionState==="disconnected"){w||(w=setTimeout(()=>{w=null,(r.connectionState==="disconnected"||r.iceConnectionState==="disconnected")&&$()},$o));return}};r.onconnectionstatechange=Re,r.addEventListener(Fo,Re),r.ontrack=b=>{let B=b.streams[0];if(B){if(!f.track&&!f.stream){P.push({track:b.track,stream:B});return}f.track?.(b.track,B),f.stream?.(B)}};let ye=e?new Promise(b=>{S=b}):Promise.resolve();return e&&queueMicrotask(()=>{!u&&r.signalingState==="stable"&&!r.localDescription&&r.connectionState!=="closed"&&r.onnegotiationneeded?.(new Event("negotiationneeded"))}),{connection:r,get channel(){return l},get isDead(){return r.connectionState==="closed"},getOffer:async(b=!1)=>{if(e)return b?Ae(!0):S?ye:r.localDescription?.type===rn?h?oe(r):ee(r):ye},async signal(b){if(b.type==="candidate"){if(b.sdp.length>Vo)return;try{let B=JSON.parse(b.sdp);B&&typeof B=="object"&&await p(Y(B))}catch(B){f.error?.(he(B,"failed to parse remote candidate"))}return}if(!(l?.readyState==="open"&&!b.sdp?.includes("a=rtpmap")))try{let B={...b,sdp:G(b.sdp)};if(b.type===rn){let q=u||r.signalingState!=="stable"&&!m;return q&&e?void 0:(q&&r.signalingState!=="stable"?await le([r.setLocalDescription({type:"rollback"}),r.setRemoteDescription(B)]):await r.setRemoteDescription(B),await M(),await r.setLocalDescription(),await fe())}if(b.type===Wo){m=!0;try{await r.setRemoteDescription(B),await M()}finally{m=!1}}}catch(B){f.error?.(he(B,"failed to apply remote signal"))}},sendData:b=>l?.send(b),destroy:()=>{U(),E(),l?.close(),r.close(),u=!1,m=!1,$()},setHandlers:b=>{let{signal:B,...q}=b;Object.assign(f,q),f.data&&v.length>0&&(y=H(y),v.splice(0).forEach(F=>f.data?.(F))),B&&K(B),(f.track||f.stream)&&P.length>0&&P.splice(0).forEach(({track:F,stream:ne})=>{f.track?.(F,ne),f.stream?.(ne)})},addStream:b=>b.getTracks().forEach(B=>r.addTrack(B,b)),removeStream:b=>r.getSenders().filter(B=>B.track&&b.getTracks().includes(B.track)).forEach(B=>r.removeTrack(B)),addTrack:(b,B)=>r.addTrack(b,B),removeTrack:b=>{let B=r.getSenders().find(q=>q.track===b);B&&r.removeTrack(B)},replaceTrack:(b,B)=>{let q=r.getSenders().find(F=>F.track===b);if(q)return q.replaceTrack(B)}}},ur=[...tn(3,(e,n)=>`stun:stun${n||""}.l.google.com:19302`),"stun:stun.cloudflare.com:3478"].map(e=>({urls:e}));var Go=1024,Zo=64,Xo=128,Yo=8,Qo=new Uint8Array,es=(e,n)=>{let t;try{t=e()}catch{return n(!1)}return typeof t=="boolean"?n(t):Promise.resolve(t).then(o=>n(o===!0),()=>n(!1))},mr=(e,n,t)=>n===2?t?e.slice():e:n===1?Te(we(e)):we(e),gr=(e,n,t,o)=>{try{e.progress(n,t,o)}catch(i){console.error(`${Z} progress handler error:`,i)}},yr=(e,n,t,o)=>{gr(e,1,t,o);try{e.receiver?.(n,t,o)}catch(i){console.error(`${Z} action handler error:`,i)}},pr=({fail:e,accept:n,refuse:t,maxReceiveBytes:o,chunkSize:i})=>{let s=new Map,r=new Map,f=new Set,c=new Map,d=0,v=0,y=0,h=!1,R=!1,P=a=>a.phase!=="released",S=a=>Math.min(o,a?.maxPayloadBytes??o),u=(a,k,A,T)=>{A?.reject(k),s.get(a.type)?.reject?.(a.peerId,a.metadata,k),T!==void 0&&t(a.peerId,T,k)},m=a=>{for(let k of Array.from(f))k.peerId===a&&(f.delete(k),f.add(k))},l=a=>{if(!P(a))return;a.phase="released",a.removeAbortListener?.(),a.timer=H(a.timer);let k=r.get(a.peerId);if(a.kind==="inline"){let A=k.inline.get(a.key);A.splice(A.indexOf(a),1),A.length||k.inline.delete(a.key),a.data=Qo}else k.bulk.delete(a.id),f.delete(a),a.data=null,a.transfer==="receiving"&&(y-=a.size,k.active===a&&(k.active=null,m(a.peerId)),R=!0);k.count--,d--,k.count||r.delete(a.peerId),a.controller?.abort()},w=(a,k)=>{P(a)&&(l(a),u(a,k,a.scope,a.kind==="bulk"?a.id:void 0))},D=(a,k)=>{if(a.phase!=="pending")return a.phase==="ready";if(a.size>S(k))return w(a,"payload exceeds receiver size limit"),!1;let A=a.scope?a.scope.receive:k.receive;if(!A)return k.receiver?(a.phase="ready",!0):!1;if(v>=Xo||(c.get(a.peerId)??0)>=Yo)return w(a,"too many pending receive decisions"),!1;a.phase="deciding";let T=new AbortController;a.controller=T,v++,c.set(a.peerId,(c.get(a.peerId)??0)+1);let L=es(()=>A({byteLength:a.size,peerId:a.peerId,signal:T.signal,...a.metadata===void 0?{}:{metadata:a.metadata}}),M=>{v--;let p=c.get(a.peerId)-1;return p?c.set(a.peerId,p):c.delete(a.peerId),P(a)?(M?a.phase="ready":w(a,"payload rejected by receiver"),M):!1});return typeof L=="boolean"?L:(L.then(()=>K()),!1)},E=(a,k,A)=>{let T;try{T=mr(A,a.format,a.kind==="inline")}catch{l(a),e(a.peerId,"invalid action payload");return}l(a),yr(k,T,a.peerId,a.metadata)},U=a=>{let k=s.get(a.type);P(a)&&k&&D(a,k)&&k.receiver&&E(a,k,a.data)},$=a=>{let k=s.get(a.type);if(!P(a)||!k||!D(a,k)||!k.receiver)return;if(a.transfer==="receiving"){a.offset===a.size&&E(a,k,a.data);return}let A=r.get(a.peerId);!A.active&&y+a.size<=o&&(A.active=a,a.transfer="receiving",y+=a.size,a.lastSeen=Date.now(),f.delete(a),n(a.peerId,a.id))},N=(a,k)=>{let A=r.get(a)?.inline.get(k);for(;A?.[0];){let T=A[0];if(U(T),P(T))break}},K=()=>{if(h){R=!0;return}h=!0;try{do{R=!1;for(let a of f)$(a);for(let[a,k]of r){for(let A of k.bulk.values())A.offset===A.size&&$(A);for(let A of k.inline.keys())N(a,A)}}while(R)}finally{h=!1}},G=a=>{let k=r.get(a.peerId);if(d>=Go||(k?.count??0)>=Zo)return u(a,"too many pending transfers",a.scope,a.kind==="bulk"?a.id:void 0),!1;if(k||(k={bulk:new Map,inline:new Map,active:null,count:0},r.set(a.peerId,k)),k.count++,d++,a.kind==="inline"){let T=k.inline.get(a.key)??[];T.push(a),k.inline.set(a.key,T)}else k.bulk.set(a.id,a),f.add(a);let A=()=>{let T=12e4-(Date.now()-a.lastSeen);T>0?a.timer=setTimeout(A,T):(w(a,"action transfer timed out"),K())};if(a.timer=setTimeout(A,12e4),a.scope){let{signal:T}=a.scope,L=()=>{w(a,"receive cancelled"),K()};if(T.addEventListener("abort",L,{once:!0}),a.removeAbortListener=()=>T.removeEventListener("abort",L),T.aborted)return L(),!1}return!0},Y=(a,k)=>{let A=s.get(a.type),T=A?.receiveScope?.(a.peerId,a.metadata);return T===null||T?.signal.aborted?(k!==void 0&&t(a.peerId,k,"unexpected response"),null):a.size>S(A)?(u(a,"payload exceeds receiver size limit",T,k),null):{action:A,scope:T}},oe=(a,k)=>({...a,...k?{scope:k}:{},phase:"pending",controller:null,lastSeen:Date.now(),timer:null});return{register:(a,k={})=>{let A={...k,receiver:null,receive:null,reject:null,progress:X};return s.set(a,A),{onMessage:T=>{A.receiver=T,K()},onReceive:T=>{A.receive=T,K()},onReject:T=>{A.reject=T},onProgress:T=>{A.progress=T}}},receiveInline:(a,k)=>{let A=Y(a);if(!A)return;let{action:T,scope:L}=A,M=L?`${a.type}\0${L.key}`:a.type;if(T?.receiver&&!(L?L.receive:T.receive)&&!r.get(a.peerId)?.inline.has(M)){let g;try{g=mr(k,a.format,!0)}catch{e(a.peerId,"invalid action payload");return}yr(T,g,a.peerId,a.metadata);return}let p={...oe(a,L),kind:"inline",key:M,data:k};G(p)&&N(a.peerId,M)},receiveOffer:(a,k)=>{if(r.get(a.peerId)?.bulk.has(k)){e(a.peerId,"duplicate action offer");return}let A=Y(a,k);if(!A)return;let T={...oe(a,A.scope),kind:"bulk",id:k,transfer:"waiting",offset:0,data:null};G(T)&&K()},receiveChunk:(a,k,A,T)=>{let L=r.get(a),M=L?.bulk.get(k);if(!M)return;if(M.transfer!=="receiving"||A!==M.offset||!T.length||T.length!==Math.min(i,M.size-M.offset)){e(a,"invalid action chunk offset or length");return}try{M.data??(M.data=new Uint8Array(M.size))}catch{w(M,"unable to allocate receive buffer"),K();return}M.data.set(T,M.offset),M.offset+=T.length;let p=Date.now();M.lastSeen=p;for(let g of f)g.phase==="ready"&&s.get(g.type)?.receiver&&(g.lastSeen=p);M.offset===M.size?($(M),P(M)&&L?.active===M&&(L.active=null,m(a)),K()):gr(s.get(M.type),M.offset/M.size,a,M.metadata)},cancel:(a,k)=>{let A=r.get(a)?.bulk.get(k);A&&(l(A),A.scope?.reject("response cancelled by sender")),K()},clearPeer:a=>{let k=r.get(a);if(k){for(let A of k.bulk.values())l(A);for(let A of k.inline.values()){let T=[...A];for(let L of T)l(L)}}K()}}};var ct=2,bn=0,Pn=1,hr=2,ot=3,st=4,Sn=5,it=36,wr=48,Ne=6,sn=14,at=16384-sn,ns=256*1024**2,vr=1024**2,kr="bufferedamountlow",br="close",Pr="error",ts=1e4,xe=(e,n)=>{let t=x(n);return t.kind=e,t.name=e==="aborted"?"AbortError":t.name,t},Tn=e=>{if(e?.aborted)throw xe("aborted","operation aborted")},Sr=(e,n,t=Ne)=>{let o=new Uint8Array(t);return o[0]=ct,o[1]=e,new DataView(o.buffer).setUint32(2,n),o},Ge=xe,rs=(e,n,t=ts)=>e.readyState!=="open"||e.bufferedAmount<=e.bufferedAmountLowThreshold?Promise.resolve(e.readyState==="open"):new Promise(o=>{let i=!1,s=null,r=d=>{i||(i=!0,e.removeEventListener(kr,f),e.removeEventListener(br,c),e.removeEventListener(Pr,c),n?.removeEventListener("abort",c),H(s),o(d))},f=()=>r(!0),c=()=>r(!1);if(e.addEventListener(kr,f),e.addEventListener(br,c),e.addEventListener(Pr,c),n?.addEventListener("abort",c,{once:!0}),s=setTimeout(()=>r(!1),t),e.readyState!=="open"||n?.aborted){r(!1);return}e.bufferedAmount<=e.bufferedAmountLowThreshold&&r(!0)}),Ar=({getPeer:e,getPeerIds:n,canReceiveFromPeer:t,onPeerError:o,throwIfAborted:i=Tn,maxReceiveBytes:s=ns})=>{if(!Number.isSafeInteger(s)||s<=0)throw x("maxReceiveBytes must be a positive safe integer");let r=new Map,f=new Map,c=new WeakSet,d=0,v=pr({fail:(u,m)=>h(u,m),accept:(u,m)=>R(u,m,ot),refuse:(u,m,l)=>R(u,m,st,l),maxReceiveBytes:s,chunkSize:at}),y=u=>{for(let m of f.get(u)?.values()??[])m.fail(Ge("disconnected","peer disconnected"));f.delete(u),v.clearPeer(u)},h=(u,m)=>{let l=e(u,!0);l&&!c.has(l)&&(c.add(l),console.warn(`${Z}: ${m}; disconnecting peer ${u}`),o(u,x(m)))},R=(u,m,l,w="")=>{let D=e(u,!0);if(!D)return;let E=ue(w).subarray(0,200),U=Sr(l,m,Ne+E.length);U.set(E,Ne);try{if((D.channel?.bufferedAmount??0)>vr)throw x("control send buffer is full");D.sendData(U)}catch{h(u,"unable to send action control")}};return{makeInternalAction:(u,m={})=>{let l={sendToPending:!!m.sendToPending,receiveWhilePending:!!m.receiveWhilePending,...m.maxPayloadBytes===void 0?{}:{maxPayloadBytes:m.maxPayloadBytes},...m.receiveScope?{receiveScope:m.receiveScope}:{}},w=r.get(u);if(w){if(w.options.sendToPending!==l.sendToPending||w.options.receiveWhilePending!==l.receiveWhilePending||w.options.receiveScope!==l.receiveScope||w.options.maxPayloadBytes!==l.maxPayloadBytes)throw x(`action type "${u}" cannot be redefined`);return w.action}let D=ue(u);if(!u||u.includes("\0")||D.length>32)throw x("action type must contain 1\u201332 UTF-8 bytes and no null characters");let E={options:l,action:{...v.register(u,l),send:async(U,$,N,K,G)=>{if(i(G),U===void 0)throw x("action data cannot be undefined");let Y=U instanceof Blob,oe=Y||U instanceof ArrayBuffer||ArrayBuffer.isView(U),a=oe?2:typeof U=="string"?0:1,k=Y?U:U instanceof ArrayBuffer?new Uint8Array(U):ArrayBuffer.isView(U)?new Uint8Array(U.buffer,U.byteOffset,U.byteLength):ue(a===0?U:re(U)),A=k instanceof Blob?k.size:k.byteLength,T=N===void 0?new Uint8Array:ue(re(N));if(T.length>16336)throw x("action metadata is too large");let L=it+T.length+A<=16384;!L&&oe&&!(k instanceof Blob)&&(k=k.slice());let M=L?0:d++>>>0,p=L?it:wr,g=new Uint8Array(p+T.length+(L?A:0));g[0]=ct,g[1]=(L?bn:Pn)|a<<4,g.set(D,2);let C=new DataView(g.buffer);C.setUint16(34,T.length),L||(C.setUint32(36,M),C.setFloat64(40,A)),g.set(T,p),L&&g.set(k instanceof Blob?new Uint8Array(await k.arrayBuffer()):k,p+T.length);let _=$?Array.isArray($)?$:[$]:n(l.sendToPending);await le([...new Set(_)].map(async W=>{let I=e(W,l.sendToPending);if(!I){console.warn(`${Z}: no peer with id ${W} found`);return}let se=null,ee=()=>{if(se)throw se;if(i(G),e(W,l.sendToPending)!==I||I.channel?.readyState==="closed")throw Ge("disconnected","peer disconnected")},fe=async J=>{ee();let Q=I.channel;if(Q&&(Q.readyState!=="open"||Q.bufferedAmount>Q.bufferedAmountLowThreshold)){if(!await rs(Q,G))throw i(G),Ge("disconnected","data channel stopped draining");ee()}try{I.sendData(J)}catch{throw Ge("disconnected","peer disconnected")}};if(L){await fe(g),K?.(1,W,N);return}let Ae=!1,Re=!1,ye=Date.now(),b,B,q=new Promise((J,Q)=>{b=J,B=Q});q.catch(X);let F=f.get(W)??new Map;if(F.has(M))throw x("action transmission id is still in use");f.set(W,F);let ne=null,Ee={accept:()=>!ne||se?!1:(ne=H(ne),b(),!0),fail:(J,Q=!1)=>{Q&&(Re=!0),se=J,B(J)},touch:()=>{ne&&(ye=Date.now())}};F.set(M,Ee);let Ue=()=>{let J=12e4-(Date.now()-ye);J>0?ne=setTimeout(Ue,J):Ee.fail(Ge("timeout","action offer timed out"))};ne=setTimeout(Ue,12e4);let Me=()=>{try{i(G)}catch(J){Ee.fail(J)}};G?.addEventListener("abort",Me,{once:!0});try{await fe(g),Ae=!0,await q;for(let J=0;J<A;J+=at){ee();let Q=Math.min(at,A-J),Pe=Sr(hr,M,sn+Q);new DataView(Pe.buffer).setFloat64(Ne,J),Pe.set(k instanceof Blob?new Uint8Array(await k.slice(J,J+Q).arrayBuffer()):k.subarray(J,J+Q),sn),await fe(Pe);for(let z of F.values())z.touch();K?.((J+Q)/A,W,N)}ee()}catch(J){throw Ae&&!Re&&e(W,!0)===I&&(!I.channel||I.channel.readyState==="open"&&(I.channel.bufferedAmount??0)<=vr)&&R(W,M,Sn),J}finally{ne=H(ne),G?.removeEventListener("abort",Me),F.delete(M),!F.size&&f.get(W)===F&&f.delete(W)}}))}}};return r.set(u,E),E.action},handleData:(u,m)=>{if(m.byteLength<2||m.byteLength>16384){h(u,"invalid action frame");return}let l=new Uint8Array(m);if(l[0]!==ct){h(u,"incompatible action protocol version");return}let w=l[1]&15,D=l[1]>>>4,E=new DataView(l.buffer,l.byteOffset,l.byteLength);if(w>Sn||D>2||w>Pn&&D!==0){h(u,"invalid action frame");return}if(w>=hr){if(l.length<Ne||(w===ot||w===Sn)&&l.length!==Ne||w===st&&l.length>206){h(u,"invalid action control");return}let A=E.getUint32(2);if(w===ot){let T=f.get(u);if(T?.get(A)?.accept())for(let L of T.values())L.touch();return}if(w===st){f.get(u)?.get(A)?.fail(Ge("rejected",we(l.subarray(Ne))),!0);return}w===Sn?v.cancel(u,A):v.receiveChunk(u,A,l.length>=sn?E.getFloat64(Ne):NaN,l.subarray(sn));return}let U=w===bn?it:wr;if(l.length<U){h(u,"invalid action header");return}let $=we(l.subarray(2,34)).replaceAll("\0",""),N=r.get($);if(!t(u,!!N?.options.receiveWhilePending))return;let K=E.getUint16(34),G=U+K,Y=w===bn?l.length-G:E.getFloat64(40),oe=w===Pn?E.getUint32(36):0;if(!$||G>l.length||!Number.isSafeInteger(Y)||Y<0||w===Pn&&(Y===0||G!==l.length)){h(u,"invalid action proposal");return}let a;try{K&&(a=Te(we(l.subarray(U,G))))}catch{h(u,"invalid action metadata");return}let k={peerId:u,type:$,format:D,size:Y,...a===void 0?{}:{metadata:a}};w===bn?v.receiveInline(k,l.subarray(G)):v.receiveOffer(k,oe)},clearPeer:y}};var Rr=e=>e&&typeof e=="object"&&!Array.isArray(e)&&typeof e.r=="string"?e:null,An=e=>{let n=Rr(e);return n?{r:n.r,...Object.hasOwn(n,"m")?{m:n.m}:{}}:null},lt=e=>{let n=Rr(e);return n?{r:n.r,...typeof n.e=="string"?{e:n.e}:{}}:null},an=(e,n)=>n===void 0?e:{...e,metadata:n},Er=({getPeer:e,getPeerIds:n,canReceiveFromPeer:t,onPeerError:o,maxReceiveBytes:i})=>{let s=Object.create(null),r={},f=new Map,c=Ar({getPeer:e,getPeerIds:n,canReceiveFromPeer:t,onPeerError:o,...i===void 0?{}:{maxReceiveBytes:i}}),d=c.makeInternalAction,v=c.handleData,y=u=>{let m=r[u];m&&(H(m.timer),m.signal&&m.abortHandler&&m.signal.removeEventListener("abort",m.abortHandler),delete r[u],m.controller.abort())},h=(u,m)=>{Se(r).forEach(([l,w])=>{w.peerId===u&&(y(l),w.reject(m))})},R=(u,m)=>{c.clearPeer(u);let l=f.get(u);l&&(f.delete(u),l.forEach(w=>w.abort())),h(u,xe("disconnected",Ce(m,"peer disconnected")))},P=d("@_response",{receiveScope:(u,m)=>{let l=lt(m),w=l&&r[l.r];if(!l||!w||w.peerId!==u)return null;let D=l.e===void 0?w.getReceive():null;return{key:l.r,signal:w.controller.signal,receive:D?E=>D({byteLength:E.byteLength,peerId:E.peerId,kind:"response",signal:E.signal}):null,reject:E=>{r[l.r]===w&&(y(l.r),w.reject(xe("rejected",E)))}}}});return P.onProgress((u,m,l)=>{let w=lt(l),D=w&&r[w.r];D&&D.peerId===m&&w?.e===void 0&&D.getReceiveProgress()?.(u,{peerId:m})}),P.onMessage((u,m,l)=>{let w=lt(l);if(!w)return;let D=r[w.r];if(!(!D||D.peerId!==m)){if(y(w.r),w.e!==void 0){D.reject(xe("rejected",w.e));return}D.resolve(u)}}),{makeAction:(u,m)=>{if(m&&"onRequest"in m&&m.kind!=="request")throw x('request actions must use kind: "request"');let l=m?.kind??"message",w=d(u),D=s[u];if(D){if(D.kind!==l)throw x(`action type "${u}" cannot be redefined`);return D.action}let E={kind:l,action:null,onReceive:m?.onReceive??null,onReceiveProgress:m?.onReceiveProgress??null},U=(a,k)=>a?(A,T)=>a(A,an({peerId:T},k)):void 0,$=(a,k,A)=>{let T=E.kind==="request"?An(A):null;E.onReceiveProgress?.(a,an({peerId:k},T?T.m:A))},N=a=>{E.onReceive=a,w.onReceive(a?k=>{let A=l==="request"?An(k.metadata):null;return a(an({byteLength:k.byteLength,peerId:k.peerId,signal:k.signal,kind:l},A?A.m:k.metadata))}:null)};if(N(E.onReceive),w.onProgress($),l==="message"){let a=m?.onMessage??null,k=(T,L,M)=>{let p=a;Promise.resolve().then(()=>p(T,an({peerId:L},M))).catch(g=>console.error(`${Z} action handler error:`,g))},A={send:async(T,L={})=>{await w.send(T,L.target,L.metadata,U(L.onProgress,L.metadata),L.signal)},get onMessage(){return a},set onMessage(T){a=T,w.onMessage(T?k:null)},get onReceive(){return E.onReceive},set onReceive(T){N(T)},get onReceiveProgress(){return E.onReceiveProgress},set onReceiveProgress(T){E.onReceiveProgress=T}};return E.action=A,s[u]=E,w.onMessage(a?k:null),A}w.onReject((a,k,A)=>{let T=An(k);T&&P.send(null,a,{r:T.r,e:A}).catch(X)});let K=m?.onRequest??null,G=(a,k,A)=>{let T=An(A);if(!T)return;let L=K,M=new AbortController,p=f.get(k);p||(p=new Set,f.set(k,p)),p.add(M),Promise.resolve().then(async()=>{let g=await L(a,{...an({peerId:k},T.m),signal:M.signal});if(g===void 0)throw x("request handler returned undefined");return g}).then(g=>P.send(g,k,{r:T.r}),g=>P.send(null,k,{r:T.r,e:Ce(g,"request failed").slice(0,512)})).catch(X).finally(()=>{let g=f.get(k);g?.delete(M),g&&!g.size&&f.delete(k),M.abort()})},Y=async(a,k)=>{let{target:A,metadata:T,onProgress:L,signal:M,timeoutMs:p}=k;if(Tn(M),!e(A,!1))throw xe("disconnected",`no active peer with id ${A}`);let g=de(20),C=new AbortController,_=new Promise((W,I)=>{let se={controller:C,getReceive:()=>E.onReceive,getReceiveProgress:()=>E.onReceiveProgress,peerId:A,resolve:W,reject:I,timer:null,...M===void 0?{}:{signal:M}},ee=()=>{y(g),I(xe("aborted","operation aborted"))};M&&(se.abortHandler=ee,M.addEventListener("abort",ee,{once:!0})),r[g]=se,p!==void 0&&(se.timer=setTimeout(()=>{y(g),se.reject(xe("timeout","request timed out"))},p))});try{let W=w.send(a,A,T===void 0?{r:g}:{r:g,m:T},U(L,T),C.signal);return await Promise.race([_,W.then(()=>_)])}finally{y(g)}},oe={request:Y,requestMany:async(a,k)=>{let{targets:A,onResult:T,...L}=k;return Tn(L.signal),await le(A.map(async M=>{try{let p={peerId:M,status:"fulfilled",value:await Y(a,{...L,target:M})};return T?.(p),p}catch(p){let g=he(p,"request failed");if(g.kind==="aborted"||!g.kind)throw g;let C=g.kind==="timeout"?{peerId:M,status:"timeout"}:g.kind==="disconnected"?{peerId:M,status:"disconnected"}:{peerId:M,status:"rejected",error:g};return T?.(C),C}}))},get onRequest(){return K},set onRequest(a){K=a,w.onMessage(a?G:null)},get onReceive(){return E.onReceive},set onReceive(a){N(a)},get onReceiveProgress(){return E.onReceiveProgress},set onReceiveProgress(a){E.onReceiveProgress=a}};return E.action=oe,s[u]=E,w.onMessage(K?G:null),oe},makeInternalAction:d,handleData:v,clearPeer:R}};var Mr=e=>e&&typeof e=="object"&&!Array.isArray(e)&&typeof e.k=="string"?{key:e.k,...typeof e.s=="string"?{streamId:e.s}:{},...typeof e.t=="string"?{trackId:e.t}:{},...Object.hasOwn(e,"m")?{metadata:e.m}:{}}:null,Dr=e=>n=>{let t=e.get(n);return t||(t=de(20),e.set(n,t)),t},Rn=()=>{let e=new WeakMap,n=new WeakMap,t=new Map,o=new Map,i=new Map,s=new Map,r=new WeakMap,f=new WeakMap;return{getStreamKey:Dr(e),getTrackKey:Dr(n),rememberRemoteStream:(c,d,v)=>{let y=r.get(d);y!==void 0&&t.get(y)===d&&t.delete(y),r.set(d,c),t.set(c,d),v&&o.set(v,d),d.getTracks?.().forEach(h=>{typeof h.id=="string"&&s.set(h.id,{track:h,stream:d})})},getRemoteStream:(c,d)=>t.get(c)??(d?o.get(d):void 0),rememberRemoteTrack:(c,d,v,y,h)=>{let R={track:d,stream:v},P=f.get(d);P!==void 0&&i.get(P)?.track===d&&i.delete(P),f.set(d,c),i.set(c,R),y&&s.set(y,R),h&&o.set(h,v)},getRemoteTrack:(c,d)=>i.get(c)??(d?s.get(d):void 0),hasRemoteMedia:()=>t.size>0||i.size>0,clearRemote:()=>{t.clear(),o.clear(),i.clear(),s.clear()}}},Br=({iterate:e,isActive:n,getSharedMediaPeer:t,onPeerError:o})=>{let i={},s={},r={},f=Rn(),c=S=>t(S)?.__trysteroMedia??r[S]??(r[S]=Rn()),d=(S,u,m,l)=>{let w=S[u]??(S[u]=[]);if(w.length>=64){console.warn(`${Z}: too many pending ${l} metadata messages`),o(u,x("too many pending media metadata messages"));return}w.push(m)},v=(S,u,m)=>{if(!S?.length)return;let l=u?S.findIndex(w=>{let D=m(w);return!D||D===u}):0;return l>=0?S.splice(l,1)[0]:void 0},y=(S,u,m,l)=>{n(S)&&(c(S).rememberRemoteStream(u,m,typeof m.id=="string"?m.id:void 0),P.onPeerStream?.(m,S,l))},h=(S,u,m,l,w)=>{n(S)&&(c(S).rememberRemoteTrack(u,m,l,typeof m.id=="string"?m.id:void 0,typeof l.id=="string"?l.id:void 0),P.onPeerTrack?.(m,l,S,w))},R=(S,u,m,l,w,D={})=>{let E={k:u,...D,...m===void 0?{}:{m}};return e(S,async(U,$)=>{await l(E,U),await w($)})},P={addStream:(S,u,m)=>R(u.target,f.getStreamKey(S),u.metadata,m,l=>l.addStream(S),{s:S.id}),removeStream:(S,u)=>{e(u,(m,l)=>l.removeStream(S))},addTrack:(S,u,m,l)=>R(m.target,f.getTrackKey(S),m.metadata,l,w=>w.addTrack(S,u),{s:u.id,t:S.id}),removeTrack:(S,u)=>{e(u,(m,l)=>l.removeTrack(S))},replaceTrack:(S,u,m,l)=>R(m.target,f.getTrackKey(u),m.metadata,l,w=>w.replaceTrack(S,u),{t:S.id}),receiveStreamMeta:(S,u)=>{if(!n(u))return;let m=Mr(S);if(!m)return;let l=c(u).getRemoteStream(m.key,m.streamId);if(l?.getTracks().length){y(u,m.key,l,m.metadata);return}d(i,u,m,"stream")},receiveTrackMeta:(S,u)=>{if(!n(u))return;let m=Mr(S);if(!m)return;let l=c(u).getRemoteTrack(m.key,m.trackId);if(l&&l.track.readyState!=="ended"&&(!l.stream.getTracks||l.stream.getTracks().includes(l.track))){h(u,m.key,l.track,l.stream,m.metadata);return}d(s,u,m,"track")},receiveRemoteStream:(S,u)=>{if(!n(S))return;let m=v(i[S],typeof u.id=="string"?u.id:void 0,l=>l.streamId);m&&y(S,m.key,u,m.metadata)},receiveRemoteTrack:(S,u,m)=>{if(!n(S))return;let l=s[S],w=typeof u.id=="string"?u.id:void 0,D=typeof m.id=="string"?m.id:void 0,E=l&&w?l.findIndex($=>$.trackId===w):-1,U=E>=0?l?.splice(E,1)[0]:v(l,D,$=>$.streamId);U&&h(S,U.key,u,m,U.metadata)},clearPeer:S=>{delete i[S],delete s[S],delete r[S]},onPeerStream:null,onPeerTrack:null};return P};var Cr="beforeunload",os=1e4,_e=e=>"@_"+e,cn=new Set,Or=()=>cn.forEach(e=>e()),ss=e=>(cn.add(e),cn.size===1&&addEventListener(Cr,Or),()=>{cn.delete(e),cn.size||removeEventListener(Cr,Or)}),Lr=(e,n,t,{onPeerHandshake:o,onHandshakeError:i,handshakeTimeoutMs:s=os,maxReceiveBytes:r,isPassive:f=!1,onBeforeLeave:c}={})=>{let d={},v={},y={},h={onPeerJoin:null,onPeerLeave:null},R=X,P=null,S=(p,g)=>(p?Array.isArray(p)?p:[p]:ce(v)).flatMap(C=>{let _=v[C];return _?[Promise.resolve(g(C,_))]:(console.warn(`${Z}: no peer with id ${C} found`),[])}),u=(p,g,C)=>{let _=d[p];!_||g&&_!==g||(A.send("",p).catch(X),N(p,_,C))},m=(p,g)=>u(p,void 0,g),l=Br({onPeerError:m,iterate:(p,g)=>S(p,(C,_)=>g(C,_)),isActive:p=>!!v[p],getSharedMediaPeer:p=>d[p]??null}),w=Er({onPeerError:m,...r===void 0?{}:{maxReceiveBytes:r},getPeer:(p,g)=>(g?d:v)[p],getPeerIds:p=>ce(p?d:v),canReceiveFromPeer:(p,g)=>M.canReceiveFromPeer(p,g)}),D=w.makeInternalAction,E=w.handleData,U=w.makeAction,$=(p,g=x("peer disconnected"))=>{let C=he(g,"peer disconnected");M.clearPeer(p,C),delete d[p],delete v[p],w.clearPeer(p,C),y[p]?.splice(0).forEach(_=>_.reject(C)),delete y[p],l.clearPeer(p)},N=(p,g,C)=>{let _=d[p];if(!_||g&&_!==g)return;let W=!!v[p];$(p,C),_.destroy(),W&&h.onPeerLeave?.(p),n(p)},K=()=>P??(P=(async()=>{c?.();let p=new AbortController;A.send("",void 0,void 0,void 0,p.signal).catch(X),await new Promise(g=>setTimeout(g,99)),p.abort();try{Se(d).forEach(([g,C])=>{C.destroy(),$(g,x("room left"))})}finally{try{R()}finally{t()}}})()),G=D(_e("ping")),Y=D(_e("pong")),oe=D(_e("signal")),a=D(_e("stream"),{maxPayloadBytes:65536}),k=D(_e("track"),{maxPayloadBytes:65536}),A=D(_e("leave"),{sendToPending:!0,receiveWhilePending:!0}),T=D(_e("hsdata"),{sendToPending:!0,receiveWhilePending:!0,maxPayloadBytes:65536}),L=D(_e("hsready"),{sendToPending:!0,receiveWhilePending:!0}),M=cr({...o===void 0?{}:{onPeerHandshake:o},...i===void 0?{}:{onHandshakeError:i},handshakeTimeoutMs:s,sendHandshakeData:T.send,sendHandshakeReady:L.send,onActivate:(p,g)=>{v[p]=g,g.setHandlers({signal:C=>{v[p]===g&&oe.send(C,p).catch(X)}}),h.onPeerJoin?.(p)},onFailure:(p,g,C)=>u(p,g,C)});return G.onMessage((p,g)=>{Y.send("",g).catch(X)}),Y.onMessage((p,g)=>{let C=y[g];C?.shift()?.resolve(),C&&!C.length&&delete y[g]}),oe.onMessage((p,g)=>{v[g]?.signal(p)}),a.onMessage((p,g)=>l.receiveStreamMeta(p,g)),k.onMessage((p,g)=>l.receiveTrackMeta(p,g)),A.onMessage((p,g)=>N(g,void 0,x("peer left room"))),T.onMessage((p,g,C)=>M.receiveHandshakeData(p,g,C)),L.onMessage((p,g)=>M.receiveHandshakeReady(g)),e((p,g)=>{let C=d[g];if(C){if(C===p)return;C.destroy(),$(g,x("peer replaced"))}d[g]=p,M.addPeer(g,p),p.setHandlers({data:_=>{d[g]===p&&E(g,_)},stream:_=>l.receiveRemoteStream(g,_),track:(_,W)=>l.receiveRemoteTrack(g,_,W),close:()=>N(g,p,x("peer disconnected")),error:_=>{console.error(`${Z} peer error:`,_),N(g,p,_)}}),M.start(g,p)}),Jn&&(R=ss(()=>K().catch(X))),{makeAction:U,leave:K,ping:async p=>{if(!v[p])throw x(`no active peer with id ${p}`);let g=Date.now();return await new Promise((C,_)=>{let W=y[p]??(y[p]=[]),I=()=>{let ee=y[p];if(!ee)return;let fe=ee.indexOf(se);fe>-1&&ee.splice(fe,1),ee.length||delete y[p]},se={resolve:()=>{I(),C()},reject:ee=>{I(),_(ee)}};W.push(se),G.send("",p).catch(ee=>se.reject(he(ee,"peer disconnected")))}),Date.now()-g},isPassive:()=>f,getPeers:()=>Vn(Se(v).map(([p,g])=>[p,g.connection])),addStream:(p,g={})=>l.addStream(p,g,a.send),removeStream:(p,g={})=>{l.removeStream(p,g.target)},addTrack:(p,g,C={})=>l.addTrack(p,g,C,k.send),removeTrack:(p,g={})=>{l.removeTrack(p,g.target)},replaceTrack:(p,g,C={})=>l.replaceTrack(p,g,C,k.send),get onPeerJoin(){return h.onPeerJoin},set onPeerJoin(p){h.onPeerJoin=p,p&&ce(v).forEach(g=>p(g))},get onPeerLeave(){return h.onPeerLeave},set onPeerLeave(p){h.onPeerLeave=p},get onPeerStream(){return l.onPeerStream},set onPeerStream(p){l.onPeerStream=p},get onPeerTrack(){return l.onPeerTrack},set onPeerTrack(p){l.onPeerTrack=p}}};var Hr=1,Ir=2,xr=(e,n)=>{let t=ue(e),o=new Uint8Array(3+t.byteLength+n.byteLength);return o[0]=Hr,o[1]=t.byteLength>>>8&255,o[2]=t.byteLength&255,o.set(t,3),o.set(n,3+t.byteLength),o},is=(e,n)=>{let t=ue(e),o=new Uint8Array(4+t.byteLength);return o[0]=Ir,o[1]=Number(n),o[2]=t.byteLength>>>8&255,o[3]=t.byteLength&255,o.set(t,4),o},Ur=(e,n)=>{if(e.byteLength<n+2)return null;let t=(e[n]??0)<<8|(e[n+1]??0),o=n+2+t;return t<=0||t>128||e.byteLength<o?null:{roomToken:we(e.subarray(n+2,o)),headerSize:o}},as=e=>{let n=new Uint8Array(e);if(n.byteLength<3||n.byteLength>16515)return null;if(n[0]===Hr){let t=Ur(n,1);return t?{type:"room",roomToken:t.roomToken,payload:n.subarray(t.headerSize).slice().buffer}:null}if(n[0]===Ir){let t=Ur(n,2);return t?{type:"presence",roomToken:t.roomToken,isPresent:n[1]===1}:null}return null},En=e=>{let{connection:n,channel:t}=e;return e.isDead||n.connectionState==="closed"||n.connectionState==="failed"||n.iceConnectionState==="closed"||n.iceConnectionState==="failed"||t?.readyState==="closing"||t?.readyState==="closed"},qr=e=>{if(En(e))return"stale";let{channel:n}=e;return!n||n.readyState!=="open"?"transient":"live"},Nr=class{constructor(){ae(this,"rooms",new Map);ae(this,"unclaimedDataTimers",new WeakMap);ae(this,"pendingDataTimers",new WeakMap);ae(this,"byApp",{})}registerRoom(e,n,t,o){let i=this.rooms.get(e)??new Map;if(i.has(n))throw x("room membership already registered");let s={token:null,tokenPromise:t,...o};i.set(n,s),this.rooms.set(e,i);let r=()=>this.rooms.get(e)?.get(n)===s,f=c=>{if(s.token)for(let d of pe(this.byApp[e]??{}))try{this.sendRoomPresence(d,s.token,c)}catch{}};return t.then(c=>{if(r()){s.token=c;for(let d of pe(this.byApp[e]??{}))d.remoteRoomTokens.has(c)&&this.attachRoom(e,n,s,d),this.discardUnboundData(d);r()&&s.active&&f(!0)}}),{connect:(c,d,v)=>{if(!r()){d.destroy();return}let y=this.reusable(e,c);y&&y.peer!==d&&d.destroy();let h=y??this.register(e,c,d,v);if(this.attachRoom(e,n,s,h),!y)for(let R of i.values())R.active&&R.token&&this.sendRoomPresence(h,R.token,!0)},reuse:c=>{if(!r())return!1;let d=this.reusable(e,c);return d?(this.attachRoom(e,n,s,d),!0):!1},setActive:c=>{!r()||s.active===c||(s.active=c,f(c))},leave:()=>{if(r()){i.delete(n),i.size||this.rooms.delete(e),f(!1);for(let c of pe(this.byApp[e]??{})){let d=c.bindings[n];d?.handlers.close?.(),d?.detach(),this.discardUnboundData(c)}}}}}owns(e,n,t){return this.byApp[e]?.[n]?.peer===t}reusable(e,n){let t=this.byApp[e]?.[n];if(t&&En(t.peer)){this.clear(e,n,{destroyPeer:!0});return}return t}attachRoom(e,n,t,o){if(this.rooms.get(e)?.get(n)!==t||o.isClosing||this.get(e,o.peerId)!==o)return;let{proxy:i,isNew:s}=this.bind(n,t.tokenPromise,o,{onDetach:()=>t.onDetach(o.peerId,o.peer)});s&&t.onPeer(i,o.peerId,o.peer)}get(e,n){return this.byApp[e]?.[n]}sendRoomPresence(e,n,t){e.isClosing||En(e.peer)||e.peer.sendData(is(n,t))}clear(e,n,{destroyPeer:t}){let o=this.byApp[e],i=o?.[n];if(!i||i.isClosing)return;i.idleTimer=H(i.idleTimer),this.clearDataTimers(i),i.isClosing=!0,t&&!i.peer.isDead&&i.peer.destroy();let s=pe(i.bindings);i.bindings={},i.bindingsByToken={},i.controlRoomId=null,delete o[n],s.forEach(r=>{r.handlers.close?.(),r.pendingData.length=0,r.pendingSendData.length=0,r.pendingTracks.length=0}),i.media.clearRemote(),i.pendingDataByToken.clear(),i.remoteRoomTokens.clear(),ce(o).length===0&&delete this.byApp[e]}register(e,n,t,o){var f;let i=this.byApp[e]?.[n];if(i){if(i.idleTimer=H(i.idleTimer),i.peer===t)return i;this.clear(e,n,{destroyPeer:!0})}let s={appId:e,peerId:n,peer:t,bindings:{},bindingsByToken:{},pendingDataByToken:new Map,remoteRoomTokens:new Set,idleTimer:null,controlRoomId:null,streamOwners:new Map,trackOwners:new Map,media:Rn(),idleMs:o,isClosing:!1};((f=this.byApp)[e]??(f[e]={}))[n]=s;let r=()=>{this.owns(e,n,t)&&this.clear(e,n,{destroyPeer:!0})};return t.setHandlers({data:c=>this.dispatchData(s,c),signal:c=>this.dispatchSignal(s,c),close:r,error:c=>{console.error(`${Z} peer error:`,c),r()},track:(c,d)=>this.dispatchTrack(s,c,d)}),s}bind(e,n,t,{onDetach:o}){let i=t.bindings[e];if(i)return t.idleTimer=H(t.idleTimer),{proxy:i.proxy,isNew:!1};let s={roomId:e,roomToken:null,roomTokenPromise:n,handlers:{},pendingData:[],pendingSendData:[],pendingTracks:[],detach:X,proxy:{}},r=()=>{if(t.bindings[e]!==s)return;let c=ce(t.bindings).length===1&&(t.streamOwners.size>0||t.trackOwners.size>0||t.media.hasRemoteMedia());c||this.pruneRoomOwnership(t,e),delete t.bindings[e],s.roomToken&&t.bindingsByToken[s.roomToken]===s&&delete t.bindingsByToken[s.roomToken],t.controlRoomId===e&&(t.controlRoomId=ce(t.bindings)[0]??null),this.discardUnboundData(t),o(),c?this.clear(t.appId,t.peerId,{destroyPeer:!0}):this.scheduleIdleTimer(t)},f={get connection(){return t.peer.connection},get channel(){return t.peer.channel},get isDead(){return t.peer.isDead},getOffer:c=>t.peer.getOffer(c),signal:c=>t.peer.signal(c),sendData:c=>{if(!s.roomToken){s.pendingSendData.push(c);return}t.peer.sendData(xr(s.roomToken,c))},destroy:()=>r(),setHandlers:c=>{Object.assign(s.handlers,c),this.flushBindingQueues(t,s)},addStream:c=>{let d=t.streamOwners.get(c)??new Set,v=d.size===0;d.add(e),t.streamOwners.set(c,d),v&&t.peer.addStream(c)},removeStream:c=>this.releaseStreamOwner(t,c,e),addTrack:(c,d)=>{let v=t.trackOwners.get(c)??{stream:d,rooms:new Set},y=v.rooms.size===0;return v.stream=d,v.rooms.add(e),t.trackOwners.set(c,v),y?t.peer.addTrack(c,d):t.peer.connection.getSenders().find(h=>h.track===c)??t.peer.addTrack(c,d)},removeTrack:c=>this.releaseTrackOwner(t,c,e),replaceTrack:async(c,d)=>{let v=t.trackOwners.get(c);if(await t.peer.replaceTrack(c,d),v&&t.trackOwners.get(c)===v){t.trackOwners.delete(c);let y=t.trackOwners.get(d)??{stream:v.stream,rooms:new Set};v.rooms.forEach(h=>y.rooms.add(h)),t.trackOwners.set(d,y)}},__trysteroMedia:t.media};return s.proxy=f,s.detach=r,t.bindings[e]=s,t.controlRoomId??(t.controlRoomId=e),t.idleTimer=H(t.idleTimer),n.then(c=>{if(t.isClosing||t.bindings[e]!==s)return;s.roomToken=c,t.bindingsByToken[c]=s;let d=t.pendingDataByToken.get(c);d?.length&&(s.pendingData.push(...d),t.pendingDataByToken.delete(c));let v=s.pendingSendData.splice(0);En(t.peer)||v.forEach(y=>{try{t.peer.sendData(xr(c,y))}catch{}}),this.flushBindingQueues(t,s),this.discardUnboundData(t)}),{proxy:f,isNew:!0}}releaseStreamOwner(e,n,t){let o=e.streamOwners.get(n);o&&(o.delete(t),o.size===0&&(e.streamOwners.delete(n),e.peer.removeStream(n)))}releaseTrackOwner(e,n,t){let o=e.trackOwners.get(n);o&&(o.rooms.delete(t),o.rooms.size===0&&(e.trackOwners.delete(n),e.peer.removeTrack(n)))}pruneRoomOwnership(e,n){e.streamOwners.forEach((t,o)=>this.releaseStreamOwner(e,o,n)),e.trackOwners.forEach((t,o)=>this.releaseTrackOwner(e,o,n))}scheduleIdleTimer(e){e.isClosing||ce(e.bindings).length>0||(e.idleTimer=H(e.idleTimer),e.idleTimer=setTimeout(()=>{let n=this.byApp[e.appId]?.[e.peerId];!n||ce(n.bindings).length>0||this.clear(e.appId,e.peerId,{destroyPeer:!0})},e.idleMs))}getSignalBinding(e){if(e.controlRoomId){let t=e.bindings[e.controlRoomId];if(t?.handlers.signal)return t}let n=pe(e.bindings).find(t=>!!t.handlers.signal);return n?(e.controlRoomId=n.roomId,n):null}flushBindingQueues(e,n){let{handlers:t}=n;if(t.data&&n.pendingData.length>0){let o=n.pendingData.splice(0);this.syncDataTimers(e),o.forEach(i=>t.data?.(i))}else this.syncDataTimers(e);(t.track||t.stream)&&n.pendingTracks.length&&n.pendingTracks.splice(0).forEach(({track:o,stream:i})=>{t.track?.(o,i),t.stream?.(i)})}unclaimedBufferedFrameCount(e){let n=0;for(let t of e.pendingDataByToken.values())n+=t.length;return n}boundBufferedFrameCount(e){let n=0;for(let t of pe(e.bindings))n+=t.pendingData.length;return n}bufferedFrameCount(e){return this.unclaimedBufferedFrameCount(e)+this.boundBufferedFrameCount(e)}clearDataTimers(e){H(this.unclaimedDataTimers.get(e)),this.unclaimedDataTimers.delete(e),H(this.pendingDataTimers.get(e)),this.pendingDataTimers.delete(e)}syncDataTimers(e){if(e.isClosing){this.clearDataTimers(e);return}this.unclaimedBufferedFrameCount(e)===0?(H(this.unclaimedDataTimers.get(e)),this.unclaimedDataTimers.delete(e)):this.unclaimedDataTimers.has(e)||this.unclaimedDataTimers.set(e,setTimeout(()=>{this.unclaimedDataTimers.delete(e),e.pendingDataByToken.clear()},1e4)),this.boundBufferedFrameCount(e)===0?(H(this.pendingDataTimers.get(e)),this.pendingDataTimers.delete(e)):this.pendingDataTimers.has(e)||this.pendingDataTimers.set(e,setTimeout(()=>{this.pendingDataTimers.delete(e),this.boundBufferedFrameCount(e)>0&&this.failData(e,"room data handler timed out")},1e4))}canBindRoomToken(e,n){return pe(e.bindings).some(t=>!t.roomToken)||[...this.rooms.get(e.appId)?.values()??[]].some(t=>!t.token||t.token===n)}discardUnboundData(e){for(let n of e.pendingDataByToken.keys())this.canBindRoomToken(e,n)||e.pendingDataByToken.delete(n);this.syncDataTimers(e)}failData(e,n){console.warn(`${Z}: ${n}; disconnecting peer ${e.peerId}`),this.clear(e.appId,e.peerId,{destroyPeer:!0})}dispatchData(e,n){if(e.isClosing)return;let t=as(n);if(!t){this.failData(e,"invalid or incompatible room frame");return}if(t.type==="presence"){if(t.isPresent){if(!e.remoteRoomTokens.has(t.roomToken)&&e.remoteRoomTokens.size>=64){this.failData(e,"too many advertised rooms");return}e.remoteRoomTokens.add(t.roomToken);for(let[i,s]of this.rooms.get(e.appId)??[])s.token===t.roomToken&&this.attachRoom(e.appId,i,s,e)}else{e.remoteRoomTokens.delete(t.roomToken),e.pendingDataByToken.delete(t.roomToken);let i=e.bindingsByToken[t.roomToken];i?.handlers.close?.(),i?.detach(),this.syncDataTimers(e)}return}let o=e.bindingsByToken[t.roomToken];if(!o){if(!this.canBindRoomToken(e,t.roomToken)||this.bufferedFrameCount(e)>=64)return;let i=e.pendingDataByToken.get(t.roomToken)??[];i.push(t.payload),e.pendingDataByToken.set(t.roomToken,i),this.syncDataTimers(e);return}if(o.handlers.data)o.handlers.data(t.payload);else{if(this.bufferedFrameCount(e)>=64){this.failData(e,"too much data waiting for a room handler");return}o.pendingData.push(t.payload),this.syncDataTimers(e)}}dispatchSignal(e,n){let t=this.getSignalBinding(e);t?t.handlers.signal?.(n):n.type==="offer"&&this.clear(e.appId,e.peerId,{destroyPeer:!0})}dispatchTrack(e,n,t){pe(e.bindings).forEach(o=>{if(o.handlers.track||o.handlers.stream){o.handlers.track?.(n,t),o.handlers.stream?.(t);return}o.pendingTracks.push({track:n,stream:t})})}};var _r=23333,cs=57333,ls=12,fs=7533,ds=23333,ln="offer-placeholder",us=["offer","answer","candidate"],zr=e=>{if(typeof e=="string")try{let n=Te(e);return n&&typeof n=="object"&&!Array.isArray(n)?n:null}catch{return null}return e&&typeof e=="object"&&!Array.isArray(e)?e:null},ze=(e,n)=>typeof e[n]=="string"&&e[n]?e[n]:void 0,jr=e=>!!(e&&typeof e=="object"&&typeof e.signal=="function"&&typeof e.destroy=="function"&&typeof e.setHandlers=="function"),$r=(e,n=!1)=>us.some(t=>t in e&&(typeof e[t]!="string"||e[t]===""))||"peer"in e&&(n||e.peer!==void 0&&!jr(e.peer)),Fr=e=>{let n=zr(e);if(!n||$r(n,typeof e=="string"))return!1;let t=ze(n,"peerId");return!!(t&&t!==te&&n.passive!==!0&&!ze(n,"answer")&&!ze(n,"candidate"))},ms=(e,n,t,o,i,s)=>{e.toCipher(n).then(r=>{e.isLeaving()||!s()||o(t,re(i(r.sdp)))})},ys=()=>({offerPeer:null,offerId:null,offerSdp:null,offerInitPromise:null,offerAnswered:!1,offerRelays:[],offerSignalRelays:[],offerSignalBacklog:[],offerRelayTimers:[],offerExpiryTimer:null,connectedPeer:null,connectedPeerUnhealthySinceMs:null,answeringExpiryTimer:null,answeringPeer:null,answerSent:!1,answerReplay:null,connectionErrorReported:!1}),gs=e=>[...e.turnConfig??[],...e.rtcConfig?.iceServers??[]].some(({urls:n})=>(Array.isArray(n)?n:[n]).some(t=>/^turns?:/i.test(t))),ps=(e,n)=>`could not connect to peer ${e} after exchanging SDP; ${gs(n)?"check that your TURN server URLs and credentials are reachable by both peers":"configure TURN servers with turnConfig or rtcConfig.iceServers"}`,Bn=(e,n,t)=>{e.isLeaving()||n.connectedPeer||n.connectionErrorReported||(n.connectionErrorReported=!0,e.onJoinError?.({error:ps(t,e.config),appId:e.appId,peerId:t,roomId:e.roomId}))},dn=(e,n)=>e[n]??(e[n]=ys()),Mn=new WeakMap,Cn=e=>{Mn.delete(e),e.answeringExpiryTimer=H(e.answeringExpiryTimer),e.answeringPeer=null,e.answerSent=!1,e.answerReplay=null},fn=(e,n)=>{e.answeringPeer===n&&(Cn(e),e.connectedPeer!==n&&!n.isDead&&n.destroy())},Wr=(e,n)=>{e.answeringPeer&&e.answeringPeer!==n&&!e.answeringPeer.isDead&&e.answeringPeer.destroy(),Cn(e),e.connectedPeer=n,e.connectedPeerUnhealthySinceMs=null},ut=(e,n)=>{e?.connectedPeer===n&&(e.connectedPeer=null,e.connectedPeerUnhealthySinceMs=null)},Dn=(e,n,t)=>{e.connectedPeer&&(e.connectedPeer.isDead||e.connectedPeer.destroy(),e.connectedPeer=null,e.connectedPeerUnhealthySinceMs=null)},mt=(e,n)=>{e.offerRelayTimers[n]=H(e.offerRelayTimers[n]),e.offerRelays[n]&&(e.offerRelays[n]=void 0)},ft=(e,n)=>{e?.offerRelays[n]===ln&&mt(e,n)},je=e=>{Mn.delete(e),e.offerExpiryTimer=H(e.offerExpiryTimer),e.offerInitPromise=null,e.offerRelays.forEach((n,t)=>mt(e,t)),e.offerRelays=[],e.offerSignalRelays=[],e.offerRelayTimers=[],e.offerSignalBacklog=[],e.offerPeer&&e.offerPeer!==e.connectedPeer&&(e.offerPeer.isDead||e.offerPeer.destroy()),e.offerPeer=null,e.offerId=null,e.offerSdp=null,e.offerAnswered=!1,e.connectionErrorReported=!1},hs=(e,n,t,o)=>{H(n.answeringExpiryTimer),n.answeringExpiryTimer=setTimeout(()=>{let i=e.peerStates[t];!i||i.connectedPeer||i.answeringPeer!==o||(i.answerSent&&Bn(e,i,t),fn(i,o),e.checkDeactivate())},ds)},dt=(e,n,t,o=cs)=>{H(n.offerExpiryTimer);let i=n.offerId;n.offerExpiryTimer=setTimeout(()=>{let s=e.peerStates[t];!s||s.connectedPeer||s.offerId!==i||(s.offerAnswered&&Bn(e,s,t),je(s),e.checkDeactivate())},o)},Kr=(e,n,t,o,i)=>{let s=()=>{n.offerPeer===o&&!n.connectedPeer&&(n.offerAnswered&&Bn(e,n,t),je(n)),e.disconnectPeer(o,t),e.checkDeactivate()};o.setHandlers({connect:()=>e.connectPeer(o,t),...i?{signal:i}:{},close:s,error:s})},ws=(e,n,t)=>{if(n.offerPeer&&n.offerId&&n.offerSdp)return Promise.resolve({peer:n.offerPeer,offer:n.offerSdp,offerId:n.offerId});if(n.offerInitPromise)return n.offerInitPromise;let i=(async()=>{let s;try{s=(await e.offerManager.checkout(1,!1,e.encryptOffer))[0]}catch(c){if(e.isLeaving()||n.offerInitPromise!==i)return null;throw c}if(!s)throw x("failed to allocate offer peer");let{peer:r,offer:f}=s;return e.isLeaving()||n.offerInitPromise!==i?(r.destroy(),null):(n.offerPeer=r,n.offerId=de(ls),n.offerSdp=f,n.offerAnswered=!1,n.connectionErrorReported=!1,n.offerSignalBacklog=[],Kr(e,n,t,r,c=>{n.offerPeer===r&&(n.offerSignalBacklog.push(c),n.offerSignalRelays.forEach(d=>d?.(c)))}),dt(e,n,t),{peer:r,offer:f,offerId:n.offerId})})().finally(()=>{n.offerInitPromise===i&&(n.offerInitPromise=null)});return n.offerInitPromise=i},Jr=async(e,n,t,o,i=0)=>{let s=e.peerStates[t];if(!s||s.connectedPeer||s.answeringPeer||s.offerAnswered){ft(s,n);return}if(s.offerRelays[n]!==ln)return;let[r,f]=await le([Le(qe(e.rootTopicPlaintext,t)),ws(e,s,t)]);if(!f){ft(s,n);return}if(e.isLeaving()){je(s);return}if(s.connectedPeer||s.answeringPeer||s.offerAnswered||s.offerRelays[n]!==ln){ft(s,n);return}s.offerRelayTimers[n]=H(s.offerRelayTimers[n]),s.offerRelays[n]=!0,s.offerRelayTimers[n]=setTimeout(()=>{if(i>=2||e.isLeaving()||s.connectedPeer||s.answeringPeer||s.offerAnswered||s.offerPeer!==f.peer||s.offerId!==f.offerId){Ps(e,t,n);return}s.offerRelays[n]=ln,Jr(e,n,t,o,i+1)},i===0&&e.announceIntervals[n]===void 0?2e3:(e.announceIntervals[n]??e.announceIntervalMs)*.9);let c=!1;s.offerSignalRelays[n]=d=>{c&&(e.isLeaving()||s.connectedPeer||s.offerPeer!==f.peer||s.offerId!==f.offerId||d.type!=="candidate"||ms(e,d,r,o,v=>({peerId:te,offerId:f.offerId,candidate:v,...e.isPassive?{passive:!0}:{}}),()=>!s.connectedPeer&&s.offerPeer===f.peer&&s.offerId===f.offerId))},o(r,re({peerId:te,offerId:f.offerId,offer:f.offer,...e.isPassive?{passive:!0}:{}})),c=!0,s.offerSignalBacklog.forEach(d=>s.offerSignalRelays[n]?.(d))},vs=async(e,n,t,o,i,s)=>{let r=dn(e.peerStates,t);if(r.answeringPeer||r.offerAnswered){let u=r.answerReplay,m=u?.lastSentAt[n];if(r.answeringPeer&&!r.answeringPeer.isDead&&u&&u.offer===o&&u.offerId===i&&(m===void 0||Date.now()-m>=1e3)){u.lastSentAt[n]=Date.now();let l=await Le(qe(e.rootTopicPlaintext,t));if(!e.isLeaving()&&r.answerReplay===u&&!r.connectedPeer){let w=D=>s(l,D);u.relays[n]=w,u.messages.forEach(w)}}return}let f=!!(r.offerPeer||r.offerRelays.some(Boolean));if(f&&te<t)return;f&&je(r);let c=e.initPeer(!1,e.config),d={offer:o,offerId:i,messages:[],lastSentAt:[],relays:[]};d.lastSentAt[n]=Date.now(),r.answeringPeer=c,r.answerSent=!1,r.answerReplay=d,r.connectionErrorReported=!1,hs(e,r,t,c);let v=()=>{r.answeringPeer===c&&!r.connectedPeer&&r.answerSent&&Bn(e,r,t),fn(r,c),e.disconnectPeer(c,t),e.checkDeactivate()};c.setHandlers({connect:()=>e.connectPeer(c,t),close:v,error:v});let y;try{y=await e.toPlain({type:"offer",sdp:o})}catch{fn(r,c),e.onJoinError?.({error:"incorrect room password when decrypting offer",appId:e.appId,peerId:t,roomId:e.roomId});return}if(c.isDead){fn(r,c);return}let h=await Le(qe(e.rootTopicPlaintext,t));if(e.isLeaving()||r.answerReplay!==d)return;d.relays[n]=u=>s(h,u);let R=[],P=!1,S=u=>{e.toCipher(u).then(m=>{if(e.isLeaving()||r.answeringPeer!==c||c.isDead)return;let l={peerId:te};u.type==="answer"?(r.answerSent=!0,l.answer=m.sdp):l.candidate=m.sdp,i&&(l.offerId=i),e.isPassive&&(l.passive=!0);let w=re(l),D=Date.now();d.messages.push(w),d.relays.forEach((E,U)=>{E&&(d.lastSentAt[U]=D,E(w))}),u.type==="answer"&&!P&&(P=!0,R.splice(0).forEach(S))})};c.setHandlers({signal:u=>{if(!(e.isLeaving()||r.answeringPeer!==c||c.isDead)&&!(u.type!=="answer"&&u.type!=="candidate")){if(u.type==="candidate"&&!P){R.push(u);return}S(u)}}}),await c.signal(y)},ks=async(e,n,t,o,i)=>{let s;try{s=await e.toPlain({type:wn,sdp:t})}catch{return}let r=e.peerStates[n],f=o&&r?.offerPeer&&r.offerId===o?r.offerPeer:null,c=!o||r?.answerReplay?.offerId===o?r?.answeringPeer:null,d=!o&&r?.offerPeer?r.offerPeer:null,v=i&&!i.isDead?i:f??c??d;v&&!v.isDead&&v.signal(s)},bs=async(e,n,t,o,i)=>{let s;try{s=await e.toPlain({type:"answer",sdp:t})}catch{i&&(e.offerManager.reclaimLeased(i),i.isDead||i.destroy()),e.onJoinError?.({error:"incorrect room password when decrypting answer",appId:e.appId,peerId:n,roomId:e.roomId});return}if(i){let r=dn(e.peerStates,n);if(e.offerManager.claimLeased(i),r.connectedPeer||r.offerAnswered||r.answeringPeer&&!r.answeringPeer.isDead&&te>n){i.destroy();return}if(r.answeringPeer){let f=r.answeringPeer;fn(r,f)}je(r),r.offerPeer=i,r.offerId=o??null,r.offerAnswered=!0,dt(e,r,n,_r),Kr(e,r,n,i),i.signal(s)}else{let r=e.peerStates[n];if(!r||!r.offerPeer||r.offerAnswered||o&&r.offerId&&o!==r.offerId||r.offerPeer.isDead)return;r.offerAnswered=!0,dt(e,r,n,_r),r.offerPeer.signal(s)}},Ps=(e,n,t)=>{let o=e.peerStates[n];!o||o.connectedPeer||o.offerRelays[t]&&(mt(o,t),e.checkDeactivate())},Vr=e=>n=>async(t,o,i)=>{if(e.isLeaving())return;let s=zr(o);if(!s||$r(s,typeof o=="string"))return;let r=ze(s,"peerId")??"",f=ze(s,"offer"),c=ze(s,"answer"),d=ze(s,"candidate"),v=ze(s,"offerId"),y=jr(s.peer)?s.peer:void 0,h=s.passive===!0;if(!r||r===te)return;let[R,P]=await le([e.rootTopicP,e.selfTopicP]);if(e.isLeaving()||t!==R&&t!==P||e.isPassive&&h||(e.isPassive&&!e.isActive&&!c&&!d&&(e.isActive=!0,e.requeueAnnounce?.()),e.isPassive&&!e.isActive))return;let S=e.peerStates[r],u=S?.connectedPeer;if(u&&S){let m=qr(u);if(m==="live"){S.connectedPeerUnhealthySinceMs=null;return}if(m==="stale")Dn(S,r,"message-from-stale-peer");else{let l=Date.now(),w=S.connectedPeerUnhealthySinceMs??l;if(S.connectedPeerUnhealthySinceMs=w,l-w<fs)return;Dn(S,r,"message-from-prolonged-disconnect")}}if(!e.reusePeer(r)){if(r&&!f&&!c&&!d){let m=dn(e.peerStates,r),l=te<r;if(m.answeringPeer||m.connectedPeer||m.offerAnswered)return;if(!l&&!m.offerPeer){let w=Mn.get(m);w||(w=[],Mn.set(m,w));let D=w[n];if(D!==void 0&&Date.now()-D<1e3)return;w[n]=Date.now();let E=await Le(qe(e.rootTopicPlaintext,r));!e.isLeaving()&&!m.connectedPeer&&!m.answeringPeer&&!m.offerAnswered&&i(E,re({peerId:te}));return}return m.offerRelays[n]?void 0:(m.offerRelays[n]=ln,Jr(e,n,r,i))}if(f)return vs(e,n,r,f,v,i);if(d)return ks(e,r,d,v,y);if(c)return bs(e,r,c,v,y)}};var On=5333,Ss=[233,533,1333],Gr=7533,Ts=123333,yt=({init:e,subscribe:n,announce:t,deactivate:o})=>{let i={},s={},r=new Nr,f=()=>pe(i).some(y=>ce(y).length>0),c=!1,d=[],v=X;return(y,h,R)=>{if(!y)throw x("requires a config map as the first argument");if(R&&typeof R!="object")throw x("third argument must be a callbacks object");let{appId:P}=y,S=R?.onJoinError,u=R?.onPeerHandshake,m=R?.handshakeTimeoutMs;if(!P)throw x("config map is missing appId field");if(!h)throw x("roomId argument required");if(y.maxReceiveBytes!==void 0&&(!Number.isSafeInteger(y.maxReceiveBytes)||y.maxReceiveBytes<=0))throw x("maxReceiveBytes must be a positive safe integer");if(m!==void 0&&(!Number.isFinite(m)||m<=0))throw x("handshakeTimeoutMs must be a positive number");if(i[P]?.[h])return i[P][h];s[P]?.[h]?.(!0);let l=qe(Z,P,h),w=Le(l),D=Le(qe(l,te)),E=er(y.password??"",P,h),U=nr(P,h),$=y._test_only_sharedPeerIdleMs??Ts,N=!1,K=z=>async j=>({type:j.type,sdp:await z(E,j.sdp)}),G=K(sr),Y=K(or),oe=()=>rt(!0,y),a=!1,k=new ir(oe),A=async z=>{let j=await z.getOffer();if(!j||j.type!=="offer")throw x("failed to get offer for peer");return(await Y(j)).sdp},T=(z,j)=>{Pe.connect(j,z,$)},L=!1,M=()=>{g||!a||L||(L=!0,queueMicrotask(()=>{L=!1,N||I.requeueAnnounce?.()}))},p=(z,j)=>{if(N)return;let V=I.peerStates[j];V?.connectedPeer===z&&(Dn(V,j,"close-event"),W(),M())},g=!!y.passive,C,_=X,W=()=>{if(!g||!I.isActive)return;let z=!1;Se(I.peerStates).forEach(([j,V])=>{V.connectedPeer||V.answeringPeer||V.offerInitPromise||V.offerPeer||V.offerRelays.some(Boolean)?z=!0:delete I.peerStates[j]}),z||(I.isActive=!1,C=H(C),ye.forEach(H),ye.length=0,_(),Pe.setActive(!1))},I={appId:P,roomId:h,config:y,peerStates:{},rootTopicPlaintext:l,rootTopicP:w,selfTopicP:D,toPlain:G,toCipher:Y,isLeaving:()=>N,isPassive:g,isActive:!g,onJoinError:S,offerManager:k,encryptOffer:A,initPeer:rt,connectPeer:T,disconnectPeer:p,reusePeer:z=>Pe.reuse(z),checkDeactivate:W,announceIntervals:[],announceIntervalMs:On},se={config:y,appId:P,roomId:h,isPassive:g},ee=Vr(I);if(!c){let z=e(y);d=(Array.isArray(z)?z:[z]).map(j=>Promise.resolve(j)),c=!0,v=y.relayConfig?.manualReconnection?X:Qt()}let fe=d.map(()=>On),Ae=d.map(()=>0),Re=d.map(()=>0),ye=[],b=d.map(async(z,j)=>n(await z,await w,await D,ee(j),V=>k.getOffers(V,A),se));le([w,D]).then(([z,j])=>{if(N)return;let V=async(ve,ie)=>{if(N||g&&!I.isActive)return;let $e=g?{passive:!0}:void 0,ke;try{ke=await t(ve,z,j,$e,se),Re[ie]=0}catch(lo){if(N)return;let St=Re[ie]??0;St===0&&y.relayConfig?.warnOnRelayFailure!==!1&&console.warn(`${Z}: announce failed - ${Ce(lo,"")}`),Re[ie]=St+1}if(N||g&&!I.isActive||ke&&typeof ke!="number"&&"stopAnnouncing"in ke)return;typeof ke=="number"?(I.announceIntervals[ie]=ke,fe[ie]=ke):ke&&(fe[ie]=ke.nextAnnounceMs,a||(a=ke.reannounceOnDisconnect===!0));let Un=Ae[ie]??0;Ae[ie]=Un+1;let bt=fe[ie]??On,Pt=Ss[Un]??(Un===3&&typeof ke=="object"?On:void 0);ye[ie]=setTimeout(()=>{V(ve,ie)},typeof Pt=="number"?Math.min(bt,Pt):bt)};_=()=>{o&&d.forEach(async ve=>{let ie=await ve;N||o(ie,z,j,se)})},I.requeueAnnounce=()=>{ye.forEach(H),ye.length=0,C=H(C),Pe.setActive(!0),C=setTimeout(W,Gr),d.forEach(async(ve,ie)=>{let $e=await ve;$e&&!N&&(Ae[ie]=0,V($e,ie))})},b.forEach(async(ve,ie)=>{if(await ve,N)return;let $e=await d[ie];$e&&!N&&(!g||I.isActive)&&V($e,ie)})});let B=X,q=y.password??"",{compose:F}=ar(q,P,h),ne=F(u),Ee=()=>{i[P]?.[h]===Q&&(delete i[P][h],ce(i[P]).length===0&&delete i[P])},Ue=()=>{s[P]?.[h]===Me&&(delete s[P][h],ce(s[P]).length===0&&delete s[P])},Me=(z=!1)=>{N||(N=!0,B=X,Ee(),Ue(),Pe.leave(),Se(I.peerStates).forEach(([j,V])=>{V.connectedPeer&&!V.connectedPeer.isDead&&(r.owns(P,j,V.connectedPeer)||V.connectedPeer.destroy()),V.answeringPeer&&!V.answeringPeer.isDead&&V.answeringPeer.destroy(),je(V),Cn(V),V.connectedPeer=null,V.connectedPeerUnhealthySinceMs=null}),ye.forEach(H),C=H(C),b.forEach(async j=>{(await j)()}),k.destroy(),!(z||f())&&(c=!1,v()))},J={...y.maxReceiveBytes===void 0?{}:{maxReceiveBytes:y.maxReceiveBytes},...ne?{onPeerHandshake:ne}:{},...m===void 0?{}:{handshakeTimeoutMs:m},isPassive:g,onBeforeLeave:()=>{Ee(),(s[P]??(s[P]={}))[h]=Me},onHandshakeError:(z,j)=>S?.({error:j.replace(/^handshake failed: /,""),appId:P,peerId:z,roomId:h})};i[P]??(i[P]={});let Q=Lr(z=>B=z,z=>{if(N)return;let j=I.peerStates[z];j?.connectedPeer&&ut(j,j.connectedPeer),W(),M()},()=>Me(!1),J),Pe=r.registerRoom(P,h,U,{active:!g||I.isActive,onPeer:(z,j,V)=>{let ve=dn(I.peerStates,j);Wr(ve,V),g&&!I.isActive&&(I.isActive=!0,Pe.setActive(!0),I.requeueAnnounce?I.requeueAnnounce():(C=H(C),C=setTimeout(W,Gr))),B(z,j),je(ve)},onDetach:(z,j)=>{ut(I.peerStates[z],j),W()}});return i[P][h]=Q}};var As=6e4,gt=e=>{if(!e)throw x("topic strategy missing room context");return e},un=(e,n,t,o)=>({kind:n,appId:e.appId,roomId:e.roomId,rootTopic:t,selfTopic:o}),pt=({steadyAnnounceIntervalMs:e=As,reannounceOnDisconnect:n=!0,init:t,subscribeTopic:o,publishTopic:i,unpublishTopic:s})=>yt({init:t,subscribe:async(r,f,c,d,v,y)=>{let h=gt(y),R=(E,U)=>{i(r,E,U,un(h,"signal",f,c))},P=null,S=!1,u=null,m=!1,l=E=>{S||(S=!0,E())},w=()=>(u||(u=Promise.resolve(o(r,c,(E,U)=>{m||d(E,U,R)},un(h,"self",f,c))).then(E=>{P=E,m&&l(E)})),u);h.isPassive||await w();let D=await o(r,f,async(E,U)=>{m||(h.isPassive&&Fr(U)&&await w(),m||await d(E,U,R))},un(h,"root",f,c));return()=>{m=!0,P&&l(P),D()}},announce:async(r,f,c,d,v)=>{let y=gt(v),h=await i(r,f,re({peerId:te,...d}),un(y,"announce",f,c));return typeof h=="number"||h!==void 0&&"stopAnnouncing"in h?h:{nextAnnounceMs:h?.nextAnnounceMs??e,reannounceOnDisconnect:h?.reannounceOnDisconnect??n}},...s?{deactivate:(r,f,c,d)=>{let v=gt(d);return s(r,f,un(v,"announce",f,c))}}:{}});var vt=Qn(e=>e.socket),Rs=5,Xr="x",Yr="EVENT",{secretKey:Es,publicKey:Ms}=Fn.keygen(),Ds=Oe(Ms),ht={},Zr=250,Je=6e4,Bs=9e5,kt=5333,mn=new WeakMap,xn=vt.scoped(),wt=new WeakSet,Cs=e=>{let n=mn.get(e),t=Math.min(n?.delayMs?Math.max(Je,n.delayMs*2):Je,Bs);return mn.set(e,{delayMs:t,untilMs:Date.now()+t}),t},yn=e=>{let n=mn.get(e);if(!n)return 0;let t=n.untilMs-Date.now();return t>0?t:0},Ln=e=>({nextAnnounceMs:e}),Os={stopAnnouncing:!0},Ls=e=>wt.has(e)?!1:(wt.add(e),mn.delete(e),e.close?.(),!0),Qr=()=>Math.floor(Date.now()/1e3),eo=e=>ht[e]??(ht[e]=vn(e,1e4)+2e4),xs=async(e,n)=>{let t={kind:eo(e),tags:[[Xr,e]],created_at:Qr(),content:n,pubkey:Ds},o=await Ke("SHA-256",re([0,t.pubkey,t.created_at,t.kind,t.tags,t.content]));return re([Yr,{...t,id:Oe(o),sig:Oe(await Fn.signAsync(o,Es))}])};var me={},no=e=>{e.flushWaiters.forEach(n=>n()),e.flushWaiters.clear()},Us=(e,n,t)=>{var i;let o=me[i=e.url]??(me[i]={subIds:[],topics:new Map,updateTimer:null,flushWaiters:new Set,retryTimer:null,retryMs:kt,pendingEose:new Set,requestedAt:0});o.topics.set(n,t),to(e,o)},Hs=(e,n)=>{let t=me[e.url];t&&(t.topics.delete(n),delete xn.forRelay(e)[n],t.topics.size===0?(t.retryTimer!==null&&clearTimeout(t.retryTimer),t.updateTimer!==null&&(clearTimeout(t.updateTimer),t.updateTimer=null),no(t),t.subIds.forEach(o=>e.send(re(["CLOSE",o]))),delete me[e.url]):to(e,t))},to=(e,n)=>{n.updateTimer===null&&(n.updateTimer=setTimeout(()=>{n.updateTimer=null;try{ro(e)}finally{no(n)}},0))},Is=e=>{let n=me[e.url];return!n||n.updateTimer===null?Promise.resolve():new Promise(t=>n.flushWaiters.add(t))},ro=e=>{let n=me[e.url];if(!n||n.topics.size===0)return;let t=[...n.topics.keys()],o=[],i=Qr();for(let s=0;s<t.length;s+=Zr)o.push(t.slice(s,s+Zr));for(;n.subIds.length>o.length;){let s=n.subIds.pop();s&&e.send(re(["CLOSE",s]))}n.pendingEose.clear(),n.requestedAt=Date.now(),o.forEach((s,r)=>{var c;let f=(c=n.subIds)[r]??(c[r]=de(64));n.pendingEose.add(f),e.send(re(["REQ",f,{kinds:[...new Set(s.map(eo))],since:i,"#x":s}]))})},oo=e=>{let n=me[e.url];if(n&&n.topics.size>0&&!e.isClosed){if(yn(e)>0){ao(e,!0);return}n.retryTimer!==null&&(clearTimeout(n.retryTimer),n.retryTimer=null),ro(e),so(e)}},so=e=>{Object.entries(xn.forRelay(e)).forEach(([n,t])=>{io(e,n,t,!0)})},io=async(e,n,t,o)=>{if(wt.has(e)||e.isClosed)return o?Os:void 0;let i=yn(e);if(i>0||e.socket.readyState!==1)return o?Ln(Math.max(Je,i)):void 0;let s=await xs(n,o?re({...Te(t),nonce:de(8)}):t);if(o&&!me[e.url]?.topics.has(n))return Ln(Je);if(yn(e)>0||e.isClosed||e.socket.readyState!==1)return o?Ln(Je):void 0;if(e.send(s),o)return Ln(Je)},ao=(e,n)=>{let t=me[e.url];if(!t||t.retryTimer!==null&&!n)return;t.retryTimer!==null&&clearTimeout(t.retryTimer);let o=n?yn(e):t.retryMs;t.retryMs=Math.min(t.retryMs*2,Je),t.retryTimer=setTimeout(()=>{t.retryTimer=null,oo(e)},Math.max(o,kt))},co=pt({init:e=>Gn(e,qs,Rs,!0).map(n=>{let t=vt.register(n,()=>Yn(n,o=>{let[i,s,r,f]=Te(o);if(i!==Yr){let c=`${Z}: relay failure from ${t.url} - `,d=i==="CLOSED"&&typeof r=="string"?r:f,v=i==="OK"&&r===!1,y=(v||i==="CLOSED")&&d?.startsWith("rate-limited:"),h=v&&d?.startsWith("duplicate:"),R=d&&/^(blocked|restricted|auth-required|pow):/.test(d);if(i==="OK"&&r===!0&&yn(t)===0&&mn.delete(t),(v||i==="CLOSED")&&R&&!Ls(t))return;if(y)Cs(t);else if(i==="EOSE"){let P=me[t.url];P?.pendingEose.delete(s)&&P.pendingEose.size===0&&(P.retryMs=kt,P.retryTimer!==null&&(clearTimeout(P.retryTimer),P.retryTimer=null),Date.now()-P.requestedAt>=1e3&&so(t))}i==="CLOSED"&&!R&&ao(t,!!y),!h&&e.relayConfig?.warnOnRelayFailure!==!1&&(i==="NOTICE"?console.warn(c+s):(v||i==="CLOSED")&&console.warn(c+d));return}if(r&&typeof r=="object"&&"content"in r){let c=me[t.url];if(c?.subIds.includes(s)&&r.tags){let d=r.tags.find(v=>v[0]===Xr);d?.[1]&&c.topics.get(d[1])?.(d[1],r.content)}}},()=>oo(t)));return t.ready}),subscribeTopic:(e,n,t,o)=>{let i=(r,f)=>{t(r,f)};Us(e,n,i);let s=()=>{me[e.url]?.topics.get(n)===i&&Hs(e,n)};return o.kind==="root"?Is(e).then(()=>s):s},publishTopic:(e,n,t,{kind:o})=>{let i=typeof t=="string"?t:re(t);return o==="announce"&&(xn.forRelay(e)[n]=i),io(e,n,i,o==="announce")},unpublishTopic:(e,n)=>{delete xn.forRelay(e)[n]}}),Zi=vt.getSockets,qs=["0x-nostr-relay.fly.dev","bendernostur.duckdns.org:8443","cdn.satellite.earth","nos.lol","nostr.chaima.info","nostr.christiansass.de","nostr.rblb.it","nostr.red5d.dev","nostr.robosats.org","nostr.stakey.net","nostrcity-club.fly.dev","relay-dev.gulugulu.moe","relay.aarpia.com","relay.agentry.com","relay.bitmacro.cloud","relay.bullishbounty.com","relay.degmods.com","relay.flashapp.me","relay.grigic.org","relay.hackshed.dev","relay.kaleidoswap.com","relay.layer.systems","relay.nostr.blockhenge.com","relay.nostr.dev.br","relay.nostrmap.net","relay.novospes.com","relay.piazza.today","relay.routstr.com","testr.nymble.world"].map(e=>"wss://"+e);window.Trystero={joinRoom:co,selfId:te};})();
+/*! Bundled license information:
+
+@noble/secp256k1/index.js:
+  (*! noble-secp256k1 - MIT License (c) 2019 Paul Miller (paulmillr.com) *)
+*/
+
+</script>
+<script>
+'use strict';
+/* =====================================================================
+   MULTIPLAYER NETWORK CONFIG  —  edit here (optional)
+   TURN = fallback relay for players who can't connect directly
+   (strict school/company networks, some mobile carriers).
+   Fill in ONE of the two options, save, upload index.html again.
+
+   Option A (Metered / Open Relay): your "credentials API URL", e.g.
+     apiUrl: 'https://YOURAPP.metered.live/api/v1/turn/credentials?apiKey=YOUR_KEY',
+
+   Option B: static TURN servers from your provider's dashboard, e.g.
+     servers: [{ urls: ['turn:HOST:80', 'turn:HOST:443?transport=tcp', 'turns:HOST:443?transport=tcp'],
+                 username: 'USERNAME', credential: 'PASSWORD' }],
+   ===================================================================== */
+const TURN_CONFIG = {
+  apiUrl: '',
+  servers: [{
+    urls: [
+      'stun:stun.relay.metered.ca:80',
+      'turn:standard.relay.metered.ca:80',
+      'turn:standard.relay.metered.ca:80?transport=tcp',
+      'turn:standard.relay.metered.ca:443',
+      'turns:standard.relay.metered.ca:443?transport=tcp'
+    ],
+    username: 'e084faa1be6656e0573d15ac',
+    credential: 'U/NOr2hgyY3z41Tf'
+  }]
+};
+
+/* ===================== DATA ===================== */
+const TYPES={normal:{n:'Normal',c:'#8b8f9c'},fire:{n:'Fire',c:'#f0642a'},water:{n:'Water',c:'#3d8bf2'},grass:{n:'Grass',c:'#2fb556'},electric:{n:'Electric',c:'#d9a90b'},rock:{n:'Rock',c:'#a2742c'},flying:{n:'Flying',c:'#7c83f0'}};
+const EFF={fire:{grass:2,water:.5,fire:.5,rock:.5},water:{fire:2,rock:2,grass:.5,water:.5},grass:{water:2,rock:2,fire:.5,grass:.5,flying:.5},electric:{water:2,flying:2,grass:.5,electric:.5,rock:0},rock:{fire:2,flying:2,grass:.5},flying:{grass:2,electric:.5,rock:.5},normal:{rock:.5}};
+function eff(a,d){const r=EFF[a];return r&&r[d]!==undefined?r[d]:1}
+const MOVES={
+ bump:{n:'Bump',t:'normal',p:40},scratch:{n:'Scratch',t:'normal',p:40},whirl:{n:'Whirl Strike',t:'normal',p:65},
+ sparkshot:{n:'Spark Shot',t:'fire',p:40},cinderbite:{n:'Cinder Bite',t:'fire',p:65},firestorm:{n:'Firestorm',t:'fire',p:90},
+ splash:{n:'Splash Shot',t:'water',p:40},waveslam:{n:'Wave Slam',t:'water',p:65},torrent:{n:'Torrent',t:'water',p:90},
+ leaftoss:{n:'Leaf Toss',t:'grass',p:40},vinelash:{n:'Vine Lash',t:'grass',p:65},thornrain:{n:'Thorn Rain',t:'grass',p:90},
+ zap:{n:'Static Zap',t:'electric',p:40},boltstrike:{n:'Bolt Strike',t:'electric',p:75},
+ rocktoss:{n:'Rock Toss',t:'rock',p:50},boulder:{n:'Boulder Hurl',t:'rock',p:80},
+ gust:{n:'Gust',t:'flying',p:40},divebomb:{n:'Dive Bomb',t:'flying',p:70}
+};
+// b = [HP, Attack, Defense, Speed]; c = [main, belly, outline]
+const SPECIES={
+ emberkit:{n:'Emberkit',t:'fire',form:'quad',f:['ears','flametail'],b:[39,52,43,65],c:['#f2803a','#ffe3b0','#6b2a0e'],xp:60,evo:[14,'blazewolf'],ls:[[1,'scratch'],[1,'sparkshot'],[9,'cinderbite'],[16,'whirl'],[20,'firestorm']]},
+ blazewolf:{n:'Blazewolf',t:'fire',form:'quad',f:['ears','flametail','mane'],b:[68,82,60,90],c:['#d43c2a','#ffd2a6','#4a0f08'],xp:150,sc:1.15,ls:[[1,'scratch'],[1,'sparkshot'],[9,'cinderbite'],[16,'whirl'],[20,'firestorm']]},
+ dropplet:{n:'Dropplet',t:'water',form:'blob',f:['drop'],b:[44,48,65,43],c:['#4fb6f0','#dff3ff','#0c4a74'],xp:60,evo:[14,'tidefin'],ls:[[1,'bump'],[1,'splash'],[9,'waveslam'],[16,'whirl'],[20,'torrent']]},
+ tidefin:{n:'Tidefin',t:'water',form:'quad',f:['fin','tail'],b:[72,78,82,62],c:['#2a7fd4','#cfeaff','#0a2f57'],xp:150,sc:1.15,ls:[[1,'bump'],[1,'splash'],[9,'waveslam'],[16,'whirl'],[20,'torrent']]},
+ sproutle:{n:'Sproutle',t:'grass',form:'blob',f:['sprout'],b:[45,49,49,45],c:['#7fd36b','#effbd9','#1f5c22'],xp:60,evo:[14,'vinecroc'],ls:[[1,'bump'],[1,'leaftoss'],[9,'vinelash'],[16,'whirl'],[20,'thornrain']]},
+ vinecroc:{n:'Vinecroc',t:'grass',form:'quad',f:['leafback','tail'],b:[75,76,84,58],c:['#3f9e4c','#dcf5c8','#143d1a'],xp:150,sc:1.15,ls:[[1,'bump'],[1,'leaftoss'],[9,'vinelash'],[16,'whirl'],[20,'thornrain']]},
+ voltmouse:{n:'Voltmouse',t:'electric',form:'quad',f:['roundears','bolttail'],b:[35,55,40,90],c:['#f5d142','#fff6c9','#6b5205'],xp:55,ls:[[1,'bump'],[1,'zap'],[10,'whirl'],[15,'boltstrike']]},
+ pebblecrab:{n:'Pebblecrab',t:'rock',form:'crab',f:['claws','rocks'],b:[50,68,95,30],c:['#c98d55','#f3dcc0','#4d2e12'],xp:62,ls:[[1,'scratch'],[1,'rocktoss'],[11,'whirl'],[16,'boulder']]},
+ fluffwing:{n:'Fluffwing',t:'flying',form:'bird',f:['wings','tuft'],b:[40,45,40,70],c:['#f2a7c3','#fff0f6','#7a2547'],xp:50,evo:[16,'galefeather'],ls:[[1,'bump'],[1,'gust'],[12,'divebomb'],[18,'whirl']]},
+ galefeather:{n:'Galefeather',t:'flying',form:'bird',f:['wings','tuft','crest'],b:[65,72,60,98],c:['#c9568a','#ffe1ef','#4f0f2c'],xp:140,sc:1.15,ls:[[1,'bump'],[1,'gust'],[12,'divebomb'],[18,'whirl']]},
+ mossling:{n:'Mossling',t:'grass',form:'blob',f:['moss'],b:[62,42,62,30],c:['#5c9e48','#c9e6a8','#24401a'],xp:55,ls:[[1,'bump'],[1,'leaftoss'],[12,'vinelash'],[18,'rocktoss']]},
+ splashotter:{n:'Splashotter',t:'water',form:'quad',f:['whiskers','tail','roundears'],b:[52,62,45,72],c:['#8a6a52','#efe0cf','#3a2616'],xp:60,ls:[[1,'scratch'],[1,'splash'],[11,'waveslam'],[17,'whirl']]},
+ cinderbug:{n:'Cinderbug',t:'fire',form:'bug',f:['antenna','shell'],b:[46,62,66,50],c:['#e04a3a','#ffd9b8','#4a0d07'],xp:60,ls:[[1,'bump'],[1,'sparkshot'],[11,'cinderbite'],[17,'rocktoss']]},
+ stormsparrow:{n:'Stormsparrow',t:'electric',form:'bird',f:['wings','crest'],b:[55,72,50,96],c:['#3a4a7a','#ffe36b','#121a33'],xp:70,ls:[[1,'gust'],[1,'zap'],[10,'divebomb'],[15,'boltstrike']]}
+};
+Object.assign(SPECIES,{
+ boulderhog:{n:'Boulderhog',t:'rock',form:'quad',f:['roundears','tail'],b:[58,72,92,34],c:['#8d8d99','#d9d9e2','#2e2e38'],xp:66,ls:[[1,'bump'],[1,'rocktoss'],[10,'whirl'],[15,'boulder']]},
+ reefcrab:{n:'Reefcrab',t:'water',form:'crab',f:['claws','rocks'],b:[60,80,100,40],c:['#2fb7b0','#cbfbf6','#0d4744'],xp:85,ls:[[1,'scratch'],[1,'splash'],[8,'waveslam'],[14,'boulder']]},
+ thornfox:{n:'Thornfox',t:'grass',form:'quad',f:['ears','leafback','tail'],b:[62,84,66,88],c:['#6cbf3a','#eaf7c7','#25480f'],xp:90,ls:[[1,'scratch'],[1,'leaftoss'],[8,'vinelash'],[12,'whirl'],[16,'thornrain']]},
+ blazewing:{n:'Blazewing',t:'fire',form:'bird',f:['wings','crest'],b:[60,86,58,96],c:['#f2603a','#ffd9a0','#5a1608'],xp:90,ls:[[1,'gust'],[1,'sparkshot'],[8,'divebomb'],[14,'firestorm']]},
+ solarion:{n:'Solarion',t:'fire',form:'quad',f:['ears','mane','flametail'],b:[92,112,90,100],c:['#ffcf3a','#fff6d0','#7a4a00'],xp:220,sc:1.25,ls:[[1,'sparkshot'],[1,'cinderbite'],[1,'whirl'],[1,'firestorm']]},
+ abyssfin:{n:'Abyssfin',t:'water',form:'quad',f:['fin','tail','whiskers'],b:[104,96,108,78],c:['#2a3fa8','#9fd2ff','#0b1240'],xp:220,sc:1.25,ls:[[1,'splash'],[1,'waveslam'],[1,'whirl'],[1,'torrent']]},
+ thunderroc:{n:'Thunderroc',t:'electric',form:'bird',f:['wings','crest','tuft'],b:[86,106,80,116],c:['#ffe14d','#fffbe0','#4a3a00'],xp:220,sc:1.25,ls:[[1,'gust'],[1,'zap'],[1,'divebomb'],[1,'boltstrike']]}
+});
+const RARITY={common:{n:'Common',c:'#9aa0b4',w:60,cm:1,xm:1},uncommon:{n:'Uncommon',c:'#3ddc6b',w:28,cm:.85,xm:1.1},rare:{n:'Rare',c:'#4aa3ff',w:9,cm:.6,xm:1.35},legendary:{n:'Legendary',c:'#ffcb3d',w:0,cm:.3,xm:2},unique:{n:'Unique',c:'#c27bff',w:0,cm:1,xm:1}};
+const RAR={emberkit:'unique',blazewolf:'unique',dropplet:'unique',tidefin:'unique',sproutle:'unique',vinecroc:'unique',fluffwing:'common',galefeather:'uncommon',mossling:'common',cinderbug:'common',splashotter:'common',voltmouse:'uncommon',pebblecrab:'uncommon',boulderhog:'uncommon',stormsparrow:'rare',reefcrab:'rare',thornfox:'rare',blazewing:'rare',solarion:'legendary',abyssfin:'legendary',thunderroc:'legendary'};
+function rarOf(s){return RARITY[RAR[s]||'common']}
+const STARTERS=['emberkit','dropplet','sproutle'];
+const EVOT=new Set(Object.values(SPECIES).filter(s=>s.evo).map(s=>s.evo[1]));
+const BASES=Object.keys(SPECIES).filter(s=>!EVOT.has(s)&&RAR[s]!=='unique'&&RAR[s]!=='legendary');
+const ZONES={
+ north:{n:'North Meadow',r:[20,3,40,13],lv:[2,5],pool:['fluffwing','mossling','voltmouse','stormsparrow']},
+ east:{n:'East Woods',r:[41,6,57,21],lv:[4,8],pool:['cinderbug','mossling','pebblecrab','boulderhog','blazewing']},
+ south:{n:'South Shore',r:[14,28,46,42],lv:[5,9],pool:['splashotter','fluffwing','pebblecrab','reefcrab']},
+ west:{n:'West Hills',r:[2,16,17,36],lv:[7,11],pool:['cinderbug','voltmouse','boulderhog','stormsparrow','thornfox','blazewing']}
+};
+function pickWild(pool){const tot=pool.reduce((a,s)=>a+rarOf(s).w,0);let r=Math.random()*tot;for(const s of pool){r-=rarOf(s).w;if(r<=0)return s}return pool[0]}
+// legendary shrines (one encounter per player per match)
+const LEGENDS=[{id:'thunderroc',x:30,y:4,l:18,zone:'north'},{id:'solarion',x:54,y:9,l:19,zone:'east'},{id:'abyssfin',x:45,y:39,l:20,zone:'south'}];
+// static AI trainers: spot you in their line of sight (4 tiles)
+const TRAINERS=[
+ {id:'ben',n:'Bugcatcher Ben',x:24,y:10,d:'down',c:'#7fbf3f',team:[['fluffwing',4],['mossling',4]],reward:2,line:'My bugs are… well, birds. Fight me!',after:'I should really catch actual bugs.'},
+ {id:'lina',n:'Lass Lina',x:37,y:7,d:'left',c:'#ff7aa8',team:[['voltmouse',5],['fluffwing',6]],reward:2,line:'You looked at me! That means battle!',after:'Okay, you can look at me now.'},
+ {id:'gwen',n:'Coach Gwen',x:21,y:25,d:'right',c:'#ffb02e',team:[['mossling',6],['voltmouse',6],['pebblecrab',7]],reward:3,line:'Warm-up time, rookie!',after:'Good form. Now go train outside.'},
+ {id:'hank',n:'Hiker Hank',x:49,y:15,d:'left',c:'#a0703c',team:[['pebblecrab',7],['boulderhog',8]],reward:3,line:'Rocks! Rocks are my whole personality!',after:'Still rocks. Still my personality.'},
+ {id:'sue',n:'Swimmer Sue',x:19,y:34,d:'right',c:'#2fb7b0',team:[['splashotter',8],['reefcrab',9]],reward:3,line:'The water is great! Unlike your team!',after:'Okay, your team is also great.'},
+ {id:'axel',n:'Ace Axel',x:8,y:21,d:'down',c:'#8b5cf6',team:[['stormsparrow',10],['thornfox',10],['blazewing',11]],reward:5,line:'Only the strongest pass the West Hills.',after:'Go on. The Arena awaits.'}
+];
+
+/* ===================== UTIL ===================== */
+const $=s=>document.querySelector(s);
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function validColor(c){return typeof c==='string'&&/^#[0-9a-f]{6}$/i.test(c)?c:'#888888'}
+function cleanName(n){return String(n==null?'':n).replace(/[\u0000-\u001f\u007f-\u009f​-‏‪-‮⁠-⁯]/g,'').trim().slice(0,16)||'Player'}
+function hpColor(r){return r>.5?'#3ddc6b':r>.2?'#f2c230':'#ef4444'}
+function hex2rgb(h){return[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)]}
+function shade(h,k){return'#'+hex2rgb(h).map(v=>Math.max(0,Math.min(255,Math.round(v*(1+k)))).toString(16).padStart(2,'0')).join('')}
+function fmt(ms){ms=Math.max(0,ms);const s=Math.ceil(ms/1000);return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+let toastT=0;function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2800)}
+
+/* ===================== MONSTER LOGIC ===================== */
+function stats(m){const b=SPECIES[m.s].b,l=m.l,f=v=>Math.floor(v*2*l/100)+5;return{mhp:Math.floor(b[0]*2*l/100)+l+10,atk:f(b[1]),def:f(b[2]),spd:f(b[3])}}
+function movesAt(sid,l){return[...new Set(SPECIES[sid].ls.filter(e=>e[0]<=l).map(e=>e[1]))].slice(-4)}
+function newMon(sid,l){while(SPECIES[sid].evo&&l>=SPECIES[sid].evo[0])sid=SPECIES[sid].evo[1];const m={s:sid,l,xp:0,m:movesAt(sid,l)};m.hp=stats(m).mhp;return m}
+function xpNeed(l){return 14+l*l*2}
+function xpGain(sid,l){return Math.floor((SPECIES[sid].xp*l/6+4)*rarOf(sid).xm)}
+function battler(m){return Object.assign({s:m.s,l:m.l,hp:m.hp,m:m.m.slice()},stats(m))}
+function gainXp(m,amt){
+  const out=[`${SPECIES[m.s].n} gained ${amt} XP!`];m.xp+=amt;
+  while(m.xp>=xpNeed(m.l)&&m.l<60){
+    m.xp-=xpNeed(m.l);const o=stats(m).mhp;m.l++;const n=stats(m).mhp;m.hp=Math.min(n,m.hp+n-o);out.push(`${SPECIES[m.s].n} grew to Lv ${m.l}!`);
+    const sp=SPECIES[m.s];
+    if(sp.evo&&m.l>=sp.evo[0]){const from=sp.n,o2=stats(m).mhp;m.s=sp.evo[1];m.hp+=stats(m).mhp-o2;out.push(`${from} evolved into ${SPECIES[m.s].n}!`);G.dex[m.s]=1}
+    for(const e of SPECIES[m.s].ls)if(e[0]===m.l&&!m.m.includes(e[1])){if(m.m.length<4){m.m.push(e[1]);out.push(`Learned ${MOVES[e[1]].n}!`)}else{const old=m.m.shift();m.m.push(e[1]);out.push(`Forgot ${MOVES[old].n}, learned ${MOVES[e[1]].n}!`)}}
+  }
+  return out;
+}
+
+/* ===================== MAP ===================== */
+// 0 grass,1 tall,2 tree,3 water,4 path,5 sand,6 wall,7 heal door,8 roof,9 flowers,10 arena roof,11 arena wall,12 arena door
+const MW=60,MH=44,MAP=new Uint8Array(MW*MH);const WALK0=new Set([0,1,4,5,7,9,12,13]);
+function tget(x,y){return(x<0||y<0||x>=MW||y>=MH)?2:MAP[y*MW+x]}
+function tset(x,y,v){if(x>=0&&y>=0&&x<MW&&y<MH)MAP[y*MW+x]=v}
+(function gen(){
+  const r=mulberry32(4242);
+  for(const z of Object.values(ZONES)){const[x0,y0,x1,y1]=z.r;for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++)if(r()<0.74)tset(x,y,1)}
+  for(let y=6;y<=21;y++)for(let x=41;x<=57;x++)if(r()<0.15)tset(x,y,2);
+  for(let y=0;y<MH;y++)for(let x=0;x<MW;x++){const d=((x-30)/10)**2+((y-36)/4.5)**2;if(d<1)tset(x,y,3);else if(d<1.5)tset(x,y,5)}
+  for(let y=0;y<MH;y++)for(let x=0;x<MW;x++)if(tget(x,y)===0&&r()<0.035)tset(x,y,2);
+  for(let y=14;y<=27;y++)for(let x=19;x<=40;x++)tset(x,y,r()<0.07?9:0);
+  for(let x=2;x<MW-2;x++)tset(x,23,4);
+  for(let y=2;y<=30;y++)tset(30,y,4);
+  for(let x=22;x<=27;x++){tset(x,17,8);tset(x,18,8);tset(x,19,6);tset(x,20,6)}
+  tset(25,20,7);tset(25,21,4);tset(25,22,4);
+  for(let x=33;x<=38;x++){tset(x,16,10);tset(x,17,10);tset(x,18,10);tset(x,19,11);tset(x,20,11)}
+  tset(35,20,12);tset(36,20,12);tset(35,21,4);tset(35,22,4);tset(36,21,4);tset(36,22,4);
+  for(let y=11;y<=22;y++)tset(54,y,4);
+  for(const L of LEGENDS){for(let dy=-2;dy<=2;dy++)for(let dx=-2;dx<=2;dx++)if(tget(L.x+dx,L.y+dy)===2)tset(L.x+dx,L.y+dy,0);for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++)tset(L.x+dx,L.y+dy,13)}
+  for(const t of TRAINERS){if(!WALK0.has(tget(t.x,t.y)))tset(t.x,t.y,0);const[dx,dy]={up:[0,-1],down:[0,1],left:[-1,0],right:[1,0]}[t.d];for(let k=1;k<=4;k++)if(tget(t.x+dx*k,t.y+dy*k)===2)tset(t.x+dx*k,t.y+dy*k,0)}
+  for(let y=0;y<MH;y++)for(let x=0;x<MW;x++)if(x<2||y<2||x>=MW-2||y>=MH-2)tset(x,y,2);
+})();
+const WALK=WALK0;
+function walkable(x,y){return WALK.has(tget(x,y))}
+function zoneAt(x,y){for(const[k,z]of Object.entries(ZONES)){const[x0,y0,x1,y1]=z.r;if(x>=x0&&x<=x1&&y>=y0&&y<=y1)return k}return null}
+
+/* ===================== PIXEL ART ===================== */
+function mk(w,h){const c=document.createElement('canvas');c.width=w;c.height=h;return c}
+function E(c,x,y,rx,ry,rot){c.beginPath();c.ellipse(x,y,Math.max(.1,rx),Math.max(.1,ry),rot||0,0,Math.PI*2)}
+function poly(c,p){c.beginPath();c.moveTo(p[0],p[1]);for(let i=2;i<p.length;i+=2)c.lineTo(p[i],p[i+1]);c.closePath()}
+function fs(c,f){c.fillStyle=f;c.fill();c.stroke()}
+// vector "blueprint" of every monster; it gets pixelated afterwards
+function drawMon(c,sid,x,y,s){
+  const sp=SPECIES[sid];const[c1,c2,c3]=sp.c;const f=new Set(sp.f);const form=sp.form;
+  c.save();c.translate(x,y);const u=s/100*(sp.sc||1);
+  c.lineWidth=Math.max(1.2,2.6*u);c.strokeStyle=c3;c.lineJoin='round';c.lineCap='round';
+  const LW=c.lineWidth;const hx=form==='blob'?0:-14*u,hy=form==='blob'?6*u:-12*u,hr=form==='blob'?0:21*u;
+  if(f.has('flametail')){c.beginPath();c.moveTo(20*u,22*u);c.quadraticCurveTo(46*u,22*u,40*u,-4*u);c.lineWidth=9*u;c.stroke();c.lineWidth=6*u;c.strokeStyle=c1;c.stroke();c.lineWidth=LW;c.strokeStyle=c3;
+    poly(c,[30*u,-2*u,40*u,-30*u,44*u,-14*u,52*u,-24*u,50*u,2*u]);fs(c,'#ffb02e');E(c,42*u,-4*u,5*u,8*u);c.fillStyle='#fff3a3';c.fill()}
+  if(f.has('tail')){c.beginPath();c.moveTo(20*u,26*u);c.quadraticCurveTo(50*u,30*u,52*u,6*u);c.lineWidth=11*u;c.stroke();c.lineWidth=7.5*u;c.strokeStyle=c1;c.stroke();c.lineWidth=LW;c.strokeStyle=c3}
+  if(f.has('bolttail')){c.beginPath();c.moveTo(22*u,24*u);c.lineTo(34*u,14*u);c.lineTo(28*u,6*u);c.lineTo(42*u,-8*u);c.lineTo(36*u,-14*u);c.lineTo(52*u,-26*u);c.lineWidth=8*u;c.stroke();c.lineWidth=5*u;c.strokeStyle='#ffe14d';c.stroke();c.lineWidth=LW;c.strokeStyle=c3}
+  if(f.has('wings')){E(c,20*u,4*u,26*u,13*u,-0.6);fs(c,c1);E(c,20*u,6*u,16*u,7*u,-0.6);c.fillStyle=c2;c.fill()}
+  if(f.has('leafback'))for(let i=0;i<3;i++){E(c,(-2+i*13)*u,(-10+i*3)*u,6*u,13*u,0.3+i*0.2);fs(c,'#2f8a3c')}
+  if(f.has('fin')){poly(c,[-2*u,-6*u,14*u,-34*u,22*u,0]);fs(c,'#5fb4ff')}
+  if(f.has('mane')){c.beginPath();for(let i=0;i<14;i++){const a=i/14*Math.PI*2,r=(i%2?20:30)*u;c.lineTo(hx+Math.cos(a)*r+2*u,hy+Math.sin(a)*r)}c.closePath();fs(c,'#ffb02e')}
+  if(form==='blob'){
+    if(f.has('drop')){c.beginPath();c.moveTo(0,-34*u);c.bezierCurveTo(14*u,-14*u,34*u,4*u,32*u,20*u);c.bezierCurveTo(30*u,44*u,-30*u,44*u,-32*u,20*u);c.bezierCurveTo(-34*u,4*u,-14*u,-14*u,0,-34*u);fs(c,c1)}
+    else{E(c,0,14*u,34*u,30*u);fs(c,c1)}
+    E(c,0,24*u,19*u,13*u);c.fillStyle=c2;c.fill();E(c,-16*u,40*u,8*u,5*u);fs(c,c1);E(c,16*u,40*u,8*u,5*u);fs(c,c1);
+    if(f.has('moss')){c.fillStyle='#3e7a30';for(const[a,b,r]of[[-18,-2,5],[10,-8,6],[20,10,4],[-24,14,3.5]]){E(c,a*u,b*u,r*u,r*u);c.fill()}
+      for(const dx of[-10,0,10]){c.beginPath();c.moveTo(dx*u,-14*u);c.lineTo(dx*u,-24*u);c.stroke();E(c,dx*u+3*u,-25*u,4*u,2.5*u,-.4);fs(c,'#8fd46b')}}
+    if(f.has('sprout')){c.beginPath();c.moveTo(0,-15*u);c.lineTo(0,-30*u);c.stroke();E(c,-9*u,-32*u,10*u,5*u,0.4);fs(c,'#3fbf4f');E(c,9*u,-34*u,10*u,5*u,-0.4);fs(c,'#3fbf4f')}
+  }else if(form==='crab'){
+    E(c,0,18*u,38*u,22*u);fs(c,c1);E(c,0,24*u,22*u,11*u);c.fillStyle=c2;c.fill();
+    for(const s of[-1,1])for(let i=0;i<3;i++){c.beginPath();c.moveTo(s*24*u,(28+i*4)*u);c.lineTo(s*(40+i*2)*u,(40+i*2)*u);c.stroke()}
+    for(const s of[-1,1]){c.beginPath();c.moveTo(s*30*u,10*u);c.lineTo(s*44*u,-6*u);c.stroke();E(c,s*48*u,-14*u,12*u,10*u);fs(c,c1)}
+    for(const[a,b]of[[-14,0],[4,-4],[18,2]]){poly(c,[a*u,b*u,(a+8)*u,(b-8)*u,(a+14)*u,b*u,(a+8)*u,(b+4)*u]);fs(c,'#9aa0a6')}
+    for(const s of[-1,1]){c.beginPath();c.moveTo(s*8*u,2*u);c.lineTo(s*10*u,-12*u);c.stroke()}
+  }else if(form==='bug'){
+    E(c,6*u,18*u,32*u,24*u);fs(c,c1);c.beginPath();c.moveTo(6*u,-6*u);c.lineTo(6*u,42*u);c.stroke();
+    c.fillStyle='#2b0805';for(const[a,b]of[[-8,8],[18,6],[-4,26],[22,26]]){E(c,a*u,b*u,4.5*u,4.5*u);c.fill()}
+    for(let i=0;i<3;i++){c.beginPath();c.moveTo((-12+i*14)*u,38*u);c.lineTo((-16+i*14)*u,46*u);c.stroke()}
+  }else{
+    E(c,6*u,20*u,form==='bird'?24*u:30*u,form==='bird'?22*u:20*u);fs(c,c1);E(c,0,26*u,15*u,11*u);c.fillStyle=c2;c.fill();
+    if(form==='quad'){for(const dx of[-14,-2,14,24]){E(c,dx*u,38*u,6*u,7*u);fs(c,c1)}}
+    else{c.strokeStyle='#e6a21a';for(const dx of[-6,8]){c.beginPath();c.moveTo(dx*u,40*u);c.lineTo(dx*u,46*u);c.stroke()}c.strokeStyle=c3}
+  }
+  if(form==='quad'||form==='bird'||form==='bug'){
+    const bx=form==='bug'?-22*u:hx,by=form==='bug'?10*u:hy,br=form==='bug'?14*u:hr;
+    if(f.has('ears'))for(const s of[-1,1]){poly(c,[bx+s*6*u,by-14*u,bx+s*16*u,by-40*u,bx+s*20*u,by-8*u]);fs(c,c1);poly(c,[bx+s*9*u,by-14*u,bx+s*15*u,by-31*u,bx+s*17*u,by-11*u]);c.fillStyle=c2;c.fill()}
+    if(f.has('roundears'))for(const s of[-1,1]){E(c,bx+s*15*u,by-16*u,10*u,10*u);fs(c,c1);E(c,bx+s*15*u,by-16*u,5*u,5*u);c.fillStyle=c2;c.fill()}
+    if(f.has('antenna'))for(const s of[-1,1]){c.beginPath();c.moveTo(bx+s*5*u,by-10*u);c.quadraticCurveTo(bx+s*8*u,by-30*u,bx+s*16*u,by-32*u);c.stroke();E(c,bx+s*16*u,by-32*u,4*u,4*u);fs(c,'#ffb02e')}
+    if(f.has('crest')){poly(c,[bx-6*u,by-18*u,bx-2*u,by-38*u,bx+4*u,by-20*u,bx+10*u,by-34*u,bx+12*u,by-16*u]);fs(c,'#ffd23f')}
+    if(f.has('tuft'))for(const dx of[-6,0,6]){c.beginPath();c.moveTo(bx+dx*u,by-18*u);c.quadraticCurveTo(bx+(dx-4)*u,by-30*u,bx+(dx+4)*u,by-32*u);c.stroke()}
+    E(c,bx,by,br,br*0.95);fs(c,c1);
+    if(form==='bird'){poly(c,[bx-br+2*u,by-2*u,bx-br-12*u,by+4*u,bx-br+2*u,by+8*u]);fs(c,'#ffb02e')}
+    if(form==='quad'){E(c,bx-6*u,by+8*u,9*u,6*u);c.fillStyle=c2;c.fill();E(c,bx-13*u,by+5*u,3*u,2.4*u);c.fillStyle=c3;c.fill()}
+    if(f.has('whiskers')){c.lineWidth=Math.max(1,1.4*u);for(const dy of[-2,4]){c.beginPath();c.moveTo(bx-12*u,by+(6+dy*.4)*u);c.lineTo(bx-30*u,by+(4+dy)*u);c.stroke()}c.lineWidth=LW}
+    eyes(c,bx-6*u,by-3*u,u,form==='bug'?.8:1.1);
+  }else if(form==='blob')eyes(c,-2*u,8*u,u,1.3);else eyes(c,0,-14*u,u,1.1,20);
+  c.restore();
+}
+function eyes(c,x,y,u,k,gap){const g=(gap||15)*u;for(const s of[-1,1]){E(c,x+s*g/2,y,6*u*k,7*u*k);c.fillStyle='#ffffff';c.fill();E(c,x+s*g/2-1.5*u,y+0.8*u,3.6*u*k,4.6*u*k);c.fillStyle='#141414';c.fill()}}
+const EXTRA=['#ffb02e','#fff3a3','#ffe14d','#2f8a3c','#3fbf4f','#9aa0a6','#ffd23f','#3e7a30','#8fd46b','#e6a21a','#5fb4ff','#2b0805','#ffffff','#141414'];
+const SPR={};
+// render the blueprint small, then snap to a hard palette with a 1px outline -> real pixel art
+function monSprite(sid,N){
+  const key=sid+':'+N;if(SPR[key])return SPR[key];
+  const c=mk(N,N),x=c.getContext('2d');drawMon(x,sid,N/2,N*0.5,N*0.74);
+  const sp=SPECIES[sid];const pal=[...sp.c,...EXTRA].map(hex2rgb);const dark=hex2rgb(sp.c[2]);
+  const id=x.getImageData(0,0,N,N),d=id.data,op=new Uint8Array(N*N);
+  for(let i=0;i<N*N;i++){if(d[i*4+3]>120){op[i]=1;let best=0,bd=1e9;for(let j=0;j<pal.length;j++){const p=pal[j];const dd=(p[0]-d[i*4])**2+(p[1]-d[i*4+1])**2+(p[2]-d[i*4+2])**2;if(dd<bd){bd=dd;best=j}}const p=pal[best];d[i*4]=p[0];d[i*4+1]=p[1];d[i*4+2]=p[2];d[i*4+3]=255}else d[i*4+3]=0}
+  for(let y=0;y<N;y++)for(let xx=0;xx<N;xx++){const i=y*N+xx;if(op[i])continue;if((xx>0&&op[i-1])||(xx<N-1&&op[i+1])||(y>0&&op[i-N])||(y<N-1&&op[i+N])){d[i*4]=dark[0];d[i*4+1]=dark[1];d[i*4+2]=dark[2];d[i*4+3]=255}}
+  x.putImageData(id,0,0);SPR[key]=c;return c;
+}
+// trainer sprites (14x15 + outline)
+const CH={
+ down:["....HHHHHH....","...HHHHHHHH...","..HHHHHHHHHH..","..DDDDDDDDDD..","..KSSSSSSSSK..","..SSESSSSESS..","..SSSSSSSSSS..","...SSSSSSSS...","..HHHHHHHHHH..",".SHHHHWWHHHHS.",".SHHHHHHHHHHS.","..HHHHHHHHHH..","...PPPPPPPP...","...PPP..PPP...","...BBB..BBB..."],
+ up:["....HHHHHH....","...HHHHHHHH...","..HHHHHHHHHH..","..HHHHHHHHHH..","..KKKKKKKKKK..","..KKKKKKKKKK..","..KKKKKKKKKK..","...KKKKKKKK...","..HHHHHHHHHH..",".SHHHHHHHHHHS.",".SHHHHHHHHHHS.","..HHHHHHHHHH..","...PPPPPPPP...","...PPP..PPP...","...BBB..BBB..."],
+ side:["....HHHHHH....","...HHHHHHHH...","..HHHHHHHHHH..","..DDDDDDDDDDDD","..KKKSSSSSSS..","..KKSSSSSESS..","..KKSSSSSSSS..","...SSSSSSSS...","...HHHHHHHH...","...HHHHHHHH...","...HSSHHHHH...","...HHHHHHHH...","....PPPPPP....","....PPPPPP....","....BBBBBB...."]
+};
+const CHS={};
+function charSprite(col,dir,fr){
+  const key=col+dir+fr;if(CHS[key])return CHS[key];
+  const base=dir==='left'||dir==='right'?'side':dir;const rows=CH[base].slice();
+  if(fr&&base!=='side'){if(fr===1){rows[13]="...PPP..BBB...";rows[14]="...BBB........"}else{rows[13]="...BBB..PPP...";rows[14]="........BBB..."}}
+  if(fr&&base==='side'){if(fr===1){rows[13]="...PP....PP...";rows[14]="...BB....BB..."}else{rows[13]="....PPPPPP....";rows[14]=".....BBBB....."}}
+  const pal={H:col,D:shade(col,-0.35),S:'#f3c6a0',E:'#1b1b2a',K:'#5a3520',P:'#2b3150',B:'#1b1b2a',W:'#ffffff'};
+  const c=mk(16,17),x=c.getContext('2d');const op=new Uint8Array(16*17);
+  rows.forEach((r,y)=>[...r].forEach((ch,xx)=>{if(pal[ch]){x.fillStyle=pal[ch];x.fillRect(xx+1,y+1,1,1);op[(y+1)*16+xx+1]=1}}));
+  x.fillStyle='#14141f';for(let y=0;y<17;y++)for(let xx=0;xx<16;xx++){const i=y*16+xx;if(op[i])continue;if((xx>0&&op[i-1])||(xx<15&&op[i+1])||(y>0&&op[i-16])||(y<16&&op[i+16]))x.fillRect(xx,y,1,1)}
+  let out=c;if(dir==='left'){out=mk(16,17);const o=out.getContext('2d');o.scale(-1,1);o.drawImage(c,-16,0)}
+  CHS[key]=out;return out;
+}
+// tiles
+const TILE={};
+function tileCanvas(fn){const c=mk(16,16);const x=c.getContext('2d');fn(x);return c}
+function P1(x,a,b,col){x.fillStyle=col;x.fillRect(a,b,1,1)}
+function grassBase(x,v){x.fillStyle='#5cb848';x.fillRect(0,0,16,16);const r=mulberry32(v*31+7);for(let i=0;i<7;i++)P1(x,Math.floor(r()*16),Math.floor(r()*16),'#4ea53c');for(let i=0;i<3;i++){const a=Math.floor(r()*15),b=Math.floor(r()*15);P1(x,a,b,'#73cf5c');P1(x,a,b+1,'#4ea53c')}}
+const TREE=["....GGGGGGG.....","..GGGLLGGGGGG...",".GGLLLGGGGGGGG..",".GGLLGGGGGGGGGG.","GGGGGGGGGGGDGGG.","GGGGGGGGGGDDGGGG","GGGGGGGGGDDGGGGG",".GGGGGGGDDGGGGG.",".GGDGGGGGGGGGDG.","..GGDDGGGGGDDG..","...GGGGGGGGGG...",".....DTTTTD.....","......TTTT......","......TTTT......",".....TTTTTT.....","................"];
+function buildTiles(){
+  TILE[0]=[0,1,2,3].map(v=>tileCanvas(x=>grassBase(x,v)));
+  TILE[1]=[0,1].map(v=>tileCanvas(x=>{x.fillStyle='#479c36';x.fillRect(0,0,16,16);const r=mulberry32(v+90);for(let i=0;i<5;i++){const a=1+i*3+Math.floor(r()*2),h=5+Math.floor(r()*4);x.fillStyle='#2c7022';x.fillRect(a,15-h,2,h);x.fillStyle='#6fcc58';x.fillRect(a,15-h,1,2)}x.fillStyle='#2c7022';x.fillRect(0,15,16,1)}));
+  TILE[2]=[0,1].map(v=>tileCanvas(x=>{grassBase(x,v+5);const pal={G:'#2e8b3a',L:'#5cc05c',D:'#1d6428',T:'#7a4a24'};TREE.forEach((r,y)=>[...r].forEach((ch,xx)=>{if(pal[ch])P1(x,xx,y,pal[ch])}))}));
+  TILE[3]=[0,1].map(fr=>tileCanvas(x=>{x.fillStyle='#3b8fd9';x.fillRect(0,0,16,16);x.fillStyle='#6db6f0';for(const[a,b]of[[2,4],[9,10],[11,2]]){x.fillRect((a+fr*2)%16,b,4,1)}x.fillStyle='#2f7cc2';x.fillRect((6+fr*3)%16,7,3,1)}));
+  TILE[4]=[0,1].map(v=>tileCanvas(x=>{x.fillStyle='#d8bd84';x.fillRect(0,0,16,16);const r=mulberry32(v+40);for(let i=0;i<5;i++)P1(x,Math.floor(r()*16),Math.floor(r()*16),i%2?'#c2a56c':'#e8d3a3')}));
+  TILE[5]=[0,1].map(v=>tileCanvas(x=>{x.fillStyle='#ecd79a';x.fillRect(0,0,16,16);const r=mulberry32(v+60);for(let i=0;i<6;i++)P1(x,Math.floor(r()*16),Math.floor(r()*16),'#d6bf80')}));
+  TILE[8]=[tileCanvas(x=>{x.fillStyle='#d23b3b';x.fillRect(0,0,16,16);x.fillStyle='#a92b2b';for(let y=3;y<16;y+=4)x.fillRect(0,y,16,1);x.fillStyle='#e85c5c';for(let y=0;y<16;y+=4)x.fillRect(0,y,16,1)})];
+  TILE[10]=[tileCanvas(x=>{x.fillStyle='#5b4bc4';x.fillRect(0,0,16,16);x.fillStyle='#463a9c';for(let y=3;y<16;y+=4)x.fillRect(0,y,16,1);x.fillStyle='#7a6ae0';for(let y=0;y<16;y+=4)x.fillRect(0,y,16,1)})];
+  const wall=(x,base,line)=>{x.fillStyle=base;x.fillRect(0,0,16,16);x.fillStyle=line;x.fillRect(0,14,16,2)};
+  TILE[6]=[tileCanvas(x=>wall(x,'#efe8dc','#bfb6a2')),tileCanvas(x=>{wall(x,'#efe8dc','#bfb6a2');x.fillStyle='#3c3c4c';x.fillRect(3,3,10,8);x.fillStyle='#8fd0ff';x.fillRect(4,4,8,6);x.fillStyle='#c8ecff';x.fillRect(4,4,3,2)})];
+  TILE[11]=[tileCanvas(x=>{wall(x,'#a9a9bd','#77778c');x.fillStyle='#8e8ea3';for(let y=0;y<14;y+=4){x.fillRect(0,y,16,1);x.fillRect((y%8)?4:12,y,1,4)}}),tileCanvas(x=>{wall(x,'#a9a9bd','#77778c');x.fillStyle='#ffcb3d';x.fillRect(5,3,6,6);x.fillStyle='#9a5b00';x.fillRect(7,5,2,2)})];
+  TILE[7]=[tileCanvas(x=>{wall(x,'#efe8dc','#bfb6a2');x.fillStyle='#3a2210';x.fillRect(2,1,12,15);x.fillStyle='#7c4a22';x.fillRect(3,2,10,14);x.fillStyle='#9a5d2c';x.fillRect(3,2,1,14);x.fillStyle='#ffd23f';x.fillRect(11,9,1,1)})];
+  TILE[12]=[tileCanvas(x=>{wall(x,'#a9a9bd','#77778c');x.fillStyle='#1b1430';x.fillRect(0,1,16,15);x.fillStyle='#2d2350';x.fillRect(1,2,14,14)})];
+  TILE[13]=[tileCanvas(x=>{x.fillStyle='#cfc8ae';x.fillRect(0,0,16,16);x.fillStyle='#b5ad90';x.fillRect(0,0,16,1);x.fillRect(0,0,1,16);x.fillStyle='#e6dfc6';x.fillRect(15,0,1,16);x.fillRect(0,15,16,1);x.fillStyle='#d9a90b';x.fillRect(7,7,2,2)})];
+  TILE[9]=[0,1,2].map(v=>tileCanvas(x=>{grassBase(x,v+12);const r=mulberry32(v+77);const cols=['#ffffff','#ffd84a','#ff7aa8'];for(let i=0;i<3;i++){const a=2+Math.floor(r()*11),b=2+Math.floor(r()*11),col=cols[i%3];P1(x,a,b-1,col);P1(x,a-1,b,col);P1(x,a+1,b,col);P1(x,a,b+1,col);P1(x,a,b,'#ffb02e')}}));
+}
+buildTiles();
+function th(x,y){return((x*73856093)^(y*19349663))>>>0}
+
+/* ===================== STATE ===================== */
+const SAVE_KEY='discountmon-v1';
+let G=null,RUN=null,B=null,T=0;
+const P={x:30,y:24,fx:30,fy:24,d:'down',moving:false,mt:0,sx:0,sy:0,tx:0,ty:0,ph:0,steps:0,fol:{x:30,y:24,tx:30,ty:24}};
+function save(){if(!G)return;G.run=RUN;try{localStorage.setItem(SAVE_KEY,JSON.stringify(G))}catch(e){}}
+function loadSave(){try{const s=localStorage.getItem(SAVE_KEY);if(s){const g=JSON.parse(s);if(g&&g.name){g.dex=g.dex||{};g.tro=g.tro||0;return g}}}catch(e){}return null}
+
+/* ===================== START ===================== */
+const COLORS=['#e8433c','#f59e0b','#2fb556','#3b82f6','#a855f7','#ec4899'];
+let pickColor=COLORS[3];
+function buildStart(){
+  const cw=$('#scolors');
+  const prev=()=>{const c=$('#sprev').getContext('2d');c.clearRect(0,0,16,17);c.drawImage(charSprite(pickColor,'down',0),0,0)};
+  COLORS.forEach(col=>{const b=document.createElement('button');b.style.background=col;if(col===pickColor)b.classList.add('sel');b.onclick=()=>{pickColor=col;[...cw.children].forEach(x=>x.classList.remove('sel'));b.classList.add('sel');prev()};cw.appendChild(b)});
+  prev();
+  $('#sgo').onclick=()=>{G={name:cleanName($('#sname').value),color:pickColor,dex:{},tro:0,x:30,y:24,d:'down',run:null};save();begin()};
+  $('#sname').addEventListener('keydown',e=>{if(e.key==='Enter')$('#sgo').click()});
+}
+function begin(){
+  $('#start').classList.add('off');
+  RUN=G.run||null;if(RUN){RUN.beat=RUN.beat||{};RUN.leg=RUN.leg||{}}
+  if(RUN&&RUN.phase==='train'&&Date.now()>=RUN.end){RUN.phase='arena_pending'}
+  if(RUN&&RUN.phase==='arena'&&RUN.st==='duel')RUN.st='out';
+  P.x=P.fx=G.x;P.y=P.fy=G.y;P.d=G.d||'down';if(!walkable(P.x,P.y)){P.x=P.fx=30;P.y=P.fy=24}
+  P.fol={x:P.x,y:P.y,tx:P.x,ty:P.y};
+  renderTeam();updateHud();pushFull();sysChat(`Welcome to Pocket Peasants (Budget Edition), ${G.name}! Batteries not included.`);
+  if(RUN&&RUN.phase==='arena_pending'){RUN.phase='train';enterArena()}else if(RUN&&RUN.phase==='arena')showArena();
+}
+
+/* ===================== CONTROL SETTINGS ===================== */
+const SET_KEY='discountmon-controls';
+const DEF_KEYS={a1:'1',a2:'2',a3:'3',a4:'4',dash:' ',sw:'q',cap:'c',run:'r'};
+const KEY_NAMES={a1:'Attack 1',a2:'Attack 2',a3:'Attack 3',a4:'Attack 4',dash:'Dash / dodge',sw:'Switch monster',cap:'Throw capsule',run:'Run away'};
+let SET={ctrl:'auto',dp:'m',side:'right',keys:{...DEF_KEYS}};
+try{const v=JSON.parse(localStorage.getItem(SET_KEY)||'null');if(v)SET={...SET,...v,keys:{...DEF_KEYS,...(v.keys||{})}}}catch(e){}
+function saveSet(){try{localStorage.setItem(SET_KEY,JSON.stringify(SET))}catch(e){}}
+function isMob(){return SET.ctrl==='mobile'||(SET.ctrl==='auto'&&matchMedia('(pointer:coarse)').matches)}
+function normKey(k){return k.length===1?k.toLowerCase():k}
+function keyLabel(k){return k===' '?'SPACE':k.length===1?k.toUpperCase():k.toUpperCase()}
+function applyControls(){
+  document.body.classList.toggle('mob',isMob());document.body.classList.toggle('left',SET.side==='left');
+  document.documentElement.style.setProperty('--dp',{s:'42px',m:'52px',l:'66px'}[SET.dp]||'52px');placeDpad();
+  if(B)buildBattleUI();
+}
+function placeDpad(){const d=$('#dpad');if(B&&isMob()){if(d.parentElement.id!=='bpad')$('#bpad').appendChild(d)}else if(d.parentElement!==$('#stage'))$('#stage').appendChild(d)}
+let capturing=null;
+function openSettings(){
+  const segBtn=(group,val,label,cur)=>`<button class="btn ${cur===val?'sel':''}" data-g="${group}" data-v="${val}">${label}</button>`;
+  const mob=isMob();
+  let h=`<h3>⚙ CONTROLS</h3><div class="lbl2">CONTROL MODE</div><div class="seg">${segBtn('ctrl','auto','AUTO',SET.ctrl)}${segBtn('ctrl','pc','PC',SET.ctrl)}${segBtn('ctrl','mobile','MOBILE',SET.ctrl)}</div>
+  <div class="small" style="text-align:left;margin:-6px 0 10px">Currently: ${mob?'mobile (touch D-pad + buttons)':'PC (keyboard)'}${SET.ctrl==='auto'?' — chosen automatically':''}</div>`;
+  if(mob)h+=`<div class="lbl2">D-PAD SIZE</div><div class="seg">${segBtn('dp','s','SMALL',SET.dp)}${segBtn('dp','m','MEDIUM',SET.dp)}${segBtn('dp','l','LARGE',SET.dp)}</div><div class="lbl2">D-PAD SIDE</div><div class="seg">${segBtn('side','left','LEFT',SET.side)}${segBtn('side','right','RIGHT',SET.side)}</div><div class="small" style="text-align:left;margin-bottom:10px">Tip: in battles you can also hold your finger on the arena to walk there.</div>`;
+  else{h+=`<div class="lbl2">KEY BINDINGS</div><div class="krow"><span>Move</span><span class="small">WASD / Arrow keys</span></div>`;
+    for(const k of Object.keys(DEF_KEYS))h+=`<div class="krow"><span>${KEY_NAMES[k]}</span><button class="btn ghost" data-key="${k}">${capturing===k?'PRESS KEY…':keyLabel(SET.keys[k])}</button></div>`;}
+  if(typeof netSettingsHtml==='function')h+=netSettingsHtml();
+  h+=`<div class="acts" style="margin-top:12px"><button class="btn ghost" id="sreset">RESET</button><button class="btn" id="sdone">DONE</button></div>`;
+  openModal(h);if(typeof bindNetSettings==='function')bindNetSettings();
+  document.querySelectorAll('#mbox [data-g]').forEach(b=>b.onclick=()=>{SET[b.dataset.g]=b.dataset.v;saveSet();applyControls();openSettings()});
+  document.querySelectorAll('#mbox [data-key]').forEach(b=>b.onclick=()=>{capturing=b.dataset.key;openSettings()});
+  $('#sreset').onclick=()=>{SET={ctrl:'auto',dp:'m',side:'right',keys:{...DEF_KEYS}};capturing=null;saveSet();applyControls();openSettings()};
+  $('#sdone').onclick=()=>{capturing=null;closeModal()};
+}
+function captureKey(e){
+  e.preventDefault();if(e.key==='Escape'){capturing=null;openSettings();return}
+  if(KEYMAP[e.key]){toast('That key is used for movement.');return}
+  const k=normKey(e.key);const other=Object.keys(SET.keys).find(a=>a!==capturing&&SET.keys[a]===k);if(other)SET.keys[other]=SET.keys[capturing];
+  SET.keys[capturing]=k;capturing=null;saveSet();openSettings();if(B)buildBattleUI();
+}
+$('#hset').onclick=openSettings;
+addEventListener('resize',()=>{if(SET.ctrl==='auto')applyControls()});
+
+/* ===================== INPUT ===================== */
+const DIRS={up:[0,-1],down:[0,1],left:[-1,0],right:[1,0]};
+const KEYMAP={ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right',w:'up',s:'down',a:'left',d:'right',W:'up',S:'down',A:'left',D:'right'};
+const held=[];
+function typing(){const a=document.activeElement;return a&&(a.tagName==='INPUT'||a.tagName==='TEXTAREA'||a.tagName==='SELECT')}
+addEventListener('keydown',e=>{
+  if(capturing){captureKey(e);return}
+  if(typing()){if(e.key==='Escape')document.activeElement.blur();return}
+  const d=KEYMAP[e.key];if(d){e.preventDefault();if(!held.includes(d))held.push(d);return}
+  if(B){if(modalOpen())return;const k=normKey(e.key),K=SET.keys;
+    for(let i=0;i<4;i++)if(k===K['a'+(i+1)]){e.preventDefault();battleMove(i);return}
+    if(k===K.dash){e.preventDefault();battleDash()}else if(k===K.sw)battleSwitch();else if(k===K.cap)throwCap();else if(k===K.run)tryRun();
+    return}
+  if(e.key==='Enter'&&G){e.preventDefault();switchTab('chat');$('#chatin').focus()}
+});
+addEventListener('keyup',e=>{const d=KEYMAP[e.key];if(d){const i=held.indexOf(d);if(i>=0)held.splice(i,1)}});
+addEventListener('blur',()=>{held.length=0});
+document.querySelectorAll('#dpad button').forEach(b=>{const d=b.dataset.d;
+  b.addEventListener('pointerdown',e=>{e.preventDefault();if(!held.includes(d))held.push(d)});
+  const up=()=>{const i=held.indexOf(d);if(i>=0)held.splice(i,1)};['pointerup','pointerleave','pointercancel'].forEach(ev=>b.addEventListener(ev,up))});
+function heldDir(){return held[held.length-1]||null}
+
+/* ===================== OVERWORLD ===================== */
+const STEP=0.16;
+function modalOpen(){return $('#modal').classList.contains('on')||$('#arena').classList.contains('on')}
+function updatePlayer(dt){
+  if(P.moving){P.mt+=dt/STEP;P.ph+=dt;
+    if(P.mt>=1){P.moving=false;P.x=P.tx;P.y=P.ty;P.fx=P.x;P.fy=P.y;onArrive();if(B)return}
+    else{P.fx=P.sx+(P.tx-P.sx)*P.mt;P.fy=P.sy+(P.ty-P.sy)*P.mt}}
+  if(!P.moving&&!B&&!modalOpen()&&!P.lock){const d=heldDir();if(d){const turned=P.d!==d;P.d=d;const[dx,dy]=DIRS[d];const nx=P.x+dx,ny=P.y+dy;
+    if(walkable(nx,ny)&&!trainerAt(nx,ny)&&!LEGENDS.some(L=>L.x===nx&&L.y===ny)){P.moving=true;P.mt=0;P.sx=P.x;P.sy=P.y;P.tx=nx;P.ty=ny;P.fol.tx=P.x;P.fol.ty=P.y;pres({x:nx,y:ny,d})}else{if(trainerAt(nx,ny)||LEGENDS.some(L=>L.x===nx&&L.y===ny))bump(nx,ny);if(turned)pres({d})}}}
+  P.bumpCd=Math.max(0,(P.bumpCd||0)-dt);
+  approach(P.fol,dt);
+}
+function approach(o,dt){if(o.fx==null){o.fx=o.x;o.fy=o.y}const dx=o.tx-o.fx,dy=o.ty-o.fy,dist=Math.hypot(dx,dy);if(dist>3){o.fx=o.tx;o.fy=o.ty;return}const sp=dt/STEP*1.05;if(dist<=sp){o.fx=o.tx;o.fy=o.ty}else{o.fx+=dx/dist*sp;o.fy+=dy/dist*sp}}
+function legendHere(x,y){if(!RUN||RUN.phase!=='train')return null;return LEGENDS.find(L=>L.x===x&&L.y===y&&!(RUN.leg&&RUN.leg[L.id]))||null}
+function trainerAt(x,y){return TRAINERS.find(t=>t.x===x&&t.y===y)||null}
+function bump(nx,ny){
+  if(P.bumpCd>0)return;P.bumpCd=0.5;
+  const t=trainerAt(nx,ny);
+  if(t){if(!RUN||RUN.phase!=='train')toast(`${t.n}: "Come back when you're in a match!"`);else if(RUN.beat&&RUN.beat[t.id])toast(`${t.n}: "${t.after}"`);else spotted(t);return}
+  const L=LEGENDS.find(L=>L.x===nx&&L.y===ny);
+  if(L){if(!RUN||RUN.phase!=='train')toast('A mysterious shrine. Something sleeps here…');else if(RUN.leg&&RUN.leg[L.id])toast('The shrine is empty now.');else startLegend(L)}
+}
+function spotted(t){if(P.lock||B)return;P.lock=true;held.length=0;t.alert=performance.now();toast(`${t.n}: "${t.line}"`);setTimeout(()=>{P.lock=false;if(!B&&RUN&&RUN.phase==='train')startTrainer(t)},900)}
+function checkSight(){
+  if(!RUN||RUN.phase!=='train')return false;
+  for(const t of TRAINERS){if(RUN.beat&&RUN.beat[t.id])continue;const[dx,dy]=DIRS[t.d];
+    for(let k=1;k<=4;k++){const x=t.x+dx*k,y=t.y+dy*k;if(!walkable(x,y))break;if(x===P.x&&y===P.y){spotted(t);return true}}}
+  return false;
+}
+function teleport(x,y){P.x=P.fx=x;P.y=P.fy=y;P.moving=false;P.fol={x,y,tx:x,ty:y};G.x=x;G.y=y;pres({x,y,d:P.d})}
+function onArrive(){
+  G.x=P.x;G.y=P.y;G.d=P.d;P.steps++;if(P.steps%8===0)save();updateHud();
+  const t=tget(P.x,P.y);
+  if(t===7){if(RUN){healAll();toast('Heal Center: your team is fully healed! Capsules restocked.')}else toast('Heal Center — start a match to get a team.')}
+  if(t===12){if(RUN&&RUN.phase==='train')toast(`The Arena opens when training ends (${fmt(RUN.end-Date.now())}).`);else if(!RUN)toast('The Arena — start or join a match first!')}
+  if(checkSight())return;
+  if(t===1&&RUN&&RUN.phase==='train'){const z=zoneAt(P.x,P.y);if(z&&Math.random()<0.13)startWild(z)}
+}
+function healAll(){if(!RUN)return;for(const m of RUN.team.concat(RUN.box))m.hp=stats(m).mhp;RUN.kap=Math.max(RUN.kap,10);save();renderTeam();updateHud()}
+function updateHud(){
+  const z=zoneAt(P.x,P.y);$('#hzone').textContent=z?ZONES[z].n:'Town';
+  $('#hkap').textContent=RUN?`Capsules ${RUN.kap}`:'No team';
+  $('#sdex').textContent=`Dex ${Object.keys(G.dex).length}/${Object.keys(SPECIES).length}`;$('#stro').textContent=`Trophies ${G.tro}`;
+}
+
+/* world render (low-res buffer, scaled up) */
+const wcv=$('#world'),wc=wcv.getContext('2d');let SC=3,LW=0,LH=0;
+function nameTag(c,x,y,txt,col,icon){
+  c.font='10px VT323';const w=Math.ceil(c.measureText(txt).width)+8+(icon?7:0);const X=Math.round(x-w/2);
+  c.fillStyle='#0b0d16cc';c.fillRect(X,y-9,w,9);c.fillStyle=col;c.fillRect(X+2,y-6,3,3);
+  c.fillStyle='#fff';c.textBaseline='alphabetic';c.fillText(txt,X+7,y-2);if(icon){c.fillStyle=icon==='⚔'?'#ffcb3d':'#ff6b6b';c.fillText(icon==='⚔'?'!!':'!',X+w-6,y-2)}
+}
+function bubble(c,x,y,txt){
+  c.font='10px VT323';let lines=[],line='';for(const wd of txt.split(' ')){const t=line?line+' '+wd:wd;if(c.measureText(t).width>80&&line){lines.push(line);line=wd}else line=t}if(line)lines.push(line);lines=lines.slice(0,4);
+  const w=Math.ceil(Math.max(...lines.map(l=>c.measureText(l).width)))+6,h=lines.length*8+4;const X=Math.round(x-w/2),Y=Math.round(y-h-3);
+  c.fillStyle='#14141f';c.fillRect(X-1,Y-1,w+2,h+2);c.fillStyle='#fff';c.fillRect(X,Y,w,h);c.fillRect(Math.round(x)-1,Y+h,3,2);
+  c.fillStyle='#14141f';lines.forEach((l,i)=>c.fillText(l,X+3,Y+8+i*8));
+}
+function drawWorld(){
+  const cw=wcv.parentElement.clientWidth,ch=wcv.parentElement.clientHeight;SC=cw<640?2:3;
+  const lw=Math.ceil(cw/SC),lh=Math.ceil(ch/SC);
+  if(lw!==LW||lh!==LH){LW=lw;LH=lh;wcv.width=lw;wcv.height=lh;wcv.style.width=lw*SC+'px';wcv.style.height=lh*SC+'px'}
+  const c=wc;c.imageSmoothingEnabled=false;
+  let camX=Math.round(P.fx*16+8-LW/2),camY=Math.round(P.fy*16+8-LH/2);
+  camX=clamp(camX,0,MW*16-LW);camY=clamp(camY,0,MH*16-LH);
+  c.fillStyle='#1d6428';c.fillRect(0,0,LW,LH);
+  const x0=Math.floor(camX/16),y0=Math.floor(camY/16),x1=x0+Math.ceil(LW/16)+1,y1=y0+Math.ceil(LH/16)+1;const wf=Math.floor(T*1.6)%2;
+  for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){if(x<0||y<0||x>=MW||y>=MH)continue;const t=tget(x,y);let arr=TILE[t];if(!arr)continue;
+    let v=t===3?wf:t===6?((y===19&&x!==25)?1:0):t===11?((x===34||x===37)&&y===19?1:0):th(x,y)%arr.length;
+    c.drawImage(arr[v],x*16-camX,y*16-camY)}
+  // signs on roofs
+  c.fillStyle='#ffffff';c.fillRect(24*16-camX+10,17*16-camY+2,4,12);c.fillRect(24*16-camX+6,17*16-camY+6,12,4);
+  c.font='8px "Press Start 2P"';c.fillStyle='#14141f';c.fillText('ARENA',33*16-camX+29,17*16-camY+13);c.fillStyle='#ffcb3d';c.fillText('ARENA',33*16-camX+28,17*16-camY+12);
+  // entities
+  const ents=[];
+  for(const o of OTH.values()){if(o.fx==null)continue;ents.push({fx:o.fx,fy:o.fy,col:o.c,d:o.d,ph:o.ph,mv:o.moving,name:o.n,bt:o.bt,bub:o.bub});if(o.ld&&o.fol.fx!=null)ents.push({fx:o.fol.fx,fy:o.fol.fy,mon:o.ld})}
+  if(G){ents.push({fx:P.fx,fy:P.fy,col:G.color,d:P.d,ph:P.ph,mv:P.moving,name:G.name+' (you)',bt:B?(B.mode==='wild'?'wild':'duel'):null,bub:myBubble,me:1});if(RUN&&RUN.team[0]&&P.fol.fx!=null&&(Math.abs(P.fol.fx-P.fx)+Math.abs(P.fol.fy-P.fy)>0.3))ents.push({fx:P.fol.fx,fy:P.fol.fy,mon:RUN.team[0].s})}
+  for(const t of TRAINERS)ents.push({fx:t.x,fy:t.y,col:t.c,d:t.d,ph:0,mv:false,name:t.n,npc:t,bt:null});
+  for(const L of LEGENDS){const gone=RUN&&RUN.leg&&RUN.leg[L.id];if(!gone)ents.push({fx:L.x,fy:L.y,legend:L})}
+  ents.sort((a,b)=>a.fy-b.fy);
+  for(const e of ents){const X=Math.round(e.fx*16-camX),Y=Math.round(e.fy*16-camY);
+    if(e.legend){if(X<-40||X>LW+40||Y<-40||Y>LH+40)continue;const s=monSprite(e.legend.id,32);const bob=Math.round(Math.sin(T*2)*1.5);c.globalAlpha=RUN&&RUN.phase==='train'?1:0.45;c.drawImage(s,X-8,Y+15-27+bob);c.globalAlpha=1;
+      c.fillStyle='#ffcb3d';for(let i=0;i<3;i++){const a=T*1.5+i*2.1;c.fillRect(Math.round(X+8+Math.cos(a)*12),Math.round(Y+4+Math.sin(a)*7),1,1)}continue}
+    if(e.mon){const s=monSprite(e.mon,24);c.drawImage(s,X-4,Y+15-21)}
+    else{const fr=e.mv?(Math.floor(e.ph/STEP*2)%2?1:2):0;c.drawImage(charSprite(e.col,e.d,fr),X,Y-2)}
+    if(tget(Math.round(e.fx),Math.round(e.fy))===1)c.drawImage(TILE[1][0],0,9,16,7,X,Y+9,16,7)}
+  for(const e of ents){if(e.mon)continue;const X=e.fx*16-camX+8,Y=Math.round(e.fy*16-camY)-3;
+    if(e.legend){nameTag(c,X,Y-14,'???','#ffcb3d','');continue}
+    if(e.npc){const beaten=RUN&&RUN.beat&&RUN.beat[e.npc.id];nameTag(c,X,Y,e.name,e.col,'');if(e.npc.alert&&performance.now()-e.npc.alert<1000){c.fillStyle='#14141f';c.fillRect(Math.round(X)-3,Y-24,6,11);c.fillStyle='#ffcb3d';c.fillRect(Math.round(X)-2,Y-23,4,6);c.fillRect(Math.round(X)-2,Y-16,4,2)}else if(beaten){vtText(c,'✓',X,Y-11,'#3ddc6b',10,'center')}continue}
+    nameTag(c,X,Y,e.name,e.col,e.bt==='duel'?'⚔':e.bt==='wild'?'!':'');if(e.bub&&e.bub.until>performance.now())bubble(c,X,Y-10,e.bub.t)}
+}
+
+/* ===================== MULTIPLAYER ===================== */
+let ROOM=null,MYPEER=null;
+const OTH=new Map();let myBubble=null,chatN=0;
+function pres(p){if(!ROOM)return;try{ROOM.presence(p).catch(()=>{})}catch(e){}}
+function leadInfo(){return RUN&&RUN.team[0]?[RUN.team[0].s,RUN.team[0].l]:null}
+function mtInfo(){return RUN?{id:RUN.id,end:RUN.end,r:RUN.phase==='arena'?RUN.r:0,st:RUN.phase==='arena'?RUN.st:'train',w:RUN.wins,prev:RUN.prev||null}:null}
+function pushFull(){if(!G)return;pres({n:G.name,c:G.color,x:P.moving?P.tx:P.x,y:P.moving?P.ty:P.y,d:P.d,tr:G.tro,ld:leadInfo(),bt:B?(B.mode==='wild'?'wild':'duel'):null,mt:mtInfo()})}
+function pushMt(){pres({mt:mtInfo(),ld:leadInfo()})}
+function setConn(on,label){$('#hon').innerHTML=`<span class="dot ${on?'on':''}"></span>${label||(on?'Online':'Offline')}`}
+async function initRoom(){
+  setConn(false,'Connecting…');
+  try{TURN_ACTIVE=await getTurnServers()}catch(e){TURN_ACTIVE=[]}
+  try{ROOM=makeP2PRoom(ROOM_ID,TURN_ACTIVE);ROOM.onPeers(onRoomPeers);setConnLabel();pushFull()}
+  catch(e){console.error(e);ROOM=null;setConn(false,'Solo (offline)')}
+}
+function others(){if(!ROOM)return[];return ROOM.peers().filter(p=>!p.sameTab&&p.kind==='viewer'&&p.presence&&typeof p.presence.x==='number')}
+function findPeer(id){return ROOM?ROOM.peers().find(p=>p.peer===id):null}
+function onRoomPeers(ch){
+  for(const p of ch.peers)if(p.sameTab)MYPEER=p.peer;
+  for(const p of ch.left){const o=OTH.get(p.peer);if(o)sysChat(`${o.n} left.`);OTH.delete(p.peer)}
+  for(const p of ch.peers){if(p.sameTab||p.kind!=='viewer')continue;syncOther(p)}
+  renderPlayers();
+}
+function syncOther(p){
+  const pr=p.presence||{};if(typeof pr.x!=='number'||typeof pr.y!=='number')return;
+  let o=OTH.get(p.peer);const tx=clamp(Math.round(pr.x),0,MW-1),ty=clamp(Math.round(pr.y),0,MH-1);const name=cleanName(pr.n);
+  if(!o){o={fx:tx,fy:ty,tx,ty,ph:0,moving:false,chatI:pr.chat&&pr.chat.i,n:name,fol:{x:tx,y:ty,tx,ty},seenMt:null};OTH.set(p.peer,o);sysChat(`${name} joined the world.`)}
+  if(tx!==o.tx||ty!==o.ty){o.fol.tx=o.tx;o.fol.ty=o.ty}
+  o.tx=tx;o.ty=ty;o.d=DIRS[pr.d]?pr.d:'down';o.n=name;o.c=validColor(pr.c);o.bt=pr.bt==='duel'||pr.bt==='wild'?pr.bt:null;
+  o.ld=Array.isArray(pr.ld)&&SPECIES[pr.ld[0]]?pr.ld[0]:null;
+  if(pr.chat&&typeof pr.chat.t==='string'&&pr.chat.i!==o.chatI){o.chatI=pr.chat.i;const t=pr.chat.t.slice(0,120);o.bub={t,until:performance.now()+6000};addChat(o.n,o.c,t)}
+  const mt=pr.mt;if(mt&&typeof mt.id==='string'&&mt.id!==o.seenMt){o.seenMt=mt.id;if(mt.st==='train'&&+mt.end>Date.now()&&(!RUN||RUN.id!==mt.id)){sysChat(`${name} is in a match (${fmt(+mt.end-Date.now())} left). Join it from the lobby!`);renderLobby()}}
+}
+function updateOthers(dt){
+  for(const o of OTH.values()){const dx=o.tx-o.fx,dy=o.ty-o.fy,dist=Math.hypot(dx,dy);
+    if(dist>4){o.fx=o.tx;o.fy=o.ty;o.moving=false;o.fol.fx=o.tx;o.fol.fy=o.ty;o.fol.tx=o.tx;o.fol.ty=o.ty}
+    else if(dist>0.01){const sp=dt/STEP*1.15*(dist>1.5?1.6:1);if(dist<=sp){o.fx=o.tx;o.fy=o.ty}else{o.fx+=dx/dist*sp;o.fy+=dy/dist*sp}o.moving=true;o.ph+=dt}
+    else o.moving=false;
+    approach(o.fol,dt)}
+}
+
+
+/* ===================== P2P ROOM (Trystero, serverless WebRTC) ===================== */
+const ROOM_ID=(()=>{try{const q=new URLSearchParams(location.search).get('room');if(q&&/^[a-z0-9_-]{1,32}$/i.test(q))return q.toLowerCase()}catch(e){}return'world'})();
+const NET_KEY='discountmon-net';
+function loadNet(){try{return JSON.parse(localStorage.getItem(NET_KEY)||'{}')||{}}catch(e){return{}}}
+function saveNet(v){try{localStorage.setItem(NET_KEY,JSON.stringify(v))}catch(e){}}
+let TURN_ACTIVE=[],TURN_SRC='',JOIN_ERRORS=0;
+function manualServers(cfg){const urls=String(cfg.urls||'').split(/[\s,]+/).filter(u=>/^(turns?|stun):/i.test(u));return urls.length?[{urls,username:cfg.user||'',credential:cfg.pass||''}]:[]}
+async function fetchApi(url){
+  const ctl=new AbortController();const t=setTimeout(()=>ctl.abort(),5000);
+  try{const r=await fetch(url,{signal:ctl.signal});const j=await r.json();const arr=Array.isArray(j)?j:Array.isArray(j.iceServers)?j.iceServers:j.iceServers?[j.iceServers]:[];return arr.filter(x=>x&&x.urls)}
+  finally{clearTimeout(t)}
+}
+async function getTurnServers(){
+  const cfg=loadNet();let list=[],src=[];
+  const api=(cfg.api||'').trim()||TURN_CONFIG.apiUrl;
+  if(api){try{const a=await fetchApi(api);if(a.length){list=list.concat(a);src.push(cfg.api?'settings API':'file API')}}catch(e){console.warn('TURN API failed',e)}}
+  const man=manualServers(cfg);if(man.length){list=list.concat(man);src.push('settings')}
+  if(Array.isArray(TURN_CONFIG.servers)&&TURN_CONFIG.servers.length){list=list.concat(TURN_CONFIG.servers.filter(x=>x&&x.urls));src.push('file')}
+  TURN_SRC=src.join(' + ');return list;
+}
+function makeP2PRoom(roomId,turn){
+  const TR=window.Trystero;
+  const cfg={appId:'discountmon-budget-edition-v1'};if(turn&&turn.length)cfg.turnConfig=turn;
+  const room=TR.joinRoom(cfg,roomId,{onJoinError:d=>{JOIN_ERRORS++;console.warn('join error',d);if(JOIN_ERRORS===1||JOIN_ERRORS%5===0)toast(turn&&turn.length?'A player could not connect even via TURN. Check the TURN settings.':'A player could not connect directly. Set up a TURN fallback: ⚙ CONTROLS → NETWORK.');setConnLabel()}});
+  const act=room.makeAction('pres');const png=room.makeAction('png');const me=TR.selfId;
+  let mine={};const others=new Map();const RTT=new Map();let snap=Object.freeze([]);const hs=[],cs=[];let lastSend=0,pending=false;
+  function entry(id,p,isMe){return Object.freeze({peer:id,by:null,isMe,sameTab:isMe,kind:'viewer',guest:false,presence:p,updatedAt:Date.now()})}
+  function rebuild(j,l){const arr=[entry(me,Object.freeze({...mine}),true)];for(const[id,p]of others)arr.push(entry(id,p,false));snap=Object.freeze(arr);const ch={peers:snap,joined:j||[],left:l||[],updated:[]};hs.forEach(h=>{try{h(ch)}catch(e){console.error(e)}})}
+  function flush(){pending=false;lastSend=performance.now();try{act.send(mine)}catch(e){}}
+  room.onPeerJoin=id=>{try{act.send(mine,{target:id})}catch(e){}cs.forEach(h=>h(true))};
+  room.onPeerLeave=id=>{RTT.delete(id);if(others.delete(id))rebuild([],[{peer:id}])};
+  act.onMessage=(data,info)=>{const id=info&&info.peerId;if(!id||!data||typeof data!=='object'||Array.isArray(data))return;try{if(JSON.stringify(data).length>8000)return}catch(e){return}const isNew=!others.has(id);others.set(id,Object.freeze(data));rebuild(isNew?[{peer:id}]:[],[])};
+  png.onMessage=(d,info)=>{const id=info&&info.peerId;if(!id||!d)return;if(typeof d.q==='number'){try{png.send({a:d.q},{target:id})}catch(e){}}else if(typeof d.a==='number'){const r=Math.round(performance.now()-d.a);if(r>=0&&r<10000)RTT.set(id,RTT.has(id)?Math.round(RTT.get(id)*0.6+r*0.4):r)}};
+  setInterval(flush,3000);
+  setInterval(()=>{if(others.size){try{png.send({q:performance.now()})}catch(e){}}},2000);
+  addEventListener('pagehide',()=>{try{room.leave()}catch(e){}});
+  return{
+    presence(patch){for(const k in patch){if(patch[k]===null)delete mine[k];else mine[k]=patch[k]}rebuild();const now=performance.now();if(now-lastSend>66)flush();else if(!pending){pending=true;setTimeout(flush,66-(now-lastSend))}return Promise.resolve()},
+    peers(){return snap},
+    onPeers(h){hs.push(h);setTimeout(()=>{rebuild()},0);return()=>{}},
+    onConnection(h){cs.push(h);setTimeout(()=>h(true),0);return()=>{}},
+    rtt(id){return RTT.has(id)?RTT.get(id):null}
+  };
+}
+function pingOf(id){return ROOM&&ROOM.rtt?ROOM.rtt(id):null}
+function setConnLabel(){if(!ROOM){setConn(false,'Solo (offline)');return}setConn(true,`Online · room "${ROOM_ID}"${TURN_ACTIVE.length?' · TURN':''}${JOIN_ERRORS?' · ⚠':''}`)}
+function testTurn(servers){
+  return new Promise(res=>{
+    if(!servers.length){res('✗ No TURN server entered.');return}
+    let pc;try{pc=new RTCPeerConnection({iceServers:servers,iceTransportPolicy:'relay'})}catch(e){res('✗ Invalid config: '+e.message);return}
+    let done=false;const fin=m=>{if(done)return;done=true;try{pc.close()}catch(e){}res(m)};
+    const t=setTimeout(()=>fin('✗ No relay address received — check URL, username and password.'),8000);
+    pc.onicecandidate=e=>{if(e.candidate&&/typ relay/.test(e.candidate.candidate)){clearTimeout(t);fin('✓ TURN works — relay address received.')}};
+    pc.createDataChannel('t');pc.createOffer().then(o=>pc.setLocalDescription(o)).catch(err=>{clearTimeout(t);fin('✗ '+err.message)});
+  });
+}
+function netSettingsHtml(){
+  const n=loadNet();const fileSet=!!(TURN_CONFIG.apiUrl||(TURN_CONFIG.servers&&TURN_CONFIG.servers.length));
+  const inp=(id,ph,val,type)=>`<input id="${id}" type="${type||'text'}" placeholder="${ph}" value="${esc(val||'')}" autocomplete="off" style="width:100%;margin-bottom:5px;background:#0b0d16;border:2px solid #000;color:var(--text);font-family:inherit;font-size:17px;padding:3px 6px">`;
+  return `<div class="lbl2" style="margin-top:14px">NETWORK · TURN FALLBACK</div>
+  <div class="small" style="text-align:left;line-height:1.1;margin:4px 0 8px">Status: ${TURN_ACTIVE.length?`<span style="color:#3ddc6b">active (${esc(TURN_SRC)})</span>`:'<span style="color:#f2c230">not configured</span> — direct connections only'}${fileSet?' · set in index.html':''}${JOIN_ERRORS?` · <span style="color:#ef4444">${JOIN_ERRORS} failed connection(s)</span>`:''}<br>Only needed if friends can't see each other. Easiest: put it in index.html so everyone gets it (see README). Settings here only apply to this browser.</div>
+  ${inp('nturl','TURN URL(s), e.g. turn:host:80, turns:host:443?transport=tcp',n.urls)}
+  <div style="display:flex;gap:5px">${inp('ntuser','Username',n.user)}${inp('ntpass','Password',n.pass,'password')}</div>
+  ${inp('ntapi','…or credentials API URL (e.g. Metered)',n.api)}
+  <div class="small" id="nttest" style="text-align:left;min-height:18px;margin-bottom:4px"></div>
+  <div class="seg" style="margin:0"><button class="btn ghost" id="ntt">TEST</button><button class="btn ghost" id="ntclr">CLEAR</button><button class="btn green" id="nts">SAVE &amp; RECONNECT</button></div>`;
+}
+function readNetForm(){return{urls:$('#nturl').value.trim(),user:$('#ntuser').value.trim(),pass:$('#ntpass').value,api:$('#ntapi').value.trim()}}
+function bindNetSettings(){
+  const out=$('#nttest');if(!out)return;
+  $('#ntt').onclick=async()=>{out.textContent='Testing…';out.style.color='';const f=readNetForm();let servers=manualServers(f);
+    if(f.api){try{servers=servers.concat(await fetchApi(f.api))}catch(e){out.textContent='✗ API URL failed: '+e.message;out.style.color='#ef4444';return}}
+    if(!servers.length&&!f.urls&&!f.api)servers=TURN_ACTIVE;
+    const r=await testTurn(servers);out.textContent=r;out.style.color=r[0]==='✓'?'#3ddc6b':'#ef4444'};
+  $('#ntclr').onclick=()=>{['nturl','ntuser','ntpass','ntapi'].forEach(i=>$('#'+i).value='');saveNet({});out.textContent='Cleared — press SAVE & RECONNECT.'};
+  $('#nts').onclick=()=>{saveNet(readNetForm());save();location.reload()};
+}
+
+/* ===================== MATCHES ===================== */
+const DUR_OPTS=[[3,'3 min'],[5,'5 min'],[10,'10 min']];
+function runningMatches(){const seen=new Map();for(const p of others()){const mt=p.presence.mt;if(mt&&typeof mt.id==='string'&&mt.id.length<40&&+mt.end>Date.now()+10000&&mt.st==='train'){const e=seen.get(mt.id)||{id:mt.id,end:+mt.end,names:[]};e.names.push(cleanName(p.presence.n));seen.set(mt.id,e)}}return[...seen.values()]}
+function renderLobby(){
+  const el=$('#lobby');if(!G||RUN){el.classList.remove('on');return}
+  const ms=runningMatches();
+  let h=`<h3>LOBBY</h3><p>Start a match: you get a fresh starter, then train and catch monsters until the timer runs out. Then everyone in the match duels in the Arena!</p>`;
+  for(const m of ms)h+=`<div class="lrow" style="margin-bottom:8px"><span style="flex:1">${esc(m.names.slice(0,3).join(', '))}${m.names.length>3?' +'+(m.names.length-3):''} · ${fmt(m.end-Date.now())} left</span><button class="btn green" data-join="${esc(m.id)}" data-end="${m.end}">JOIN</button></div>`;
+  h+=`<div class="lrow"><select id="ldur">${DUR_OPTS.map(([v,l])=>`<option value="${v}" ${v===10?'selected':''}>${l}</option>`).join('')}</select><button class="btn" id="lstart">START NEW MATCH</button></div>`;
+  if(el.dataset.h!==h){el.dataset.h=h;el.innerHTML=h;
+    $('#lstart').onclick=()=>pickStarter(sid=>startRun('m'+Math.random().toString(36).slice(2,10),Date.now()+(+$('#ldur').value)*60000,sid));
+    el.querySelectorAll('[data-join]').forEach(b=>b.onclick=()=>{const id=b.dataset.join,end=+b.dataset.end;pickStarter(sid=>startRun(id,end,sid))})}
+  el.classList.add('on');
+}
+function pickStarter(cb){
+  openModal(`<h3>CHOOSE YOUR STARTER</h3><p>Starters are unique — you'll never find them in the wild. It starts at Lv 5. Train it fast!</p><div class="starters">${STARTERS.map(s=>`<button class="stc" data-s="${s}"><canvas width="56" height="56"></canvas><br>${SPECIES[s].n}<br><span class="tb" style="background:${TYPES[SPECIES[s].t].c}">${TYPES[SPECIES[s].t].n.toUpperCase()}</span> <span class="tb" style="background:#c27bff;color:#14141f">UNIQUE</span></button>`).join('')}</div><div class="acts"><button class="btn ghost" id="mno">CANCEL</button></div>`);
+  document.querySelectorAll('.stc').forEach(b=>{b.querySelector('canvas').getContext('2d').drawImage(monSprite(b.dataset.s,56),0,0);b.onclick=()=>{closeModal();cb(b.dataset.s)}});
+  $('#mno').onclick=closeModal;
+}
+function startRun(id,end,sid,prev){
+  if(end<Date.now()+5000){toast('That match is almost over.');return}
+  RUN={id,end,phase:'train',team:[newMon(sid,5)],box:[],kap:10,r:1,st:'train',wins:0,prev:prev||null,beat:{},leg:{}};G.dex[sid]=1;$('#arena').classList.remove('on');
+  save();renderLobby();renderTeam();updateHud();pushMt();teleport(30,24);
+  sysChat(`Match started! You have ${fmt(end-Date.now())} to train. Tall grass is in every direction.`);toast('Training started! Head into the tall grass.');
+}
+function leaveRun(){RUN=null;save();$('#arena').classList.remove('on');pres({mt:null,ld:null});renderLobby();renderTeam();updateHud()}
+function matchTick(){
+  if(!RUN||!G)return;const left=RUN.end-Date.now();const tm=$('#htimer');
+  if(RUN.phase==='train'){tm.textContent='TRAINING '+fmt(left);tm.classList.toggle('hot',left<30000);if(left<=0)enterArena()}
+  else{tm.textContent=RUN.st==='champ'?'CHAMPION!':'ARENA';tm.classList.remove('hot')}
+}
+function enterArena(){
+  if(B&&B.mode==='wild')endWild('Time is up!');
+  if(B&&B.spar)closeBattle();
+  if(myCh)cancelCh();if(incoming){closeModal();incoming=null}
+  RUN.phase='arena';RUN.r=1;RUN.st='wait';healAll();teleport(35,21);P.d='up';
+  sysChat('Training is over — to the Arena!');save();pushMt();showArena();
+}
+function participants(){
+  const list=[{peer:MYPEER||'me',me:true,n:G.name,c:G.color,r:RUN.r,st:RUN.st,w:RUN.wins}];
+  for(const p of others()){const mt=p.presence.mt;if(mt&&mt.id===RUN.id)list.push({peer:p.peer,n:cleanName(p.presence.n),c:validColor(p.presence.c),r:Math.floor(+mt.r)||0,st:typeof mt.st==='string'?mt.st:'train',w:Math.floor(+mt.w)||0})}
+  return list;
+}
+function arenaTick(){
+  if(!RUN||RUN.phase!=='arena')return;
+  if(!B)showArena();
+  if(B||RUN.st==='out'||RUN.st==='champ')return;
+  const parts=participants();
+  // wait until nobody is still training or behind in an earlier round
+  if(parts.some(p=>p.st==='train'||(p.st!=='out'&&p.st!=='champ'&&p.r<RUN.r)))return;
+  // everyone who reached this round (incl. those who already lost or won it) -> stable pairing on every client
+  const pool=parts.filter(p=>p.st!=='train'&&p.r>=RUN.r);
+  if(pool.length===1){if(RUN.wins>=1){RUN.st='champ';G.tro++;save();pushMt();sysChat('🏆 You are the Arena Champion!');pres({tr:G.tro});updateHud();showArena()}else startAiDuel();return}
+  const ids=pool.map(p=>p.peer).sort();const i=ids.indexOf(MYPEER||'me');if(i<0)return;
+  if(ids.length%2===1&&i===ids.length-1)startAiDuel();
+  else{const opp=ids[i%2===0?i+1:i-1];startDuel(opp,RUN.id+'-'+RUN.r+'-'+[MYPEER,opp].sort().join('-'))}
+}
+function showArena(){
+  const el=$('#arena');el.classList.add('on');
+  const parts=participants();
+  const stTxt={train:'TRAINING',wait:'READY',duel:'DUELING',out:'OUT',champ:'CHAMPION'};
+  const stCol={train:'#6b7280',wait:'#3b82f6',duel:'#f0642a',out:'#4b5063',champ:'#ffcb3d'};
+  let my;if(RUN.st==='champ')my='🏆 You won the tournament! You are the Arena Champion.';else if(RUN.st==='out')my=`You were knocked out in round ${RUN.r}. Watch the rest — or leave the match.`;else if(parts.some(p=>p.st==='train'))my='Waiting for everyone to finish training…';else my=`Round ${RUN.r} — waiting for the other duels to finish…`;
+  const h=`<h2>THE ARENA</h2><div class="small">Knockout tournament · real-time duels · teams fully healed</div><div class="st">${esc(my)}</div>${parts.sort((a,b)=>(b.w-a.w)).map(p=>`<div class="arow"><span><span class="sw" style="display:inline-block;width:10px;height:10px;background:${p.c};border:2px solid #000;margin-right:6px"></span>${esc(p.n)}${p.me?' (you)':''}</span><span>${p.w} win${p.w===1?'':'s'} <span class="tag" style="background:${stCol[p.st]||'#555'}">${stTxt[p.st]||'?'}</span></span></div>`).join('')}${RUN.st==='out'||RUN.st==='champ'?rematchHtml():''}`;
+  if($('#abox').dataset.h!==h){$('#abox').dataset.h=h;$('#abox').innerHTML=h;const b=$('#aleave');if(b)b.onclick=leaveRun;
+    const r=$('#arematch');if(r)r.onclick=()=>{const prev=RUN.id;pickStarter(sid=>startRun('m'+Math.random().toString(36).slice(2,10),Date.now()+600000,sid,prev))};
+    document.querySelectorAll('[data-rjoin]').forEach(b=>b.onclick=()=>{const id=b.dataset.rjoin,end=+b.dataset.end,prev=RUN.id;pickStarter(sid=>startRun(id,end,sid,prev))})}
+}
+function rematchHtml(){
+  const seen=new Map();for(const p of others()){const mt=p.presence.mt;if(mt&&mt.prev===RUN.id&&mt.st==='train'&&typeof mt.id==='string'&&mt.id.length<40&&+mt.end>Date.now()+10000){const e=seen.get(mt.id)||{id:mt.id,end:+mt.end,n:[]};e.n.push(cleanName(p.presence.n));seen.set(mt.id,e)}}
+  let h='<div style="margin-top:12px;display:flex;flex-direction:column;gap:8px">';
+  for(const m of seen.values())h+=`<button class="btn green" data-rjoin="${esc(m.id)}" data-end="${m.end}">JOIN REMATCH (${esc(m.n.slice(0,2).join(', '))} · ${fmt(m.end-Date.now())})</button>`;
+  h+='<div style="display:flex;gap:8px"><button class="btn" id="arematch" style="flex:1">NEW MATCH · 10 MIN</button><button class="btn ghost" id="aleave">LOBBY</button></div></div>';return h;
+}
+function openModal(h){$('#mbox').innerHTML=h;$('#modal').classList.add('on')}
+function closeModal(){$('#modal').classList.remove('on')}
+
+/* ===================== PLAYER CHALLENGES (during training) ===================== */
+let myCh=null,incoming=null;const handledCh=new Set();
+function canSpar(){return!!(RUN&&RUN.phase==='train'&&!B)}
+function challenge(peer){
+  if(!canSpar()||myCh)return;const p=findPeer(peer);if(!p)return;const mt=p.presence.mt;
+  if(!mt||mt.st!=='train'||p.presence.bt){toast("That player can't battle right now.");return}
+  const id='s'+Math.random().toString(36).slice(2,10);myCh={to:peer,id,t:Date.now()};pres({ch:{to:peer,id}});toast(`Battle request sent to ${cleanName(p.presence.n)}…`);lastPlr='';renderPlayers();
+}
+function cancelCh(msg){myCh=null;pres({ch:null});if(msg)toast(msg);lastPlr='';renderPlayers()}
+function checkChallenges(){
+  if(!ROOM||!MYPEER||!G)return;
+  for(const p of others()){const ch=p.presence.ch;
+    if(ch&&typeof ch==='object'&&ch.to===MYPEER&&typeof ch.id==='string'&&ch.id.length<40&&!handledCh.has(ch.id)){handledCh.add(ch.id);
+      if(!canSpar()||modalOpen()||myCh)pres({dec:ch.id});else showChallenge(p.peer,ch.id,cleanName(p.presence.n))}}
+  if(incoming){const p=findPeer(incoming.peer);if(!p||!p.presence.ch||p.presence.ch.id!==incoming.id||!canSpar()){closeModal();incoming=null}}
+  if(myCh){const tp=findPeer(myCh.to);
+    if(!tp)cancelCh('That player left.');else if(!canSpar())cancelCh();
+    else if(tp.presence.dec===myCh.id)cancelCh(`${cleanName(tp.presence.n)} declined.`);
+    else if(tp.presence.du&&tp.presence.du.id===myCh.id&&tp.presence.du.opp===MYPEER){const id=myCh.id;myCh=null;pres({ch:null});startDuel(tp.peer,id,true)}
+    else if(Date.now()-myCh.t>30000)cancelCh('No answer.')}
+}
+function showChallenge(peer,id,name){
+  incoming={peer,id};
+  openModal(`<h3>⚔ BATTLE REQUEST</h3><p><b>${esc(name)}</b> wants a friendly real-time battle. Both teams are fully healed for the fight, and the winner's monster gains XP.</p><div class="acts"><button class="btn ghost" id="mno">DECLINE</button><button class="btn" id="myes">FIGHT!</button></div>`);
+  $('#mno').onclick=()=>{pres({dec:id});incoming=null;closeModal()};
+  $('#myes').onclick=()=>{incoming=null;closeModal();if(canSpar())startDuel(peer,id,true)};
+}
+
+/* ===================== REAL-TIME BATTLE ENGINE ===================== */
+const AW=320,AH=180,AX0=14,AX1=306,AY0=50,AY1=170;
+function mkFighter(side,team,x,ctrl){const f={side,team,a:0,x,y:112,face:side==='L'?1:-1,cd:[0,0,0,0],dashT:0,dashCd:0,inv:1,swCd:0,flash:0,faint:0,out:false,ctrl,mvx:0,mvy:0,ddx:0,ddy:0,think:0};const i=team.findIndex(m=>m.hp>0);f.a=i<0?0:i;if(i<0)f.out=true;return f}
+function act(F){return F.team[F.a]}
+function fspeed(F){return Math.min(120,48+act(F).spd*1.15)*(F.ctrl==='ai'?0.82:1)}
+function shotParams(mid){const mv=MOVES[mid]||MOVES.bump;if(mv.t==='normal')return{mel:1,sp:270,life:0.17,r:10,p:mv.p,n:1};if(mv.p>=85)return{sp:125,life:2.4,r:4,p:Math.round(mv.p*0.42),n:3};return{sp:178-mv.p,life:2.4,r:3+mv.p/25,p:mv.p,n:1}}
+function cdOf(mid){return 0.45+(MOVES[mid]||MOVES.bump).p/62}
+function calcDmg(att,def,mid,p){const mv=MOVES[mid]||MOVES.bump;const e=eff(mv.t,SPECIES[def.s].t);let d=((2*att.l/5+2)*p*att.atk/Math.max(1,def.def))/50+2;d*=(mv.t===SPECIES[att.s].t?1.5:1)*e*(0.85+Math.random()*0.15)*0.55;return{d:e===0?0:Math.max(1,Math.round(d)),e}}
+function say(t){if(!B)return;B.log.push({t,at:performance.now()});if(B.log.length>3)B.log.shift()}
+function newBattle(o){B=Object.assign({shots:[],parts:[],nums:[],log:[],state:'fight',ptr:null,capCd:0,sid:0},o);held.length=0;$('#battle').classList.add('on');buildBattleUI();pres({bt:B.mode==='wild'?'wild':'duel'})}
+function closeBattle(){B=null;placeDpad();$('#battle').classList.remove('on');pres({bt:null,du:null,ld:leadInfo()});renderTeam();updateHud()}
+function fire(F,i,remote){
+  const bt=act(F);const mid=bt.m[i];if(!mid||F.cd[i]>0||F.faint>0||F.out)return;
+  const T=F===B.me?B.foe:B.me;F.cd[i]=cdOf(mid)*(F.ctrl==='ai'?1.35:1);
+  let dx=T.x-F.x,dy=T.y-F.y;const L=Math.hypot(dx,dy)||1;dx/=L;dy/=L;F.face=dx<0?-1:1;
+  const sp=shotParams(mid);const angs=sp.n===3?[-0.24,0,0.24]:[0];
+  for(const a of angs){const c=Math.cos(a),s=Math.sin(a);const vx=(dx*c-dy*s)*sp.sp,vy=(dx*s+dy*c)*sp.sp;
+    const sh={id:F.side+(++B.sid)+'_'+Math.floor(Math.random()*1e6),side:F.side,att:Object.assign({},bt),mid,x:F.x+dx*8,y:F.y-10+dy*6,vx,vy,age:0,life:sp.life,r:sp.r,p:sp.p,mel:sp.mel};
+    B.shots.push(sh);if(B.mode==='duel'&&F===B.me)B.mySh.push([sh.id,F.a,mid,Math.round(sh.x),Math.round(sh.y),Math.round(vx),Math.round(vy)])}
+  if(B.mode==='duel'&&F===B.me){B.mySh=B.mySh.slice(-9);publishDuel(true)}
+}
+function nextAlive(F){const n=F.team.findIndex((m,i)=>i!==F.a&&m.hp>0);return n}
+function doSwitch(F,idx){F.a=idx;F.swCd=1.6;F.inv=0.7;F.cd=[0.3,0.3,0.3,0.3];say(`${F===B.me?'Go':'Foe sends out'} ${SPECIES[act(F).s].n}!`);if(B.mode==='duel'&&F===B.me)publishDuel(true)}
+function hitLocal(T,s){
+  const def=act(T);const r=calcDmg(s.att,def,s.mid,s.p);def.hp=Math.max(0,def.hp-r.d);
+  T.flash=0.25;T.inv=Math.max(T.inv,0.12);const L=Math.hypot(s.vx,s.vy)||1;T.x=clamp(T.x+s.vx/L*5,AX0,AX1);T.y=clamp(T.y+s.vy/L*4,AY0,AY1);
+  B.nums.push({x:T.x,y:T.y-34,t:r.d?'-'+r.d:'0',c:r.e>1?'#ffcb3d':r.e<1?'#c0c4d6':'#ffffff',at:performance.now()});
+  if(r.e>1)say('Super effective!');else if(r.e===0)say('It had no effect…');
+  if(def.hp<=0){T.faint=0.9;say(`${SPECIES[def.s].n} fainted!`);if(B.mode==='wild'&&T===B.foe)wildWin();else if(B.mode==='trainer'&&T===B.foe)trainerKO(def)}
+  if(B.mode==='duel'&&T===B.me)publishDuel(true);
+}
+function burst(x,y,col,n){for(let i=0;i<n;i++){const a=Math.random()*6.28,s=30+Math.random()*60;B.parts.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:0.35+Math.random()*0.25,age:0,c:col})}}
+function controlMe(dt){
+  const F=B.me;if(F.out||F.faint>0)return;
+  let dx=0,dy=0;for(const d of held){dx+=DIRS[d][0];dy+=DIRS[d][1]}
+  if(B.ptr&&!dx&&!dy){const ex=B.ptr.x-F.x,ey=B.ptr.y-F.y;if(Math.hypot(ex,ey)>3){dx=ex;dy=ey}}
+  const L=Math.hypot(dx,dy);if(L){dx/=L;dy/=L;F.ddx=dx;F.ddy=dy}
+  move(F,dx,dy,dt);
+}
+function move(F,dx,dy,dt){
+  if(F.dashT>0){F.x+=F.ddx*230*dt;F.y+=F.ddy*230*dt}else{F.x+=dx*fspeed(F)*dt;F.y+=dy*fspeed(F)*dt}
+  F.x=clamp(F.x,AX0,AX1);F.y=clamp(F.y,AY0,AY1);
+  const T=F===B.me?B.foe:B.me;if(T)F.face=T.x<F.x?-1:1;
+}
+function aiUpdate(F,dt){
+  const T=B.me;if(F.out||F.faint>0)return;
+  F.think-=dt;
+  const dx=T.x-F.x,dy=T.y-F.y,d=Math.hypot(dx,dy)||1;
+  if(F.think<=0){F.think=0.3+Math.random()*0.35;
+    const melee=act(F).m.some(m=>MOVES[m].t==='normal')&&Math.random()<0.3;const want=melee?18:70+Math.random()*40;
+    const rad=Math.abs(d-want)>12?Math.sign(d-want):0;const perp=Math.random()<0.5?1:-1;
+    F.mvx=dx/d*rad+(-dy/d)*perp*0.8;F.mvy=dy/d*rad+(dx/d)*perp*0.8;const L=Math.hypot(F.mvx,F.mvy)||1;F.mvx/=L;F.mvy/=L;
+    if(Math.random()<0.7){const ready=[0,1,2,3].filter(i=>act(F).m[i]&&F.cd[i]<=0&&(MOVES[act(F).m[i]].t!=='normal'||d<34));if(ready.length)fire(F,ready[Math.floor(Math.random()*ready.length)])}
+    if(B.mode==='ai'&&act(F).hp<act(F).mhp*0.2&&F.swCd<=0&&Math.random()<0.25){const n=F.team.findIndex((m,i)=>i!==F.a&&m.hp>act(F).hp*2);if(n>=0)doSwitch(F,n)}}
+  if(F.dashCd<=0)for(const s of B.shots)if(s.side!==F.side&&!s.cap&&Math.hypot(s.x-F.x,s.y-F.y+10)<30&&Math.random()<0.06){F.dashT=0.14;F.dashCd=1.6;F.inv=0.24;F.ddx=-s.vy/(Math.hypot(s.vx,s.vy)||1);F.ddy=s.vx/(Math.hypot(s.vx,s.vy)||1);break}
+  move(F,F.mvx,F.mvy,dt);
+}
+function bUpdate(dt){
+  const now=performance.now();
+  for(const F of[B.me,B.foe]){if(!F)continue;F.cd=F.cd.map(v=>Math.max(0,v-dt));F.dashT=Math.max(0,F.dashT-dt);F.dashCd=Math.max(0,F.dashCd-dt);F.inv=Math.max(0,F.inv-dt);F.swCd=Math.max(0,F.swCd-dt);F.flash=Math.max(0,F.flash-dt)}
+  B.capCd=Math.max(0,B.capCd-dt);
+  for(const p of B.parts){p.age+=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vx*=0.9;p.vy*=0.9}B.parts=B.parts.filter(p=>p.age<p.life);
+  B.nums=B.nums.filter(n=>now-n.at<900);
+  if(B.mode==='duel')duelSync(dt);
+  if(B.state==='count'){if(now>=B.cntEnd){B.state='fight';say('FIGHT!')}return}
+  if(B.state==='catch'){catchUpdate(now);return}
+  if(B.state!=='fight')return;
+  controlMe(dt);
+  if(B.foe.ctrl==='ai')aiUpdate(B.foe,dt);
+  // fainting -> next monster (only for fighters this client is authoritative for)
+  for(const F of[B.me,B.foe]){if(F.ctrl==='remote'||F.faint<=0)continue;F.faint-=dt;if(F.faint<=0){if(B.mode==='wild'&&F===B.foe)continue;const n=nextAlive(F);if(n<0){F.out=true}else doSwitch(F,n)}}
+  // shots
+  for(const s of B.shots){s.age+=dt;s.x+=s.vx*dt;s.y+=s.vy*dt;if(s.age>s.life||s.x<0||s.x>AW||s.y<20||s.y>AH){s.dead=1;continue}
+    const T=s.side===B.me.side?B.foe:B.me;if(!T||T.out||T.faint>0)continue;
+    if(Math.hypot(s.x-T.x,s.y-(T.y-12))<s.r+11){
+      if(s.cap){s.dead=1;if(B.mode==='wild')startCatch();continue}
+      if(T.inv>0)continue;
+      s.dead=1;burst(s.x,s.y,TYPES[MOVES[s.mid].t].c,7);
+      if(B.mode!=='duel'||T===B.me)hitLocal(T,s)}}
+  B.shots=B.shots.filter(s=>!s.dead);
+  if(B.mode==='duel')publishDuel(false);
+  checkEnd();
+}
+function checkEnd(){
+  if(B.state!=='fight')return;
+  if(B.mode==='wild'){if(B.me.out)wildLose();return}
+  if(B.mode==='trainer'){if(B.me.out)wildLose();else if(B.foe.out)trainerWin();return}
+  if(B.me.out){duelResult(false);return}
+  if(B.foe.out)duelResult(true);
+}
+/* --- player actions --- */
+function battleMove(i){if(B&&B.state==='fight')fire(B.me,i)}
+function battleDash(){if(!B||B.state!=='fight')return;const F=B.me;if(F.dashCd>0||F.faint>0||F.out)return;if(!F.ddx&&!F.ddy){F.ddx=F.face>0?-1:1;F.ddy=0}let dx=0,dy=0;for(const d of held){dx+=DIRS[d][0];dy+=DIRS[d][1]}const L=Math.hypot(dx,dy);if(L){F.ddx=dx/L;F.ddy=dy/L}F.dashT=0.15;F.dashCd=1.0;F.inv=0.26}
+function battleSwitch(){if(!B||B.state!=='fight')return;const F=B.me;if(F.swCd>0||F.faint>0||F.out)return;const n=F.team.findIndex((m,i)=>i>F.a&&m.hp>0);const m=n>=0?n:F.team.findIndex((m,i)=>i!==F.a&&m.hp>0);if(m>=0)doSwitch(F,m)}
+function throwCap(){if(!B||B.mode!=='wild'||B.state!=='fight'||B.capCd>0)return;if(RUN.kap<=0){say('No capsules left!');return}
+  RUN.kap--;B.capCd=1.2;updateHud();const F=B.me,T=B.foe;let dx=T.x-F.x,dy=(T.y-12)-(F.y-12);const L=Math.hypot(dx,dy)||1;
+  B.shots.push({cap:1,side:F.side,x:F.x,y:F.y-14,vx:dx/L*210,vy:dy/L*210,age:0,life:1.5,r:5,mid:'bump'});say('Capsule thrown!')}
+function tryRun(){if(!B||B.state!=='fight'||B.mode!=='wild')return;if(Math.hypot(B.me.x-B.foe.x,B.me.y-B.foe.y)>=90)endWild('Got away safely!');else say('Too close to run! Get some distance.')}
+function forfeit(){if(!B||B.mode==='wild'||B.state==='over')return;if(B.state==='fight'||B.state==='count'||B.state==='wait'){B.me.team.forEach(m=>m.hp=0);B.me.out=true;if(B.mode==='duel')publishDuel(true);duelResult(false,'You forfeited.')}}
+
+/* --- wild --- */
+function startWild(zk){
+  const z=ZONES[zk];const sid=pickWild(z.pool);const l=z.lv[0]+Math.floor(Math.random()*(z.lv[1]-z.lv[0]+1));
+  const wild=newMon(sid,l);G.dex[sid]=G.dex[sid]||0;
+  if(!RUN.team.some(m=>m.hp>0))healAll();
+  newBattle({mode:'wild',zone:zk,wild,me:mkFighter('L',RUN.team.map(battler),70,'local'),foe:mkFighter('R',[battler(wild)],250,'ai')});
+  B.foe.inv=0.6;const rr=RAR[sid];say(rr==='rare'?`✦ A RARE ${SPECIES[wild.s].n} (Lv ${l}) appeared! ✦`:rr==='uncommon'?`An uncommon ${SPECIES[wild.s].n} (Lv ${l}) appeared!`:`A wild ${SPECIES[wild.s].n} (Lv ${l}) appeared!`);if(rr==='rare')burst(250,80,'#4aa3ff',24);
+}
+function startLegend(L){
+  if(!RUN.team.some(m=>m.hp>0))healAll();
+  const wild=newMon(L.id,L.l);G.dex[L.id]=G.dex[L.id]||0;
+  newBattle({mode:'wild',legend:L.id,zone:L.zone,wild,me:mkFighter('L',RUN.team.map(battler),70,'local'),foe:mkFighter('R',[battler(wild)],250,'ai'),state:'count',cntEnd:performance.now()+2000});
+  say(`★ The legendary ${SPECIES[L.id].n} awakens! ★`);burst(250,80,'#ffcb3d',40);
+}
+function startTrainer(t){
+  if(!RUN.team.some(m=>m.hp>0))healAll();
+  const team=t.team.map(([s,l])=>battler(newMon(s,l)));
+  newBattle({mode:'trainer',trainer:t,oppName:t.n,zone:zoneAt(t.x,t.y)||'north',me:mkFighter('L',RUN.team.map(battler),70,'local'),foe:mkFighter('R',team,250,'ai'),state:'count',cntEnd:performance.now()+1800});
+  say(`${t.n} wants to battle!`);
+}
+function trainerKO(def){const idx=B.me.a;syncBack();const m=RUN.team[idx];if(m){const msgs=gainXp(m,Math.round(xpGain(def.s,def.l)*1.4));Object.assign(B.me.team[idx],battler(m));msgs.forEach(say)}}
+async function trainerWin(){B.state='over';const t=B.trainer;RUN.beat[t.id]=1;RUN.kap+=t.reward;syncBack();say(`You defeated ${t.n}!`);say(`Reward: ${t.reward} capsules.`);sysChat(`You beat ${t.n} and got ${t.reward} capsules.`);updateHud();const myB=B;await sleep(2400);if(B===myB)endWild()}
+function syncBack(){if(B&&(B.mode==='wild'||B.mode==='trainer'))B.me.team.forEach((b,i)=>{if(RUN.team[i])RUN.team[i].hp=b.hp})}
+async function wildWin(){
+  B.state='over';const idx=B.me.a;syncBack();const m=RUN.team[idx];if(B.legend){RUN.leg[B.legend]=1;say(`${SPECIES[B.legend].n} vanished into the light…`)}
+  const msgs=m?gainXp(m,xpGain(B.wild.s,B.wild.l)):[];if(m)Object.assign(B.me.team[idx],battler(m));
+  const myB=B;for(const t of msgs){say(t);await sleep(1000);if(B!==myB)return}await sleep(700);if(B===myB)endWild();
+}
+async function wildLose(){B.state='over';say('All your monsters fainted…');const myB=B;await sleep(1600);if(B!==myB)return;endWild();healAll();teleport(25,21);toast('You rushed back to the Heal Center.')}
+function startCatch(){const w=act(B.foe);const chance=clamp(((1-w.hp/w.mhp*0.8)*0.72+0.16-w.l*0.006)*rarOf(w.s).cm,0.04,0.95);B.state='catch';B.catch={t0:performance.now(),ok:Math.random()<chance,x:B.foe.x,y:B.foe.y-10};B.catch.sh=B.catch.ok?3:1+Math.floor(Math.random()*2)}
+function catchUpdate(now){const c=B.catch;const el=(now-c.t0)/1000;if(el<c.sh*0.6+0.5)return;
+  if(c.ok&&!c.done){c.done=1;B.state='over';const m=B.wild;if(B.legend)RUN.leg[B.legend]=1;m.hp=act(B.foe).hp;G.dex[m.s]=1;syncBack();const toTeam=RUN.team.length<6;(toTeam?RUN.team:RUN.box).push(m);
+    say(`Gotcha! ${SPECIES[m.s].n} was caught!`);say(toTeam?'It joined your team.':'Your team is full — sent to the Box.');sysChat(`You caught ${SPECIES[m.s].n} (Lv ${m.l})!`);const myB=B;setTimeout(()=>{if(B===myB)endWild()},1900)}
+  else if(!c.ok){B.state='fight';B.catch=null;B.foe.inv=0.6;say('Oh no! It broke free!')}}
+function endWild(msg){if(!B)return;syncBack();if(msg)toast(msg);closeBattle();save();pushMt()}
+
+/* --- duels (AI + PvP) --- */
+function tourneyTeam(){return RUN.team.map(m=>{const b=battler(m);b.hp=b.mhp;return b})}
+function startAiDuel(){
+  RUN.st='duel';pushMt();
+  const n=RUN.team.length,avg=Math.round(RUN.team.reduce((a,m)=>a+m.l,0)/n)+RUN.r-1;
+  const team=[];for(let i=0;i<n;i++){const s=BASES[Math.floor(Math.random()*BASES.length)];team.push(battler(newMon(s,clamp(avg+Math.floor(Math.random()*3)-1,2,60))))}
+  newBattle({mode:'ai',oppName:'Champion Bot',me:mkFighter('L',tourneyTeam(),70,'local'),foe:mkFighter('R',team,250,'ai'),state:'count',cntEnd:performance.now()+3000});
+  say(`Round ${RUN.r}: Champion Bot challenges you!`);
+}
+function sanitizeTeam(arr){
+  if(!Array.isArray(arr)||arr.length<1||arr.length>6)return null;const out=[];
+  for(const e of arr){if(!Array.isArray(e)||!SPECIES[e[0]])return null;const l=clamp(Math.floor(+e[1]||1),1,60);let mv=Array.isArray(e[2])?e[2].filter(x=>typeof x==='string'&&MOVES[x]).slice(0,4):[];if(!mv.length)mv=['bump'];const b=battler({s:e[0],l,hp:0,m:mv});b.hp=b.mhp;out.push(b)}
+  return out;
+}
+function startDuel(opp,id,spar){
+  if(!spar){RUN.st='duel';pushMt()}
+  const op=findPeer(opp);const oppName=op?cleanName(op.presence.n):'Opponent';const left=(MYPEER||'')<opp;
+  const raw=RUN.team.map(m=>[m.s,m.l,m.m.slice(0,4)]);
+  newBattle({mode:'duel',spar:!!spar,id,opp,oppName,raw,me:mkFighter(left?'L':'R',tourneyTeam(),left?70:250,'local'),foe:null,state:'wait',mySh:[],seen:new Set(),pubT:0,missing:0,t0:performance.now()});
+  say(spar?`Friendly battle: waiting for ${oppName}…`:`Round ${RUN.r}: waiting for ${oppName}…`);publishDuel(true);
+}
+function publishDuel(force){const now=performance.now();if(!force&&now-B.pubT<60)return;B.pubT=now;const F=B.me;
+  pres({du:{id:B.id,opp:B.opp,team:B.raw,a:F.a,x:Math.round(F.x),y:Math.round(F.y),hp:F.team.map(m=>m.hp),sh:B.mySh}})}
+function duelSync(dt){
+  const op=findPeer(B.opp);const du=op&&op.presence.du;
+  if(B.state==='over')return;
+  if(!du||du.id!==B.id){if(B.state==='wait'){if(performance.now()-B.t0>25000)duelResult(true,`${B.oppName} never showed up.`)}else{B.missing+=dt;if(B.missing>6)duelResult(true,`${B.oppName} left the arena.`)}return}
+  B.missing=0;
+  if(!B.foe){const ot=sanitizeTeam(du.team);if(!ot)return;const left=B.me.side==='L';B.foe=mkFighter(left?'R':'L',ot,left?250:70,'remote');B.foe.x=clamp(+du.x||B.foe.x,AX0,AX1);B.foe.y=clamp(+du.y||112,AY0,AY1);
+    if(Array.isArray(du.sh))du.sh.forEach(e=>Array.isArray(e)&&B.seen.add(String(e[0])));B.state='count';B.cntEnd=performance.now()+3000;say(`${B.oppName} enters the arena!`);return}
+  const F=B.foe;const tx=clamp(+du.x||F.x,AX0,AX1),ty=clamp(+du.y||F.y,AY0,AY1);const k=Math.min(1,dt*14);F.x+=(tx-F.x)*k;F.y+=(ty-F.y)*k;F.face=B.me.x<F.x?-1:1;
+  const a=Math.floor(+du.a);if(a>=0&&a<F.team.length&&a!==F.a){F.a=a;say(`${B.oppName} sends out ${SPECIES[act(F).s].n}!`)}
+  if(Array.isArray(du.hp))F.team.forEach((m,i)=>{const v=clamp(Math.floor(+du.hp[i]),0,m.mhp);if(Number.isFinite(v)&&v<m.hp){B.nums.push({x:F.x,y:F.y-34,t:'-'+(m.hp-v),c:'#fff',at:performance.now()});F.flash=0.25;if(v===0)say(`${SPECIES[m.s].n} fainted!`)}if(Number.isFinite(v))m.hp=v});
+  F.out=F.team.every(m=>m.hp<=0);F.faint=act(F).hp<=0?1:0;
+  if(Array.isArray(du.sh))for(const e of du.sh){if(!Array.isArray(e))continue;const id=String(e[0]).slice(0,40);if(B.seen.has(id))continue;B.seen.add(id);if(B.state!=='fight')continue;
+    const ai=clamp(Math.floor(+e[1]),0,F.team.length-1),mid=MOVES[e[2]]?e[2]:'bump';const sp=shotParams(mid);let vx=+e[5]||0,vy=+e[6]||0;const L=Math.hypot(vx,vy)||1;if(L>sp.sp*1.05){vx=vx/L*sp.sp;vy=vy/L*sp.sp}
+    B.shots.push({id,side:F.side,att:F.team[ai],mid,x:clamp(+e[3]||F.x,0,AW),y:clamp(+e[4]||F.y,0,AH),vx,vy,age:0,life:sp.life,r:sp.r,p:sp.p,mel:sp.mel})}
+}
+function duelResult(win,why){
+  if(!B||B.state==='over')return;B.state='over';say(win?'YOU WIN!':'YOU LOSE…');if(why)say(why);
+  if(B.mode==='duel')publishDuel(true);
+  if(B.spar){
+    if(win){const m=RUN.team[B.me.a]||RUN.team[0];const lv=B.foe?Math.round(B.foe.team.reduce((a,x)=>a+x.l,0)/B.foe.team.length):m.l;gainXp(m,xpGain(B.foe?act(B.foe).s:m.s,lv)+10).forEach(t=>say(t))}
+    sysChat(win?`You won the friendly battle against ${B.oppName}!`:`${B.oppName} won the friendly battle.`);save();
+    const myS=B;setTimeout(()=>{if(B===myS){closeBattle();pushMt()}},3200);return;
+  }
+  if(win){RUN.wins++;RUN.r++;RUN.st='wait'}else RUN.st='out';
+  sysChat(win?`You won round ${RUN.r-1}${B.oppName?' against '+B.oppName:''}!`:`You lost${B.oppName?' against '+B.oppName:''}.`);
+  save();const myB=B;setTimeout(()=>{if(B===myB){closeBattle();pushMt();showArena()}},2800);
+}
+
+/* --- battle UI --- */
+function buildBattleUI(){
+  const el=$('#bact');el.innerHTML='';
+  for(let i=0;i<4;i++){const b=document.createElement('button');b.className='mv';b.dataset.i=i;b.onclick=()=>battleMove(i);b.innerHTML='<span class="cd"></span><span class="lbl"></span>';el.appendChild(b)}
+  const row=document.createElement('div');row.className='brow';
+  const add=(t,cls,fn,id)=>{const b=document.createElement('button');b.className='btn '+cls;b.textContent=t;b.onclick=fn;if(id)b.id=id;row.appendChild(b)};
+  add('DASH','ghost',battleDash);add('SWITCH','ghost',battleSwitch,'bsw');
+  if(B.mode==='wild'){add('CAPSULE','',throwCap,'bcap');add('RUN','ghost',tryRun)}else if(B.mode!=='trainer')add('FORFEIT','red',forfeit);
+  add('⚙','ghost',openSettings);
+  el.appendChild(row);
+  const K=SET.keys;
+  el.insertAdjacentHTML('beforeend',`<div class="keys">Move: WASD/arrows or hold on the arena · Attacks: ${['a1','a2','a3','a4'].map(a=>keyLabel(K[a])).join('/')} · Dash: ${keyLabel(K.dash)} · Switch: ${keyLabel(K.sw)}${B.mode==='wild'?` · Capsule: ${keyLabel(K.cap)} · Run: ${keyLabel(K.run)}`:''}</div>`);
+  placeDpad();
+  B.uiKey='';
+}
+function updateBattleUI(){
+  const F=B.me;const mon=act(F);const key=mon.s+F.a+mon.m.join();
+  const btns=document.querySelectorAll('#bact .mv');
+  if(key!==B.uiKey){B.uiKey=key;btns.forEach((b,i)=>{const mid=mon.m[i];b.style.visibility=mid?'visible':'hidden';if(!mid)return;const mv=MOVES[mid];b.style.background=TYPES[mv.t].c;b.querySelector('.lbl').innerHTML=`<span class="k">${isMob()?'':esc(keyLabel(SET.keys['a'+(i+1)]))}</span> ${esc(mv.n)}<small>${TYPES[mv.t].n} · ${mv.t==='normal'?'melee':mv.p>=85?'spread':'ranged'} · ${mv.p}</small>`})}
+  btns.forEach((b,i)=>{const mid=mon.m[i];if(!mid)return;b.querySelector('.cd').style.width=(F.cd[i]/cdOf(mid)*100)+'%'});
+  const cap=$('#bcap');if(cap)cap.textContent=`CAPSULE (${RUN.kap})`;
+}
+const bcv=$('#bcv'),bc=bcv.getContext('2d');
+function toArena(e){const r=bcv.getBoundingClientRect();return{x:(e.clientX-r.left)/r.width*AW,y:(e.clientY-r.top)/r.height*AH+10}}
+bcv.addEventListener('pointerdown',e=>{if(!B)return;bcv.setPointerCapture(e.pointerId);B.ptr=toArena(e)});
+bcv.addEventListener('pointermove',e=>{if(B&&B.ptr)B.ptr=toArena(e)});
+['pointerup','pointercancel'].forEach(ev=>bcv.addEventListener(ev,()=>{if(B)B.ptr=null}));
+const FLOORS0={north:['#5cb848','#53ad40'],east:['#3f8f3a','#378234'],south:['#ecd79a','#e2cb8a'],west:['#c9a66b','#bb985f'],arena:['#8a8ea6','#7d8199']};
+function pxText(c,t,x,y,col,size,align){c.font=`${size||8}px "Press Start 2P"`;c.textAlign=align||'left';c.fillStyle='#14141f';c.fillText(t,x+1,y+1);c.fillStyle=col;c.fillText(t,x,y);c.textAlign='left'}
+function vtText(c,t,x,y,col,size,align){c.font=`${size||10}px VT323`;c.textAlign=align||'left';c.fillStyle='#14141f';c.fillText(t,x+1,y+1);c.fillStyle=col;c.fillText(t,x,y);c.textAlign='left'}
+function hudPanel(c,x,y,F,right,label){
+  const mon=act(F);const w=128,h=28;const X=right?x-w:x;
+  c.fillStyle='#14141f';c.fillRect(X-1,y-1,w+2,h+2);c.fillStyle='#f6f1e1';c.fillRect(X,y,w,h);c.fillStyle='#d9d2bb';c.fillRect(X,y+h-2,w,2);
+  vtText(c,(label?label+': ':'')+SPECIES[mon.s].n,X+4,y+10,'#14141f',10);vtText(c,'Lv'+mon.l,X+w-4,y+10,'#14141f',10,'right');
+  c.fillStyle='#14141f';c.fillRect(X+4,y+13,w-8,6);c.fillStyle='#4b4f63';c.fillRect(X+5,y+14,w-10,4);
+  const r=clamp(mon.hp/mon.mhp,0,1);c.fillStyle=hpColor(r);c.fillRect(X+5,y+14,Math.round((w-10)*r),4);
+  c.fillStyle='#ffffff55';c.fillRect(X+5,y+14,Math.round((w-10)*r),1);
+  vtText(c,`${mon.hp}/${mon.mhp}`,X+4,y+26,'#4b4f63',9);
+  for(let i=0;i<F.team.length;i++){c.fillStyle='#14141f';c.fillRect(X+w-6-i*7,y+20,6,6);c.fillStyle=F.team[i].hp>0?'#e8453c':'#8a8ea6';c.fillRect(X+w-5-i*7,y+21,4,4)}
+}
+function drawBattle(){
+  if(!B)return;const c=bc;c.imageSmoothingEnabled=false;const now=performance.now();
+  const fl=FLOORS0[B.zone||'arena']||FLOORS0.arena;
+  for(let y=0;y<AH;y+=16)for(let x=0;x<AW;x+=16){c.fillStyle=((x+y)/16)%2?fl[0]:fl[1];c.fillRect(x,y,16,16)}
+  if(!B.zone){c.fillStyle='#ffffff30';c.fillRect(AW/2-1,AY0-14,2,AH-AY0+14);c.strokeStyle='#ffffff30';c.lineWidth=2;c.beginPath();c.arc(AW/2,112,26,0,7);c.stroke()}
+  c.fillStyle='#14141f';c.fillRect(0,AY0-16,AW,2);c.fillStyle='#00000030';c.fillRect(0,0,AW,AY0-14);
+  const ents=[B.me,B.foe].filter(Boolean).sort((a,b)=>a.y-b.y);
+  for(const F of ents){if(F.out&&act(F).hp<=0&&F.faint<=0&&F.ctrl!=='remote')continue;const mon=act(F);if(F===B.foe&&B.catch)continue;
+    const s=monSprite(mon.s,48);const X=Math.round(F.x),Y=Math.round(F.y);
+    c.fillStyle='#00000040';c.fillRect(X-12,Y-2,24,4);c.fillRect(X-9,Y-3,18,6);
+    let alpha=1;if(mon.hp<=0)alpha=Math.max(0,F.ctrl==='remote'?0.25:F.faint/0.9);else if(F.flash>0)alpha=Math.floor(F.flash*30)%2?0.3:1;else if(F.inv>0&&F.dashT>0)alpha=0.5;
+    c.globalAlpha=alpha;c.save();c.translate(X,Y-38);if(F.face>0)c.scale(-1,1);c.drawImage(s,-24,-4);c.restore();c.globalAlpha=1;
+    if(F===B.me){c.fillStyle=G.color;c.fillRect(X-2,Y+3,5,2);c.fillRect(X-1,Y+5,3,1)}}
+  for(const s of B.shots){const X=Math.round(s.x),Y=Math.round(s.y);
+    if(s.cap){c.fillStyle='#14141f';c.fillRect(X-4,Y-4,8,8);c.fillStyle='#e8453c';c.fillRect(X-3,Y-3,6,3);c.fillStyle='#f5f5f5';c.fillRect(X-3,Y,6,3);c.fillStyle='#14141f';c.fillRect(X-3,Y,6,1);continue}
+    const col=TYPES[MOVES[s.mid].t].c;
+    if(s.mel){c.fillStyle='#ffffff';const a=Math.atan2(s.vy,s.vx);for(let i=-3;i<=3;i++){const aa=a+i*0.25;c.fillRect(Math.round(s.x+Math.cos(aa)*6)-1,Math.round(s.y+Math.sin(aa)*6)-1,2,2)}continue}
+    const r=Math.round(s.r);c.fillStyle='#14141f';c.fillRect(X-r-1,Y-r-1,r*2+2,r*2+2);c.fillStyle=col;c.fillRect(X-r,Y-r,r*2,r*2);c.fillStyle='#ffffffb0';c.fillRect(X-r+1,Y-r+1,Math.max(1,r-1),Math.max(1,r-1));
+    c.fillStyle=col+'90';c.fillRect(Math.round(X-s.vx*0.04)-1,Math.round(Y-s.vy*0.04)-1,3,3)}
+  for(const p of B.parts){c.fillStyle=p.c;c.fillRect(Math.round(p.x),Math.round(p.y),2,2)}
+  if(B.catch){const c2=B.catch,el=(now-c2.t0)/1000;const wob=c2.done||el>c2.sh*0.6?0:Math.sin(el*14)*2;const X=Math.round(c2.x+wob),Y=Math.round(c2.y+8);
+    c.fillStyle='#14141f';c.fillRect(X-5,Y-5,10,10);c.fillStyle='#e8453c';c.fillRect(X-4,Y-4,8,4);c.fillStyle='#f5f5f5';c.fillRect(X-4,Y,8,4);c.fillStyle='#14141f';c.fillRect(X-4,Y,8,1);c.fillStyle='#fff';c.fillRect(X-1,Y-1,2,2);
+    if(c2.done){c.fillStyle='#ffcb3d';for(let i=0;i<6;i++){const a=i/6*6.28+now/300;c.fillRect(Math.round(X+Math.cos(a)*12),Math.round(Y+Math.sin(a)*12),2,2)}}}
+  for(const n of B.nums){const k=(now-n.at)/900;vtText(c,n.t,Math.round(n.x),Math.round(n.y-k*14),n.c,12,'center')}
+  hudPanel(c,4,4,B.me,false,'');
+  if(B.foe)hudPanel(c,AW-4,4,B.foe,true,B.legend?'★':B.mode==='wild'?'Wild':'');
+  if(B.foe){const rc=rarOf(act(B.foe).s);if(RAR[act(B.foe).s]!=='common'){c.fillStyle='#14141f';c.fillRect(AW-133,34,60,9);vtText(c,rc.n.toUpperCase(),AW-130,41,rc.c,9)}}
+  if(B.mode!=='wild'&&B.zone===undefined&&B.oppName)vtText(c,'vs '+B.oppName,AW/2,12,'#ffffff',10,'center');
+  const msgs=B.log.filter(m=>now-m.at<2600);msgs.forEach((m,i)=>{const y=AH-8-(msgs.length-1-i)*10;c.font='10px VT323';const w=c.measureText(m.t).width+8;c.fillStyle='#0b0d16c8';c.fillRect(Math.round(AW/2-w/2),y-8,Math.ceil(w),10);vtText(c,m.t,AW/2,y,'#ffffff',10,'center')});
+  if(B.state==='count'){const n=Math.ceil((B.cntEnd-now)/1000);pxText(c,n>0?String(n):'GO!',AW/2,104,'#ffcb3d',16,'center')}
+  if(B.state==='wait'){pxText(c,'WAITING FOR OPPONENT',AW/2,104,'#ffffff',8,'center')}
+  if(B.state==='over'&&B.mode!=='wild'&&B.mode!=='trainer'){const w=B.me.out?'YOU LOSE':'YOU WIN!';pxText(c,w,AW/2,100,B.me.out?'#ef4444':'#ffcb3d',16,'center')}
+  if(B.ptr){c.fillStyle='#ffffff80';c.fillRect(Math.round(B.ptr.x)-1,Math.round(B.ptr.y)-1,3,3)}
+}
+
+/* ===================== SIDE PANELS ===================== */
+let curTab='team',unread=0;
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>switchTab(b.dataset.t));
+function switchTab(t){curTab=t;document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('act',b.dataset.t===t));document.querySelectorAll('.pane').forEach(p=>p.classList.toggle('act',p.id==='pane-'+t));if(t==='chat'){unread=0;$('#cbadge').innerHTML='';const l=$('#chatlog');l.scrollTop=l.scrollHeight}if(t==='players')renderPlayers()}
+function monCard(m,i,inTeam){
+  const st=stats(m),sp=SPECIES[m.s],r=m.hp/st.mhp;const d=document.createElement('div');d.className='card';
+  const cv=mk(48,48);cv.getContext('2d').drawImage(monSprite(m.s,48),0,0);d.appendChild(cv);
+  const info=document.createElement('div');info.className='info';
+  info.innerHTML=`<div class="nm"><span>${esc(sp.n)}</span><span class="lv">Lv ${m.l}</span></div><span class="tb" style="background:${TYPES[sp.t].c}">${TYPES[sp.t].n.toUpperCase()}</span> <span class="tb" style="background:${rarOf(m.s).c};color:#14141f">${rarOf(m.s).n.toUpperCase()}</span> <span class="small">HP ${m.hp}/${st.mhp}</span><div class="bar"><i style="width:${r*100}%;background:${hpColor(r)}"></i></div><div class="bar xp"><i style="width:${Math.min(100,m.xp/xpNeed(m.l)*100)}%"></i></div><div class="small" style="margin-top:3px">${m.m.map(x=>MOVES[x].n).join(' · ')}</div>`;
+  const acts=document.createElement('div');const btn=(t,fn,dis)=>{const b=document.createElement('button');b.className='mini';b.textContent=t;b.disabled=!!dis||!!B||(RUN&&RUN.phase==='arena');b.onclick=fn;acts.appendChild(b)};
+  if(inTeam){if(i>0)btn('↑ Lead',()=>{RUN.team.unshift(RUN.team.splice(i,1)[0]);changed()});if(RUN.team.length>1)btn('→ Box',()=>{RUN.box.push(RUN.team.splice(i,1)[0]);changed()})}
+  else btn('→ Team',()=>{RUN.team.push(RUN.box.splice(i,1)[0]);changed()},RUN.team.length>=6);
+  info.appendChild(acts);d.appendChild(info);return d;
+}
+function changed(){save();renderTeam();pushMt()}
+function renderTeam(){
+  if(!G)return;const el=$('#pane-team');el.innerHTML='';
+  el.insertAdjacentHTML('beforeend',`<div class="stats"><div class="stat">Trainer<b style="color:${G.color}">${esc(G.name)}</b></div><div class="stat">Trophies<b>🏆 ${G.tro}</b></div><div class="stat">Monster Dex<b>${Object.values(G.dex).filter(v=>v).length} / ${Object.keys(SPECIES).length}</b></div><div class="stat">Capsules<b>${RUN?RUN.kap:'-'}</b></div></div>`);
+  if(!RUN){el.insertAdjacentHTML('beforeend',`<div class="sec">NO ACTIVE MATCH</div><div class="small" style="line-height:1.1">Start or join a match in the lobby (bottom of the map). You'll pick a starter and get a few minutes to train before the Arena tournament.</div>`)}
+  else{
+    el.insertAdjacentHTML('beforeend',`<div class="sec">TEAM (${RUN.team.length}/6) — LEAD FIGHTS FIRST</div>`);RUN.team.forEach((m,i)=>el.appendChild(monCard(m,i,true)));
+    if(RUN.box.length){el.insertAdjacentHTML('beforeend',`<div class="sec">BOX (${RUN.box.length})</div>`);RUN.box.forEach((m,i)=>el.appendChild(monCard(m,i,false)))}
+    const lb=document.createElement('button');lb.className='mini';lb.textContent='Leave match';lb.disabled=!!B;lb.onclick=()=>{openModal(`<h3>LEAVE MATCH?</h3><p>Your match team will be lost.</p><div class="acts"><button class="btn ghost" id="mno">STAY</button><button class="btn red" id="myes">LEAVE</button></div>`);$('#mno').onclick=closeModal;$('#myes').onclick=()=>{closeModal();leaveRun()}};
+    el.insertAdjacentHTML('beforeend','<div class="sec">MATCH</div>');el.appendChild(lb);
+  }
+  el.insertAdjacentHTML('beforeend',`<div class="sec">AREAS</div><div class="small" style="line-height:1.15">${Object.values(ZONES).map(z=>`<span style="color:var(--text)">${z.n}</span> · Lv ${z.lv[0]}–${z.lv[1]}`).join('<br>')}</div>`);
+  const cb=document.createElement('button');cb.className='mini';cb.textContent='⚙ Control settings';cb.style.marginTop='12px';cb.onclick=openSettings;el.appendChild(cb);
+  const rb=document.createElement('button');rb.className='mini';rb.textContent='Reset save…';rb.style.marginTop='12px';rb.onclick=()=>{openModal(`<h3>RESET SAVE?</h3><p>Name, trophies and dex will be deleted from this browser.</p><div class="acts"><button class="btn ghost" id="mno">CANCEL</button><button class="btn red" id="myes">RESET</button></div>`);$('#mno').onclick=closeModal;$('#myes').onclick=()=>{try{localStorage.removeItem(SAVE_KEY)}catch(e){}location.reload()}};el.appendChild(rb);
+}
+let lastPlr='';
+function renderPlayers(){
+  const el=$('#pane-players');const list=others();$('#pcount').textContent=ROOM?` ${list.length+1}`:'';
+  let h='';
+  const link=location.origin+location.pathname+(ROOM_ID==='world'?'':'?room='+ROOM_ID);
+  h+=`<div class="sec">ROOM: ${esc(ROOM_ID.toUpperCase())}</div><div class="small" style="line-height:1.15;margin-bottom:8px">Everyone who opens this link at the same time plays together:<br><span style="color:var(--text);word-break:break-all">${esc(link)}</span></div><div class="lrow" style="margin-bottom:12px"><input id="proom" maxlength="32" placeholder="private room name" style="flex:1;min-width:0;background:#0b0d16;border:2px solid #000;color:var(--text);font-family:inherit;font-size:18px;padding:3px 6px"><button class="btn ghost" id="pgo">JOIN ROOM</button></div>`;
+  if(!ROOM)h+=`<div class="small">Multiplayer could not start in this browser — you're playing solo (the Arena pits you against Champion Bot).</div>`;
+  else{
+    const st=p=>{const mt=p.mt;if(!mt)return'in lobby';if(mt.st==='train')return`training · ${fmt(+mt.end-Date.now())}`;return({wait:'in the Arena',duel:'dueling',out:'knocked out',champ:'🏆 champion'})[mt.st]||'in a match'};
+    if(G)h+=`<div class="plr"><span class="sw" style="background:${G.color}"></span><div class="who"><b>${esc(G.name)} (you)</b><span class="small">${st({mt:mtInfo()})} · 🏆${G.tro}</span></div></div>`;
+    if(!list.length)h+=`<div class="small" style="line-height:1.15;margin-top:8px">Nobody else is here yet. Send the link above to friends — finding each other can take a few seconds.</div>`;
+    for(const p of list){const pr=p.presence;const same=RUN&&pr.mt&&pr.mt.id===RUN.id;
+      const canB=canSpar()&&!myCh&&pr.mt&&pr.mt.st==='train'&&!pr.bt;const pend=myCh&&myCh.to===p.peer;
+      h+=`<div class="plr"><span class="sw" style="background:${validColor(pr.c)}"></span><div class="who"><b>${esc(cleanName(pr.n))}${p.guest?' (guest)':''}${same?' ★':''}</b><span class="small">${esc(st(pr))} · 🏆${Math.max(0,Math.floor(+pr.tr)||0)}${typeof pingOf==='function'&&pingOf(p.peer)!=null?` · <span style="color:${pingOf(p.peer)>150?'#ef4444':pingOf(p.peer)>80?'#f2c230':'#3ddc6b'}">${pingOf(p.peer)} ms</span>`:''}</span></div>${pr.mt&&pr.mt.st==='train'?`<button class="btn" data-ch="${esc(p.peer)}" ${canB?'':'disabled'}>${pend?'…':'⚔ BATTLE'}</button>`:''}</div>`}
+    if(RUN)h+=`<div class="small" style="margin-top:6px;line-height:1.1">★ = in your match · During training you can challenge anyone who's training to a friendly real-time battle (winner gets XP).</div>`;
+  }
+  if(h!==lastPlr){if(document.activeElement&&document.activeElement.id==='proom')return;lastPlr=h;el.innerHTML=h;bindPlayers(el);const go=()=>{const v=($('#proom').value||'').trim().toLowerCase().replace(/[^a-z0-9_-]/g,'').slice(0,32);location.search=v?'?room='+v:''};const b=$('#pgo');if(b){b.onclick=go;$('#proom').addEventListener('keydown',e=>{if(e.key==='Enter')go()})}}
+}
+function bindPlayers(el){el.querySelectorAll('[data-ch]').forEach(b=>b.onclick=()=>challenge(b.dataset.ch))}
+function addChat(name,col,t){const l=$('#chatlog');const d=document.createElement('div');d.className='m';d.innerHTML=`<span style="color:${validColor(col)}">${esc(name)}:</span> ${esc(t)}`;l.appendChild(d);l.scrollTop=l.scrollHeight;if(curTab!=='chat'){unread++;$('#cbadge').innerHTML=`<span class="badge">${unread}</span>`}}
+function sysChat(t){const l=$('#chatlog');const d=document.createElement('div');d.className='m sys';d.textContent='» '+t;l.appendChild(d);l.scrollTop=l.scrollHeight}
+$('#chatform').addEventListener('submit',e=>{e.preventDefault();const inp=$('#chatin');const t=inp.value.replace(/[\u0000-\u001f]/g,'').trim().slice(0,120);if(!t||!G)return;inp.value='';chatN++;pres({chat:{i:Date.now()%1e9+chatN,t}});myBubble={t,until:performance.now()+6000};addChat(G.name,G.color,t)});
+
+/* ===================== LOOP ===================== */
+let last=performance.now(),slow=0;
+function frame(now){const dt=Math.max(0,Math.min(0.05,(now-last)/1000));last=now;T+=dt;
+  try{if(G){if(!B)updatePlayer(dt);updateOthers(dt);if(B){bUpdate(dt);if(B){drawBattle();updateBattleUI()}}else drawWorld();
+}}catch(e){console.error(e)}
+  requestAnimationFrame(frame)}
+
+/* ===================== BOOT ===================== */
+applyControls();
+G=loadSave();
+if(G)begin();else buildStart();
+requestAnimationFrame(frame);
+setInterval(()=>{try{if(G){matchTick();arenaTick();checkChallenges();if(!RUN)renderLobby();renderPlayers()}}catch(e){console.error(e)}},400);
+initRoom();
+</script>
+</body>
+</html>
