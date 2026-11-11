@@ -127,7 +127,7 @@ select{background:#0b0d16;color:var(--text);border:2px solid #000;font-family:in
 /* modal & start */
 #modal{position:absolute;inset:0;background:#05070cb0;display:none;align-items:center;justify-content:center;z-index:7}
 #modal.on{display:flex}
-.box{background:var(--panel);border:3px solid #000;box-shadow:5px 5px 0 #000;padding:16px;max-width:520px;width:92%;text-align:center;max-height:92%;overflow:auto}
+.box{background:var(--panel);border:3px solid #000;box-shadow:5px 5px 0 #000;padding:16px;max-width:520px;width:92%;text-align:center}
 .box h3{font-family:'Press Start 2P';font-size:11px;margin:0 0 10px;color:var(--accent);line-height:1.5}
 .box p{color:var(--muted);font-size:19px;margin:0 0 14px;line-height:1.1}
 .box .acts{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
@@ -137,13 +137,6 @@ select{background:#0b0d16;color:var(--text);border:2px solid #000;font-family:in
 .stc:hover{border-color:var(--accent)}
 #start{position:fixed;inset:0;background:#10121c;display:flex;align-items:center;justify-content:center;z-index:10;overflow:auto;padding:20px}
 #start.off{display:none}
-#menu{position:fixed;inset:0;background:radial-gradient(circle at 50% 20%,#2a3a24 0%,#10121c 70%);display:flex;align-items:center;justify-content:center;z-index:9;overflow:auto;padding:20px}
-#menu.off{display:none}
-#menu .sbox{max-width:460px}
-.mbtn{display:block;width:100%;font-size:12px;padding:14px 12px;margin-bottom:10px}
-.mstar{display:flex;justify-content:center;gap:10px;margin:0 0 18px}
-.mstar canvas{width:72px;height:72px}
-.mlist{max-height:46vh;overflow:auto;text-align:left;margin-bottom:10px}
 .sbox{max-width:520px;width:100%;text-align:center}
 .sbox h1{font-family:'Press Start 2P';color:var(--accent);font-size:22px;line-height:1.5;margin:0 0 8px;text-shadow:3px 3px 0 #9a5b00}
 .sbox .tag2{color:var(--muted);margin-bottom:22px;font-size:21px;line-height:1.1}
@@ -168,7 +161,7 @@ select{background:#0b0d16;color:var(--text);border:2px solid #000;font-family:in
 <div id="app">
   <div id="stage">
     <canvas id="world"></canvas>
-    <div class="hud"><span class="chip timer" id="htimer" style="pointer-events:auto;cursor:pointer">LOBBY</span><span class="chip" id="hzone">Town</span><span class="chip" id="hkap">Capsules -</span><span class="chip" id="hon"><span class="dot"></span>Solo</span><button class="chip" id="hmenu" style="pointer-events:auto;cursor:pointer;color:var(--text);font-family:inherit">☰ MENU</button><button class="chip" id="hmap" style="pointer-events:auto;cursor:pointer;color:var(--text);font-family:inherit">🗺 MAP</button><button class="chip" id="hset">⚙ CONTROLS</button></div>
+    <div class="hud"><span class="chip timer" id="htimer" style="pointer-events:auto;cursor:pointer">LOBBY</span><span class="chip" id="hzone">Town</span><span class="chip" id="hkap">Capsules -</span><span class="chip" id="hon"><span class="dot"></span>Solo</span><button class="chip" id="hmap" style="pointer-events:auto;cursor:pointer;color:var(--text);font-family:inherit">🗺 MAP</button><button class="chip" id="hset">⚙ CONTROLS</button></div>
     <div id="toast"></div>
     <div id="help">Arrows/WASD: walk · M: map · Grass/ferns/reeds/scree: wild monsters · Red roof: Heal Center · Enter: chat</div>
     <div id="dpad"><span></span><button data-d="up">▲</button><span></span><button data-d="left">◀</button><span></span><button data-d="right">▶</button><span></span><button data-d="down">▼</button><span></span></div>
@@ -189,7 +182,6 @@ select{background:#0b0d16;color:var(--text);border:2px solid #000;font-family:in
   </aside>
 </div>
 
-<div id="menu" class="off"><div class="sbox"><h1>POCKET<br>PEASANTS</h1><div class="tag2" style="font-family:'Press Start 2P';font-size:9px;color:#ef4444;margin:-4px 0 16px">BUDGET EDITION™</div><div class="mstar" id="mstar"></div><div id="menuBody"></div></div></div>
 <div id="start">
   <div class="sbox">
     <h1>POCKET<br>PEASANTS</h1>
@@ -633,38 +625,6 @@ function buildStart(){
   $('#sgo').onclick=()=>{G={name:cleanName($('#sname').value),color:pickColor,dex:{},tro:0,x:30,y:24,d:'down',run:null};save();begin()};
   $('#sname').addEventListener('keydown',e=>{if(e.key==='Enter')$('#sgo').click()});
 }
-/* ===================== START MENU ===================== */
-let MENU_VIEW='main',lastMenu='';
-function menuOpen(){return!$('#menu').classList.contains('off')}
-function openMenu(v){if(B&&!B.closing)return;MENU_VIEW=v||'main';lastMenu='';closeMap();$('#menu').classList.remove('off');held.length=0;
-  const ms=$('#mstar');if(!ms.children.length)STARTERS.forEach(sid=>{const c=mk(48,48);const x=c.getContext('2d');x.imageSmoothingEnabled=false;x.drawImage(monSprite(sid,24),0,0,48,48);ms.appendChild(c)});renderMenu()}
-function closeMenu(){$('#menu').classList.add('off')}
-function renderMenu(){
-  if(!menuOpen()||!G)return;let h='';const active=RUN&&!RUN.free;
-  if(MENU_VIEW==='main'){
-    h+=`<div class="tag2">Hi ${esc(G.name)}! ${active?'You are in a lobby.':'What do you want to play?'}</div>`;
-    if(active){const ph=RUN.phase==='lobby'?'waiting in lobby':RUN.phase==='train'?`training · ${fmt(RUN.end-Date.now())} left`:'in the Arena';h+=`<button class="btn green mbtn" data-m="cont">▶ CONTINUE${RUN.cfg.name?' · '+esc(RUN.cfg.name.toUpperCase()):''} (${ph})</button>`}
-    h+=`<button class="btn ${active?'ghost':''} mbtn" data-m="create">＋ CREATE LOBBY</button><button class="btn ${active?'ghost':''} mbtn" data-m="join">⇢ JOIN LOBBY</button>`;
-    h+=`<button class="btn ghost mbtn" data-m="free">${RUN&&RUN.free?'▶ CONTINUE FREE PLAY':G.freeRun?'FREE PLAY (CONTINUE)':'FREE PLAY'}</button><button class="btn ghost mbtn" data-m="settings">⚙ SETTINGS</button>`;
-    if(active)h+=`<div class="small">Creating or joining another lobby leaves your current one.</div>`;
-  }else if(MENU_VIEW==='join'){
-    const ms=runningMatches();h+=`<div class="tag2">JOIN A LOBBY</div><div class="mlist">`;
-    if(!ROOM)h+=`<div class="small">Multiplayer is not connected — no lobbies can be found.</div>`;
-    else if(!ms.length)h+=`<div class="small">Searching for open lobbies… none found yet. Players in the same room show up within a few seconds.</div>`;
-    for(const m of ms)h+=`<div class="plr" style="align-items:flex-start"><div class="who"><b>${esc(m.cfg.name||m.names[0]+"'s lobby")}</b><span class="small">${m.names.length} player${m.names.length>1?'s':''} · ${lobbyLine(m)}<br>${esc(cfgSummary(m.cfg))} · ${m.cfg.dur} min</span></div><button class="btn green" data-m="joinid" data-id="${esc(m.id)}">JOIN</button></div>`;
-    h+=`</div><button class="btn ghost mbtn" data-m="back">◀ BACK</button>`;
-  }
-  if(h===lastMenu)return;lastMenu=h;$('#menuBody').innerHTML=h;
-  document.querySelectorAll('#menuBody [data-m]').forEach(b=>b.onclick=()=>{const a=b.dataset.m;
-    if(a==='cont'){closeMenu();if(RUN&&RUN.phase==='arena')showArena();switchTab('lobby')}
-    else if(a==='create'){closeMenu();openCreate()}
-    else if(a==='join'){MENU_VIEW='join';lastMenu='';renderMenu()}
-    else if(a==='joinid'){closeMenu();joinLobby(b.dataset.id)}
-    else if(a==='back'){MENU_VIEW='main';lastMenu='';renderMenu()}
-    else if(a==='free'){closeMenu();if(!(RUN&&RUN.free))startFree()}
-    else if(a==='settings'){closeMenu();openSettings()}});
-}
-$('#hmenu').onclick=()=>openMenu('main');
 function begin(){
   $('#start').classList.add('off');
   RUN=G.run||G.freeRun||null;if(RUN){RUN.beat=RUN.beat||{};RUN.leg=RUN.leg||{}}
@@ -674,7 +634,6 @@ function begin(){
   P.fol={x:P.x,y:P.y,tx:P.x,ty:P.y};
   renderTeam();updateHud();pushFull();sysChat(`Welcome to Pocket Peasants (Budget Edition), ${G.name}! Batteries not included.`);
   if(RUN&&RUN.phase==='arena_pending'){RUN.phase='train';enterArena()}else if(RUN&&RUN.phase==='arena')showArena();
-  openMenu('main');
 }
 
 /* ===================== CONTROL SETTINGS ===================== */
@@ -697,7 +656,7 @@ let capturing=null;
 function openSettings(){
   const segBtn=(group,val,label,cur)=>`<button class="btn ${cur===val?'sel':''}" data-g="${group}" data-v="${val}">${label}</button>`;
   const mob=isMob();
-  let h=`<h3>⚙ SETTINGS</h3><div class="lbl2">PROFILE</div><div class="lrow" style="margin:4px 0 6px"><input id="pname" maxlength="16" value="${esc(G?G.name:'')}" style="flex:1;min-width:0;background:#0b0d16;border:2px solid #000;color:var(--text);font-family:inherit;font-size:18px;padding:3px 6px"><button class="btn ghost" id="pnameok">SAVE</button></div><div class="colors" style="margin-bottom:12px">${COLORS.map(c=>`<button data-col="${c}" style="background:${c};${G&&G.color===c?'outline:3px solid #fff':''}"></button>`).join('')}</div><div class="lbl2">CONTROL MODE</div><div class="seg">${segBtn('ctrl','auto','AUTO',SET.ctrl)}${segBtn('ctrl','pc','PC',SET.ctrl)}${segBtn('ctrl','mobile','MOBILE',SET.ctrl)}</div>
+  let h=`<h3>⚙ CONTROLS</h3><div class="lbl2">CONTROL MODE</div><div class="seg">${segBtn('ctrl','auto','AUTO',SET.ctrl)}${segBtn('ctrl','pc','PC',SET.ctrl)}${segBtn('ctrl','mobile','MOBILE',SET.ctrl)}</div>
   <div class="small" style="text-align:left;margin:-6px 0 10px">Currently: ${mob?'mobile (touch D-pad + buttons)':'PC (keyboard)'}${SET.ctrl==='auto'?' — chosen automatically':''}</div>`;
   if(mob)h+=`<div class="lbl2">D-PAD SIZE</div><div class="seg">${segBtn('dp','s','SMALL',SET.dp)}${segBtn('dp','m','MEDIUM',SET.dp)}${segBtn('dp','l','LARGE',SET.dp)}</div><div class="lbl2">D-PAD SIDE</div><div class="seg">${segBtn('side','left','LEFT',SET.side)}${segBtn('side','right','RIGHT',SET.side)}</div><div class="small" style="text-align:left;margin-bottom:10px">Tip: in battles you can also hold your finger on the arena to walk there.</div>`;
   else{h+=`<div class="lbl2">KEY BINDINGS</div><div class="krow"><span>Move</span><span class="small">WASD / Arrow keys</span></div>`;
@@ -705,8 +664,6 @@ function openSettings(){
   if(typeof netSettingsHtml==='function')h+=netSettingsHtml();
   h+=`<div class="acts" style="margin-top:12px"><button class="btn ghost" id="sreset">RESET</button><button class="btn" id="sdone">DONE</button></div>`;
   openModal(h);if(typeof bindNetSettings==='function')bindNetSettings();
-  const pn=$('#pnameok');if(pn)pn.onclick=()=>{G.name=cleanName($('#pname').value);save();pushFull();renderTeam();toast('Name saved.')};
-  document.querySelectorAll('#mbox [data-col]').forEach(b=>b.onclick=()=>{G.color=b.dataset.col;save();pushFull();renderTeam();openSettings()});
   document.querySelectorAll('#mbox [data-g]').forEach(b=>b.onclick=()=>{SET[b.dataset.g]=b.dataset.v;saveSet();applyControls();openSettings()});
   document.querySelectorAll('#mbox [data-key]').forEach(b=>b.onclick=()=>{capturing=b.dataset.key;openSettings()});
   $('#sreset').onclick=()=>{SET={ctrl:'auto',dp:'m',side:'right',keys:{...DEF_KEYS}};capturing=null;saveSet();applyControls();openSettings()};
@@ -736,7 +693,6 @@ addEventListener('keydown',e=>{
     return}
   if((e.key==='m'||e.key==='M')&&G){toggleMap();return}
   if(e.key==='Escape'&&mapOpen()){closeMap();return}
-  if(e.key==='Escape'&&G&&!B){if(menuOpen())closeMenu();else if(!$('#modal').classList.contains('on'))openMenu('main');return}
   if(e.key==='Enter'&&G){e.preventDefault();switchTab('chat');$('#chatin').focus()}
 });
 addEventListener('keyup',e=>{const d=KEYMAP[e.key];if(d){const i=held.indexOf(d);if(i>=0)held.splice(i,1)}if(B&&B.aim&&normKey(e.key)===SET.keys.cap)capRelease()});
@@ -748,7 +704,7 @@ function heldDir(){return held[held.length-1]||null}
 
 /* ===================== OVERWORLD ===================== */
 const STEP=0.16;
-function modalOpen(){return menuOpen()||$('#modal').classList.contains('on')||$('#arena').classList.contains('on')||$('#mapov').classList.contains('on')||!!FX}
+function modalOpen(){return $('#modal').classList.contains('on')||$('#arena').classList.contains('on')||$('#mapov').classList.contains('on')||!!FX}
 function updatePlayer(dt){
   if(P.moving){P.mt+=dt/STEP;P.ph+=dt;
     if(P.mt>=1){P.moving=false;P.x=P.tx;P.y=P.ty;P.fx=P.x;P.fy=P.y;onArrive();if(B)return}
@@ -1844,7 +1800,7 @@ applyControls();
 G=loadSave();
 if(G)begin();else buildStart();
 requestAnimationFrame(frame);
-setInterval(()=>{try{if(G){matchTick();arenaTick();checkChallenges();renderMenu();if(!RUN||RUN.free||RUN.phase==='lobby')renderLobby();renderPlayers();renderLobbyPane()}}catch(e){console.error(e)}},400);
+setInterval(()=>{try{if(G){matchTick();arenaTick();checkChallenges();if(!RUN||RUN.free||RUN.phase==='lobby')renderLobby();renderPlayers();renderLobbyPane()}}catch(e){console.error(e)}},400);
 initRoom();
 </script>
 </body>
