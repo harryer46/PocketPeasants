@@ -285,6 +285,7 @@ const TURN_CONFIG = {
 function showErr(m){try{const b=document.getElementById('errbox');if(!b)return;b.textContent='⚠ Error: '+String(m).slice(0,220)+' — please send this to the developer.';b.style.display='block';clearTimeout(showErr.t);showErr.t=setTimeout(()=>b.style.display='none',12000)}catch(e){}}
 addEventListener('error',e=>showErr((e.message||'error')+(e.lineno?' @'+e.lineno:'')));
 addEventListener('unhandledrejection',e=>showErr(e.reason&&e.reason.message||e.reason||'promise error'));
+document.addEventListener('visibilitychange',()=>{if(document.hidden||!B)return;const n=performance.now();B.lqT=n;B.tbT=n;if(B.t0)B.t0=Math.max(B.t0,n-20000)});
 /* ===================== DATA ===================== */
 const TYPES={normal:{n:'Normal',c:'#8b8f9c'},fire:{n:'Fire',c:'#f0642a'},water:{n:'Water',c:'#3d8bf2'},grass:{n:'Grass',c:'#2fb556'},electric:{n:'Electric',c:'#d9a90b'},rock:{n:'Rock',c:'#a2742c'},flying:{n:'Flying',c:'#7c83f0'}};
 const EFF={fire:{grass:2,water:.5,fire:.5,rock:.5},water:{fire:2,rock:2,grass:.5,water:.5},grass:{water:2,rock:2,fire:.5,grass:.5,flying:.5},electric:{water:2,flying:2,grass:.5,electric:.5,rock:0},rock:{fire:2,flying:2,grass:.5},flying:{grass:2,electric:.5,rock:.5},normal:{rock:.5}};
@@ -686,7 +687,7 @@ function begin(){
   $('#start').classList.add('off');
   RUN=G.run||G.freeRun||null;if(RUN){RUN.beat=RUN.beat||{};RUN.leg=RUN.leg||{}}
   if(RUN&&RUN.phase==='train'&&Date.now()>=RUN.end){RUN.phase='arena_pending'}
-  if(RUN&&RUN.phase==='arena'){RUN.res=RUN.res||[];if(RUN.st==='duel'){RUN.res.push([RUN.r,'?',0]);RUN.r++;RUN.st=RUN.r>cfgOf().rounds?'done':'wait'}if(RUN.st==='pick')RUN.st='wait'}
+  if(RUN&&RUN.phase==='arena'){RUN.res=RUN.res||[];if(RUN.st==='duel'){RUN.res.push([RUN.r,RUN.dopp||'?',0]);RUN.r++;RUN.st=RUN.r>cfgOf().rounds?'done':'wait'}if(RUN.st==='pick')RUN.st='wait'}
   P.x=P.fx=G.x;P.y=P.fy=G.y;P.d=G.d||'down';if(!walkable(P.x,P.y)){P.x=P.fx=30;P.y=P.fy=24}
   P.fol={x:P.x,y:P.y,tx:P.x,ty:P.y};
   renderTeam();updateHud();pushFull();sysChat(`Welcome to Pocket Peasants (Budget Edition), ${G.name}! Batteries not included.`);
@@ -945,7 +946,7 @@ let ROOM=null,MYPEER=null;
 const OTH=new Map();let myBubble=null,chatN=0;
 function pres(p){if(!ROOM)return;try{ROOM.presence(p).catch(()=>{})}catch(e){}}
 function leadInfo(){return RUN&&RUN.team[0]?[RUN.team[0].s,RUN.team[0].l]:null}
-function mtInfo(){if(RUN&&RUN.free)return{id:RUN.id,end:0,r:0,st:'free',prev:null};return RUN?{id:RUN.id,end:RUN.end,r:RUN.phase==='arena'?RUN.r:0,st:RUN.phase==='arena'?RUN.st:RUN.phase==='lobby'?'lobby':'train',prev:RUN.prev||null,res:RUN.res||[],cfg:RUN.cfg}:null}
+function mtInfo(){if(RUN&&RUN.free)return{id:RUN.id,end:0,r:0,st:'free',prev:null};return RUN?{id:RUN.id,end:RUN.end,r:RUN.phase==='arena'?RUN.r:0,st:RUN.phase==='arena'?RUN.st:RUN.phase==='lobby'?'lobby':'train',prev:RUN.prev||null,res:RUN.res||[],cfg:RUN.cfg,rs:RUN.rs||0}:null}
 function pushFull(){if(!G)return;pres({n:G.name,c:G.color,x:P.moving?P.tx:P.x,y:P.moving?P.ty:P.y,d:P.d,tr:G.tro,ld:leadInfo(),bt:B?(B.mode==='wild'?'wild':'duel'):null,mt:mtInfo()})}
 function pushMt(){pres({mt:mtInfo(),ld:leadInfo()})}
 function setConn(on,label){$('#hon').innerHTML=`<span class="dot ${on?'on':''}"></span>${label||(on?'Online':'Offline')}`}
@@ -1124,7 +1125,7 @@ function pickStarter(cb){
 function startRun(id,end,sid,prev,cfg,phase){
   phase=phase||'train';if(phase==='train'&&end<Date.now()+5000){toast('That game is almost over.');return}
   cfg=sanitizeCfg(cfg||DEF_CFG);
-  RUN={id,end:phase==='lobby'?0:end,cfg,phase,team:[newMon(sid,START_LV)],box:[],kap:cfg.kap,r:1,st:phase==='lobby'?'lobby':'train',res:[],prev:prev||null,beat:{},leg:{}};G.dex[sid]=1;$('#arena').classList.remove('on');
+  RUN={id,starter:sid,rs:cfg.host===(MYPEER||'me')?0:null,end:phase==='lobby'?0:end,cfg,phase,team:[newMon(sid,START_LV)],box:[],kap:cfg.kap,r:1,st:phase==='lobby'?'lobby':'train',res:[],prev:prev||null,beat:{},leg:{}};G.dex[sid]=1;$('#arena').classList.remove('on');
   save();$('#lobby').dataset.h='';renderLobby();renderTeam();updateHud();pushMt();teleport(30,24);
   if(phase==='lobby'){sysChat(`You're in the lobby${cfg.name?' "'+cfg.name+'"':''} (${cfgSummary(cfg)}). The host starts the game.`);switchTab('lobby')}
   else{sysChat(`Game${cfg.name?' "'+cfg.name+'"':''} running! ${fmt(end-Date.now())} to train (${cfgSummary(cfg)}). Walk into the Arena when you're ready.`);toast('Training started! Head into the grass.')}
@@ -1139,10 +1140,31 @@ function hostAddTime(){if(!isHost())return;RUN.end=Math.max(RUN.end,Date.now())+
 function syncHost(){
   if(!RUN||RUN.free||!ROOM)return;const h=hostPeer();if(!h||h===(MYPEER||'me'))return;
   const p=findPeer(h),mt=p&&p.presence.mt;if(!mt||mt.id!==RUN.id)return;const end=+mt.end;
+  const rs=Math.floor(+mt.rs)||0;if(RUN.rs==null){RUN.rs=rs}else if(rs>RUN.rs){resetRun(rs);return}
   if(RUN.phase==='lobby'&&mt.st!=='lobby'&&end>0){RUN.phase='train';RUN.st='train';RUN.end=end;save();pushMt();$('#lobby').dataset.h='';renderLobby();sysChat('The host started the game! Go train.');toast('Game started! Head into the grass.');return}
   if((RUN.phase==='train'||RUN.phase==='arena')&&end>0&&Math.abs(end-RUN.end)>1500){RUN.end=end;save();pushMt();if(RUN.phase==='train')toast(`Timer changed by the host: ${fmt(end-Date.now())} left.`)}
 }
-function leaveRun(){RUN=G.freeRun||null;if(RUN){RUN.beat=RUN.beat||{};RUN.leg=RUN.leg||{}}save();$('#arena').classList.remove('on');pres({mt:mtInfo(),ld:leadInfo()});afterRunChange();if(RUN)toast('Back to free play.')}
+// close a running battle, the arena screen and any open dialog immediately (used when leaving or resetting a lobby)
+function hardExit(){
+  if(B){B.state='over';B=null;FX=null;try{fxc.clearRect(0,0,fxcv.width,fxcv.height)}catch(e){}$('#battle').classList.remove('on');$('#stage').style.transform='';try{placeDpad()}catch(e){}pres({du:null,bt:null})}
+  if(myCh)cancelCh();if(incoming){incoming=null}
+  closeModal();closeMap();$('#arena').classList.remove('on');$('#abox').dataset.h='';held.length=0;
+}
+function leaveRun(){
+  hardExit();RUN=G.freeRun||null;if(RUN){RUN.beat=RUN.beat||{};RUN.leg=RUN.leg||{}}
+  P.d='down';teleport(30,24);save();pres({mt:mtInfo(),ld:leadInfo()});afterRunChange();
+  switchTab('lobby');if(isMob())$('#side').classList.add('open');
+  if(RUN)toast('Back at the start — free play. Join or create a lobby any time.');else startFree();
+}
+// host: send everyone in this lobby back to the start (lobby phase, fresh starter, no timer)
+function resetRun(n){
+  hardExit();const c=RUN.cfg,sid=RUN.starter||(RUN.team[0]&&RUN.team[0].s)||STARTERS[0];
+  Object.assign(RUN,{rs:n,phase:'lobby',st:'lobby',end:0,r:1,res:[],pick:null,dopp:null,trophy:0,team:[newMon(sid,START_LV)],box:[],kap:c.kap,beat:{},leg:{}});
+  P.d='down';teleport(30,24);save();afterRunChange();switchTab('lobby');
+  sysChat('The host reset the session — everyone is back at the start. The host starts the game again.');toast('Session reset — back at the start!');
+}
+function hostReset(){if(!isHost())return;openModal(`<h3>RESET SESSION?</h3><p>Everyone in this lobby goes back to the start: fresh starter, no catches, timer and Arena results cleared. Then you can start again.</p><div class="acts"><button class="btn ghost" id="mno">CANCEL</button><button class="btn red" id="myes">RESET</button></div>`);
+  $('#mno').onclick=closeModal;$('#myes').onclick=()=>{closeModal();resetRun((RUN.rs||0)+1)}}
 function matchTick(){
   if(!RUN||!G){$('#htimer').textContent='LOBBY';$('#htimer').classList.remove('hot');return}
   if(RUN.free){$('#htimer').textContent='FREE PLAY';$('#htimer').classList.remove('hot');return}const tm=$('#htimer');
@@ -1165,17 +1187,20 @@ function enterArena(early){
 function pickArenaTeam(){
   const n=cfgOf().team;
   if(RUN.team.length<=n){RUN.pick=RUN.team.map((_,i)=>i);RUN.st='wait';save();pushMt();showArena();return}
-  let sel=RUN.team.map((_,i)=>i).slice(0,n);let left=30;
+  let sel=RUN.team.map((_,i)=>i).slice(0,n);let left=30;const run=RUN;
   const render=()=>{openModal(`<h3>CHOOSE ${n} MONSTERS</h3><p>Pick your Arena team (${sel.length}/${n}). Auto-confirm in ${left}s.</p><div style="display:flex;flex-direction:column;gap:6px;text-align:left;max-height:50vh;overflow:auto">${RUN.team.map((m,i)=>`<button class="btn ${sel.includes(i)?'green':'ghost'}" data-pk="${i}" style="text-align:left;font-family:VT323;font-size:19px">${sel.includes(i)?'✓ ':''}${esc(SPECIES[m.s].n)} · Lv ${m.l} · ${TYPES[SPECIES[m.s].t].n}</button>`).join('')}</div><div class="acts" style="margin-top:10px"><button class="btn" id="myes" ${sel.length? '':'disabled'}>CONFIRM</button></div>`);
     document.querySelectorAll('[data-pk]').forEach(b=>b.onclick=()=>{const i=+b.dataset.pk;if(sel.includes(i))sel=sel.filter(x=>x!==i);else if(sel.length<n)sel.push(i);render()});$('#myes').onclick=done};
-  const done=()=>{clearInterval(t);closeModal();RUN.pick=sel.length?sel.sort((a,b)=>a-b):[0];RUN.st='wait';save();pushMt();showArena()};
-  const t=setInterval(()=>{left--;if(left<=0)done();else{const p=document.querySelector('#mbox p');if(p)p.textContent=`Pick your Arena team (${sel.length}/${n}). Auto-confirm in ${left}s.`}},1000);
+  const done=()=>{clearInterval(t);if(RUN!==run||RUN.phase!=='arena')return;closeModal();RUN.pick=sel.length?sel.sort((a,b)=>a-b):[0];RUN.st='wait';save();pushMt();showArena()};
+  const t=setInterval(()=>{if(RUN!==run||RUN.phase!=='arena'){clearInterval(t);return}left--;if(left<=0)done();else{const p=document.querySelector('#mbox p');if(p)p.textContent=`Pick your Arena team (${sel.length}/${n}). Auto-confirm in ${left}s.`}},1000);
   render();
 }
 function cleanRes(a){return Array.isArray(a)?a.slice(0,12).filter(x=>Array.isArray(x)&&Number.isFinite(+x[0])&&typeof x[1]==='string'&&x[1].length<40).map(x=>[Math.floor(+x[0]),x[1],[0,0.5,1].includes(+x[2])?+x[2]:0]):[]}
+const PACT=new Map(),DECT=new Map();
+function peerStale(p,ms){const a=PACT.get(p.peer);return!!a&&!p.me&&Date.now()-a.t>ms}
 function participants(){
   const list=[{peer:MYPEER||'me',me:true,n:G.name,c:G.color,r:RUN.r,st:RUN.st,res:RUN.res||[]}];
-  for(const p of others()){const mt=p.presence.mt;if(mt&&mt.id===RUN.id)list.push({peer:p.peer,n:cleanName(p.presence.n),c:validColor(p.presence.c),r:Math.floor(+mt.r)||0,st:typeof mt.st==='string'?mt.st:'train',res:cleanRes(mt.res)})}
+  for(const p of others()){const mt=p.presence.mt;if(mt&&mt.id===RUN.id){const e={peer:p.peer,n:cleanName(p.presence.n),c:validColor(p.presence.c),r:Math.floor(+mt.r)||0,st:typeof mt.st==='string'?mt.st:'train',res:cleanRes(mt.res)};list.push(e);
+    const sig=e.st+'|'+e.r+'|'+e.res.length,a=PACT.get(p.peer);if(!a||a.sig!==sig)PACT.set(p.peer,{sig,t:Date.now()})}}
   return list;
 }
 // Swiss system: score = wins (+0.5 draw); tiebreak Buchholz (sum of opponents' scores)
@@ -1195,10 +1220,15 @@ function arenaTick(){
   if(!B)showArena();
   if(B||RUN.st!=='wait')return;
   const parts=participants();
-  if(parts.some(p=>p.st==='train'||p.st==='pick'||p.st==='lobby'))return;
+  // players still training/picking hold the start — unless the timer ran out 45 s ago (phone asleep / tab in background)
+  const late=Date.now()>RUN.end+45000;
+  if(!late&&parts.some(p=>p.st==='train'||p.st==='pick'||p.st==='lobby'))return;
   if(RUN.r===1&&!(RUN.res||[]).length&&Date.now()<RUN.end&&!(parts.length>1))return;
-  if(parts.some(p=>p.st!=='done'&&p.r<RUN.r))return;
-  const pool=parts.filter(p=>p.r>=RUN.r);const me=MYPEER||'me';
+  // a player still in an earlier round only blocks if that round is really undecided (opponent has no result against them) and they are not frozen
+  // (a decided player gets 20 s to publish their own result before the others move on without them)
+  const decided=p=>{if(!parts.some(q=>q.res.some(x=>x[0]===p.r&&x[1]===p.peer)))return false;const k=p.peer+':'+p.r;if(!DECT.has(k))DECT.set(k,Date.now());return Date.now()-DECT.get(k)>20000};
+  if(parts.some(p=>p.st!=='done'&&p.r<RUN.r&&p.r>0&&!decided(p)&&!peerStale(p,150000)))return;
+  const pool=parts.filter(p=>p.r>=RUN.r&&p.st!=='pick'&&p.st!=='train'&&p.st!=='lobby'&&!p.res.some(x=>x[0]===RUN.r));const me=MYPEER||'me';
   const pr=pairRound(pool,RUN.r).find(x=>x[0]===me||x[1]===me);if(!pr)return;
   const opp=pr[0]===me?pr[1]:pr[0];
   if(opp==='bot')startAiDuel();else startDuel(opp,RUN.id+'-'+RUN.r+'-'+[me,opp].sort().join('-'));
@@ -1214,7 +1244,7 @@ function showArena(){
   let my;
   if(allDone)my=tab[0]&&tab[0].me?'🏆 You won the tournament!':`Tournament over — you placed #${tab.findIndex(p=>p.me)+1} of ${tab.length}.`;
   else if(RUN.st==='done')my='You played all rounds. Waiting for the last duels…';
-  else if(parts.length>1&&parts.some(p=>p.st==='train'||p.st==='lobby'))my=`Waiting for other players… (${parts.filter(p=>p.st!=='train'&&p.st!=='lobby').length}/${parts.length} in the Arena · timer ${fmt(RUN.end-Date.now())})`;
+  else if(parts.length>1&&Date.now()<=RUN.end+45000&&parts.some(p=>p.st==='train'||p.st==='lobby'))my=`Waiting for other players… (${parts.filter(p=>p.st!=='train'&&p.st!=='lobby').length}/${parts.length} in the Arena · timer ${fmt(RUN.end-Date.now())})`;
   else if(parts.length<=1&&Date.now()<RUN.end&&RUN.r===1&&!(RUN.res||[]).length)my=`Waiting for other players… You're alone — the tournament starts when the timer ends (${fmt(RUN.end-Date.now())}).`;
   else if(parts.some(p=>p.st==='pick'))my='Waiting for everyone to pick their Arena team…';
   else my=`Round ${RUN.r} of ${R} — pairing as soon as the previous duels finish…`;
@@ -1414,6 +1444,10 @@ function bUpdate(dt){
       s.dead=1;burst(s.x,s.y,TYPES[MOVES[s.mid].t].c,7);
       if(B.mode!=='duel'||T===B.me){const d=hitLocal(T,s);drainHeal(s,d)}
       else if(MOVES[s.mid].fx==='drain'){drainHeal(s,calcDmg(s.att,act(T),s.mid,s.p).d)}}}
+  // opposing projectiles that meet cancel each other out (melee hits and capsules are unaffected)
+  for(let i=0;i<B.shots.length;i++){const a=B.shots[i];if(a.dead||a.cap||a.mel)continue;
+    for(let j=i+1;j<B.shots.length;j++){const b=B.shots[j];if(b.dead||b.cap||b.mel||b.side===a.side)continue;
+      if(Math.hypot(a.x-b.x,a.y-b.y)<(a.r||4)+(b.r||4)+2){a.dead=b.dead=1;const mx=(a.x+b.x)/2,my=(a.y+b.y)/2;burst(mx,my,'#ffffff',10);burst(mx,my,TYPES[MOVES[a.mid].t].c,5);burst(mx,my,TYPES[MOVES[b.mid].t].c,5);break}}}
   B.shots=B.shots.filter(s=>!s.dead);
   if(B.mode==='duel')publishDuel(false);
   checkEnd();
@@ -1606,7 +1640,7 @@ function sanitizeTeam(arr){
   return out;
 }
 function startDuel(opp,id,spar){
-  if(!spar){RUN.st='duel';pushMt()}
+  if(!spar){RUN.st='duel';RUN.dopp=opp;save();pushMt()}
   const op=findPeer(opp);const oppName=op?cleanName(op.presence.n):'Opponent';const left=(MYPEER||'')<opp;
   const raw=(spar?RUN.team.map((_,i)=>i):arenaIdx()).map(i=>RUN.team[i]).map(m=>[m.s,m.l,m.m.slice(0,4)]);
   const sameTb=!!(RUN.cfg&&RUN.cfg.tb&&!RUN.free&&op&&op.presence.mt&&op.presence.mt.id===RUN.id);
@@ -1614,11 +1648,21 @@ function startDuel(opp,id,spar){
   say(spar?`Friendly battle: waiting for ${oppName}…`:`Round ${RUN.r}: waiting for ${oppName}…`);publishDuel(true);
 }
 function publishDuel(force){const now=performance.now();if(!force&&now-B.pubT<60)return;B.pubT=now;const F=B.me;
-  if(B.tb){const ta={};for(let t=B.turn-2;t<=B.turn;t++)if(B.tbActs['t'+t])ta['t'+t]=B.tbActs['t'+t];pres({du:{id:B.id,opp:B.opp,team:B.raw,tb:1,ta}});return}
-  pres({du:{id:B.id,opp:B.opp,team:B.raw,a:F.a,x:Math.round(F.x),y:Math.round(F.y),hp:F.team.map(m=>m.hp),sh:B.mySh,fx:Object.keys(F.st).filter(k=>F.st[k]>0)}})}
+  if(B.tb){const ta={};for(let t=B.turn-2;t<=B.turn;t++)if(B.tbActs['t'+t])ta['t'+t]=B.tbActs['t'+t];B.q=(B.q||0)+1;pres({du:{id:B.id,opp:B.opp,team:B.raw,tb:1,ta,q:B.q}});return}
+  B.q=(B.q||0)+1;pres({du:{id:B.id,opp:B.opp,q:B.q,team:B.raw,a:F.a,x:Math.round(F.x),y:Math.round(F.y),hp:F.team.map(m=>m.hp),sh:B.mySh,fx:Object.keys(F.st).filter(k=>F.st[k]>0)}})}
 function duelSync(dt){
   const op=findPeer(B.opp);const du=op&&op.presence.du;
-  if(B.state==='over')return;
+  if(B.state==='over')return;const now=performance.now();
+  // the opponent already booked this round against me (e.g. my phone was asleep) → take the mirrored result so both sides agree
+  if(!B.spar&&RUN&&op&&op.presence.mt&&op.presence.mt.id===RUN.id){const x=cleanRes(op.presence.mt.res).find(e=>e[0]===RUN.r&&e[1]===(MYPEER||'me'));
+    if(x){duelResult(x[2]===1?false:x[2]===0?true:null,x[2]===1?`${B.oppName} was awarded the win while you were away.`:`${B.oppName} gave up the round.`);return}}
+  if(du&&du.id===B.id){if(du.q!==B.lq){B.lq=du.q;B.lqT=now}
+    const idle=now-(B.lqT||now);
+    if(!B.tb&&(B.state==='fight'||B.state==='count')&&idle>12000&&!document.hidden){duelResult(true,`${B.oppName} stopped responding.`);return}
+    if(B.tb){const key=B.state+B.turn;if(B.tbK!==key){B.tbK=key;B.tbT=now;B.tbWarn=0}const el=now-B.tbT;
+      if(B.state==='tbChoose'&&el>30000&&!B.tbWarn){B.tbWarn=1;say('10 seconds left to choose!')}
+      if(B.state==='tbChoose'&&el>40000){const me=act(B.me);let i=me.m.findIndex(Boolean);say('Time is up — auto attack!');tbChoose({k:'move',i:Math.max(0,i)});return}
+      if(B.state==='tbWait'&&el>75000&&!document.hidden){duelResult(true,`${B.oppName} didn't choose in time.`);return}}}
   if(!du||du.id!==B.id){if(B.state==='wait'){if(performance.now()-B.t0>25000)duelResult(true,`${B.oppName} never showed up.`)}else{B.missing+=dt;if(B.missing>6)duelResult(true,`${B.oppName} left the arena.`)}return}
   B.missing=0;
   if(B.tb){tbDuelSync(du);return}
@@ -1831,7 +1875,7 @@ function renderTeam(){
   else{
     el.insertAdjacentHTML('beforeend',`<div class="sec">TEAM (${RUN.team.length}/6) — LEAD FIGHTS FIRST</div>`);RUN.team.forEach((m,i)=>el.appendChild(monCard(m,i,true)));
     if(RUN.box.length){el.insertAdjacentHTML('beforeend',`<div class="sec">BOX (${RUN.box.length})</div>`);RUN.box.forEach((m,i)=>el.appendChild(monCard(m,i,false)))}
-    if(!RUN.free){const lb=document.createElement('button');lb.className='mini';lb.textContent='Leave lobby';lb.disabled=!!B;lb.onclick=()=>{openModal(`<h3>LEAVE LOBBY?</h3><p>Your team from this lobby will be lost.</p><div class="acts"><button class="btn ghost" id="mno">STAY</button><button class="btn red" id="myes">LEAVE</button></div>`);$('#mno').onclick=closeModal;$('#myes').onclick=()=>{closeModal();leaveRun()}};
+    if(!RUN.free){const lb=document.createElement('button');lb.className='mini';lb.textContent='Leave lobby';lb.onclick=()=>{openModal(`<h3>LEAVE LOBBY?</h3><p>Your team from this lobby will be lost.</p><div class="acts"><button class="btn ghost" id="mno">STAY</button><button class="btn red" id="myes">LEAVE</button></div>`);$('#mno').onclick=closeModal;$('#myes').onclick=()=>{closeModal();leaveRun()}};
     el.insertAdjacentHTML('beforeend','<div class="sec">LOBBY</div>');el.appendChild(lb);}
   }
   el.insertAdjacentHTML('beforeend',`<div class="sec">AREAS</div><div class="small" style="line-height:1.15">Wild monsters get stronger the farther you go from town. Each area has its own monsters.<br>${Object.values(ZONES).map(z=>`<span style="color:var(--text)">${z.n}</span> · ${z.enc}`).join('<br>')}</div>`);
@@ -1876,7 +1920,8 @@ function renderLobbyPane(){
     for(const p of parts)h+=`<div class="plr"><span class="sw" style="background:${p.c}"></span><div class="who"><b>${esc(p.n)}${p.me?' (you)':''}${p.peer===hp?' ★ host':''}</b><span class="small">${stTxt[p.st]||p.st}</span></div></div>`;
     if(host){h+=`<div class="sec">HOST CONTROLS</div>`;
       if(RUN.phase==='lobby')h+=`<button class="btn green" data-lb="start" style="width:100%;margin-bottom:6px">▶ START GAME</button>`;
-      if(RUN.phase==='train'||(RUN.phase==='arena'&&parts.some(p=>p.st==='train')))h+=`<div class="lrow" style="margin-bottom:6px"><button class="btn" data-lb="arena" style="flex:1">⚔ START ARENA FOR ALL</button><button class="btn ghost" data-lb="time" style="flex:1">+5 MIN</button></div>`}
+      if(RUN.phase==='train'||(RUN.phase==='arena'&&parts.some(p=>p.st==='train')))h+=`<div class="lrow" style="margin-bottom:6px"><button class="btn" data-lb="arena" style="flex:1">⚔ START ARENA FOR ALL</button><button class="btn ghost" data-lb="time" style="flex:1">+5 MIN</button></div>`;
+      if(RUN.phase!=='lobby')h+=`<button class="btn ghost" data-lb="reset" style="width:100%;margin-bottom:6px">⟲ RESET SESSION (ALL BACK TO START)</button>`}
     else if(RUN.phase==='lobby')h+=`<div class="small" style="margin:8px 0">The host (★) starts the game.</div>`;
     h+=`<div class="sec">YOU</div>`;
     if(RUN.phase==='train')h+=`<button class="btn" data-lb="enter" style="width:100%;margin-bottom:6px">ENTER ARENA EARLY</button>`;
@@ -1884,7 +1929,7 @@ function renderLobbyPane(){
   }
   if(h===lastLob)return;lastLob=h;el.innerHTML=h;
   el.querySelectorAll('[data-lb]').forEach(b=>b.onclick=()=>{const a=b.dataset.lb;
-    if(a==='free')startFree();else if(a==='create')openCreate();else if(a==='join')joinLobby(b.dataset.id);else if(a==='start')hostStart();else if(a==='arena')hostArenaNow();else if(a==='time')hostAddTime();
+    if(a==='free')startFree();else if(a==='create')openCreate();else if(a==='join')joinLobby(b.dataset.id);else if(a==='start')hostStart();else if(a==='arena')hostArenaNow();else if(a==='time')hostAddTime();else if(a==='reset')hostReset();
     else if(a==='enter'){if(B)return;confirmEarlyArena()}else if(a==='leave'){openModal(`<h3>LEAVE LOBBY?</h3><p>Your team from this lobby will be lost.</p><div class="acts"><button class="btn ghost" id="mno">STAY</button><button class="btn red" id="myes">LEAVE</button></div>`);$('#mno').onclick=closeModal;$('#myes').onclick=()=>{closeModal();leaveRun()}}
     lastLob='';setTimeout(renderLobbyPane,50)});
 }
