@@ -66,8 +66,10 @@ Im Tab *Players* steht bei jedem Mitspieler der **Ping** (grün < 80 ms, gelb < 
 
 ## Spielablauf
 
-1. **Match erstellen:** Kampfstil (Echtzeit oder rundenbasiert), Name, Trainingszeit (1–60 Min.), Arena-Runden, Monster pro Kampf, Kapseln, EP-Bonus, Begegnungsrate, Legendäre an/aus.
-   Die Arena startet, wenn der Timer abläuft – oder sobald alle Spieler in die Arena gegangen sind.
+1. **Lobby erstellen oder beitreten** (Tab *LOBBY* oder unten auf der Karte). Der Ersteller ist Host (★) und startet das Spiel, wenn alle da sind.
+   Host-Steuerung: Spiel starten, Arena für alle starten, +5 Minuten.
+   **Lobby-Parameter:** Kampfstil (Echtzeit oder rundenbasiert), Name, Trainingszeit (1–60 Min.), Arena-Runden, Monster pro Kampf, Kapseln, EP-Bonus, Begegnungsrate, Legendäre an/aus.
+   Die Arena startet, wenn der Timer abläuft – oder (ab 2 Spielern) sobald alle in die Arena gegangen sind. Bis dahin: „Waiting for other players“, Rückkehr ins Training möglich.
    Turnier im **Schweizer System** mit Rangliste (Punkte, Buchholz). Ungerade Spielerzahl → Arena Bot.
 2. **Free Play:** Ohne Match einfach losspielen – dein Free-Play-Team wird gespeichert.
    **Lobby:** Match starten (3 / 5 / 10 Min.) oder einem laufenden beitreten → frischer Starter.
