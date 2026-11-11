@@ -3,6 +3,12 @@
 Multiplayer-Monster-Browserspiel (Pixelart, Echtzeitkämpfe, Match-Modus mit Arena-Turnier).
 Alles steckt in **einer Datei: `index.html`** – kein Server, keine Kosten.
 
+## Spielen
+
+**https://harryer46.github.io/PocketPeasants/**
+
+![QR-Code zum Spiel](qr.png)
+
 ## Auf GitHub Pages veröffentlichen (kostenlos, ca. 5 Minuten)
 
 1. Auf **github.com** anmelden (oder kostenloses Konto erstellen).
@@ -60,7 +66,10 @@ Im Tab *Players* steht bei jedem Mitspieler der **Ping** (grün < 80 ms, gelb < 
 
 ## Spielablauf
 
-1. **Free Play:** Ohne Match einfach losspielen – dein Free-Play-Team wird gespeichert.
+1. **Match erstellen:** Name, Trainingszeit (1–60 Min.), Arena-Runden, Monster pro Kampf, Kapseln, EP-Bonus, Begegnungsrate, Legendäre an/aus.
+   Die Arena startet, wenn der Timer abläuft – oder sobald alle Spieler in die Arena gegangen sind.
+   Turnier im **Schweizer System** mit Rangliste (Punkte, Buchholz). Ungerade Spielerzahl → Arena Bot.
+2. **Free Play:** Ohne Match einfach losspielen – dein Free-Play-Team wird gespeichert.
    **Lobby:** Match starten (3 / 5 / 10 Min.) oder einem laufenden beitreten → frischer Starter.
 2. **Training:** Im hohen Gras wilde Monster bekämpfen und fangen (Kapseln werfen!).
    Rotes Dach = Heilzentrum. Im Tab *Players* kannst du andere Trainierende direkt
