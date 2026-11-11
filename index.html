@@ -118,7 +118,7 @@ select{background:#0b0d16;color:var(--text);border:2px solid #000;font-family:in
 #battle{position:absolute;inset:0;background:#0a0c14;display:none;flex-direction:column;align-items:center;justify-content:center;padding:10px;z-index:5}
 #battle.on{display:flex}
 #bwrap{width:100%;max-width:900px;display:flex;flex-direction:column;gap:8px}
-#bcv{width:100%;aspect-ratio:3/2;margin:0 auto;border:3px solid #000;box-shadow:4px 4px 0 #000;display:block;touch-action:none;background:#222}
+#bcv{width:100%;aspect-ratio:5/4;margin:0 auto;border:3px solid #000;box-shadow:4px 4px 0 #000;display:block;touch-action:none;background:#222}
 #bact{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
 .mv{position:relative;overflow:hidden;border:2px solid #000;box-shadow:3px 3px 0 #000;padding:6px 7px;text-align:left;color:#fff;font-size:19px;line-height:1}
 .mv small{display:block;font-size:15px;opacity:.9}
@@ -301,7 +301,7 @@ const TURN_CONFIG = {
 
 /* ===================== VERSION ===================== */
 // bump with every release (MAJOR.MINOR.PATCH). Players can only share lobbies/duels with the same version.
-const VERSION='0.18.0';
+const VERSION='0.19.0';
 function cmpV(a,b){const x=String(a||'0').split('.').map(Number),y=String(b||'0').split('.').map(Number);for(let i=0;i<3;i++){const d=(x[i]||0)-(y[i]||0);if(d)return d}return 0}
 /* ===================== ERROR REPORTING ===================== */
 function showErr(m){try{const b=document.getElementById('errbox');if(!b)return;b.textContent='⚠ Error: '+String(m).slice(0,220)+' — please send this to the developer.';b.style.display='block';clearTimeout(showErr.t);showErr.t=setTimeout(()=>b.style.display='none',12000)}catch(e){}}
@@ -1448,8 +1448,14 @@ function drawFX(){
 }
 
 /* ===================== REAL-TIME BATTLE ENGINE ===================== */
-const AW=360,AH=240,AX0=14,AX1=346,AY0=76,AY1=228,XL=95,XR=265,AYM=152,UI=1.5,UW=AW/UI,UH=AH/UI;
-function mkFighter(side,team,x,ctrl){const f={st:{burn:0,slow:0,stun:0,shield:0,haste:0},burnT:0,side,team,a:0,x,y:AYM,face:side==='L'?1:-1,cd:[0,0,0,0],dashT:0,dashCd:0,inv:1,swCd:0,flash:0,faint:0,out:false,ctrl,mvx:0,mvy:0,ddx:0,ddy:0,think:0};const i=team.findIndex(m=>m.hp>0);f.a=i<0?0:i;if(i<0)f.out=true;return f}
+const AW=360,AH=288,ACX=180,ACY=184,ARX=158,ARY=92,YT=ACY-66,YB=ACY+68,AX0=ACX-ARX,AX1=ACX+ARX,AY0=ACY-ARY,AY1=ACY+ARY,XL=ACX,XR=ACX,AYM=ACY,UI=1.5,UW=AW/UI,UH=AH/UI;
+// feet stay inside the oval; points outside are pulled back onto its edge
+function arenaClamp(F){const dx=(F.x-ACX)/ARX,dy=(F.y-ACY)/ARY,d=Math.hypot(dx,dy);if(d>1){F.x=ACX+dx/d*ARX;F.y=ACY+dy/d*ARY}}
+function outArena(x,y){const dx=(x-ACX)/(ARX+24),dy=(y-ACY)/(ARY+30);return dx*dx+dy*dy>1}
+// duels: each player sees himself at the bottom — the 'R' player's view is the canonical field turned by 180°
+function flipOn(){return!!(B&&B.mode==='duel'&&B.me&&B.me.side==='R')}
+function fx_(x){return flipOn()?2*ACX-x:x}function fy_(y){return flipOn()?2*ACY-y:y}
+function mkFighter(side,team,x,ctrl){const f={st:{burn:0,slow:0,stun:0,shield:0,haste:0},burnT:0,side,team,a:0,x:ACX,y:ctrl==='local'?YB:YT,face:ctrl==='local'?1:-1,cd:[0,0,0,0],dashT:0,dashCd:0,inv:1,swCd:0,flash:0,faint:0,out:false,ctrl,mvx:0,mvy:0,ddx:0,ddy:0,think:0};const i=team.findIndex(m=>m.hp>0);f.a=i<0?0:i;if(i<0)f.out=true;return f}
 function act(F){return F.team[F.a]}
 function fspeed(F){return Math.min(120,48+act(F).spd*1.15)*0.96*(F.ctrl==='ai'?0.82:1)*(F.st&&F.st.slow>0?0.55:1)*(F.st&&F.st.haste>0?1.35:1)}
 function shotParams(mid){const r=shotParams0(mid);if(!r.mel&&!r.self&&r.sp)r.sp*=1.2;return r}
@@ -1464,10 +1470,44 @@ function cdOf(mid){const mv=MOVES[mid]||MOVES.bump;return mv.cd||(mv.k==='self'?
 function moveDesc(mid){const mv=MOVES[mid];const k={melee:'melee',shot:'ranged',spread:'spread',multi:'rapid',big:'heavy',self:'self'}[mv.k]||'ranged';return`${TYPES[mv.t].n} · ${k}${mv.p?' · '+mv.p:''}${mv.fx?' · '+FX_TXT[mv.fx]:''}`}
 function calcDmg(att,def,mid,p){const mv=MOVES[mid]||MOVES.bump;const e=eff(mv.t,SPECIES[def.s].t);let d=((2*att.l/5+2)*p*att.atk/Math.max(1,def.def))/50+2;d*=(mv.t===SPECIES[att.s].t?1.5:1)*e*(0.85+Math.random()*0.15)*0.55;return{d:e===0?0:Math.max(1,Math.round(d)),e}}
 function say(t){if(!B)return;if(/grew to Lv/.test(t))B.lvlFx=performance.now();if(/evolved into/.test(t))B.evoFx=performance.now();B.log.push({t,at:performance.now()});if(B.log.length>3)B.log.shift()}
+// destructible obstacles: rocks take many hits, plants few (fire burns plants fast). Same layout for both duel players.
+function genObs(seed,zone){const r=mulberry32(seed>>>0),out=[];const nR=2+Math.floor(r()*2)+(zone==='west'?1:0),nP=2+Math.floor(r()*2)+(zone==='east'||zone==='south'?1:0);
+  const kinds=[...Array(nR).fill('rock'),...Array(nP).fill('plant')];let id=0;
+  for(const kind of kinds){const rad=kind==='rock'?12:9;for(let t=0;t<120;t++){const a=r()*6.283,q=0.2+r()*0.68,x=ACX+Math.cos(a)*ARX*q,y=ACY+Math.sin(a)*ARY*q;
+      if(Math.hypot(x-ACX,(y-YT)*1.3)<48||Math.hypot(x-ACX,(y-YB)*1.3)<48)continue;if(out.some(o=>Math.hypot(o.x-x,(o.y-y)*1.3)<o.r+rad+24))continue;
+      out.push({id:id++,kind,x:Math.round(x),y:Math.round(y),r:rad,hp:kind==='rock'?70:14,max:kind==='rock'?70:14,v:Math.floor(r()*3)});break}}
+  return out}
+function obsPush(F){if(!B||!B.obs)return;for(const o of B.obs){if(o.dead)continue;let dx=F.x-o.x,dy=(F.y-o.y)*1.4;const d=Math.hypot(dx,dy),min=o.r+8;if(d<min){if(d<0.01){dx=1;dy=0}const L=Math.hypot(dx,dy);F.x=o.x+dx/L*min;F.y=o.y+dy/L*min/1.4}}}
+function shotVsObs(s){if(!B.obs)return false;for(const o of B.obs){if(o.dead)continue;if(Math.hypot(s.x-o.x,s.y-(o.y-8))<o.r+(s.r||4)){s.dead=1;hitObs(o,s);return true}}return false}
+function hitObs(o,s){const mv=MOVES[s.mid]||{p:30,t:'normal'};let dmg=Math.max(4,(mv.p||30)*0.45);if(o.kind==='plant'&&mv.t==='fire')dmg*=2.5;if(o.kind==='rock'&&(mv.t==='rock'||mv.t==='water'))dmg*=1.4;
+  o.hp-=dmg;o.hitT=performance.now();burst(o.x,o.y-8,o.kind==='rock'?'#9aa0a6':'#5fa236',6);if(o.hp<=0)breakObs(o)}
+function breakObs(o){if(o.dead)return;o.dead=1;o.hp=0;burst(o.x,o.y-8,o.kind==='rock'?'#8a8a8a':'#4f8f2e',22);burst(o.x,o.y-8,o.kind==='rock'?'#d0d0c8':'#ffd23f',8);
+  say(o.kind==='rock'?'A rock shatters!':'A plant gets shredded!');if(B.mode==='duel'){B.obGone=B.obGone||[];if(!B.obGone.includes(o.id)){B.obGone.push(o.id);publishDuel(true)}}}
+const OBSPR={};
+function obsSprite(kind,v,stage){const k=kind+v+stage;if(OBSPR[k])return OBSPR[k];const W=16,H=16,c=mk(W,H),x=c.getContext('2d'),id=x.createImageData(W,H),d=id.data;const rr=mulberry32(hashStr(k));
+  const put=(X,Y,col)=>{if(X<0||Y<0||X>=W||Y>=H)return;const o=(Y*W+X)*4;d[o]=col[0];d[o+1]=col[1];d[o+2]=col[2];d[o+3]=255};
+  if(kind==='rock'){const cx=8,cy=9,rx=7-(v===2?1:0),ry=5.5+(v===1?1:0);
+    for(let Y=0;Y<H;Y++)for(let X=0;X<W;X++){const dx=(X-cx)/rx,dy=(Y-cy)/ry,q=dx*dx+dy*dy;if(q>1)continue;let val=0.62-(dx+dy)*0.33+BAYER[(Y&3)*4+(X&3)]*0.18;if(q>0.72)val-=0.38;
+      let pal=RGB.rock;if(dy<-0.45&&rr()<0.7)pal=RGB.moss;put(X,Y,pal[clamp(Math.floor(val*pal.length),0,pal.length-1)])}
+    // cracks grow with damage
+    const dark=hex2rgb('#2a2a30');for(let i=0;i<stage*3;i++){let X=5+Math.floor(rr()*6),Y=6+Math.floor(rr()*5);for(let j=0;j<3;j++){const dx=(X-cx)/rx,dy=(Y-cy)/ry;if(dx*dx+dy*dy<0.8)put(X,Y,dark);X+=rr()<0.5?1:-1;Y+=rr()<0.6?1:0}}}
+  else{const leaf=RGB.leaf,fl=[hex2rgb(v===0?'#ff7aa8':v===1?'#ffd23f':'#ffffff'),hex2rgb('#fff3a3')];
+    const blobs=[[8,10,5],[5,8,3.5],[11,8,3.5],[8,6,3.5]];
+    for(let Y=0;Y<H;Y++)for(let X=0;X<W;X++){let best=9;for(const[bx,by,br]of blobs){const q=((X-bx)**2+(Y-by)**2)/(br*br);if(q<best)best=q}if(best>1)continue;
+      let val=0.6-((X-8)+(Y-8))/14*0.5+BAYER[(Y&3)*4+(X&3)]*0.25;if(best>0.75)val-=0.4;put(X,Y,leaf[clamp(Math.floor(val*leaf.length),0,leaf.length-1)])}
+    if(stage<2)for(let i=0;i<4-stage*2;i++){const X=4+Math.floor(rr()*8),Y=5+Math.floor(rr()*6);put(X,Y,fl[0]);put(X+1,Y,fl[1])}}
+  // 1px dark outline
+  const src=new Uint8ClampedArray(d);for(let Y=0;Y<H;Y++)for(let X=0;X<W;X++){const o=(Y*W+X)*4;if(src[o+3])continue;const n=[[1,0],[-1,0],[0,1],[0,-1]].some(([a,b])=>{const X2=X+a,Y2=Y+b;return X2>=0&&Y2>=0&&X2<W&&Y2<H&&src[(Y2*W+X2)*4+3]});if(n){d[o]=20;d[o+1]=22;d[o+2]=26;d[o+3]=255}}
+  x.putImageData(id,0,0);OBSPR[k]=c;return c}
+function drawObs(c,o,now){const st=o.hp<o.max*0.34?2:o.hp<o.max*0.7?1:0;const s=obsSprite(o.kind,o.v,st);let sx=0;if(o.hitT&&now-o.hitT<160)sx=Math.round(Math.sin(now/18)*2);
+  c.fillStyle='rgba(10,20,8,0.28)';c.beginPath();c.ellipse(o.x,o.y+2,o.r+2,4,0,0,7);c.fill();c.drawImage(s,Math.round(o.x-16+sx),Math.round(o.y-26),32,32);
+  if(o.kind==='rock'&&o.hp<o.max){c.fillStyle='#14141f';c.fillRect(Math.round(o.x-11),Math.round(o.y-30),22,4);c.fillStyle='#c9c9c9';c.fillRect(Math.round(o.x-10),Math.round(o.y-29),Math.round(20*o.hp/o.max),2)}}
 function newBattle(o){
   B=Object.assign({shots:[],parts:[],nums:[],log:[],state:'fight',ptr:null,capCd:0,sid:0,vshots:[]},o);held.length=0;
   if(B.tb===undefined)B.tb=!!(RUN&&!RUN.free&&RUN.cfg&&RUN.cfg.tb);
-  if(B.tb){B.me.x=B.me.side==='L'?XL:XR;B.me.y=AYM;if(B.foe){B.foe.x=B.foe.side==='L'?XL:XR;B.foe.y=AYM}if(B.state==='fight'||B.state==='count')B.state='tbChoose';B.turn=1;B.tbActs={}}pres({bt:B.mode==='wild'||B.mode==='trainer'?'wild':'duel'});
+  if(B.tb){B.me.x=ACX;B.me.y=YB;if(B.foe){B.foe.x=ACX;B.foe.y=YT}if(B.state==='fight'||B.state==='count')B.state='tbChoose';B.turn=1;B.tbActs={}}
+  // obstacles (real-time only); a duel builds them from its shared id in the canonical view, the 'R' player sees them turned by 180°
+  B.obs=B.tb?[]:genObs(B.mode==='duel'?hashStr(String(B.id)):Math.random()*4e9,B.zone||'arena').map(o=>flipOn()?Object.assign(o,{x:2*ACX-o.x,y:2*ACY-o.y}):o);pres({bt:B.mode==='wild'||B.mode==='trainer'?'wild':'duel'});
   const kind=B.legend?'legend':B.mode==='wild'?'wild':'trainer';const myB=B;
   const realState=B.state;B.state='intro';
   transition(kind,()=>{if(B!==myB)return;$('#battle').classList.add('on');buildBattleUI();const now=performance.now();B.enterT=now;B.log.forEach(m=>m.at=now);
@@ -1503,7 +1543,7 @@ function dealDamage(T,d,col,text){const def=act(T);if(def.hp<=0)return;def.hp=Ma
 function hitLocal(T,s){
   const def=act(T);const r=calcDmg(s.att,def,s.mid,s.p);let d=r.d;if(T.st.shield>0&&d>0)d=Math.max(1,Math.round(d*0.5));
   const mv=MOVES[s.mid]||MOVES.bump;
-  T.flash=0.25;T.hurtT=performance.now();T.inv=Math.max(T.inv,0.12);const L=Math.hypot(s.vx,s.vy)||1,kb=mv.fx==='knock'?16:5;T.x=clamp(T.x+s.vx/L*kb,AX0,AX1);T.y=clamp(T.y+s.vy/L*kb*0.8,AY0,AY1);
+  T.flash=0.25;T.hurtT=performance.now();T.inv=Math.max(T.inv,0.12);const L=Math.hypot(s.vx,s.vy)||1,kb=mv.fx==='knock'?16:5;T.x+=s.vx/L*kb;T.y+=s.vy/L*kb*0.8;arenaClamp(T);
   if(r.e>1)say('Super effective!');else if(r.e===0)say('It had no effect…');
   if(d>0&&mv.fx==='burn'&&Math.random()<0.35&&SPECIES[def.s].t!=='fire'){T.st.burn=3;say(`${SPECIES[def.s].n} was burned!`)}
   if(d>0&&mv.fx==='slow'){T.st.slow=2.2}
@@ -1522,7 +1562,7 @@ function controlMe(dt){
 }
 function move(F,dx,dy,dt){
   if(F.dashT>0){F.x+=F.ddx*265*dt;F.y+=F.ddy*265*dt}else{F.x+=dx*fspeed(F)*dt;F.y+=dy*fspeed(F)*dt}
-  F.x=clamp(F.x,AX0,AX1);F.y=clamp(F.y,AY0,AY1);
+  obsPush(F);arenaClamp(F);
   const T=F===B.me?B.foe:B.me;if(T)F.face=T.x<F.x?-1:1;
 }
 function aiUpdate(F,dt){
@@ -1560,7 +1600,8 @@ function bUpdate(dt){
   // fainting -> next monster (only for fighters this client is authoritative for)
   for(const F of[B.me,B.foe]){if(F.ctrl==='remote'||F.faint<=0)continue;F.faint-=dt;if(F.faint<=0){if(B.mode==='wild'&&F===B.foe)continue;const n=nextAlive(F);if(n<0){F.out=true}else doSwitch(F,n)}}
   // shots
-  for(const s of B.shots){s.age+=dt;s.x+=s.vx*dt;s.y+=s.vy*dt;if(s.age>s.life||s.x<0||s.x>AW||s.y<20||s.y>AH){s.dead=1;if(s.cap)say('Missed!');continue}
+  for(const s of B.shots){s.age+=dt;s.x+=s.vx*dt;s.y+=s.vy*dt;if(s.age>s.life||outArena(s.x,s.y+10)){s.dead=1;if(s.cap)say('Missed!');continue}
+    if(!s.cap&&shotVsObs(s))continue;
     const T=s.side===B.me.side?B.foe:B.me;if(!T||T.out||T.faint>0)continue;
     if(Math.hypot(s.x-T.x,s.y-(T.y-12))<s.r+11){
       if(s.cap){s.dead=1;if(B.mode==='wild')startCatch(throwBonus());continue}
@@ -1667,7 +1708,7 @@ function tbUpdate(dt,now){
   if(B.slowUntil&&now<B.slowUntil)dt*=0.3;
   for(const s of B.shots){if(!s.cap)continue;s.age+=dt;s.x+=s.vx*dt;s.y+=s.vy*dt;const T=B.foe;
     if(Math.hypot(s.x-T.x,s.y-(T.y-12))<s.r+11){s.dead=1;startCatch(throwBonus())}
-    else if(s.age>s.life||s.x<0||s.x>AW||s.y<20||s.y>AH){s.dead=1;say('Missed!');setTimeout(()=>{if(B&&B.state==='tbPlay')tbRun(null)},600)}}
+    else if(s.age>s.life||outArena(s.x,s.y+10)){s.dead=1;say('Missed!');setTimeout(()=>{if(B&&B.state==='tbPlay')tbRun(null)},600)}}
   B.shots=B.shots.filter(s=>!s.dead);
   if(B.state==='catch'){catchUpdate(now);return}
   if(B.state==='flee'){fleeUpdate(dt);return}
@@ -1676,7 +1717,7 @@ function tbUpdate(dt,now){
 // PvP: both pick, actions exchanged via presence, resolved with the same seeded rng on both sides
 function tbDuelSync(du){
   if(!du){const op=findPeer(B.opp);du=op&&op.presence.du;if(!du||du.id!==B.id)return}
-  if(!B.foe){let ot=sanitizeTeam(du.team);const mt=sanitizeTeam(B.raw);if(!ot||!mt)return;if(!B.spar)ot=ot.slice(0,cfgOf().team);const left=B.me.side==='L';B.me=mkFighter(B.me.side,mt,left?XL:XR,'local');B.me.y=AYM;B.foe=mkFighter(left?'R':'L',ot,left?XR:XL,'remote');B.foe.y=AYM;
+  if(!B.foe){let ot=sanitizeTeam(du.team);const mt=sanitizeTeam(B.raw);if(!ot||!mt)return;if(!B.spar)ot=ot.slice(0,cfgOf().team);const left=B.me.side==='L';B.me=mkFighter(B.me.side,mt,left?XL:XR,'local');B.foe=mkFighter(left?'R':'L',ot,left?XR:XL,'remote');B.foe.y=AYM;
     const now=performance.now();B.me.spawnT=now;B.foe.spawnT=now+200;B.state='tbChoose';say(`${B.oppName} enters the arena!`);buildBattleUI();return}
   if(B.state!=='tbWait')return;
   const mine=B.tbActs['t'+B.turn],th=du.ta&&du.ta['t'+B.turn];if(!mine||!th)return;
@@ -1701,10 +1742,10 @@ function throwCap(){capPress()}
 function throwCapOld(){if(!B||B.mode!=='wild'||B.state!=='fight'||B.capCd>0)return;if(RUN.kap<=0){say('No capsules left!');return}
   RUN.kap--;B.capCd=1.2;updateHud();const F=B.me,T=B.foe;let dx=T.x-F.x,dy=(T.y-12)-(F.y-12);const L=Math.hypot(dx,dy)||1;
   B.shots.push({cap:1,side:F.side,x:F.x,y:F.y-14,vx:dx/L*190,vy:dy/L*190,age:0,life:1.6,r:6,mid:'bump',flight:L/190});say('Capsule thrown!')}
-function tryRun(){if(B&&B.tb){tbChoose({k:'run'});return}if(!B||B.state!=='fight'||B.mode!=='wild')return;if(Math.hypot(B.me.x-B.foe.x,B.me.y-B.foe.y)>=125){B.state='flee';B.fleeT=performance.now();B.me.face=-1;B.shots=[];say('Got away safely!')}else say('Too close to run! Get some distance.')}
-function fleeUpdate(dt){const F=B.me;F.x-=150*dt;F.face=-1;if(Math.random()<0.5)B.parts.push({x:F.x+8,y:F.y-1,vx:20+Math.random()*20,vy:-Math.random()*15,life:0.4,age:0,c:'#e8dcc0'});
+function tryRun(){if(B&&B.tb){tbChoose({k:'run'});return}if(!B||B.state!=='fight'||B.mode!=='wild')return;if(Math.hypot(B.me.x-B.foe.x,B.me.y-B.foe.y)>=160){B.state='flee';B.fleeT=performance.now();B.me.face=-1;B.shots=[];say('Got away safely!')}else say('Too close to run! Get some distance.')}
+function fleeUpdate(dt){const F=B.me;F.y+=150*dt;if(Math.random()<0.5)B.parts.push({x:F.x,y:F.y-8,vx:(Math.random()-.5)*20,vy:-20-Math.random()*15,life:0.4,age:0,c:'#e8dcc0'});
   for(const p of B.parts){p.age+=dt;p.x+=p.vx*dt;p.y+=p.vy*dt}B.parts=B.parts.filter(p=>p.age<p.life);
-  if(F.x<-30&&!B.fleeDone){B.fleeDone=true;endWild()}}
+  if(F.y>AH+50&&!B.fleeDone){B.fleeDone=true;endWild()}}
 function forfeit(){if(B&&B.tb&&B.state!=='over'&&B.mode!=='wild'&&B.mode!=='trainer'){if(B.mode==='duel'&&B.foe){B.tbActs['t'+B.turn]={k:'ff'};publishDuel(true)}duelResult(false,'You forfeited.');return}if(!B||B.mode==='wild'||B.state==='over')return;if(B.state==='fight'||B.state==='count'||B.state==='wait'){B.me.team.forEach(m=>m.hp=0);B.me.out=true;if(B.mode==='duel')publishDuel(true);duelResult(false,'You forfeited.')}}
 
 /* --- wild --- */
@@ -1719,7 +1760,7 @@ function startLegend(L){
   if(!RUN.team.some(m=>m.hp>0))healAll();
   const LS_=legSid(L),wild=newMon(LS_,L.l);G.dex[LS_]=G.dex[LS_]||0;
   newBattle({mode:'wild',legend:L.id,zone:L.zone,wild,me:mkFighter('L',RUN.team.map(battler),XL,'local'),foe:mkFighter('R',[battler(wild)],XR,'ai'),state:'count',cntEnd:performance.now()+2000});
-  say(`★ The legendary ${SPECIES[LS_].n} awakens! ★`);burst(XR,64,'#ffcb3d',40);
+  say(`★ The legendary ${SPECIES[LS_].n} awakens! ★`);burst(ACX,YT-20,'#ffcb3d',40);
 }
 function startTrainer(t){
   if(!RUN.team.some(m=>m.hp>0))healAll();
@@ -1773,7 +1814,7 @@ function startDuel(opp,id,spar){
 }
 function publishDuel(force){const now=performance.now();if(!force&&now-B.pubT<60)return;B.pubT=now;const F=B.me;
   if(B.tb){const ta={};for(let t=B.turn-2;t<=B.turn;t++)if(B.tbActs['t'+t])ta['t'+t]=B.tbActs['t'+t];B.q=(B.q||0)+1;pres({du:{id:B.id,opp:B.opp,team:B.raw,tb:1,ta,q:B.q}});return}
-  B.q=(B.q||0)+1;pres({du:{id:B.id,opp:B.opp,q:B.q,team:B.raw,a:F.a,x:Math.round(F.x),y:Math.round(F.y),hp:F.team.map(m=>m.hp),sh:B.mySh,fx:Object.keys(F.st).filter(k=>F.st[k]>0)}})}
+  B.q=(B.q||0)+1;pres({du:{id:B.id,opp:B.opp,q:B.q,team:B.raw,a:F.a,x:Math.round(fx_(F.x)),y:Math.round(fy_(F.y)),hp:F.team.map(m=>m.hp),ob:B.obGone||[],sh:flipOn()?B.mySh.map(e=>[e[0],e[1],e[2],2*ACX-e[3],2*ACY-e[4],-e[5],-e[6]]):B.mySh,fx:Object.keys(F.st).filter(k=>F.st[k]>0)}})}
 function duelSync(dt){
   const op=findPeer(B.opp);const du=op&&op.presence.du;
   if(B.state==='over')return;const now=performance.now();
@@ -1790,16 +1831,17 @@ function duelSync(dt){
   if(!du||du.id!==B.id){if(B.state==='wait'){if(performance.now()-B.t0>25000)duelResult(true,`${B.oppName} never showed up.`)}else{B.missing+=dt;if(B.missing>6)duelResult(true,`${B.oppName} left the arena.`)}return}
   B.missing=0;
   if(B.tb){tbDuelSync(du);return}
-  if(!B.foe){let ot=sanitizeTeam(du.team);if(!ot)return;if(!B.spar)ot=ot.slice(0,cfgOf().team);const left=B.me.side==='L';B.foe=mkFighter(left?'R':'L',ot,left?XR:XL,'remote');B.foe.x=clamp(+du.x||B.foe.x,AX0,AX1);B.foe.y=clamp(+du.y||AYM,AY0,AY1);
+  if(!B.foe){let ot=sanitizeTeam(du.team);if(!ot)return;if(!B.spar)ot=ot.slice(0,cfgOf().team);const left=B.me.side==='L';B.foe=mkFighter(left?'R':'L',ot,left?XR:XL,'remote');if(Number.isFinite(+du.x)&&Number.isFinite(+du.y)&&+du.x){B.foe.x=fx_(+du.x);B.foe.y=fy_(+du.y)}arenaClamp(B.foe);
     if(Array.isArray(du.sh))du.sh.forEach(e=>Array.isArray(e)&&B.seen.add(String(e[0])));B.state='count';B.cntEnd=performance.now()+3000;say(`${B.oppName} enters the arena!`);return}
-  const F=B.foe;const tx=clamp(+du.x||F.x,AX0,AX1),ty=clamp(+du.y||F.y,AY0,AY1);const k=Math.min(1,dt*14);F.x+=(tx-F.x)*k;F.y+=(ty-F.y)*k;F.face=B.me.x<F.x?-1:1;
+  const F=B.foe;const P_={x:+du.x?fx_(+du.x):F.x,y:+du.y?fy_(+du.y):F.y};arenaClamp(P_);const k=Math.min(1,dt*14);F.x+=(P_.x-F.x)*k;F.y+=(P_.y-F.y)*k;F.face=B.me.x<F.x?-1:1;
+  if(Array.isArray(du.ob)&&B.obs)for(const id of du.ob){const o=B.obs.find(o=>o.id===+id);if(o&&!o.dead)breakObs(o)}
   const a=Math.floor(+du.a);if(a>=0&&a<F.team.length&&a!==F.a){F.a=a;say(`${B.oppName} sends out ${SPECIES[act(F).s].n}!`)}
   if(Array.isArray(du.hp))F.team.forEach((m,i)=>{const v=clamp(Math.floor(+du.hp[i]),0,m.mhp);if(Number.isFinite(v)&&v<m.hp){F.hurtT=performance.now();B.nums.push({x:F.x,y:F.y-34,t:'-'+(m.hp-v),c:'#fff',at:performance.now()});F.flash=0.25;if(v===0)say(`${SPECIES[m.s].n} fainted!`)}if(Number.isFinite(v))m.hp=v});
   F.stShow=Array.isArray(du.fx)?du.fx.filter(k=>typeof k==='string'&&k in F.st):[];
   F.out=F.team.every(m=>m.hp<=0);F.faint=act(F).hp<=0?1:0;
   if(Array.isArray(du.sh))for(const e of du.sh){if(!Array.isArray(e))continue;const id=String(e[0]).slice(0,40);if(B.seen.has(id))continue;B.seen.add(id);if(B.state!=='fight')continue;
     const ai=clamp(Math.floor(+e[1]),0,F.team.length-1),mid=MOVES[e[2]]?e[2]:'bump';const sp=shotParams(mid);let vx=+e[5]||0,vy=+e[6]||0;const L=Math.hypot(vx,vy)||1;if(L>sp.sp*1.05){vx=vx/L*sp.sp;vy=vy/L*sp.sp}
-    B.shots.push({id,side:F.side,att:F.team[ai],mid,x:clamp(+e[3]||F.x,0,AW),y:clamp(+e[4]||F.y,0,AH),vx,vy,age:0,life:sp.life,r:sp.r,p:sp.p,mel:sp.mel})}
+    B.shots.push({id,side:F.side,att:F.team[ai],mid,x:clamp(fx_(+e[3]||0),0,AW),y:clamp(fy_(+e[4]||0),0,AH),vx:flipOn()?-vx:vx,vy:flipOn()?-vy:vy,age:0,life:sp.life,r:sp.r,p:sp.p,mel:sp.mel})}
 }
 function duelResult(win,why){
   if(!B||B.state==='over')return;B.state='over';finale(win);say(win===true?'YOU WIN!':win===false?'YOU LOSE…':'DRAW!');if(why)say(why);
@@ -1847,21 +1889,28 @@ bcv.addEventListener('pointerdown',e=>{if(!B)return;bcv.setPointerCapture(e.poin
 bcv.addEventListener('pointermove',e=>{if(B&&B.ptr)B.ptr=toArena(e)});
 ['pointerup','pointercancel'].forEach(ev=>bcv.addEventListener(ev,()=>{if(B)B.ptr=null}));
 const BBG={};
-function battleBG(z){if(BBG[z])return BBG[z];const W=AW/2,H=AH/2,Y0=AY0/2,cv=mk(W,H),c=cv.getContext('2d'),id=c.createImageData(W,H),d=id.data;
+function battleBG(z){if(BBG[z])return BBG[z];const W=AW/2,H=AH/2,cv=mk(W,H),c=cv.getContext('2d'),id=c.createImageData(W,H),d=id.data;
   const seed=hashStr(z),nL=noise2(seed,22,W,H),nS=noise2(seed+1,6,W,H),nD=noise2(seed+2,10,W,H);
   const gp=z==='east'?RGB.forest:z==='south'?RGB.shore:z==='west'?RGB.hills:RGB.meadow;
-  for(let y=0;y<H;y++)for(let x=0;x<W;x++){const dth=BAYER[(y&3)*4+(x&3)]*0.22;let v=nL(x,y)*0.62+nS(x,y)*0.38+dth,pal=gp;
-    if(z==='arena'){pal=RGB.stone;v=0.45+nS(x,y)*0.3+dth+(((x>>3)+(y>>3))%2?0.08:-0.04)}
-    else if(z==='south'&&nD(x,y)>0.55)pal=RGB.sand;else if(nD(x,y)>(z==='west'?0.5:0.68))pal=RGB.dirt;
+  // round arena seen from above: floor oval (a bit larger than where the feet may go), a rim, scenery outside
+  const cx=ACX/2,cy=(ACY-10)/2,rx=(ARX+20)/2,ry=(ARY+22)/2;
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){const dth=BAYER[(y&3)*4+(x&3)]*0.22,e=((x-cx)/rx)**2+((y-cy)/ry)**2;let v,pal;
+    if(e<1){v=nL(x,y)*0.62+nS(x,y)*0.38+dth;pal=gp;
+      if(z==='arena'){pal=RGB.stone;v=0.5+nS(x,y)*0.28+dth+(e>0.82?-0.12:0)}
+      else if(z==='south'&&nD(x,y)>0.55)pal=RGB.sand;else if(nD(x,y)>(z==='west'?0.5:0.68))pal=RGB.dirt;
+      if(e>0.9&&z!=='arena')v-=0.18}
+    else if(e<1.16){pal=z==='arena'?RGB.stone:z==='south'?RGB.sand:RGB.rock;v=0.25+nS(x,y)*0.35+dth-(y<cy?0.15:0)+(e<1.05?0.25:0)}
+    else{if(z==='south'){pal=RGB.water;v=0.35+nL(x,y)*0.4+dth*0.6}else if(z==='arena'){pal=RGB.stone;v=0.12+((x+y*3)%5===0?0.25:0)+nS(x,y)*0.15}
+      else if(z==='west'){pal=RGB.hills;v=0.15+nL(x,y)*0.5+dth}else{pal=z==='east'?RGB.forest:RGB.meadow;v=0.1+nL(x,y)*0.45+dth}}
     const cc=pal[clamp(Math.floor(v*pal.length),0,pal.length-1)],o=(y*W+x)*4;d[o]=cc[0];d[o+1]=cc[1];d[o+2]=cc[2];d[o+3]=255}
-  if(z!=='arena'){const r=mulberry32(seed+9);const lp=z==='east'?RGB.leafF:RGB.leaf;
-    for(let x=-3;x<W+6;x+=7+Math.floor(r()*3))paintCanopy(d,W,H,x,Y0-9+Math.floor(r()*3),5+Math.floor(r()*2),lp,seed+x);
-    for(let y=Y0;y<H+5;y+=8+Math.floor(r()*4)){paintCanopy(d,W,H,-1+Math.floor(r()*2),y,5+Math.floor(r()*2),lp,seed+y*3);paintCanopy(d,W,H,W+1-Math.floor(r()*2),y,5+Math.floor(r()*2),lp,seed+y*5)}}
+  const r=mulberry32(seed+9),outside=(x,y,m)=>((x-cx)/(rx+m))**2+((y-cy)/(ry+m))**2>1;
+  if(z==='north'||z==='east'){const lp=z==='east'?RGB.leafF:RGB.leaf;for(let i=0;i<70;i++){const x=Math.floor(r()*W),y=Math.floor(r()*H);if(outside(x,y,6))paintCanopy(d,W,H,x,y,4+Math.floor(r()*3),lp,seed+i*7)}}
   c.putImageData(id,0,0);
-  if(z!=='arena'){const r=mulberry32(seed+5);for(let i=0;i<4;i++){const x=i%2?9+Math.floor(r()*10):W-19+Math.floor(r()*9),y=Y0+5+Math.floor(r()*(H-Y0-12));paintRock(c,x,y,3,r)}
-    for(let i=0;i<18;i++){const x=Math.floor(r()*W),y=Y0+Math.floor(r()*(H-Y0));c.fillStyle=z==='east'?'#1d4416':'#3a7424';c.fillRect(x,y,1,1);c.fillRect(x+1,y-1,1,1)}}
-  else{c.fillStyle='#ffffff40';c.fillRect(7,Y0,W-14,1);c.fillRect(7,H-4,W-14,1);c.fillRect(7,Y0,1,H-Y0-4);c.fillRect(W-8,Y0,1,H-Y0-4);c.fillRect(W/2,Y0,1,H-Y0-4);
-    for(let a=0;a<64;a++){const t=a/64*6.283;c.fillRect(Math.round(W/2+Math.cos(t)*14),Math.round((Y0+H)/2+Math.sin(t)*14),1,1)}}
+  if(z==='west'){for(let i=0;i<26;i++){const x=Math.floor(r()*W),y=Math.floor(r()*H);if(outside(x,y,5))paintRock(c,x,y,2+Math.floor(r()*3),r)}}
+  if(z==='south'){c.fillStyle='#ffffff55';for(let i=0;i<40;i++){const x=Math.floor(r()*W),y=Math.floor(r()*H);if(outside(x,y,4))c.fillRect(x,y,2+Math.floor(r()*3),1)}}
+  if(z==='arena'){const cols=['#ef4444','#3b82f6','#ffcb3d','#3ddc6b','#a855f7','#f2f2f2'];for(let i=0;i<260;i++){const x=Math.floor(r()*W),y=Math.floor(r()*H);if(outside(x,y,3)){c.fillStyle=cols[i%cols.length];c.fillRect(x,y,1,1);c.fillStyle='#e8c9a0';c.fillRect(x,y-1,1,1)}}
+    c.fillStyle='#ffffff50';for(let a=0;a<96;a++){const t=a/96*6.283;c.fillRect(Math.round(cx+Math.cos(t)*14),Math.round(cy+Math.sin(t)*9),1,1)}c.fillRect(Math.round(cx-rx+6),Math.round(cy),Math.round(rx*2-12),1)}
+  for(let i=0;i<18&&z!=='arena';i++){const x=Math.floor(r()*W),y=Math.floor(r()*H);if(!outside(x,y,-4)){c.fillStyle=z==='east'?'#1d4416':'#3a7424';c.fillRect(x,y,1,1);c.fillRect(x+1,y-1,1,1)}}
   BBG[z]=cv;return cv}
 const FLOORS0={north:['#5cb848','#53ad40'],east:['#3f8f3a','#378234'],south:['#ecd79a','#e2cb8a'],west:['#c9a66b','#bb985f'],arena:['#8a8ea6','#7d8199']};
 function pxText(c,t,x,y,col,size,align){c.font=`${size||8}px "Press Start 2P"`;c.textAlign=align||'left';c.fillStyle='#14141f';c.fillText(t,x+1,y+1);c.fillStyle=col;c.fillText(t,x,y);c.textAlign='left'}
@@ -1901,8 +1950,8 @@ function hudPanel(c,x,y,F,right,label){
 }
 function sizeBattle(){
   const wrap=$('#bwrap'),st=$('#stage');const mob=isMob();const ctl=mob?0:($('#bctl').offsetHeight||0);
-  const avail=Math.max(120,st.clientHeight-ctl-(mob?0:40));const w=Math.max(200,Math.min(mob?st.clientWidth:wrap.clientWidth,avail*1.5));
-  bcv.style.width=w+'px';const dpr=Math.min(3,devicePixelRatio||1);const W=Math.round(w*dpr),H=Math.round(W/1.5);
+  const avail=Math.max(120,st.clientHeight-ctl-(mob?0:40));const w=Math.max(200,Math.min(mob?st.clientWidth:wrap.clientWidth,avail*AW/AH));
+  bcv.style.width=w+'px';const dpr=Math.min(3,devicePixelRatio||1);const W=Math.round(w*dpr),H=Math.round(W*AH/AW);
   if(bcv.width!==W||bcv.height!==H){bcv.width=W;bcv.height=H}
   return W/AW;
 }
@@ -1910,16 +1959,16 @@ function drawBattle(){
   if(!B)return;const c=bc;const K=sizeBattle();c.setTransform(K,0,0,K,0,0);const _n=performance.now();if(B.shakeUntil&&_n<B.shakeUntil)c.translate(Math.round((Math.random()-.5)*4),Math.round((Math.random()-.5)*4));c.imageSmoothingEnabled=false;const now=performance.now();
   c.drawImage(battleBG(B.zone||'arena'),0,0,AW,AH);
 
-  c.fillStyle='#14141f';c.fillRect(0,AY0-20,AW,2);c.fillStyle='#00000030';c.fillRect(0,0,AW,AY0-18);
-  const ents=[B.me,B.foe].filter(Boolean).sort((a,b)=>a.y-b.y);
-  for(const F of ents){if(F.out&&act(F).hp<=0&&F.faint<=0&&F.ctrl!=='remote')continue;const mon=act(F);
+  c.fillStyle='#0b0d16b8';c.fillRect(0,0,AW,48);c.fillStyle='#14141f';c.fillRect(0,48,AW,2);
+  const ents=[B.me,B.foe].filter(Boolean).concat((B.obs||[]).filter(o=>!o.dead)).sort((a,b)=>a.y-b.y);
+  for(const F of ents){if(F.kind){drawObs(c,F,now);continue}if(F.out&&act(F).hp<=0&&F.faint<=0&&F.ctrl!=='remote')continue;const mon=act(F);
     let catchK=-1;if(F===B.foe&&B.catch){const el=(now-B.catch.t0)/1000;if(el>0.4||B.catch.done)continue;catchK=el/0.4}
     if(F.spawnT&&now<F.spawnT)continue;
     const s=monSprite(mon.s,24);let X=Math.round(F.x/2)*2,Y=Math.round(F.y/2)*2;
     // entrance: slide in from the side at battle start
-    if(B.enterT){const ek=clamp((now-B.enterT)/550,0,1),off=(1-ek)*(1-ek)*120;X=Math.round(X+(F.side==='L'?-off:off))}
+    if(B.enterT){const ek=clamp((now-B.enterT)/550,0,1),off=(1-ek)*(1-ek)*110;Y=Math.round(Y+(F===B.me?off:-off))}
     if(B.fin&&B.fin.win===true&&F===B.me&&mon.hp>0){Y=Math.round(Y-Math.abs(Math.sin((now-B.fin.t0)/1000*7))*7)}
-    if(F.lungeT){const lk=(now-F.lungeT)/350;if(lk<1)X=Math.round(X+Math.sin(lk*Math.PI)*26*(F.side==='L'?1:-1))}
+    if(F.lungeT){const lk=(now-F.lungeT)/350,O=F===B.me?B.foe:B.me;if(lk<1&&O){const ux=O.x-F.x,uy=O.y-F.y,ul=Math.hypot(ux,uy)||1,k=Math.sin(lk*Math.PI)*26;X=Math.round(X+ux/ul*k);Y=Math.round(Y+uy/ul*k)}}
     let sc=1,white=0,yoff=0,clipY=null;
     const sk=F.spawnT?(now-F.spawnT)/380:1;if(sk<1){sc=0.2+0.8*sk;white=1-sk}
     if(catchK>=0){sc=1-catchK*0.9;white=1}
@@ -1977,8 +2026,8 @@ function drawBattle(){
   if(B.foe&&B.mode==='wild'){const rc=rarOf(act(B.foe).s);if(RAR[act(B.foe).s]!=='common'){c.fillStyle='#14141f';c.fillRect(UW-116,34,58,9);vtText(c,rc.n.toUpperCase(),UW-113,41,rc.c,9)}}
   if(B.mode!=='wild'&&B.zone===undefined&&B.oppName)vtText(c,'vs '+B.oppName,UW/2,42,'#ffffff',9,'center');
   const msgs=B.log.filter(m=>now-m.at<2600);msgs.forEach((m,i)=>{const y=UH-6-(msgs.length-1-i)*10;c.font='10px VT323';const w=c.measureText(m.t).width+8;c.fillStyle='#0b0d16c8';c.fillRect(Math.round(UW/2-w/2),y-8,Math.ceil(w),10);vtText(c,m.t,UW/2,y,'#ffffff',10,'center')});
-  if(B.state==='count'){const n=Math.ceil((B.cntEnd-now)/1000);pxText(c,n>0?String(n):'GO!',UW/2,104,'#ffcb3d',16,'center')}
-  if(B.state==='wait'){pxText(c,'WAITING FOR OPPONENT',UW/2,104,'#ffffff',8,'center')}
+  if(B.state==='count'){const n=Math.ceil((B.cntEnd-now)/1000);pxText(c,n>0?String(n):'GO!',UW/2,UH/2+8,'#ffcb3d',16,'center')}
+  if(B.state==='wait'){pxText(c,'WAITING FOR OPPONENT',UW/2,UH/2+4,'#ffffff',8,'center')}
   if(B.fin)drawFinale(c,now);
 }
 
