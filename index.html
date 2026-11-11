@@ -128,6 +128,13 @@ select{background:#0b0d16;color:var(--text);border:2px solid #000;font-family:in
 .brow .btn{flex:1;font-size:8px;padding:8px 4px}
 .keys{grid-column:1/-1;font-size:16px;color:var(--muted);text-align:center}
 /* arena */
+#bpick{position:absolute;left:50%;top:22%;transform:translateX(-50%);z-index:7;display:none;background:#0b0d16e8;border:3px solid #000;box-shadow:4px 4px 0 #000;padding:8px 10px;text-align:center;max-width:94%}
+#bpick.on{display:block}
+#bpick .t{font-family:'Press Start 2P';font-size:9px;color:var(--accent);margin-bottom:6px}
+#bpick .row{display:flex;gap:6px;justify-content:center;flex-wrap:wrap}
+#bpick button{background:var(--panel2);border:2px solid #000;box-shadow:2px 2px 0 #000;color:var(--text);font-family:inherit;font-size:17px;padding:4px 6px;min-width:84px;touch-action:manipulation}
+#bpick button.sel{border-color:var(--accent);background:#3a3410}
+#bpick canvas{display:block;margin:0 auto;width:40px;height:40px;image-rendering:pixelated}
 #arena{position:absolute;inset:0;background:#141022f4;display:none;align-items:center;justify-content:center;z-index:4;padding:14px}
 #arena.on{display:flex}
 .abox{background:var(--panel);border:3px solid #000;box-shadow:5px 5px 0 #000;padding:16px;width:min(520px,100%);max-height:100%;overflow:auto}
@@ -230,6 +237,7 @@ body.mob.portrait #rotate.show{display:block}
     <div id="arena"><div class="abox" id="abox"></div></div>
     <div id="mapov"><div class="mapbox"><div class="maphead"><span>WORLD MAP</span><button class="btn ghost" id="mclose">✕ CLOSE</button></div><canvas id="mapcv"></canvas><div id="mapleg"></div></div></div>
     <div id="battle"><div id="bwrap"><canvas id="bcv" width="720" height="480"></canvas><div id="bctl"><div id="bpad"></div><div id="bact"></div></div></div></div>
+    <div id="bpick"></div>
     <div id="modal"><div class="box" id="mbox"></div></div>
     <canvas id="fxcv"></canvas>
   </div>
@@ -301,7 +309,7 @@ const TURN_CONFIG = {
 
 /* ===================== VERSION ===================== */
 // bump with every release (MAJOR.MINOR.PATCH). Players can only share lobbies/duels with the same version.
-const VERSION='0.20.0';
+const VERSION='0.22.0';
 function cmpV(a,b){const x=String(a||'0').split('.').map(Number),y=String(b||'0').split('.').map(Number);for(let i=0;i<3;i++){const d=(x[i]||0)-(y[i]||0);if(d)return d}return 0}
 /* ===================== ERROR REPORTING ===================== */
 function showErr(m){try{const b=document.getElementById('errbox');if(!b)return;b.textContent='⚠ Error: '+String(m).slice(0,220)+' — please send this to the developer.';b.style.display='block';clearTimeout(showErr.t);showErr.t=setTimeout(()=>b.style.display='none',12000)}catch(e){}}
@@ -803,7 +811,7 @@ function openSettings(){
   let h=`<h3>⚙ CONTROLS</h3><div class="lbl2">CONTROL MODE</div><div class="seg">${segBtn('ctrl','auto','AUTO',SET.ctrl)}${segBtn('ctrl','pc','PC',SET.ctrl)}${segBtn('ctrl','mobile','MOBILE',SET.ctrl)}</div>
   <div class="small" style="text-align:left;margin:-6px 0 10px">Currently: ${mob?'mobile (touch D-pad + buttons)':'PC (keyboard)'}${SET.ctrl==='auto'?' — chosen automatically':''}</div>`;
   if(mob)h+=`<div class="lbl2">D-PAD SIZE</div><div class="seg">${segBtn('dp','s','SMALL',SET.dp)}${segBtn('dp','m','MEDIUM',SET.dp)}${segBtn('dp','l','LARGE',SET.dp)}</div><div class="lbl2">D-PAD SIDE</div><div class="seg">${segBtn('side','left','LEFT',SET.side)}${segBtn('side','right','RIGHT',SET.side)}</div><div class="small" style="text-align:left;margin-bottom:10px">Tip: in battles you can also hold your finger on the arena to walk there.</div>`;
-  else{h+=`<div class="lbl2">KEY BINDINGS</div><div class="krow"><span>Move</span><span class="small">WASD / Arrow keys</span></div>`;
+  else{h+=`<div class="lbl2">KEY BINDINGS</div><div class="krow"><span>Move</span><span class="small">WASD (world: also arrows)</span></div><div class="krow"><span>Aim (battle)</span><span class="small">Arrow keys</span></div>`;
     for(const k of Object.keys(DEF_KEYS))h+=`<div class="krow"><span>${KEY_NAMES[k]}</span><button class="btn ghost" data-key="${k}">${capturing===k?'PRESS KEY…':keyLabel(SET.keys[k])}</button></div>`;}
   h+=`<div class="lbl2">MONSTER SET (FREE PLAY)</div><div class="seg">${segBtn('alt','1','★ ALTERNATIVE',SET.alt==='0'?'0':'1')}${segBtn('alt','0','CLASSIC',SET.alt==='0'?'0':'1')}</div><div class="small" style="text-align:left;margin:-6px 0 10px">Lobbies choose their own set when they are created.</div>`;
   if(typeof netSettingsHtml==='function')h+=netSettingsHtml();
@@ -826,12 +834,12 @@ addEventListener('resize',()=>{if(SET.ctrl==='auto')applyControls()});
 /* ===================== INPUT ===================== */
 const DIRS={up:[0,-1],down:[0,1],left:[-1,0],right:[1,0]};
 const KEYMAP={ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right',w:'up',s:'down',a:'left',d:'right',W:'up',S:'down',A:'left',D:'right'};
-const held=[];
+const held=[],aimHeld=[];
 function typing(){const a=document.activeElement;return a&&(a.tagName==='INPUT'||a.tagName==='TEXTAREA'||a.tagName==='SELECT')}
 addEventListener('keydown',e=>{
   if(capturing){captureKey(e);return}
   if(typing()){if(e.key==='Escape')document.activeElement.blur();return}
-  const d=KEYMAP[e.key];if(d){e.preventDefault();if(!held.includes(d))held.push(d);return}
+  const d=KEYMAP[e.key];if(d){e.preventDefault();if(e.key.startsWith('Arrow')&&B&&!B.tb){if(!aimHeld.includes(d))aimHeld.push(d);return}if(!held.includes(d))held.push(d);return}
   if(B){if(modalOpen())return;const k=normKey(e.key),K=SET.keys;
     for(let i=0;i<4;i++)if(k===K['a'+(i+1)]){e.preventDefault();battleMove(i);return}
     if(k===K.dash){e.preventDefault();battleDash()}else if(k===K.sw)battleSwitch();else if(k===K.cap){if(!e.repeat)capPress()}else if(k===K.run)tryRun();
@@ -840,8 +848,8 @@ addEventListener('keydown',e=>{
   if(e.key==='Escape'&&mapOpen()){closeMap();return}
   if(e.key==='Enter'&&G){e.preventDefault();switchTab('chat');$('#chatin').focus()}
 });
-addEventListener('keyup',e=>{const d=KEYMAP[e.key];if(d){const i=held.indexOf(d);if(i>=0)held.splice(i,1)}if(B&&B.aim&&normKey(e.key)===SET.keys.cap)capRelease()});
-addEventListener('blur',()=>{held.length=0});
+addEventListener('keyup',e=>{const d=KEYMAP[e.key];if(d){const i=held.indexOf(d);if(i>=0)held.splice(i,1);const j=aimHeld.indexOf(d);if(j>=0)aimHeld.splice(j,1)}if(B&&B.aim&&normKey(e.key)===SET.keys.cap)capRelease()});
+addEventListener('blur',()=>{held.length=0;aimHeld.length=0});
 document.querySelectorAll('#dpad button').forEach(b=>{const d=b.dataset.d;
   b.addEventListener('pointerdown',e=>{e.preventDefault();if(!held.includes(d))held.push(d)});
   const up=()=>{const i=held.indexOf(d);if(i>=0)held.splice(i,1)};['pointerup','pointerleave','pointercancel'].forEach(ev=>b.addEventListener(ev,up))});
@@ -857,8 +865,9 @@ function heldDir(){if(JOY.active){const m=Math.hypot(JOY.x,JOY.y);if(m>0.35)retu
   z.addEventListener('pointerup',end);z.addEventListener('pointercancel',end);z.addEventListener('lostpointercapture',end);
 })();
 // right-hand action buttons (multi-touch: each button tracks its own finger)
-function tbBtn(label,cls,pos,down,up){const b=document.createElement('button');b.className='tbb '+(cls||'');Object.assign(b.style,pos);b.innerHTML=`<div class="cdr"></div><span>${label}</span>`;
-  b.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();b.classList.add('on');try{b.setPointerCapture(e.pointerId)}catch(_){}down&&down()});
+function tbBtn(label,cls,pos,down,up,drag){const b=document.createElement('button');b.className='tbb '+(cls||'');Object.assign(b.style,pos);b.innerHTML=`<div class="cdr"></div><span>${label}</span>`;
+  b.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();b.classList.add('on');try{b.setPointerCapture(e.pointerId)}catch(_){}const r=b.getBoundingClientRect();b._cx=r.left+r.width/2;b._cy=r.top+r.height/2;down&&down()});
+  b.addEventListener('pointermove',e=>{if(drag&&b.classList.contains('on')){e.preventDefault();drag(e.clientX-b._cx,e.clientY-b._cy)}});
   const rel=()=>{if(!b.classList.contains('on'))return;b.classList.remove('on');up&&up()};['pointerup','pointercancel','lostpointercapture'].forEach(ev=>b.addEventListener(ev,rel));
   b.addEventListener('contextmenu',e=>e.preventDefault());return b}
 let TB_KEY='';
@@ -867,12 +876,14 @@ function buildTouchButtons(){
   if(!B){$('#joyhint').style.display=JOY.active?'none':'flex';return}
   const m=B.me?act(B.me).m:[];
   const spots=[{right:'0px',bottom:'0px',width:'82px',height:'82px'},{right:'94px',bottom:'4px',width:'60px',height:'60px'},{right:'70px',bottom:'74px',width:'60px',height:'60px'},{right:'4px',bottom:'94px',width:'60px',height:'60px'}];
-  for(let i=0;i<4;i++){const mid=m[i];if(!mid)continue;const mv=MOVES[mid];const b=tbBtn(esc(mv.n.split(' ')[0].toUpperCase()).slice(0,8)+'<br>'+apCost(mid)+' AP','mvb',Object.assign({},spots[i],{background:TYPES[mv.t].c+'dd'}),()=>battleMove(i));b.dataset.i=i;el.appendChild(b)}
+  const aimDrag=(dx,dy)=>{if(B&&Math.hypot(dx,dy)>14){setAim(dx,dy);B.aimDrag=1}};
+  for(let i=0;i<4;i++){const mid=m[i];if(!mid)continue;const mv=MOVES[mid];const b=tbBtn(esc(mv.n.split(' ')[0].toUpperCase()).slice(0,8)+'<br>'+apCost(mid)+' AP','mvb',Object.assign({},spots[i],{background:TYPES[mv.t].c+'dd'}),B.tb?()=>battleMove(i):null,B.tb?null:()=>{if(B){B.aimDrag=0;battleMove(i)}},B.tb?null:aimDrag);b.dataset.i=i;el.appendChild(b)}
   if(!B.tb)el.appendChild(tbBtn('DASH','',{right:'166px',bottom:'4px',width:'60px',height:'60px'},battleDash));
   el.appendChild(tbBtn('SWAP','',{right:'140px',bottom:'80px',width:'48px',height:'48px'},battleSwitch));
-  if(B.mode==='wild'){el.appendChild(tbBtn('◓<br>HOLD','',{right:'78px',bottom:'146px',width:'52px',height:'52px',background:'#2fb7b0cc'},capPress,capRelease));el.appendChild(tbBtn('RUN','',{right:'10px',bottom:'166px',width:'44px',height:'44px'},tryRun))}
+  if(B.mode==='wild'){el.appendChild(tbBtn('◓<br>DRAG','',{right:'78px',bottom:'146px',width:'56px',height:'56px',background:'#2fb7b0cc'},capPress,()=>{if(B)B.aimDrag=0;capRelease()},B.tb?null:aimDrag));el.appendChild(tbBtn('RUN','',{right:'10px',bottom:'166px',width:'44px',height:'44px'},tryRun))}
   else if(B.mode!=='trainer')el.appendChild(tbBtn('GIVE<br>UP','',{right:'10px',bottom:'166px',width:'44px',height:'44px',background:'#ef4444cc'},forfeit));
   $('#joyhint').style.display=B.tb?'none':(JOY.active?'none':'flex');
+  if(!B.tb&&!buildTouchButtons.tip){buildTouchButtons.tip=1;say('Tip: drag an attack button to aim — release to fire.')}
 }
 function updateTouch(){
   const t=$('#touch');if(!t)return;document.body.classList.toggle('inbattle',!!B);
@@ -1238,7 +1249,7 @@ function syncHost(){
 }
 // close a running battle, the arena screen and any open dialog immediately (used when leaving or resetting a lobby)
 function hardExit(){
-  if(B){B.state='over';B=null;FX=null;try{fxc.clearRect(0,0,fxcv.width,fxcv.height)}catch(e){}$('#battle').classList.remove('on');$('#stage').style.transform='';try{placeDpad()}catch(e){}pres({du:null,bt:null})}
+  if(B){B.state='over';B=null;FX=null;$('#bpick').classList.remove('on');try{fxc.clearRect(0,0,fxcv.width,fxcv.height)}catch(e){}$('#battle').classList.remove('on');$('#stage').style.transform='';try{placeDpad()}catch(e){}pres({du:null,bt:null})}
   if(myCh)cancelCh();if(incoming){incoming=null}
   closeModal();closeMap();$('#arena').classList.remove('on');$('#abox').dataset.h='';held.length=0;
 }
@@ -1516,21 +1527,34 @@ function newBattle(o){
   transition(kind,()=>{if(B!==myB)return;$('#battle').classList.add('on');buildBattleUI();const now=performance.now();B.enterT=now;B.log.forEach(m=>m.at=now);
     for(const F of[B.me,B.foe])if(F)F.spawnT=now+(F===B.foe?150:450);
     const introMs=1000;if(realState==='count')B.cntEnd=Math.max(B.cntEnd||0,now+introMs+1600);
-    setTimeout(()=>{if(B===myB&&B.state==='intro')B.state=realState==='fight'&&B.mode==='wild'?'fight':realState},introMs)},undefined,350);
+    setTimeout(()=>{if(B===myB&&B.state==='intro'){if(realState==='fight'&&B.mode==='wild'&&!B.tb&&B.me.team.filter(m=>m.hp>0).length>1){B.state='count';B.cntEnd=performance.now()+2600}else B.state=realState}},introMs)},undefined,350);
 }
-function closeBattle(){const myB=B;if(!myB)return;myB.closing=true;transition('fade',()=>{if(B===myB)B=null;placeDpad();$('#battle').classList.remove('on');$('#stage').style.transform='';pres({bt:null,du:null,ld:leadInfo()});renderTeam();updateHud()},300,350)}
+function closeBattle(){const myB=B;if(!myB)return;myB.closing=true;$('#bpick').classList.remove('on');transition('fade',()=>{if(B===myB)B=null;placeDpad();$('#battle').classList.remove('on');$('#stage').style.transform='';pres({bt:null,du:null,ld:leadInfo()});renderTeam();updateHud()},300,350)}
 function fire(F,i,remote){
   const bt=act(F);const mid=bt.m[i];if(!mid||F.cd[i]>0||F.faint>0||F.out||F.st.stun>0)return;
   const cost=apCost(mid);if(F.ctrl!=='remote'){if((F.ap??AP_MAX)<cost){if(F===B.me){F.apShake=performance.now();const n=performance.now();if(!B.apMsgT||n-B.apMsgT>1200){B.apMsgT=n;say('Not enough AP!')}}return}F.ap=(F.ap??AP_MAX)-cost}
   const T=F===B.me?B.foe:B.me;F.cd[i]=cdOf(mid)*(F.ctrl==='ai'?1.35:1);
   const mvv=MOVES[mid];if(mvv.k==='self'){selfMove(F,mvv);return}F.atkT=performance.now();
-  let dx=T.x-F.x,dy=T.y-F.y;const L=Math.hypot(dx,dy)||1;dx/=L;dy/=L;F.face=dx<0?-1:1;
+  let dx=T.x-F.x,dy=T.y-F.y;const L=Math.hypot(dx,dy)||1;dx/=L;dy/=L;
+  if(F===B.me&&!B.tb){const a=myAim();dx=a.x;dy=a.y;try{navigator.vibrate&&navigator.vibrate(8)}catch(e){}}F.face=dx<0?-1:1;
   const sp=shotParams(mid);const angs=sp.n===3?[-sp.ang,0,sp.ang]:[0];
   for(const a of angs){const c=Math.cos(a),s=Math.sin(a);const vx=(dx*c-dy*s)*sp.sp,vy=(dx*s+dy*c)*sp.sp;
     const sh={id:F.side+(++B.sid)+'_'+Math.floor(Math.random()*1e6),side:F.side,att:Object.assign({},bt),mid,x:F.x+dx*8,y:F.y-10+dy*6,vx,vy,age:0,life:sp.life,r:sp.r,p:sp.p,mel:sp.mel};
     B.shots.push(sh);if(B.mode==='duel'&&F===B.me)B.mySh.push([sh.id,F.a,mid,Math.round(sh.x),Math.round(sh.y),Math.round(vx),Math.round(vy)])}
   if(B.mode==='duel'&&F===B.me){B.mySh=B.mySh.slice(-9);publishDuel(true)}
 }
+function startBreak(F){const now=performance.now();const alive=F.team.filter((m,i)=>i!==F.a&&m.hp>0).length;
+  B.state='break';B.brk={F,t0:now,me:F===B.me,choice:null,end:now+(F===B.me&&alive>1?4500:2300)};B.shots=[];B.aimDrag=0;
+  for(const X of[B.me,B.foe])if(X){X.vx=X.vy=0;X.dashT=0}
+  say(F===B.me?(alive>1?'Round paused — choose your next monster!':'Round paused — next monster!'):`Round paused — ${B.mode==='wild'?'':B.oppName||'the foe'} is sending the next monster…`)}
+function breakUpdate(now,dt){const k=B.brk,F=k.F;F.faint=Math.max(0.01,F.faint-dt*0.5);
+  if(now<k.end)return;
+  if(F.ctrl==='remote'&&act(F).hp<=0){if(now-k.t0<9000)return}  // wait until the other player has sent his next monster
+  if(F.ctrl!=='remote'&&act(F).hp<=0){let idx=k.choice;if(idx==null||!F.team[idx]||F.team[idx].hp<=0)idx=nextAlive(F);if(idx<0){F.out=true;B.state='fight';B.brk=null;return}
+    F.a=idx;F.spawnT=now;F.cd=[0.3,0.3,0.3,0.3];say(`${F===B.me?'Go':'Foe sends out'} ${SPECIES[act(F).s].n}!`)}
+  F.faint=0;F.st={burn:0,slow:0,stun:0,shield:0,haste:0};
+  B.me.x=ACX;B.me.y=YB;if(B.foe){B.foe.x=ACX;B.foe.y=YT}for(const X of[B.me,B.foe])if(X){X.vx=X.vy=0;X.ap=AP_MAX;X.inv=1}B.aimV=null;B.enterT=now;
+  B.brk=null;B.state='count';B.cntEnd=now+1600;if(B.mode==='duel')publishDuel(true)}
 function nextAlive(F){const n=F.team.findIndex((m,i)=>i!==F.a&&m.hp>0);return n}
 function doSwitch(F,idx){F.a=idx;F.spawnT=performance.now();burst(F.x,F.y-14,'#ffffff',12);F.swCd=1.6;F.inv=0.7;F.cd=[0.3,0.3,0.3,0.3];say(`${F===B.me?'Go':'Foe sends out'} ${SPECIES[act(F).s].n}!`);if(B.mode==='duel'&&F===B.me)publishDuel(true)}
 function selfMove(F,mv){const m=act(F);F.castT=performance.now();
@@ -1556,7 +1580,11 @@ function hitLocal(T,s){
 }
 function drainHeal(s,d){if(MOVES[s.mid].fx!=='drain'||!d)return;const A=s.side===B.me.side?B.me:B.foe;if(!A||A.ctrl==='remote')return;const m=act(A);if(m.hp<=0)return;const h=Math.max(1,Math.round(d*0.5));m.hp=Math.min(m.mhp,m.hp+h);B.nums.push({x:A.x,y:A.y-34,t:'+'+h,c:'#3ddc6b',at:performance.now()});if(B.mode==='duel'&&A===B.me)publishDuel(true)}
 function burst(x,y,col,n){for(let i=0;i<n;i++){const a=Math.random()*6.28,s=30+Math.random()*60;B.parts.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:0.35+Math.random()*0.25,age:0,c:col})}}
+// manual aiming (no auto-aim): arrow keys on PC, drag on an attack button on phones; the direction is kept until changed
+function myAim(){if(!B.aimV){const T=B.foe;const dx=T?T.x-B.me.x:0,dy=T?T.y-B.me.y:-1,L=Math.hypot(dx,dy)||1;B.aimV={x:dx/L,y:dy/L}}return B.aimV}
+function setAim(x,y){const L=Math.hypot(x,y);if(L>0.001)B.aimV={x:x/L,y:y/L}}
 function controlMe(dt){
+  if(aimHeld.length&&!B.tb){let ax=0,ay=0;for(const d of aimHeld){ax+=DIRS[d][0];ay+=DIRS[d][1]}if(ax||ay)setAim(ax,ay)}
   const F=B.me;if(F.out||F.faint>0||F.st.stun>0||B.aim){F.vx=F.vy=0;return}
   let dx=0,dy=0,sc=1;for(const d of held){dx+=DIRS[d][0];dy+=DIRS[d][1]}
   if(JOY.active&&!dx&&!dy){const m=Math.hypot(JOY.x,JOY.y);if(m>0.18){dx=JOY.x;dy=JOY.y;sc=clamp((m-0.18)/0.55,0.3,1)}}
@@ -1598,13 +1626,17 @@ function bUpdate(dt){
   if(B.state==='intro'){return}
   if(B.tb){tbUpdate(dt,now);return}
   if(B.state==='flee'){fleeUpdate(dt);return}
-  if(B.state==='count'){if(now>=B.cntEnd){B.state='fight';say('FIGHT!')}return}
+  if(B.state==='count'){if(now>=B.cntEnd){B.state='fight';B.leadDone=1;say('FIGHT!')}return}
+  if(B.state==='break'){breakUpdate(now,dt);return}
   if(B.state==='catch'){catchUpdate(now);return}
   if(B.state!=='fight')return;
   controlMe(dt);
   if(B.foe.ctrl==='ai')aiUpdate(B.foe,dt);
   // fainting -> next monster (only for fighters this client is authoritative for)
-  for(const F of[B.me,B.foe]){if(F.ctrl==='remote'||F.faint<=0)continue;F.faint-=dt;if(F.faint<=0){if(B.mode==='wild'&&F===B.foe)continue;const n=nextAlive(F);if(n<0){F.out=true}else doSwitch(F,n)}}
+  // a monster faints but its trainer has more → the round pauses (faint animation, next pick), then both restart from their start spots
+  for(const F of[B.me,B.foe]){if(!F||F.faint<=0||act(F).hp>0)continue;if(B.mode==='wild'&&F===B.foe)continue;
+    if(F.team.some((m,i)=>i!==F.a&&m.hp>0)){startBreak(F);return}
+    if(F.ctrl==='remote')continue;F.faint-=dt;if(F.faint<=0)F.out=true}
   // shots
   for(const s of B.shots){s.age+=dt;s.x+=s.vx*dt;s.y+=s.vy*dt;if(s.age>s.life||outArena(s.x,s.y+10)){s.dead=1;if(s.cap)say('Missed!');continue}
     if(!s.cap&&shotVsObs(s))continue;
@@ -1742,7 +1774,7 @@ function battleDash(){if(!B||B.tb||B.state!=='fight')return;const F=B.me;if(F.da
 function battleSwitch(){if(B&&B.tb){tbSwitchMenu();return}if(!B||B.state!=='fight')return;const F=B.me;if(F.swCd>0||F.faint>0||F.out)return;const n=F.team.findIndex((m,i)=>i>F.a&&m.hp>0);const m=n>=0?n:F.team.findIndex((m,i)=>i!==F.a&&m.hp>0);if(m>=0)doSwitch(F,m)}
 // aiming: hold CAPSULE -> the aim line swings; release to throw. A pulsing ring on the target gives a throw bonus.
 function capPress(){if(!B||B.mode!=='wild'||B.aim)return;if(!(B.state==='fight'||(B.tb&&B.state==='tbChoose'))||B.capCd>0)return;if(RUN.kap<=0){say('No capsules left!');return}B.aim={t0:performance.now()};say('Aim… release to throw!')}
-function aimAngle(now){const F=B.me,T=B.foe;return Math.atan2((T.y-12)-(F.y-14),T.x-F.x)+Math.sin((now-B.aim.t0)/1000*3.4)*0.55}
+function aimAngle(now){const F=B.me,T=B.foe;if(!B.tb){const a=myAim();return Math.atan2(a.y,a.x)}return Math.atan2((T.y-12)-(F.y-14),T.x-F.x)+Math.sin((now-B.aim.t0)/1000*3.4)*0.55}
 function ringR(now){return 5+11*(0.5+0.5*Math.sin(now/240))}
 function capRelease(){if(!B||!B.aim)return;const now=performance.now(),a=aimAngle(now);B.aim=null;RUN.kap--;B.capCd=1.2;updateHud();
   const F=B.me,sp=215;B.shots.push({cap:1,side:F.side,x:F.x,y:F.y-14,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,age:0,life:1.3,r:5,mid:'bump',flight:Math.hypot(B.foe.x-F.x,B.foe.y-F.y)/sp});
@@ -1774,7 +1806,7 @@ function startLegend(L){
 function startTrainer(t){
   if(!RUN.team.some(m=>m.hp>0))healAll();
   const team=trainerTeam(t).map(([s,l])=>battler(newMon(s,l)));
-  newBattle({mode:'trainer',trainer:t,oppName:t.n,zone:zoneAt(t.x,t.y)||'north',me:mkFighter('L',RUN.team.map(battler),XL,'local'),foe:mkFighter('R',team,XR,'ai'),state:'count',cntEnd:performance.now()+1800});
+  newBattle({mode:'trainer',trainer:t,oppName:t.n,zone:zoneAt(t.x,t.y)||'north',me:mkFighter('L',RUN.team.map(battler),XL,'local'),foe:mkFighter('R',team,XR,'ai'),state:'count',cntEnd:performance.now()+2600});
   say(`${t.n} wants to battle!`);
 }
 function trainerKO(def){const idx=B.me.a;syncBack();const m=RUN.team[idx];if(m){const msgs=gainXp(m,Math.round(xpGain(def.s,def.l)*1.4));Object.assign(B.me.team[idx],battler(m));msgs.forEach(say)}}
@@ -1878,12 +1910,25 @@ function buildBattleUI(){
   el.appendChild(row);
   const K=SET.keys;
   if(B.tb)el.insertAdjacentHTML('beforeend',`<div class="keys">Turn-based · pick an action: attacks ${['a1','a2','a3','a4'].map(a=>keyLabel(K[a])).join('/')} · Switch: ${keyLabel(K.sw)}${B.mode==='wild'?` · Capsule: ${keyLabel(K.cap)} · Run: ${keyLabel(K.run)}`:''}</div>`);else
-  el.insertAdjacentHTML('beforeend',`<div class="keys">Move: WASD/arrows or hold on the arena · Attacks: ${['a1','a2','a3','a4'].map(a=>keyLabel(K[a])).join('/')} · Dash: ${keyLabel(K.dash)} · Switch: ${keyLabel(K.sw)}${B.mode==='wild'?` · Capsule: ${keyLabel(K.cap)} · Run: ${keyLabel(K.run)}`:''}</div>`);
+  el.insertAdjacentHTML('beforeend',`<div class="keys">Move: WASD (or hold on the arena) · Aim: arrow keys · Attacks: ${['a1','a2','a3','a4'].map(a=>keyLabel(K[a])).join('/')} · Dash: ${keyLabel(K.dash)} · Switch: ${keyLabel(K.sw)}${B.mode==='wild'?` · Capsule: ${keyLabel(K.cap)} · Run: ${keyLabel(K.run)}`:''}</div>`);
   const cb=$('#bcap');if(cb){cb.onclick=null;cb.addEventListener('pointerdown',e=>{e.preventDefault();capPress()});['pointerup','pointerleave','pointercancel'].forEach(ev=>cb.addEventListener(ev,()=>capRelease()))}
   placeDpad();
   B.uiKey='';
 }
-function updateBattleUI(){
+// choose the lead during the start countdown, or the next monster during a round pause
+function renderPick(){const el=$('#bpick');if(!el)return;let mode=null;
+  if(B&&!B.tb&&B.me&&!B.closing){const alive=B.me.team.map((m,i)=>i).filter(i=>B.me.team[i].hp>0);
+    if(B.state==='count'&&!B.leadDone&&alive.length>1)mode='lead';else if(B.state==='break'&&B.brk&&B.brk.me&&alive.length>1)mode='next'}
+  if(!mode){if(el.classList.contains('on')){el.classList.remove('on');el.dataset.k=''}return}
+  const sel=mode==='lead'?B.me.a:(B.brk.choice??-1),left=Math.max(0,Math.ceil(((mode==='lead'?B.cntEnd:B.brk.end)-performance.now())/1000));
+  const key=mode+sel+B.me.team.map(m=>m.s+m.hp).join()+left;if(el.dataset.k===key)return;el.dataset.k=key;
+  el.innerHTML=`<div class="t">${mode==='lead'?'WHO STARTS?':'CHOOSE NEXT'} · ${left}</div><div class="row">${B.me.team.map((m,i)=>m.hp>0?`<button data-pk="${i}" class="${i===sel?'sel':''}"><canvas width="24" height="24"></canvas>${esc(SPECIES[m.s].n)}<br><span class="small">Lv ${m.l} · ${m.hp}/${m.mhp}</span></button>`:'').join('')}</div>`;
+  el.querySelectorAll('[data-pk]').forEach(b=>{const cx=b.querySelector('canvas').getContext('2d');cx.drawImage(monSprite(B.me.team[+b.dataset.pk].s,24),0,0);
+    b.onpointerdown=e=>{e.preventDefault();e.stopPropagation();const i=+b.dataset.pk;if(!B)return;
+      if(B.state==='count'&&!B.leadDone){if(i!==B.me.a){B.me.a=i;B.me.spawnT=performance.now();burst(B.me.x,B.me.y-14,'#ffffff',12);say(`Go ${SPECIES[act(B.me).s].n}!`);if(B.mode==='duel')publishDuel(true)}}
+      else if(B.state==='break'&&B.brk){B.brk.choice=i;B.brk.end=Math.min(B.brk.end,performance.now()+500)}el.dataset.k=''}});
+  el.classList.add('on')}
+function updateBattleUI(){try{renderPick()}catch(e){console.error(e)}
   const F=B.me;const mon=act(F);const key=mon.s+F.a+mon.m.join();
   const btns=document.querySelectorAll('#bact .mv');
   if(key!==B.uiKey){B.uiKey=key;btns.forEach((b,i)=>{const mid=mon.m[i];b.style.visibility=mid?'visible':'hidden';if(!mid)return;const mv=MOVES[mid];b.style.background=TYPES[mv.t].c;b.querySelector('.lbl').innerHTML=`<span class="k">${isMob()?'':esc(keyLabel(SET.keys['a'+(i+1)]))}</span> ${esc(mv.n)}<small>${esc(moveDesc(mid).replace(/^\w+ · /,''))}</small>`})}
@@ -1894,7 +1939,7 @@ function updateBattleUI(){
 }
 const bcv=$('#bcv'),bc=bcv.getContext('2d');
 function toArena(e){const r=bcv.getBoundingClientRect();return{x:(e.clientX-r.left)/r.width*AW,y:(e.clientY-r.top)/r.height*AH+18}}
-bcv.addEventListener('pointerdown',e=>{if(!B)return;bcv.setPointerCapture(e.pointerId);B.ptr=toArena(e)});
+bcv.addEventListener('pointerdown',e=>{if(!B||isMob())return;bcv.setPointerCapture(e.pointerId);B.ptr=toArena(e)});
 bcv.addEventListener('pointermove',e=>{if(B&&B.ptr)B.ptr=toArena(e)});
 ['pointerup','pointercancel'].forEach(ev=>bcv.addEventListener(ev,()=>{if(B)B.ptr=null}));
 const BBG={};
@@ -2024,6 +2069,9 @@ function drawBattle(){
     const ex=F.x+Math.cos(a)*84,ey=F.y-14+Math.sin(a)*84;c.strokeStyle='#ffcb3d';c.lineWidth=1;c.strokeRect(Math.round(ex)-3,Math.round(ey)-3,6,6);
     const r=ringR(now),T=B.foe;c.strokeStyle=r<8?'#3ddc6b':r<11.5?'#ffcb3d':'#ffffff';c.beginPath();c.arc(T.x,T.y-12,r,0,7);c.stroke();c.strokeStyle='#ffffff60';c.beginPath();c.arc(T.x,T.y-12,16,0,7);c.stroke()}
   if(B.ptr){c.fillStyle='#ffffff80';c.fillRect(Math.round(B.ptr.x)-1,Math.round(B.ptr.y)-1,3,3)}
+  if(!B.tb&&B.me&&!B.aim&&(B.state==='fight'||B.state==='count')&&!B.me.out){const a=myAim(),F=B.me,on=!!B.aimDrag||aimHeld.length>0;c.fillStyle=on?'#ffcb3d':'#ffffff70';
+    for(let i=2;i<10;i++){const d=i*8;c.fillRect(Math.round(F.x+a.x*d)-1,Math.round(F.y-14+a.y*d)-1,2,2)}
+    const tx=F.x+a.x*82,ty=F.y-14+a.y*82,px=-a.y,py=a.x;for(let k=0;k<5;k++){c.fillRect(Math.round(tx-a.x*k*2+px*k*1.5)-1,Math.round(ty-a.y*k*2+py*k*1.5)-1,2,2);c.fillRect(Math.round(tx-a.x*k*2-px*k*1.5)-1,Math.round(ty-a.y*k*2-py*k*1.5)-1,2,2)}}
   // ---- UI layer: drawn 1.5x larger than the battlefield pixels ----
   c.setTransform(K*UI,0,0,K*UI,0,0);c.imageSmoothingEnabled=false;
   for(const n of B.nums){const k=(now-n.at)/900;vtText(c,n.t,Math.round(n.x/UI),Math.round(n.y/UI-k*14),n.c,12,'center')}
