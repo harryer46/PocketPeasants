@@ -466,10 +466,11 @@ const SPR={};
 // render the blueprint small, then snap to a hard palette with a 1px outline -> real pixel art
 function monSprite(sid,N){
   const key=sid+':'+N;if(SPR[key])return SPR[key];
-  const c=mk(N,N),x=c.getContext('2d');drawMon(x,sid,N/2,N*0.5,N*0.74);
+  const big=mk(N*4,N*4),bx=big.getContext('2d');drawMon(bx,sid,N*2,N*2,N*4*0.74);
+  const c=mk(N,N),x=c.getContext('2d');x.imageSmoothingEnabled=true;x.imageSmoothingQuality='high';x.drawImage(big,0,0,N,N);
   const sp=SPECIES[sid];const pal=[...sp.c,...EXTRA].map(hex2rgb);const dark=hex2rgb(sp.c[2]);
   const id=x.getImageData(0,0,N,N),d=id.data,op=new Uint8Array(N*N);
-  for(let i=0;i<N*N;i++){if(d[i*4+3]>120){op[i]=1;let best=0,bd=1e9;for(let j=0;j<pal.length;j++){const p=pal[j];const dd=(p[0]-d[i*4])**2+(p[1]-d[i*4+1])**2+(p[2]-d[i*4+2])**2;if(dd<bd){bd=dd;best=j}}const p=pal[best];d[i*4]=p[0];d[i*4+1]=p[1];d[i*4+2]=p[2];d[i*4+3]=255}else d[i*4+3]=0}
+  for(let i=0;i<N*N;i++){if(d[i*4+3]>105){op[i]=1;let best=0,bd=1e9;for(let j=0;j<pal.length;j++){const p=pal[j];const dd=(p[0]-d[i*4])**2+(p[1]-d[i*4+1])**2+(p[2]-d[i*4+2])**2;if(dd<bd){bd=dd;best=j}}const p=pal[best];d[i*4]=p[0];d[i*4+1]=p[1];d[i*4+2]=p[2];d[i*4+3]=255}else d[i*4+3]=0}
   shadePixels(d,op,N,N,dark);
   x.putImageData(id,0,0);SPR[key]=c;return c;
 }
@@ -1008,7 +1009,7 @@ function openCreate(){
 }
 function pickStarter(cb){
   openModal(`<h3>CHOOSE YOUR STARTER</h3><p>Starters are unique — you'll never find them in the wild. They start at Lv ${START_LV} and evolve at Lv 5 and Lv 10.</p><div class="starters">${STARTERS.map(s=>`<button class="stc" data-s="${s}"><canvas width="56" height="56"></canvas><br>${SPECIES[s].n}<br><span class="tb" style="background:${TYPES[SPECIES[s].t].c}">${TYPES[SPECIES[s].t].n.toUpperCase()}</span> <span class="tb" style="background:#c27bff;color:#14141f">UNIQUE</span></button>`).join('')}</div><div class="acts"><button class="btn ghost" id="mno">CANCEL</button></div>`);
-  document.querySelectorAll('.stc').forEach(b=>{b.querySelector('canvas').getContext('2d').drawImage(monSprite(b.dataset.s,56),0,0);b.onclick=()=>{closeModal();cb(b.dataset.s)}});
+  document.querySelectorAll('.stc').forEach(b=>{{const cx=b.querySelector('canvas').getContext('2d');cx.imageSmoothingEnabled=false;cx.drawImage(monSprite(b.dataset.s,24),4,4,48,48)}b.onclick=()=>{closeModal();cb(b.dataset.s)}});
   $('#mno').onclick=closeModal;
 }
 function startRun(id,end,sid,prev,cfg){
@@ -1547,26 +1548,27 @@ bcv.addEventListener('pointerdown',e=>{if(!B)return;bcv.setPointerCapture(e.poin
 bcv.addEventListener('pointermove',e=>{if(B&&B.ptr)B.ptr=toArena(e)});
 ['pointerup','pointercancel'].forEach(ev=>bcv.addEventListener(ev,()=>{if(B)B.ptr=null}));
 const BBG={};
-function battleBG(z){if(BBG[z])return BBG[z];const W=AW,H=AH,cv=mk(W,H),c=cv.getContext('2d'),id=c.createImageData(W,H),d=id.data;
-  const seed=hashStr(z),nL=noise2(seed,40,W,H),nS=noise2(seed+1,11,W,H),nD=noise2(seed+2,20,W,H);
+function battleBG(z){if(BBG[z])return BBG[z];const W=AW/2,H=AH/2,Y0=AY0/2,cv=mk(W,H),c=cv.getContext('2d'),id=c.createImageData(W,H),d=id.data;
+  const seed=hashStr(z),nL=noise2(seed,22,W,H),nS=noise2(seed+1,6,W,H),nD=noise2(seed+2,10,W,H);
   const gp=z==='east'?RGB.forest:z==='south'?RGB.shore:z==='west'?RGB.hills:RGB.meadow;
   for(let y=0;y<H;y++)for(let x=0;x<W;x++){const dth=BAYER[(y&3)*4+(x&3)]*0.22;let v=nL(x,y)*0.62+nS(x,y)*0.38+dth,pal=gp;
-    if(z==='arena'){pal=RGB.stone;v=0.45+nS(x,y)*0.3+dth+(((x>>4)+(y>>4))%2?0.08:-0.04)}
+    if(z==='arena'){pal=RGB.stone;v=0.45+nS(x,y)*0.3+dth+(((x>>3)+(y>>3))%2?0.08:-0.04)}
     else if(z==='south'&&nD(x,y)>0.55)pal=RGB.sand;else if(nD(x,y)>(z==='west'?0.5:0.68))pal=RGB.dirt;
     const cc=pal[clamp(Math.floor(v*pal.length),0,pal.length-1)],o=(y*W+x)*4;d[o]=cc[0];d[o+1]=cc[1];d[o+2]=cc[2];d[o+3]=255}
   if(z!=='arena'){const r=mulberry32(seed+9);const lp=z==='east'?RGB.leafF:RGB.leaf;
-    for(let x=-6;x<W+12;x+=13+Math.floor(r()*6))paintCanopy(d,W,H,x,AY0-18+Math.floor(r()*6),10+Math.floor(r()*4),lp,seed+x);
-    for(let y=AY0;y<H+10;y+=16+Math.floor(r()*8)){paintCanopy(d,W,H,-2+Math.floor(r()*4),y,9+Math.floor(r()*3),lp,seed+y*3);paintCanopy(d,W,H,W+2-Math.floor(r()*4),y,9+Math.floor(r()*3),lp,seed+y*5)}}
+    for(let x=-3;x<W+6;x+=7+Math.floor(r()*3))paintCanopy(d,W,H,x,Y0-9+Math.floor(r()*3),5+Math.floor(r()*2),lp,seed+x);
+    for(let y=Y0;y<H+5;y+=8+Math.floor(r()*4)){paintCanopy(d,W,H,-1+Math.floor(r()*2),y,5+Math.floor(r()*2),lp,seed+y*3);paintCanopy(d,W,H,W+1-Math.floor(r()*2),y,5+Math.floor(r()*2),lp,seed+y*5)}}
   c.putImageData(id,0,0);
-  if(z!=='arena'){const r=mulberry32(seed+5);for(let i=0;i<4;i++){const x=i%2?18+Math.floor(r()*20):W-38+Math.floor(r()*18),y=AY0+10+Math.floor(r()*(H-AY0-24));paintRock(c,x,y,5+Math.floor(r()*2),r)}
-    for(let i=0;i<30;i++){const x=Math.floor(r()*W),y=AY0+Math.floor(r()*(H-AY0));c.fillStyle=z==='east'?'#1d4416':'#3a7424';c.fillRect(x,y,1,2);c.fillRect(x+1,y-1,1,2)}}
-  else{c.strokeStyle='#ffffff40';c.lineWidth=1;c.strokeRect(14.5,AY0-1.5,W-29,H-AY0-6);c.beginPath();c.arc(W/2,101,24,0,7);c.stroke();c.fillStyle='#ffffff30';c.fillRect(W/2,AY0-1,1,H-AY0-6)}
+  if(z!=='arena'){const r=mulberry32(seed+5);for(let i=0;i<4;i++){const x=i%2?9+Math.floor(r()*10):W-19+Math.floor(r()*9),y=Y0+5+Math.floor(r()*(H-Y0-12));paintRock(c,x,y,3,r)}
+    for(let i=0;i<18;i++){const x=Math.floor(r()*W),y=Y0+Math.floor(r()*(H-Y0));c.fillStyle=z==='east'?'#1d4416':'#3a7424';c.fillRect(x,y,1,1);c.fillRect(x+1,y-1,1,1)}}
+  else{c.fillStyle='#ffffff40';c.fillRect(7,Y0,W-14,1);c.fillRect(7,H-4,W-14,1);c.fillRect(7,Y0,1,H-Y0-4);c.fillRect(W-8,Y0,1,H-Y0-4);c.fillRect(W/2,Y0,1,H-Y0-4);
+    for(let a=0;a<64;a++){const t=a/64*6.283;c.fillRect(Math.round(W/2+Math.cos(t)*12),Math.round(50+Math.sin(t)*12),1,1)}}
   BBG[z]=cv;return cv}
 const FLOORS0={north:['#5cb848','#53ad40'],east:['#3f8f3a','#378234'],south:['#ecd79a','#e2cb8a'],west:['#c9a66b','#bb985f'],arena:['#8a8ea6','#7d8199']};
 function pxText(c,t,x,y,col,size,align){c.font=`${size||8}px "Press Start 2P"`;c.textAlign=align||'left';c.fillStyle='#14141f';c.fillText(t,x+1,y+1);c.fillStyle=col;c.fillText(t,x,y);c.textAlign='left'}
 function vtText(c,t,x,y,col,size,align){c.font=`${size||10}px VT323`;c.textAlign=align||'left';c.fillStyle='#14141f';c.fillText(t,x+1,y+1);c.fillStyle=col;c.fillText(t,x,y);c.textAlign='left'}
 // original two-tone pill capsule (teal / yellow)
-function drawCapsule(c,x,y,rot,open){c.save();c.translate(x,y);c.rotate(rot||0);
+function drawCapsule(c,x,y,rot,open){c.save();c.translate(Math.round(x/2)*2,Math.round(y/2)*2);c.rotate(rot||0);c.scale(1.5,1.5);
   c.fillStyle='#14141f';c.fillRect(-6,-4,12,8);c.fillRect(-7,-3,14,6);
   c.fillStyle='#2fb7b0';c.fillRect(-6,-3,6,6);c.fillRect(-5,-4,5,8);
   c.fillStyle='#ffcb3d';c.fillRect(0,-3,6,6);c.fillRect(0,-4,5,8);
@@ -1605,14 +1607,14 @@ function sizeBattle(){
 }
 function drawBattle(){
   if(!B)return;const c=bc;const K=sizeBattle();c.setTransform(K,0,0,K,0,0);const _n=performance.now();if(B.shakeUntil&&_n<B.shakeUntil)c.translate(Math.round((Math.random()-.5)*4),Math.round((Math.random()-.5)*4));c.imageSmoothingEnabled=false;const now=performance.now();
-  c.drawImage(battleBG(B.zone||'arena'),0,0);
+  c.drawImage(battleBG(B.zone||'arena'),0,0,AW,AH);
 
   c.fillStyle='#14141f';c.fillRect(0,AY0-16,AW,2);c.fillStyle='#00000030';c.fillRect(0,0,AW,AY0-14);
   const ents=[B.me,B.foe].filter(Boolean).sort((a,b)=>a.y-b.y);
   for(const F of ents){if(F.out&&act(F).hp<=0&&F.faint<=0&&F.ctrl!=='remote')continue;const mon=act(F);
     let catchK=-1;if(F===B.foe&&B.catch){const el=(now-B.catch.t0)/1000;if(el>0.4||B.catch.done)continue;catchK=el/0.4}
     if(F.spawnT&&now<F.spawnT)continue;
-    const s=monSprite(mon.s,48);let X=Math.round(F.x),Y=Math.round(F.y);
+    const s=monSprite(mon.s,24);let X=Math.round(F.x/2)*2,Y=Math.round(F.y/2)*2;
     // entrance: slide in from the side at battle start
     if(B.enterT){const ek=clamp((now-B.enterT)/550,0,1),off=(1-ek)*(1-ek)*120;X=Math.round(X+(F.side==='L'?-off:off))}
     if(B.fin&&B.fin.win===true&&F===B.me&&mon.hp>0){Y=Math.round(Y-Math.abs(Math.sin((now-B.fin.t0)/1000*7))*7)}
@@ -1626,8 +1628,8 @@ function drawBattle(){
     let alpha=1;if(F.flash>0)alpha=Math.floor(F.flash*30)%2?0.3:1;else if(F.inv>0&&F.dashT>0)alpha=0.5;
     if(B.state==='flee'&&F===B.me){/* running away */}
     c.save();if(clipY!=null){c.beginPath();c.rect(X-40,0,80,clipY);c.clip()}
-    c.globalAlpha=alpha;c.translate(X,Y-38+yoff+(1-sc)*30);if(F.face>0)c.scale(-1,1);c.scale(sc,sc);c.drawImage(s,-24,-4);
-    if(white>0){c.globalAlpha=alpha*white;c.drawImage(whiteSprite(mon.s,48),-24,-4)}
+    c.globalAlpha=alpha;c.translate(X,Y-38+yoff+(1-sc)*30);if(F.face>0)c.scale(-1,1);c.scale(sc,sc);c.drawImage(s,-24,-4,48,48);
+    if(white>0){c.globalAlpha=alpha*white;c.drawImage(whiteSprite(mon.s,24),-24,-4,48,48)}
     c.restore();c.globalAlpha=1;
     if(F===B.me&&B.lvlFx&&now-B.lvlFx<1400){const k=(now-B.lvlFx)/1400;c.fillStyle='#ffe14d';for(let i=0;i<10;i++){const a=i/10*6.28+k*4;c.fillRect(Math.round(X+Math.cos(a)*18),Math.round(Y-20-k*26+Math.sin(a)*6),2,2)}pxText(c,'LEVEL UP!',X,Math.round(Y-48-k*8),'#ffe14d',6,'center')}
     if(F===B.me){c.fillStyle=G.color;c.fillRect(X-2,Y+3,5,2);c.fillRect(X-1,Y+5,3,1)}}
@@ -1635,10 +1637,10 @@ function drawBattle(){
     if(s.cap){const pk=clamp(s.age/(s.flight||1),0,1),arc=Math.sin(pk*Math.PI)*28;c.fillStyle='#00000040';c.fillRect(X-3,Y+12,6,2);drawCapsule(c,X,Math.round(Y-arc),s.age*18);continue}
     const col=TYPES[MOVES[s.mid].t].c;
     if(s.mel){c.fillStyle='#ffffff';const a=Math.atan2(s.vy,s.vx);for(let i=-3;i<=3;i++){const aa=a+i*0.25;c.fillRect(Math.round(s.x+Math.cos(aa)*6)-1,Math.round(s.y+Math.sin(aa)*6)-1,2,2)}continue}
-    const r=Math.round(s.r);c.fillStyle='#14141f';c.fillRect(X-r-1,Y-r-1,r*2+2,r*2+2);c.fillStyle=col;c.fillRect(X-r,Y-r,r*2,r*2);c.fillStyle='#ffffffb0';c.fillRect(X-r+1,Y-r+1,Math.max(1,r-1),Math.max(1,r-1));
+    const r=Math.max(2,Math.round(s.r/2)*2),SX=Math.round(X/2)*2,SY=Math.round(Y/2)*2;c.fillStyle='#14141f';c.fillRect(SX-r-2,SY-r-2,r*2+4,r*2+4);c.fillStyle=col;c.fillRect(SX-r,SY-r,r*2,r*2);c.fillStyle='#ffffffb0';c.fillRect(SX-r,SY-r,2,2);
     c.fillStyle=col+'90';c.fillRect(Math.round(X-s.vx*0.04)-1,Math.round(Y-s.vy*0.04)-1,3,3)}
   for(const v of B.vshots||[]){const k=clamp((now-v.t0)/v.dur,0,1);const x=v.x+(v.tx-v.x)*k,y=v.y+(v.ty-v.y)*k-(v.cap?Math.sin(k*Math.PI)*28:0);if(v.cap){drawCapsule(c,Math.round(x),Math.round(y),k*12);continue}const r=Math.round(v.r);c.fillStyle='#14141f';c.fillRect(Math.round(x)-r-1,Math.round(y)-r-1,r*2+2,r*2+2);c.fillStyle=TYPES[MOVES[v.mid].t].c;c.fillRect(Math.round(x)-r,Math.round(y)-r,r*2,r*2);c.fillStyle='#ffffffb0';c.fillRect(Math.round(x)-r+1,Math.round(y)-r+1,Math.max(1,r-1),Math.max(1,r-1))}
-  for(const p of B.parts){c.fillStyle=p.c;c.fillRect(Math.round(p.x),Math.round(p.y),2,2)}
+  for(const p of B.parts){c.fillStyle=p.c;c.fillRect(Math.round(p.x/2)*2,Math.round(p.y/2)*2,2,2)}
   if(B.tb&&B.state==='tbChoose'){const t=B.mode==='duel'?`TURN ${B.turn} · choose an action`:'Choose an action';c.fillStyle='#0b0d16c8';c.font='10px VT323';const w=c.measureText(t).width+10;c.fillRect(AW/2-w/2,AY0-12,w,11);vtText(c,t,AW/2,AY0-3,'#ffcb3d',10,'center')}
   if(B.tb&&B.state==='tbWait'){c.fillStyle='#0b0d16c8';c.fillRect(AW/2-55,AY0-12,110,11);vtText(c,'waiting for opponent…',AW/2,AY0-3,'#ffffff',10,'center')}
   if(B.catch){const c2=B.catch,el=(now-c2.t0)/1000;let X=c2.x,Y=c2.y,rot=0,open=0;
@@ -1675,7 +1677,7 @@ document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>switchTab(b.d
 function switchTab(t){curTab=t;document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('act',b.dataset.t===t));document.querySelectorAll('.pane').forEach(p=>p.classList.toggle('act',p.id==='pane-'+t));if(t==='chat'){unread=0;$('#cbadge').innerHTML='';const l=$('#chatlog');l.scrollTop=l.scrollHeight}if(t==='players')renderPlayers()}
 function monCard(m,i,inTeam){
   const st=stats(m),sp=SPECIES[m.s],r=m.hp/st.mhp;const d=document.createElement('div');d.className='card';
-  const cv=mk(48,48);cv.getContext('2d').drawImage(monSprite(m.s,48),0,0);d.appendChild(cv);
+  const cv=mk(48,48);{const cx=cv.getContext('2d');cx.imageSmoothingEnabled=false;cx.drawImage(monSprite(m.s,24),0,0,48,48)}d.appendChild(cv);
   const info=document.createElement('div');info.className='info';
   info.innerHTML=`<div class="nm"><span>${esc(sp.n)}</span><span class="lv">Lv ${m.l}</span></div><span class="tb" style="background:${TYPES[sp.t].c}">${TYPES[sp.t].n.toUpperCase()}</span> <span class="tb" style="background:${rarOf(m.s).c};color:#14141f">${rarOf(m.s).n.toUpperCase()}</span> <span class="small">HP ${m.hp}/${st.mhp}</span><div class="bar"><i style="width:${r*100}%;background:${hpColor(r)}"></i></div><div class="bar xp"><i style="width:${Math.min(100,m.xp/xpNeed(m.l)*100)}%"></i></div><div class="small" style="margin-top:3px">${m.m.map(x=>MOVES[x].n).join(' · ')}</div>`;
   const acts=document.createElement('div');const btn=(t,fn,dis)=>{const b=document.createElement('button');b.className='mini';b.textContent=t;b.disabled=!!dis||!!B||(RUN&&RUN.phase==='arena');b.onclick=fn;acts.appendChild(b)};
