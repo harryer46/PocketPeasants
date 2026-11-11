@@ -80,7 +80,18 @@ body.mob #dpad{display:grid}body.mob #help{display:none}body.mob .keys{display:n
 #mapleg{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:6px;margin-top:8px}
 .mleg{background:var(--panel2);border:2px solid #000;padding:5px 8px;font-size:17px;line-height:1.05}
 .mleg b{font-weight:normal;font-family:'Press Start 2P';font-size:8px}
-#hset{pointer-events:auto;cursor:pointer;color:var(--text);font-family:inherit}
+#mainc{flex:1;display:flex;flex-direction:column;min-width:0;min-height:0}
+#mainc>#stage{flex:1;min-height:0}
+#topbar{position:relative;z-index:9;display:flex;align-items:center;gap:5px;padding:4px 8px;background:#0b0d16;border-bottom:3px solid #000;flex-shrink:0;overflow-x:auto;overflow-y:hidden;white-space:nowrap;scrollbar-width:none}
+#topbar button{background:#252a40;border:2px solid #000;color:var(--text);font-family:inherit;font-size:17px;padding:1px 7px;box-shadow:2px 2px 0 #000;flex-shrink:0}
+#topbar button.act{background:var(--accent);color:#1b1300}
+#topbar .chip{box-shadow:none;font-size:17px;cursor:pointer;flex-shrink:0}
+.tbrand{font-family:'Press Start 2P';font-size:8px;color:var(--accent);margin-right:4px;flex-shrink:0}.tbrand i{color:var(--muted);font-style:normal}
+.tsp{flex:1}
+#tver{font-size:15px;color:var(--muted);flex-shrink:0;padding-left:2px}
+@media (max-width:1350px){.tbrand{display:none}}
+#side .tabs,#side .brand{display:none}
+.hud{top:6px}
 #bctl{display:flex;gap:8px;align-items:flex-start}
 #bctl #bact{flex:1}
 #bpad{display:none}
@@ -150,8 +161,11 @@ select{background:#0b0d16;color:var(--text);border:2px solid #000;font-family:in
 /* ===== mobile (landscape-first) layout ===== */
 body.mob{overscroll-behavior:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 body.mob #app{flex-direction:row!important}
-body.mob #stage{flex:1 1 auto!important;height:100vh!important;height:100dvh!important;touch-action:none}
-body.mob #side{position:fixed;top:0;right:0;height:100%;width:min(360px,88vw);z-index:8;transform:translateX(105%);transition:transform .2s;border-left:3px solid #000;padding-top:env(safe-area-inset-top);padding-right:env(safe-area-inset-right)}
+body.mob #mainc{height:100vh;height:100dvh}
+body.mob #stage{flex:1 1 auto!important;height:auto!important;touch-action:none}
+body.mob #topbar{padding:max(3px,env(safe-area-inset-top)) max(6px,env(safe-area-inset-right)) 3px max(6px,env(safe-area-inset-left))}
+body.mob #topbar button{font-size:15px;padding:2px 6px}body.mob .tbrand{display:none}
+body.mob #side{position:fixed;top:36px;right:0;height:calc(100% - 36px);width:min(360px,88vw);z-index:8;transform:translateX(105%);transition:transform .2s;border-left:3px solid #000;padding-top:env(safe-area-inset-top);padding-right:env(safe-area-inset-right)}
 body.mob #side.open{transform:none}
 body.mob .brand{display:none}
 body.mob .hud{top:max(6px,env(safe-area-inset-top));left:max(6px,env(safe-area-inset-left));gap:4px}
@@ -193,7 +207,7 @@ body.mob.portrait #rotate.show{display:block}
 }
 @media (max-width:820px){
   #app{flex-direction:column}
-  #stage{flex:none;height:60vh}
+  #mainc{flex:none;height:60vh}
   #side{width:100%;flex:1;border-left:0;border-top:3px solid #000}
   .brand{display:none}
   #bact{grid-template-columns:repeat(2,1fr)}
@@ -203,9 +217,11 @@ body.mob.portrait #rotate.show{display:block}
 </head>
 <body>
 <div id="app">
+<div id="mainc">
+  <div id="topbar"><span class="tbrand">POCKET PEASANTS</span><span class="chip timer" id="htimer">LOBBY</span><button id="tupd" style="display:none;background:#ef4444;color:#fff">⬆ NEW VERSION — RELOAD</button><span class="tsp"></span><button data-t="lobby">🏟 LOBBY</button><button data-t="team">🎒 TEAM</button><button data-t="players">👥 PLAYERS<span id="pcount"></span></button><button data-t="chat">💬 CHAT<span id="cbadge"></span></button><button id="hmap">🗺 MAP</button><button id="hset">⚙</button><span id="tver"></span></div>
   <div id="stage">
     <canvas id="world"></canvas>
-    <div class="hud"><span class="chip timer" id="htimer" style="pointer-events:auto;cursor:pointer">LOBBY</span><span class="chip" id="hzone">Town</span><span class="chip" id="hkap">Capsules -</span><span class="chip" id="hon"><span class="dot"></span>Solo</span><button class="chip" id="hpanel" style="pointer-events:auto;cursor:pointer;color:var(--text);font-family:inherit">👥</button><button class="chip" id="hmap" style="pointer-events:auto;cursor:pointer;color:var(--text);font-family:inherit">🗺 MAP</button><button class="chip" id="hset">⚙ CONTROLS</button></div>
+    <div class="hud"><span class="chip" id="hzone">Town</span><span class="chip" id="hkap">Capsules -</span><span class="chip" id="hon"><span class="dot"></span>Solo</span></div>
     <div id="toast"></div>
     <div id="help">Arrows/WASD: walk · M: map · Grass/ferns/reeds/scree: wild monsters · Red roof: Heal Center · Enter: chat</div>
     <div id="dpad"><span></span><button data-d="up">▲</button><span></span><button data-d="left">◀</button><span></span><button data-d="right">▶</button><span></span><button data-d="down">▼</button><span></span></div>
@@ -217,9 +233,10 @@ body.mob.portrait #rotate.show{display:block}
     <div id="modal"><div class="box" id="mbox"></div></div>
     <canvas id="fxcv"></canvas>
   </div>
+</div>
   <aside id="side">
     <div class="brand"><h1>POCKET<br>PEASANTS<br><span style="font-size:7px;color:#9aa1bd">BUDGET EDITION™</span></h1><div class="sub"><span id="sdex">Dex 0/14</span><span id="stro">Trophies 0</span></div></div>
-    <div class="tabs"><button data-t="team" class="act">TEAM</button><button data-t="players">PLAYERS<span id="pcount"></span></button><button data-t="lobby">LOBBY</button><button data-t="chat">CHAT<span id="cbadge"></span></button></div>
+    <div class="tabs"><button data-t="team" class="act">TEAM</button><button data-t="players">PLAYERS</button><button data-t="lobby">LOBBY</button><button data-t="chat">CHAT</button></div>
     <div class="pane act" id="pane-team"></div>
     <div class="pane" id="pane-players"></div>
     <div class="pane" id="pane-lobby"></div>
@@ -237,6 +254,7 @@ body.mob.portrait #rotate.show{display:block}
     <div class="field"><label>YOUR NAME</label><input id="sname" maxlength="16" placeholder="e.g. Harald"></div>
     <div class="field"><label>YOUR COLOR</label><div class="colors" id="scolors"></div></div>
     <div id="loadbar"><i></i></div>
+    <div class="small" id="sver" style="margin:-6px 0 10px"></div>
     <button class="btn" id="sgo" style="font-size:12px;padding:13px 22px">PLAY</button> <button class="btn ghost" id="sfs" style="font-size:10px;padding:13px 14px;display:none">⛶ FULLSCREEN</button>
   </div>
 </div>
@@ -281,11 +299,17 @@ const TURN_CONFIG = {
   }]
 };
 
+/* ===================== VERSION ===================== */
+// bump with every release (MAJOR.MINOR.PATCH). Players can only share lobbies/duels with the same version.
+const VERSION='0.18.0';
+function cmpV(a,b){const x=String(a||'0').split('.').map(Number),y=String(b||'0').split('.').map(Number);for(let i=0;i<3;i++){const d=(x[i]||0)-(y[i]||0);if(d)return d}return 0}
 /* ===================== ERROR REPORTING ===================== */
 function showErr(m){try{const b=document.getElementById('errbox');if(!b)return;b.textContent='⚠ Error: '+String(m).slice(0,220)+' — please send this to the developer.';b.style.display='block';clearTimeout(showErr.t);showErr.t=setTimeout(()=>b.style.display='none',12000)}catch(e){}}
 addEventListener('error',e=>showErr((e.message||'error')+(e.lineno?' @'+e.lineno:'')));
 addEventListener('unhandledrejection',e=>showErr(e.reason&&e.reason.message||e.reason||'promise error'));
 document.addEventListener('visibilitychange',()=>{if(document.hidden||!B)return;const n=performance.now();B.lqT=n;B.tbT=n;if(B.t0)B.t0=Math.max(B.t0,n-20000)});
+setInterval(()=>{try{if(!ROOM)return;let nv=null;for(const p of others()){const v=p.presence.v;if(typeof v==='string'&&v.length<12&&cmpV(v,VERSION)>0&&(!nv||cmpV(v,nv)>0))nv=v}
+  const b=$('#tupd');if(nv){b.style.display='';b.textContent=`⬆ v${nv} AVAILABLE — RELOAD`}else b.style.display='none'}catch(e){}},3000);
 /* ===================== DATA ===================== */
 const TYPES={normal:{n:'Normal',c:'#8b8f9c'},fire:{n:'Fire',c:'#f0642a'},water:{n:'Water',c:'#3d8bf2'},grass:{n:'Grass',c:'#2fb556'},electric:{n:'Electric',c:'#d9a90b'},rock:{n:'Rock',c:'#a2742c'},flying:{n:'Flying',c:'#7c83f0'}};
 const EFF={fire:{grass:2,water:.5,fire:.5,rock:.5},water:{fire:2,rock:2,grass:.5,water:.5},grass:{water:2,rock:2,fire:.5,grass:.5,flying:.5},electric:{water:2,flying:2,grass:.5,electric:.5,rock:0},rock:{fire:2,flying:2,grass:.5},flying:{grass:2,electric:.5,rock:.5},normal:{rock:.5}};
@@ -736,7 +760,8 @@ function buildStart(){
   const prev=()=>{const c=$('#sprev').getContext('2d');c.clearRect(0,0,16,17);c.drawImage(charSprite(pickColor,'down',0),0,0)};
   COLORS.forEach(col=>{const b=document.createElement('button');b.style.background=col;if(col===pickColor)b.classList.add('sel');b.onclick=()=>{pickColor=col;[...cw.children].forEach(x=>x.classList.remove('sel'));b.classList.add('sel');prev()};cw.appendChild(b)});
   prev();
-  $('#sgo').onclick=()=>{G={name:cleanName($('#sname').value),color:pickColor,dex:{},tro:0,x:30,y:24,d:'down',run:null};save();begin()};
+  // a new session always starts here: a lobby from an earlier session is not resumed (free-play team, dex and trophies are kept)
+  $('#sgo').onclick=()=>{const nm=cleanName($('#sname').value);if(G){G.name=nm;G.color=pickColor;G.x=30;G.y=24;G.d='down';G.run=G.freeRun||null}else G={name:nm,color:pickColor,dex:{},tro:0,x:30,y:24,d:'down',run:null};save();begin()};
   $('#sname').addEventListener('keydown',e=>{if(e.key==='Enter')$('#sgo').click()});
 }
 function begin(){
@@ -856,7 +881,9 @@ function updateTouch(){
   buildTouchButtons();
   if(B&&B.me){const mon=act(B.me),F=B.me;document.querySelectorAll('#tbtns .mvb').forEach(b=>{const i=+b.dataset.i,mid=mon.m[i];if(!mid)return;const cd=B.tb?0:F.cd[i]/cdOf(mid);b.style.setProperty('--cd',clamp(cd,0,1)+'turn');b.classList.toggle('off',!!B.tb&&B.state!=='tbChoose')})}
 }
-$('#hpanel').onclick=()=>$('#side').classList.toggle('open');
+// top menu bar: on desktop it switches the side panel, on phones it opens the slide-in drawer
+document.querySelectorAll('#topbar button[data-t]').forEach(b=>b.onclick=()=>{const t=b.dataset.t,sd=$('#side');if(isMob()){if(sd.classList.contains('open')&&curTab===t){sd.classList.remove('open');return}sd.classList.add('open')}switchTab(t)});
+$('#tupd').onclick=()=>location.reload();
 $('#stage').addEventListener('pointerdown',e=>{if(isMob()&&$('#side').classList.contains('open')&&!e.target.closest('#side'))$('#side').classList.remove('open')},true);
 function checkOrient(){const port=matchMedia('(orientation: portrait)').matches;document.body.classList.toggle('portrait',port);const r=$('#rotate');if(r&&port&&isMob()&&!checkOrient.dismissed)r.classList.add('show');else if(r)r.classList.remove('show')}
 addEventListener('resize',checkOrient);addEventListener('orientationchange',()=>setTimeout(checkOrient,200));
@@ -1000,7 +1027,7 @@ function renderMapLegend(){
   h+=`<div class="mleg"><b style="color:var(--accent)">LEGEND</b><br>✚ Heal Center · ⚔ Arena<br>★ Legendary shrine · ■ Trainer (✓ beaten)<br>Rings: wild levels rise with distance from town.<br>Colors: <span style="color:${RARITY.common.c}">common</span> · <span style="color:${RARITY.uncommon.c}">uncommon</span> · <span style="color:${RARITY.rare.c}">rare</span></div>`;
   $('#mapleg').innerHTML=h;
 }
-$('#hmap').onclick=toggleMap;$('#htimer').onclick=()=>switchTab('lobby');$('#mclose').onclick=closeMap;
+$('#hmap').onclick=toggleMap;$('#htimer').onclick=()=>{if(isMob())$('#side').classList.add('open');switchTab('lobby')};$('#mclose').onclick=closeMap;
 $('#mapov').addEventListener('click',e=>{if(e.target.id==='mapov')closeMap()});
 
 /* ===================== MULTIPLAYER ===================== */
@@ -1009,7 +1036,7 @@ const OTH=new Map();let myBubble=null,chatN=0;
 function pres(p){if(!ROOM)return;try{ROOM.presence(p).catch(()=>{})}catch(e){}}
 function leadInfo(){return RUN&&RUN.team[0]?[RUN.team[0].s,RUN.team[0].l]:null}
 function mtInfo(){if(RUN&&RUN.free)return{id:RUN.id,end:0,r:0,st:'free',prev:null};return RUN?{id:RUN.id,end:RUN.end,r:RUN.phase==='arena'?RUN.r:0,st:RUN.phase==='arena'?RUN.st:RUN.phase==='lobby'?'lobby':'train',prev:RUN.prev||null,res:RUN.res||[],cfg:RUN.cfg,rs:RUN.rs||0}:null}
-function pushFull(){if(!G)return;pres({n:G.name,c:G.color,x:P.moving?P.tx:P.x,y:P.moving?P.ty:P.y,d:P.d,tr:G.tro,ld:leadInfo(),bt:B?(B.mode==='wild'?'wild':'duel'):null,mt:mtInfo()})}
+function pushFull(){if(!G)return;pres({v:VERSION,n:G.name,c:G.color,x:P.moving?P.tx:P.x,y:P.moving?P.ty:P.y,d:P.d,tr:G.tro,ld:leadInfo(),bt:B?(B.mode==='wild'?'wild':'duel'):null,mt:mtInfo()})}
 function pushMt(){pres({mt:mtInfo(),ld:leadInfo()})}
 function setConn(on,label){$('#hon').innerHTML=`<span class="dot ${on?'on':''}"></span>${label||(on?'Online':'Offline')}`}
 async function initRoom(){
@@ -1131,7 +1158,7 @@ function sanitizeCfg(c){c=c&&typeof c==='object'?c:{};const n=(v,d,a,b)=>Number.
 function cfgSummary(c){return`${c.tb?'turn-based':'real-time'} · ${c.rounds} round${c.rounds>1?'s':''} · team of ${c.team}${c.xp>1?` · ${c.xp}× XP`:''}${c.enc!==1?(c.enc>1?' · many encounters':' · few encounters'):''}${c.leg?'':' · no legendaries'} · ${c.kap} capsules · ${c.alt===0?'classic':'alternative'} monsters`}
 function runningMatches(){const seen=new Map();for(const p of others()){const mt=p.presence.mt;if(!mt||typeof mt.id!=='string'||mt.id.length>=40||(RUN&&RUN.id===mt.id))continue;
   const open=mt.st==='lobby'||(mt.st==='train'&&+mt.end>Date.now()+10000);if(!open)continue;
-  const e=seen.get(mt.id)||{id:mt.id,end:+mt.end||0,names:[],cfg:sanitizeCfg(mt.cfg),waiting:true};e.names.push(cleanName(p.presence.n));if(mt.st==='train'){e.waiting=false;e.end=Math.max(e.end,+mt.end)}seen.set(mt.id,e)}return[...seen.values()]}
+  const e=seen.get(mt.id)||{id:mt.id,end:+mt.end||0,names:[],cfg:sanitizeCfg(mt.cfg),waiting:true,v:String(p.presence.v||'old').slice(0,12)};e.names.push(cleanName(p.presence.n));if(mt.st==='train'){e.waiting=false;e.end=Math.max(e.end,+mt.end)}seen.set(mt.id,e)}return[...seen.values()]}
 function lobbyLine(m){return m.waiting?'waiting in lobby':`${fmt(m.end-Date.now())} left`}
 let LOBBY_MIN=true;
 function startFree(){
@@ -1150,7 +1177,7 @@ function renderLobby(){
       if(el.dataset.h!==h){el.dataset.h=h;el.innerHTML=h;$('#lmax').onclick=()=>{LOBBY_MIN=false;renderLobby()}}el.classList.add('on');return}
     h=`<div class="lrow" style="margin-bottom:6px"><h3 style="flex:1;margin:0">LOBBIES</h3><button class="btn ghost" id="lmin">▼</button></div><p>Your free-play team stays saved. Join a lobby or create one: everyone gets a fresh starter, trains, then fights a Swiss-system Arena tournament.</p>`;
   }else h=`<h3>LOBBY</h3><p>Play freely with a saved team — or join / create a lobby: fresh starter, train until the timer ends, then a Swiss-system Arena tournament with rankings.</p><div class="lrow" style="margin-bottom:8px"><button class="btn green" id="lfree" style="flex:1">${G.freeRun?'CONTINUE FREE PLAY':'FREE PLAY'}</button></div>`;
-  for(const m of ms)h+=`<div class="lrow" style="margin-bottom:8px;align-items:flex-start"><span style="flex:1;line-height:1.05"><span style="color:var(--text)">${esc(m.cfg.name||m.names.slice(0,2).join(', '))}</span> · ${lobbyLine(m)} · ${m.names.length} player${m.names.length>1?'s':''}<br><span class="small">${esc(cfgSummary(m.cfg))}</span></span><button class="btn green" data-join="${esc(m.id)}">JOIN</button></div>`;
+  for(const m of ms)h+=`<div class="lrow" style="margin-bottom:8px;align-items:flex-start"><span style="flex:1;line-height:1.05"><span style="color:var(--text)">${esc(m.cfg.name||m.names.slice(0,2).join(', '))}</span> · ${lobbyLine(m)} · ${m.names.length} player${m.names.length>1?'s':''}<br><span class="small">${esc(cfgSummary(m.cfg))}</span></span>${m.v===VERSION?`<button class="btn green" data-join="${esc(m.id)}">JOIN</button>`:verLock(m)}</div>`;
   h+=`<div class="lrow"><button class="btn" id="lcreate" style="flex:1">＋ CREATE LOBBY</button></div>`;
   if(el.dataset.h!==h){el.dataset.h=h;el.innerHTML=h;
     const lm=$('#lmin');if(lm)lm.onclick=()=>{LOBBY_MIN=true;renderLobby()};
@@ -1193,7 +1220,9 @@ function startRun(id,end,sid,prev,cfg,phase){
   if(phase==='lobby'){sysChat(`You're in the lobby${cfg.name?' "'+cfg.name+'"':''} (${cfgSummary(cfg)}). The host starts the game.`);switchTab('lobby')}
   else{sysChat(`Game${cfg.name?' "'+cfg.name+'"':''} running! ${fmt(end-Date.now())} to train (${cfgSummary(cfg)}). Walk into the Arena when you're ready.`);toast('Training started! Head into the grass.')}
 }
-function joinLobby(id){const m=runningMatches().find(x=>x.id===id);if(!m){toast('That lobby is gone.');return}pickStarter(sid=>startRun(m.id,m.end,sid,null,m.cfg,m.waiting?'lobby':'train'),sanitizeCfg(m.cfg))}
+function verLock(m){return`<button class="btn ghost" disabled title="Everyone in a lobby needs the same version">v${esc(m.v)}</button>`}
+function joinLobby(id){const m=runningMatches().find(x=>x.id===id);if(!m){toast('That lobby is gone.');return}
+  if(m.v!==VERSION){toast(cmpV(m.v,VERSION)>0?`That lobby runs v${m.v} — reload the page to update (you have v${VERSION}).`:`That lobby runs an older version (v${m.v}). Its players need to reload.`);return}pickStarter(sid=>startRun(m.id,m.end,sid,null,m.cfg,m.waiting?'lobby':'train'),sanitizeCfg(m.cfg))}
 // host = creator while present, otherwise the member with the lowest id (same answer on every client)
 function hostPeer(){if(!RUN||RUN.free)return null;const ids=participants().map(p=>p.peer);if(RUN.cfg.host&&ids.includes(RUN.cfg.host))return RUN.cfg.host;return ids.sort()[0]}
 function isHost(){return hostPeer()===(MYPEER||'me')}
@@ -1222,7 +1251,7 @@ function leaveRun(){
 // host: send everyone in this lobby back to the start (lobby phase, fresh starter, no timer)
 function resetRun(n){
   hardExit();const c=RUN.cfg,sid=RUN.starter||(RUN.team[0]&&RUN.team[0].s)||startersNow()[0];
-  Object.assign(RUN,{rs:n,phase:'lobby',st:'lobby',end:0,r:1,res:[],pick:null,dopp:null,trophy:0,team:[newMon(sid,START_LV)],box:[],kap:c.kap,beat:{},leg:{}});
+  Object.assign(RUN,{rs:n,phase:'lobby',st:'lobby',end:0,r:1,res:[],gaveUp:0,solo:0,pick:null,dopp:null,trophy:0,team:[newMon(sid,START_LV)],box:[],kap:c.kap,beat:{},leg:{}});
   P.d='down';teleport(30,24);save();afterRunChange();switchTab('lobby');
   sysChat('The host reset the session — everyone is back at the start. The host starts the game again.');toast('Session reset — back at the start!');
 }
@@ -1270,13 +1299,15 @@ function participants(){
 // Swiss system: score = wins (+0.5 draw); tiebreak Buchholz (sum of opponents' scores)
 function standings(parts,upto){
   const sc={},bh={};for(const p of parts)sc[p.peer]=p.res.filter(x=>x[0]<upto).reduce((a,x)=>a+x[2],0);
-  for(const p of parts)bh[p.peer]=p.res.filter(x=>x[0]<upto&&x[1]!=='bot').reduce((a,x)=>a+(sc[x[1]]||0),0);
+  for(const p of parts)bh[p.peer]=p.res.filter(x=>x[0]<upto&&x[1]!=='bot'&&x[1]!=='bye').reduce((a,x)=>a+(sc[x[1]]||0),0);
   return parts.slice().sort((a,b)=>sc[b.peer]-sc[a.peer]||bh[b.peer]-bh[a.peer]||(a.peer<b.peer?-1:1)).map(p=>Object.assign({},p,{score:sc[p.peer],bh:bh[p.peer]}));
 }
+// PvP only: with an odd number of players the lowest-ranked player who has not had one yet gets a bye (free win, no fight)
 function pairRound(parts,r){
-  const order=standings(parts,r),used=new Set(),pairs=[];const played=(a,b)=>a.res.some(x=>x[0]<r&&x[1]===b.peer);
-  for(const p of order){if(used.has(p.peer))continue;used.add(p.peer);let q=order.find(o=>!used.has(o.peer)&&!played(p,o));if(!q)q=order.find(o=>!used.has(o.peer));
-    if(q){used.add(q.peer);pairs.push([p.peer,q.peer])}else pairs.push([p.peer,'bot'])}
+  const list=standings(parts,r),pairs=[];
+  if(list.length%2){let bi=-1;for(let i=list.length-1;i>=0;i--)if(!list[i].res.some(x=>x[1]==='bye')){bi=i;break}if(bi<0)bi=list.length-1;pairs.push([list[bi].peer,'bye']);list.splice(bi,1)}
+  const used=new Set(),played=(a,b)=>a.res.some(x=>x[0]<r&&x[1]===b.peer);
+  for(const p of list){if(used.has(p.peer))continue;used.add(p.peer);let q=list.find(o=>!used.has(o.peer)&&!played(p,o));if(!q)q=list.find(o=>!used.has(o.peer));if(q){used.add(q.peer);pairs.push([p.peer,q.peer])}}
   return pairs;
 }
 function arenaTick(){
@@ -1288,25 +1319,30 @@ function arenaTick(){
   const late=Date.now()>RUN.end+45000;
   if(!late&&parts.some(p=>p.st==='train'||p.st==='pick'||p.st==='lobby'))return;
   if(RUN.r===1&&!(RUN.res||[]).length&&Date.now()<RUN.end&&!(parts.length>1))return;
+  // nobody to fight → no tournament (the Arena is PvP only)
+  if(parts.length<2&&RUN.r===1&&!(RUN.res||[]).length){RUN.st='done';RUN.solo=1;save();pushMt();$('#abox').dataset.h='';showArena();return}
   // a player still in an earlier round only blocks if that round is really undecided (opponent has no result against them) and they are not frozen
   // (a decided player gets 20 s to publish their own result before the others move on without them)
   const decided=p=>{if(!parts.some(q=>q.res.some(x=>x[0]===p.r&&x[1]===p.peer)))return false;const k=p.peer+':'+p.r;if(!DECT.has(k))DECT.set(k,Date.now());return Date.now()-DECT.get(k)>20000};
   if(parts.some(p=>p.st!=='done'&&p.r<RUN.r&&p.r>0&&!decided(p)&&!peerStale(p,150000)))return;
-  const pool=parts.filter(p=>p.r>=RUN.r&&p.st!=='pick'&&p.st!=='train'&&p.st!=='lobby'&&!p.res.some(x=>x[0]===RUN.r));const me=MYPEER||'me';
+  const pool=parts.filter(p=>p.r>=RUN.r&&p.st!=='done'&&p.st!=='pick'&&p.st!=='train'&&p.st!=='lobby'&&!p.res.some(x=>x[0]===RUN.r));const me=MYPEER||'me';
   const pr=pairRound(pool,RUN.r).find(x=>x[0]===me||x[1]===me);if(!pr)return;
   const opp=pr[0]===me?pr[1]:pr[0];
-  if(opp==='bot')startAiDuel();else startDuel(opp,RUN.id+'-'+RUN.r+'-'+[me,opp].sort().join('-'));
+  if(opp==='bye'){RUN.res=(RUN.res||[]).concat([[RUN.r,'bye',1]]);RUN.r++;RUN.st=RUN.r>cfgOf().rounds?'done':'wait';sysChat(`Round ${RUN.r-1}: odd number of players — you get a free win (bye).`);toast('Free win this round (bye)!');save();pushMt();$('#abox').dataset.h='';showArena();return}
+  startDuel(opp,RUN.id+'-'+RUN.r+'-'+[me,opp].sort().join('-'));
 }
 function showArena(){
   const el=$('#arena');el.classList.add('on');
   const parts=participants();const R=cfgOf().rounds;const allDone=parts.every(p=>p.st==='done');
   const tab=standings(parts,99);
-  if(allDone&&!RUN.trophy&&tab[0]&&tab[0].me&&parts.length>0){RUN.trophy=1;G.tro++;save();pres({tr:G.tro});updateHud();sysChat('🏆 You won the tournament!')}
+  if(allDone&&!RUN.trophy&&!RUN.gaveUp&&!RUN.solo&&tab[0]&&tab[0].me&&parts.length>1){RUN.trophy=1;G.tro++;save();pres({tr:G.tro});updateHud();sysChat('🏆 You won the tournament!')}
   const stTxt={train:'TRAINING',pick:'PICKING',wait:'READY',duel:'DUELING',done:'FINISHED'};
   const stCol={train:'#6b7280',pick:'#8b5cf6',wait:'#3b82f6',duel:'#f0642a',done:'#3ddc6b'};
-  const nameOf=id=>id==='bot'?'Arena Bot':(parts.find(p=>p.peer===id)||{n:'(left)'}).n;
+  const nameOf=id=>id==='bye'?'nobody (bye)':id==='bot'?'Arena Bot':(parts.find(p=>p.peer===id)||{n:'(left)'}).n;
   let my;
-  if(allDone)my=tab[0]&&tab[0].me?'🏆 You won the tournament!':`Tournament over — you placed #${tab.findIndex(p=>p.me)+1} of ${tab.length}.`;
+  if(RUN.solo)my='No opponents — the Arena is PvP only and needs at least 2 players. Tournament cancelled.';
+  else if(RUN.gaveUp&&RUN.st==='done')my=allDone?`You gave up. Final result: #${tab.findIndex(p=>p.me)+1} of ${tab.length}.`:'You gave up the tournament. The others play on — you can watch the standings.';
+  else if(allDone)my=tab[0]&&tab[0].me&&parts.length>1?'🏆 You won the tournament!':`Tournament over — you placed #${tab.findIndex(p=>p.me)+1} of ${tab.length}.`;
   else if(RUN.st==='done')my='You played all rounds. Waiting for the last duels…';
   else if(parts.length>1&&Date.now()<=RUN.end+45000&&parts.some(p=>p.st==='train'||p.st==='lobby'))my=`Waiting for other players… (${parts.filter(p=>p.st!=='train'&&p.st!=='lobby').length}/${parts.length} in the Arena · timer ${fmt(RUN.end-Date.now())})`;
   else if(parts.length<=1&&Date.now()<RUN.end&&RUN.r===1&&!(RUN.res||[]).length)my=`Waiting for other players… You're alone — the tournament starts when the timer ends (${fmt(RUN.end-Date.now())}).`;
@@ -1317,10 +1353,16 @@ function showArena(){
    <div class="arow" style="background:transparent;border-color:transparent;font-size:16px;color:var(--muted)"><span>#  PLAYER</span><span>PTS · BUCHHOLZ · W-L</span></div>
    ${tab.map((p,i)=>`<div class="arow" ${p.me?'style="border-color:var(--accent)"':''}><span>${i+1}. <span class="sw" style="display:inline-block;width:10px;height:10px;background:${p.c};border:2px solid #000;margin:0 4px"></span>${esc(p.n)}${p.me?' (you)':''}</span><span>${p.score} · ${p.bh} · ${rec(p)} <span class="tag" style="background:${stCol[p.st]||'#555'}">${stTxt[p.st]||'?'}</span></span></div>`).join('')}
    ${(RUN.res||[]).length?`<div class="small" style="margin-top:8px">Your games: ${RUN.res.map(x=>`R${x[0]} vs ${esc(nameOf(x[1]))}: ${x[2]===1?'won':x[2]===0?'lost':'draw'}`).join(' · ')}</div>`:''}
-   ${RUN.st==='done'?rematchHtml():''}${canGoBack()?'<div style="margin-top:10px"><button class="btn ghost" id="aback" style="width:100%">◀ BACK TO TRAINING</button></div>':''}`;
-  if($('#abox').dataset.h!==h){$('#abox').dataset.h=h;$('#abox').innerHTML=h;const b=$('#aleave');if(b)b.onclick=leaveRun;const bk=$('#aback');if(bk)bk.onclick=backToTraining;
+   ${RUN.st!=='done'?'<div style="margin-top:10px"><button class="btn red" id="agiveup" style="width:100%">🏳 GIVE UP TOURNAMENT</button></div>':''}${RUN.st==='done'?rematchHtml():''}${canGoBack()?'<div style="margin-top:10px"><button class="btn ghost" id="aback" style="width:100%">◀ BACK TO TRAINING</button></div>':''}`;
+  if($('#abox').dataset.h!==h){$('#abox').dataset.h=h;$('#abox').innerHTML=h;const b=$('#aleave');if(b)b.onclick=leaveRun;const bk=$('#aback');if(bk)bk.onclick=backToTraining;const gu=$('#agiveup');if(gu)gu.onclick=giveUpArena;
     const r=$('#arematch');if(r)r.onclick=()=>{const prev=RUN.id,cfg=Object.assign({},RUN.cfg,{host:MYPEER||'me'});pickStarter(sid=>startRun('m'+Math.random().toString(36).slice(2,10),0,sid,prev,cfg,'lobby'),cfg)};
     document.querySelectorAll('[data-rjoin]').forEach(b=>b.onclick=()=>joinLobby(b.dataset.rjoin))}
+}
+function giveUpArena(){
+  openModal(`<h3>GIVE UP THE TOURNAMENT?</h3><p>You won't be paired again. Your points so far stay in the table${B&&B.mode==='duel'&&!B.spar?' and your current duel counts as a loss':''}.</p><div class="acts"><button class="btn ghost" id="mno">KEEP FIGHTING</button><button class="btn red" id="myes">GIVE UP</button></div>`);
+  $('#mno').onclick=closeModal;$('#myes').onclick=()=>{closeModal();if(!RUN||RUN.phase!=='arena')return;RUN.gaveUp=1;
+    if(B&&B.mode==='duel'&&!B.spar&&B.state!=='over'){forfeit();return}
+    RUN.st='done';save();pushMt();sysChat('You gave up the tournament.');$('#abox').dataset.h='';showArena()};
 }
 function canGoBack(){return RUN&&RUN.phase==='arena'&&RUN.r===1&&!(RUN.res||[]).length&&(RUN.st==='wait'||RUN.st==='pick')&&Date.now()<RUN.end&&!B&&!participants().some(p=>p.st==='duel')}
 function backToTraining(){if(!canGoBack())return;RUN.phase='train';RUN.st='train';RUN.pick=null;RUN.res=[];RUN.r=1;$('#arena').classList.remove('on');$('#abox').dataset.h='';teleport(35,23);P.d='down';save();pushMt();toast('Back to training!')}
@@ -1335,20 +1377,35 @@ function closeModal(){$('#modal').classList.remove('on')}
 
 /* ===================== PLAYER CHALLENGES (during training) ===================== */
 let myCh=null,incoming=null;const handledCh=new Set();
-function canSpar(){return!!(RUN&&RUN.phase==='train'&&!B)}
+function canSpar(){return!!(RUN&&(RUN.phase==='train'||RUN.phase==='lobby')&&!B)}
 function challenge(peer){
   if(!canSpar()||myCh)return;const p=findPeer(peer);if(!p)return;const mt=p.presence.mt;
-  if(!mt||(mt.st!=='train'&&mt.st!=='free')||p.presence.bt){toast("That player can't battle right now.");return}
+  if(!mt||(mt.st!=='train'&&mt.st!=='free'&&mt.st!=='lobby')||p.presence.bt){toast("That player can't battle right now.");return}
+  if(p.presence.v!==VERSION){toast(`${cleanName(p.presence.n)} plays a different version (v${String(p.presence.v||'old').slice(0,12)}). Both need the same — reload.`);return}
   const id='s'+Math.random().toString(36).slice(2,10);myCh={to:peer,id,t:Date.now()};pres({ch:{to:peer,id}});toast(`Battle request sent to ${cleanName(p.presence.n)}…`);lastPlr='';renderPlayers();
+}
+/* lobby invites: shown as a dialog on the other player's screen */
+const INVITED=new Set(),handledInv=new Set();
+function canInvite(){return!!(RUN&&!RUN.free&&(RUN.phase==='lobby'||(RUN.phase==='train'&&RUN.end>Date.now()+20000)))}
+function invite(peer){if(!canInvite())return;const p=findPeer(peer);if(!p)return;INVITED.add(peer+RUN.id);pres({inv:{to:peer,id:RUN.id,k:Math.random().toString(36).slice(2,8)}});toast(`Invite sent to ${cleanName(p.presence.n)}.`);lastPlr='';renderPlayers()}
+function checkInvites(){
+  if(modalOpen()||B||!MYPEER)return;
+  for(const p of others()){const iv=p.presence.inv;if(!iv||typeof iv!=='object'||iv.to!==MYPEER||typeof iv.id!=='string'||iv.id.length>40)continue;
+    const key=p.peer+':'+iv.id+':'+iv.k;if(handledInv.has(key))continue;handledInv.add(key);
+    if(RUN&&RUN.id===iv.id)continue;const m=runningMatches().find(x=>x.id===iv.id);if(!m)continue;
+    const nm=cleanName(p.presence.n);
+    openModal(`<h3>✉ LOBBY INVITE</h3><p><b>${esc(nm)}</b> invites you to <b>${esc(m.cfg.name||nm+"'s lobby")}</b> (${m.names.length} player${m.names.length>1?'s':''} · ${esc(lobbyLine(m))}).<br><span class="small">${esc(cfgSummary(m.cfg))}</span>${RUN&&!RUN.free?'<br>You will leave your current lobby.':''}</p><div class="acts"><button class="btn ghost" id="mno">NO THANKS</button><button class="btn green" id="myes">JOIN</button></div>`);
+    $('#mno').onclick=closeModal;$('#myes').onclick=()=>{closeModal();joinLobby(iv.id)};return}
 }
 function cancelCh(msg){myCh=null;pres({ch:null});if(msg)toast(msg);lastPlr='';renderPlayers()}
 function checkChallenges(){
   if(!ROOM||!MYPEER||!G)return;
+  try{checkInvites()}catch(e){console.error(e)}
   for(const p of others()){const ch=p.presence.ch;
     if(ch&&typeof ch==='object'&&ch.to===MYPEER&&typeof ch.id==='string'&&ch.id.length<40&&!handledCh.has(ch.id)){handledCh.add(ch.id);
       // both challenged each other at the same moment → just fight (the lower id accepts the other's request)
       if(myCh&&myCh.to===p.peer&&canSpar()){if((MYPEER||'')<p.peer){myCh=null;pres({ch:null});startDuel(p.peer,ch.id,true)}continue}
-      if(!canSpar()||modalOpen()||myCh)pres({dec:ch.id});else showChallenge(p.peer,ch.id,cleanName(p.presence.n))}}
+      if(!canSpar()||modalOpen()||myCh||p.presence.v!==VERSION)pres({dec:ch.id});else showChallenge(p.peer,ch.id,cleanName(p.presence.n))}}
   if(incoming){const p=findPeer(incoming.peer);if(!p||!p.presence.ch||p.presence.ch.id!==incoming.id||!canSpar()){closeModal();incoming=null}}
   if(myCh){const tp=findPeer(myCh.to);
     if(!tp)cancelCh('That player left.');else if(!canSpar())cancelCh();
@@ -1754,7 +1811,7 @@ function duelResult(win,why){
   }
   const sc=win===true?1:win===false?0:0.5;RUN.res=(RUN.res||[]).concat([[RUN.r,B.opp||'bot',sc]]);
   sysChat(`Round ${RUN.r}: ${sc===1?'won':sc===0?'lost':'draw'} against ${B.oppName||'opponent'}.`);
-  RUN.r++;RUN.st=RUN.r>cfgOf().rounds?'done':'wait';
+  RUN.r++;RUN.st=RUN.r>cfgOf().rounds||RUN.gaveUp?'done':'wait';
   save();const myB=B;setTimeout(()=>{if(B===myB){closeBattle();pushMt();showArena()}},2800);
 }
 
@@ -1928,7 +1985,7 @@ function drawBattle(){
 /* ===================== SIDE PANELS ===================== */
 let curTab='team',unread=0;
 document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>switchTab(b.dataset.t));
-function switchTab(t){curTab=t;document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('act',b.dataset.t===t));document.querySelectorAll('.pane').forEach(p=>p.classList.toggle('act',p.id==='pane-'+t));if(t==='chat'){unread=0;$('#cbadge').innerHTML='';const l=$('#chatlog');l.scrollTop=l.scrollHeight}if(t==='players')renderPlayers();if(t==='lobby'){lastLob='';renderLobbyPane()}}
+function switchTab(t){curTab=t;document.querySelectorAll('.tabs button,#topbar button[data-t]').forEach(b=>b.classList.toggle('act',b.dataset.t===t));document.querySelectorAll('.pane').forEach(p=>p.classList.toggle('act',p.id==='pane-'+t));if(t==='chat'){unread=0;$('#cbadge').innerHTML='';const l=$('#chatlog');l.scrollTop=l.scrollHeight}if(t==='players')renderPlayers();if(t==='lobby'){lastLob='';renderLobbyPane()}}
 function monCard(m,i,inTeam){
   const st=stats(m),sp=SPECIES[m.s],r=m.hp/st.mhp;const d=document.createElement('div');d.className='card';
   const cv=mk(48,48);{const cx=cv.getContext('2d');cx.imageSmoothingEnabled=false;cx.drawImage(monSprite(m.s,24),0,0,48,48)}d.appendChild(cv);
@@ -1967,13 +2024,14 @@ function renderPlayers(){
     if(G)h+=`<div class="plr"><span class="sw" style="background:${G.color}"></span><div class="who"><b>${esc(G.name)} (you)</b><span class="small">${st({mt:mtInfo()})} · 🏆${G.tro}</span></div></div>`;
     if(!list.length)h+=`<div class="small" style="line-height:1.15;margin-top:8px">Nobody else is here yet. Send the link above to friends — finding each other can take a few seconds.</div>`;
     for(const p of list){const pr=p.presence;const same=RUN&&pr.mt&&pr.mt.id===RUN.id;
-      const canB=canSpar()&&!myCh&&pr.mt&&(pr.mt.st==='train'||pr.mt.st==='free')&&!pr.bt;const pend=myCh&&myCh.to===p.peer;
-      h+=`<div class="plr"><span class="sw" style="background:${validColor(pr.c)}"></span><div class="who"><b>${esc(cleanName(pr.n))}${p.guest?' (guest)':''}${same?' ★':''}</b><span class="small">${esc(st(pr))} · 🏆${Math.max(0,Math.floor(+pr.tr)||0)}${typeof pingOf==='function'&&pingOf(p.peer)!=null?` · <span style="color:${pingOf(p.peer)>150?'#ef4444':pingOf(p.peer)>80?'#f2c230':'#3ddc6b'}">${pingOf(p.peer)} ms</span>`:''}</span></div>${pr.mt&&(pr.mt.st==='train'||pr.mt.st==='free')?`<button class="btn" data-ch="${esc(p.peer)}" ${canB?'':'disabled'}>${pend?'…':'⚔ BATTLE'}</button>`:''}</div>`}
-    if(RUN)h+=`<div class="small" style="margin-top:6px;line-height:1.1">★ = in your lobby · During training you can challenge anyone who's training to a friendly real-time battle (winner gets XP).</div>`;
+      const canB=canSpar()&&!myCh&&pr.mt&&(pr.mt.st==='train'||pr.mt.st==='free'||pr.mt.st==='lobby')&&!pr.bt&&pr.v===VERSION;
+      const canI=canInvite()&&!same&&pr.v===VERSION&&!(pr.mt&&['wait','duel','pick'].includes(pr.mt.st));const pend=myCh&&myCh.to===p.peer;
+      h+=`<div class="plr"><span class="sw" style="background:${validColor(pr.c)}"></span><div class="who"><b>${esc(cleanName(pr.n))}${p.guest?' (guest)':''}${same?' ★':''}</b><span class="small">${esc(st(pr))} · 🏆${Math.max(0,Math.floor(+pr.tr)||0)}${typeof pingOf==='function'&&pingOf(p.peer)!=null?` · <span style="color:${pingOf(p.peer)>150?'#ef4444':pingOf(p.peer)>80?'#f2c230':'#3ddc6b'}">${pingOf(p.peer)} ms</span>`:''}</span></div><div style="display:flex;flex-direction:column;gap:4px">${canI?`<button class="btn green" data-inv="${esc(p.peer)}" ${INVITED.has(p.peer+RUN.id)?'disabled':''}>${INVITED.has(p.peer+RUN.id)?'✓ INVITED':'✉ INVITE'}</button>`:''}${pr.mt&&(pr.mt.st==='train'||pr.mt.st==='free'||pr.mt.st==='lobby')?`<button class="btn" data-ch="${esc(p.peer)}" ${canB?'':'disabled'}>${pend?'…':'⚔ BATTLE'}</button>`:''}</div></div>`}
+    if(RUN)h+=`<div class="small" style="margin-top:6px;line-height:1.1">★ = in your lobby · ✉ invites a player into your lobby · ⚔ challenges anyone in free play, a lobby or training to a friendly battle (winner gets XP).</div>`;
   }
   if(h!==lastPlr){if(document.activeElement&&document.activeElement.id==='proom')return;lastPlr=h;el.innerHTML=h;bindPlayers(el);const go=()=>{const v=($('#proom').value||'').trim().toLowerCase().replace(/[^a-z0-9_-]/g,'').slice(0,32);location.search=v?'?room='+v:''};const b=$('#pgo');if(b){b.onclick=go;$('#proom').addEventListener('keydown',e=>{if(e.key==='Enter')go()})}}
 }
-function bindPlayers(el){el.querySelectorAll('[data-ch]').forEach(b=>b.onclick=()=>challenge(b.dataset.ch))}
+function bindPlayers(el){el.querySelectorAll('[data-ch]').forEach(b=>b.onclick=()=>challenge(b.dataset.ch));el.querySelectorAll('[data-inv]').forEach(b=>b.onclick=()=>invite(b.dataset.inv))}
 let lastLob='';
 function renderLobbyPane(){
   const el=$('#pane-lobby');if(!el||curTab!=='lobby'||!G)return;let h='';
@@ -1983,7 +2041,7 @@ function renderLobbyPane(){
     if(!RUN)h+=`<button class="btn green" data-lb="free" style="width:100%;margin-bottom:8px">${G.freeRun?'CONTINUE FREE PLAY':'FREE PLAY'}</button>`;
     h+=`<button class="btn" data-lb="create" style="width:100%">＋ CREATE LOBBY</button><div class="sec">OPEN LOBBIES</div>`;
     const ms=runningMatches();if(!ms.length)h+=`<div class="small">No open lobbies right now${ROOM?'':' (multiplayer not connected)'}. Create one and invite your friends!</div>`;
-    for(const m of ms)h+=`<div class="plr" style="align-items:flex-start"><div class="who"><b>${esc(m.cfg.name||m.names[0]+"'s lobby")}</b><span class="small">${m.names.length} player${m.names.length>1?'s':''} · ${lobbyLine(m)}<br>${esc(cfgSummary(m.cfg))} · ${m.cfg.dur} min</span></div><button class="btn green" data-lb="join" data-id="${esc(m.id)}">JOIN</button></div>`;
+    for(const m of ms)h+=`<div class="plr" style="align-items:flex-start"><div class="who"><b>${esc(m.cfg.name||m.names[0]+"'s lobby")}</b><span class="small">${m.names.length} player${m.names.length>1?'s':''} · ${lobbyLine(m)}<br>${esc(cfgSummary(m.cfg))} · ${m.cfg.dur} min</span></div>${m.v===VERSION?`<button class="btn green" data-lb="join" data-id="${esc(m.id)}">JOIN</button>`:verLock(m)}</div>`;
   }else{
     const parts=participants(),hp=hostPeer(),host=isHost(),c=RUN.cfg;
     const phase=RUN.phase==='lobby'?'Waiting for the host to start':RUN.phase==='train'?`Training · ${fmt(RUN.end-Date.now())} left`:RUN.st==='done'?'Tournament finished':`Arena · round ${Math.min(RUN.r,c.rounds)}/${c.rounds}`;
@@ -2021,7 +2079,9 @@ function frame(now){if(!WORLD&&!BAKE_FAIL)bakeTick();const dt=Math.max(0,Math.mi
 /* ===================== BOOT ===================== */
 applyControls();
 G=loadSave();
-if(G)begin();else buildStart();
+$('#tver').textContent='v'+VERSION;$('#sver').textContent='v'+VERSION;
+if(G){$('#sname').value=G.name;if(COLORS.includes(G.color))pickColor=G.color}
+buildStart();
 requestAnimationFrame(frame);
 setInterval(()=>{try{if(G){matchTick();arenaTick();checkChallenges();if(!RUN||RUN.free||RUN.phase==='lobby')renderLobby();renderPlayers();renderLobbyPane()}}catch(e){console.error(e)}},400);
 initRoom();
