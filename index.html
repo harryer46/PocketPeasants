@@ -128,6 +128,14 @@ select{background:#0b0d16;color:var(--text);border:2px solid #000;font-family:in
 .brow .btn{flex:1;font-size:8px;padding:8px 4px}
 .keys{grid-column:1/-1;font-size:16px;color:var(--muted);text-align:center}
 /* arena */
+#dexgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:6px;max-height:60vh;overflow:auto;margin:6px 0 10px}
+.dexc{background:var(--panel2);border:2px solid #000;color:var(--text);font-family:inherit;font-size:16px;padding:4px 2px;line-height:1.05}
+.dexc canvas{display:block;margin:0 auto 2px;width:48px;height:48px;image-rendering:pixelated}
+.dexc.unk{color:var(--muted)}
+.mvrow{background:var(--panel2);border:2px solid #000;padding:4px 8px;margin-bottom:5px;text-align:left;font-size:17px;line-height:1.1}
+.mvrow b{font-weight:normal;font-size:19px}
+.statrow{display:grid;grid-template-columns:70px 1fr 34px;gap:6px;align-items:center;font-size:16px;text-align:left}
+.statrow i{display:block;height:6px;background:var(--blue);border:1px solid #000}
 #bpick{position:absolute;left:50%;top:22%;transform:translateX(-50%);z-index:7;display:none;background:#0b0d16e8;border:3px solid #000;box-shadow:4px 4px 0 #000;padding:8px 10px;text-align:center;max-width:94%}
 #bpick.on{display:block}
 #bpick .t{font-family:'Press Start 2P';font-size:9px;color:var(--accent);margin-bottom:6px}
@@ -225,7 +233,7 @@ body.mob.portrait #rotate.show{display:block}
 <body>
 <div id="app">
 <div id="mainc">
-  <div id="topbar"><span class="tbrand">POCKET PEASANTS</span><span class="chip timer" id="htimer">LOBBY</span><button id="tupd" style="display:none;background:#ef4444;color:#fff">⬆ NEW VERSION — RELOAD</button><span class="tsp"></span><button data-t="lobby">🏟 LOBBY</button><button data-t="team">🎒 TEAM</button><button data-t="players">👥 PLAYERS<span id="pcount"></span></button><button data-t="chat">💬 CHAT<span id="cbadge"></span></button><button id="hmap">🗺 MAP</button><button id="hset">⚙</button><span id="tver"></span></div>
+  <div id="topbar"><span class="tbrand">POCKET PEASANTS</span><span class="chip timer" id="htimer">LOBBY</span><button id="tupd" style="display:none;background:#ef4444;color:#fff">⬆ NEW VERSION — RELOAD</button><span class="tsp"></span><button data-t="lobby">🏟 LOBBY</button><button data-t="team">🎒 TEAM</button><button data-t="players">👥 PLAYERS<span id="pcount"></span></button><button data-t="chat">💬 CHAT<span id="cbadge"></span></button><button id="hdex">📖 DEX</button><button id="hmap">🗺 MAP</button><button id="hset">⚙</button><span id="tver"></span></div>
   <div id="stage">
     <canvas id="world"></canvas>
     <div class="hud"><span class="chip" id="hzone">Town</span><span class="chip" id="hkap">Capsules -</span><span class="chip" id="hon"><span class="dot"></span>Solo</span></div>
@@ -309,7 +317,7 @@ const TURN_CONFIG = {
 
 /* ===================== VERSION ===================== */
 // bump with every release (MAJOR.MINOR.PATCH). Players can only share lobbies/duels with the same version.
-const VERSION='0.22.0';
+const VERSION='0.23.0';
 function cmpV(a,b){const x=String(a||'0').split('.').map(Number),y=String(b||'0').split('.').map(Number);for(let i=0;i<3;i++){const d=(x[i]||0)-(y[i]||0);if(d)return d}return 0}
 /* ===================== ERROR REPORTING ===================== */
 function showErr(m){try{const b=document.getElementById('errbox');if(!b)return;b.textContent='⚠ Error: '+String(m).slice(0,220)+' — please send this to the developer.';b.style.display='block';clearTimeout(showErr.t);showErr.t=setTimeout(()=>b.style.display='none',12000)}catch(e){}}
@@ -1038,7 +1046,7 @@ function renderMapLegend(){
   h+=`<div class="mleg"><b style="color:var(--accent)">LEGEND</b><br>✚ Heal Center · ⚔ Arena<br>★ Legendary shrine · ■ Trainer (✓ beaten)<br>Rings: wild levels rise with distance from town.<br>Colors: <span style="color:${RARITY.common.c}">common</span> · <span style="color:${RARITY.uncommon.c}">uncommon</span> · <span style="color:${RARITY.rare.c}">rare</span></div>`;
   $('#mapleg').innerHTML=h;
 }
-$('#hmap').onclick=toggleMap;$('#htimer').onclick=()=>{if(isMob())$('#side').classList.add('open');switchTab('lobby')};$('#mclose').onclick=closeMap;
+$('#hmap').onclick=toggleMap;$('#hdex').onclick=()=>{if(G)openDex()};$('#htimer').onclick=()=>{if(isMob())$('#side').classList.add('open');switchTab('lobby')};$('#mclose').onclick=closeMap;
 $('#mapov').addEventListener('click',e=>{if(e.target.id==='mapov')closeMap()});
 
 /* ===================== MULTIPLAYER ===================== */
@@ -1383,7 +1391,7 @@ function rematchHtml(){
   for(const m of seen.values())h+=`<button class="btn green" data-rjoin="${esc(m.id)}" data-end="${m.end}">JOIN REMATCH LOBBY (${esc(m.n.slice(0,2).join(', '))})</button>`;
   h+=`<div style="display:flex;gap:8px"><button class="btn" id="arematch" style="flex:1">NEW LOBBY (SAME SETTINGS)</button><button class="btn ghost" id="aleave">LEAVE</button></div></div>`;return h;
 }
-function openModal(h){$('#mbox').innerHTML=h;$('#modal').classList.add('on')}
+function openModal(h){const mb=$('#mbox');mb.style.maxWidth='';mb.style.maxHeight='';mb.style.overflow='';mb.innerHTML=h;$('#modal').classList.add('on')}
 function closeModal(){$('#modal').classList.remove('on')}
 
 /* ===================== PLAYER CHALLENGES (during training) ===================== */
@@ -1906,7 +1914,7 @@ function buildBattleUI(){
   const add=(t,cls,fn,id)=>{const b=document.createElement('button');b.className='btn '+cls;b.textContent=t;b.onclick=fn;if(id)b.id=id;row.appendChild(b)};
   if(!B.tb)add('DASH','ghost',battleDash);add('SWITCH','ghost',battleSwitch,'bsw');
   if(B.mode==='wild'){add('HOLD: CAPSULE','',()=>{},'bcap');add('RUN','ghost',tryRun)}else if(B.mode!=='trainer')add('FORFEIT','red',forfeit);
-  add('⚙','ghost',openSettings);
+  add('ℹ MOVES','ghost',()=>{if(B&&B.me)openMonInfo(act(B.me).s,act(B.me))});add('⚙','ghost',openSettings);
   el.appendChild(row);
   const K=SET.keys;
   if(B.tb)el.insertAdjacentHTML('beforeend',`<div class="keys">Turn-based · pick an action: attacks ${['a1','a2','a3','a4'].map(a=>keyLabel(K[a])).join('/')} · Switch: ${keyLabel(K.sw)}${B.mode==='wild'?` · Capsule: ${keyLabel(K.cap)} · Run: ${keyLabel(K.run)}`:''}</div>`);else
@@ -2102,9 +2110,41 @@ function monCard(m,i,inTeam){
   const acts=document.createElement('div');const btn=(t,fn,dis)=>{const b=document.createElement('button');b.className='mini';b.textContent=t;b.disabled=!!dis||!!B||(RUN&&RUN.phase==='arena');b.onclick=fn;acts.appendChild(b)};
   if(inTeam){if(i>0)btn('↑ Lead',()=>{RUN.team.unshift(RUN.team.splice(i,1)[0]);changed()});if(RUN.team.length>1)btn('→ Box',()=>{RUN.box.push(RUN.team.splice(i,1)[0]);changed()})}
   else btn('→ Team',()=>{RUN.team.push(RUN.box.splice(i,1)[0]);changed()},RUN.team.length>=6);
+  {const b=document.createElement('button');b.className='mini';b.textContent='ℹ Details';b.onclick=()=>openMonInfo(m.s,m);acts.appendChild(b)}
   info.appendChild(acts);d.appendChild(info);return d;
 }
 function changed(){save();renderTeam();pushMt()}
+/* ===================== DEX & DETAILS ===================== */
+const KIND_TXT={melee:'Melee — hits up close',shot:'Ranged — single projectile',spread:'Spread — 3 projectiles in a fan',multi:'Rapid — quick volley',big:'Heavy — big, slow projectile',self:'Self — buffs/heals yourself'};
+const FX_LONG={burn:'May burn: damage over time',slow:'Slows the target',stun:'May stun the target briefly',drain:'Heals you by half the damage dealt',heal:'Heals 30% of max HP',shield:'Halves incoming damage for a while',haste:'Speeds you up for a while',knock:'Knocks the target back'};
+function moveInfoHtml(mid,learnLv){const mv=MOVES[mid];if(!mv)return'';const T=TYPES[mv.t];
+  return`<div class="mvrow"><b>${esc(mv.n)}</b>${learnLv!=null?` <span class="small">· learned at Lv ${learnLv}</span>`:''}<br><span class="tb" style="background:${T.c}">${T.n.toUpperCase()}</span> <span class="small">${esc(KIND_TXT[mv.k]||mv.k)}</span><br>
+   <span class="small">Power <b style="font-size:17px;color:var(--text)">${mv.p||'—'}</b> · AP <b style="font-size:17px;color:#4aa3ff">${apCost(mid)}</b> · Cooldown ${cdOf(mid).toFixed(1)} s · Turn-based accuracy ${TB_ACC[mv.k]||100}%${mv.fx?`<br>Effect: ${esc(FX_LONG[mv.fx]||mv.fx)}`:''}</span></div>`}
+function prevForm(sid){return Object.keys(SPECIES).find(k=>SPECIES[k].evo&&SPECIES[k].evo[1]===sid)}
+function habitatOf(sid){const out=[];if(startersNow().includes(sid)||RAR[sid]==='unique')out.push('Starter (unique — never wild)');
+  for(const z in ZONES)if(poolOf(z).includes(sid))out.push(ZONES[z].n);for(const L of LEGENDS)if(legSid(L)===sid)out.push('Legendary shrine ('+ZONES[L.zone].n+')');
+  const pf=prevForm(sid);if(pf)out.push('Evolves from '+SPECIES[pf].n+' at Lv '+SPECIES[pf].evo[0]);return out.length?out.join(' · '):'—'}
+// m = an own monster (shows its current values), otherwise the dex entry
+function openMonInfo(sid,m,back){const sp=SPECIES[sid];if(!sp)return;const caught=!!(G.dex&&G.dex[sid])||!!m;
+  let h=`<h3>${esc(sp.n)}${m?` · Lv ${m.l}`:''}</h3><canvas id="minfocv" width="24" height="24" style="width:96px;height:96px;image-rendering:pixelated;display:block;margin:0 auto 4px"></canvas><div><span class="tb" style="background:${TYPES[sp.t].c}">${TYPES[sp.t].n.toUpperCase()}</span> <span class="tb" style="background:${rarOf(sid).c};color:#14141f">${rarOf(sid).n.toUpperCase()}</span></div>
+    <p class="small" style="margin:6px 0 8px">Found: ${esc(habitatOf(sid))}${sp.evo?` · evolves into ${caught?esc(SPECIES[sp.evo[1]].n):'???'} at Lv ${sp.evo[0]}`:''}</p>`;
+  if(!caught){h+=`<p>Catch one to see its stats and moves.</p>`}
+  else{const st=m?stats(m):null,b=sp.b,names=['HP','Attack','Defense','Speed'],vals=m?[st.mhp,st.atk,st.def,st.spd]:b,mx=m?Math.max(...vals,1):130;
+    h+=`<div style="margin:4px 0 10px">${names.map((n,i)=>`<div class="statrow"><span>${n}</span><span style="background:#0b0d16;border:1px solid #000"><i style="width:${Math.min(100,vals[i]/mx*100)}%"></i></span><span>${vals[i]}</span></div>`).join('')}</div>`;
+    if(m)h+=`<div class="small" style="margin-bottom:8px">HP ${m.hp}/${st.mhp}${m.xp!=null?` · XP ${m.xp}/${xpNeed(m.l)} to Lv ${m.l+1}`:''}</div><div class="lbl2" style="margin-bottom:4px">KNOWN MOVES</div>${m.m.map(mid=>moveInfoHtml(mid)).join('')}`;
+    const next=sp.ls.filter(e=>!m||!m.m.includes(e[1]));
+    if(next.length)h+=`<div class="lbl2" style="margin:8px 0 4px">${m?'OTHER MOVES OF THIS LINE':'LEARNSET'}</div>${next.map(e=>moveInfoHtml(e[1],e[0])).join('')}`}
+  h+=`<div class="acts" style="margin-top:10px">${back?'<button class="btn ghost" id="mback">◀ DEX</button>':''}<button class="btn" id="mok">CLOSE</button></div>`;
+  openModal(h);$('#mbox').style.maxHeight='92%';$('#mbox').style.overflow='auto';
+  const c=$('#minfocv').getContext('2d');c.imageSmoothingEnabled=false;c.drawImage(monSprite(sid,24),0,0);
+  $('#mok').onclick=closeModal;if(back)$('#mback').onclick=()=>openDex()}
+function openDex(){const ids=rosterIds();
+  const seen=ids.filter(s=>G.dex[s]!==undefined).length,caught=ids.filter(s=>G.dex[s]).length;
+  openModal(`<h3>📖 MONSTER DEX</h3><p class="small" style="margin-bottom:4px">${altOn()?'Alternative':'Classic'} set · seen ${seen} · caught ${caught} / ${ids.length}</p><div id="dexgrid">${ids.map((s,i)=>{const k=G.dex[s];return`<button class="dexc ${k===undefined?'unk':''}" data-dx="${s}"><canvas width="24" height="24"></canvas>#${String(i+1).padStart(2,'0')} ${k===undefined?'???':esc(SPECIES[s].n)}${k?'<br><span class="small">◓ caught</span>':k===0?'<br><span class="small">seen</span>':''}</button>`}).join('')}</div><div class="acts"><button class="btn" id="mok">CLOSE</button></div>`);
+  $('#mbox').style.maxWidth='760px';$('#mbox').style.maxHeight='92%';$('#mbox').style.overflow='auto';
+  document.querySelectorAll('[data-dx]').forEach(b=>{const s=b.dataset.dx,cx=b.querySelector('canvas').getContext('2d');cx.imageSmoothingEnabled=false;if(G.dex[s]!==undefined)cx.drawImage(monSprite(s,24),0,0);else{cx.globalAlpha=0.3;cx.filter='brightness(0)';cx.drawImage(monSprite(s,24),0,0)}
+    b.onclick=()=>{if(G.dex[s]===undefined){toast('Not seen yet — go explore!');return}openMonInfo(s,null,true)}});
+  $('#mok').onclick=closeModal}
 function renderTeam(){
   if(!G)return;const el=$('#pane-team');el.innerHTML='';
   el.insertAdjacentHTML('beforeend',`<div class="stats"><div class="stat">Trainer<b style="color:${G.color}">${esc(G.name)}</b></div><div class="stat">Trophies<b>🏆 ${G.tro}</b></div><div class="stat">Monster Dex<b>${rosterIds().filter(s=>G.dex[s]).length} / ${rosterIds().length}</b></div><div class="stat">Capsules<b>${RUN?RUN.kap:'-'}</b></div></div>`);
