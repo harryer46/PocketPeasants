@@ -98,7 +98,7 @@ select{background:#0b0d16;color:var(--text);border:2px solid #000;font-family:in
 #battle{position:absolute;inset:0;background:#0a0c14;display:none;flex-direction:column;align-items:center;justify-content:center;padding:10px;z-index:5}
 #battle.on{display:flex}
 #bwrap{width:100%;max-width:900px;display:flex;flex-direction:column;gap:8px}
-#bcv{width:100%;aspect-ratio:16/9;border:3px solid #000;box-shadow:4px 4px 0 #000;display:block;touch-action:none;background:#222}
+#bcv{width:100%;aspect-ratio:3/2;margin:0 auto;border:3px solid #000;box-shadow:4px 4px 0 #000;display:block;touch-action:none;background:#222}
 #bact{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
 .mv{position:relative;overflow:hidden;border:2px solid #000;box-shadow:3px 3px 0 #000;padding:6px 7px;text-align:left;color:#fff;font-size:19px;line-height:1}
 .mv small{display:block;font-size:15px;opacity:.9}
@@ -158,7 +158,7 @@ select{background:#0b0d16;color:var(--text);border:2px solid #000;font-family:in
     <div id="dpad"><span></span><button data-d="up">▲</button><span></span><button data-d="left">◀</button><span></span><button data-d="right">▶</button><span></span><button data-d="down">▼</button><span></span></div>
     <div id="lobby"></div>
     <div id="arena"><div class="abox" id="abox"></div></div>
-    <div id="battle"><div id="bwrap"><canvas id="bcv" width="320" height="180"></canvas><div id="bctl"><div id="bpad"></div><div id="bact"></div></div></div></div>
+    <div id="battle"><div id="bwrap"><canvas id="bcv" width="720" height="480"></canvas><div id="bctl"><div id="bpad"></div><div id="bact"></div></div></div></div>
     <div id="modal"><div class="box" id="mbox"></div></div>
   </div>
   <aside id="side">
@@ -463,7 +463,7 @@ function th(x,y){return((x*73856093)^(y*19349663))>>>0}
 const SAVE_KEY='discountmon-v1';
 let G=null,RUN=null,B=null,T=0;
 const P={x:30,y:24,fx:30,fy:24,d:'down',moving:false,mt:0,sx:0,sy:0,tx:0,ty:0,ph:0,steps:0,fol:{x:30,y:24,tx:30,ty:24}};
-function save(){if(!G)return;G.run=RUN;try{localStorage.setItem(SAVE_KEY,JSON.stringify(G))}catch(e){}}
+function save(){if(!G)return;G.run=RUN;if(RUN&&RUN.free)G.freeRun=RUN;try{localStorage.setItem(SAVE_KEY,JSON.stringify(G))}catch(e){}}
 function loadSave(){try{const s=localStorage.getItem(SAVE_KEY);if(s){const g=JSON.parse(s);if(g&&g.name){g.dex=g.dex||{};g.tro=g.tro||0;return g}}}catch(e){}return null}
 
 /* ===================== START ===================== */
@@ -479,7 +479,7 @@ function buildStart(){
 }
 function begin(){
   $('#start').classList.add('off');
-  RUN=G.run||null;if(RUN){RUN.beat=RUN.beat||{};RUN.leg=RUN.leg||{}}
+  RUN=G.run||G.freeRun||null;if(RUN){RUN.beat=RUN.beat||{};RUN.leg=RUN.leg||{}}
   if(RUN&&RUN.phase==='train'&&Date.now()>=RUN.end){RUN.phase='arena_pending'}
   if(RUN&&RUN.phase==='arena'&&RUN.st==='duel')RUN.st='out';
   P.x=P.fx=G.x;P.y=P.fy=G.y;P.d=G.d||'down';if(!walkable(P.x,P.y)){P.x=P.fx=30;P.y=P.fy=24}
@@ -600,21 +600,23 @@ function updateHud(){
 /* world render (low-res buffer, scaled up) */
 const wcv=$('#world'),wc=wcv.getContext('2d');let SC=3,LW=0,LH=0;
 function nameTag(c,x,y,txt,col,icon){
-  c.font='10px VT323';const w=Math.ceil(c.measureText(txt).width)+8+(icon?7:0);const X=Math.round(x-w/2);
-  c.fillStyle='#0b0d16cc';c.fillRect(X,y-9,w,9);c.fillStyle=col;c.fillRect(X+2,y-6,3,3);
-  c.fillStyle='#fff';c.textBaseline='alphabetic';c.fillText(txt,X+7,y-2);if(icon){c.fillStyle=icon==='⚔'?'#ffcb3d':'#ff6b6b';c.fillText(icon==='⚔'?'!!':'!',X+w-6,y-2)}
+  c.font='8px VT323';c.textBaseline='alphabetic';const w=Math.ceil(c.measureText(txt).width)+9+(icon?6:0);const X=Math.round(x-w/2);
+  c.fillStyle='#000000';c.fillRect(X-0.5,y-9.5,w+1,9);c.fillStyle='#14182af0';c.fillRect(X,y-9,w,8);c.fillStyle=col;c.fillRect(X+2,y-6.5,3,3);
+  c.fillStyle='#ffffff';c.fillText(txt,X+7,y-2.6);if(icon){c.fillStyle=icon==='⚔'?'#ffcb3d':'#ff6b6b';c.fillText(icon==='⚔'?'!!':'!',X+w-5,y-2.6)}
 }
 function bubble(c,x,y,txt){
-  c.font='10px VT323';let lines=[],line='';for(const wd of txt.split(' ')){const t=line?line+' '+wd:wd;if(c.measureText(t).width>80&&line){lines.push(line);line=wd}else line=t}if(line)lines.push(line);lines=lines.slice(0,4);
-  const w=Math.ceil(Math.max(...lines.map(l=>c.measureText(l).width)))+6,h=lines.length*8+4;const X=Math.round(x-w/2),Y=Math.round(y-h-3);
+  c.font='8px VT323';let lines=[],line='';for(const wd of txt.split(' ')){const t=line?line+' '+wd:wd;if(c.measureText(t).width>70&&line){lines.push(line);line=wd}else line=t}if(line)lines.push(line);lines=lines.slice(0,4);
+  const w=Math.ceil(Math.max(...lines.map(l=>c.measureText(l).width)))+6,h=lines.length*7+4;const X=Math.round(x-w/2),Y=Math.round(y-h-3);
   c.fillStyle='#14141f';c.fillRect(X-1,Y-1,w+2,h+2);c.fillStyle='#fff';c.fillRect(X,Y,w,h);c.fillRect(Math.round(x)-1,Y+h,3,2);
-  c.fillStyle='#14141f';lines.forEach((l,i)=>c.fillText(l,X+3,Y+8+i*8));
+  c.fillStyle='#14141f';lines.forEach((l,i)=>c.fillText(l,X+3,Y+8+i*7-1));
 }
 function drawWorld(){
-  const cw=wcv.parentElement.clientWidth,ch=wcv.parentElement.clientHeight;SC=cw<640?2:3;
-  const lw=Math.ceil(cw/SC),lh=Math.ceil(ch/SC);
-  if(lw!==LW||lh!==LH){LW=lw;LH=lh;wcv.width=lw;wcv.height=lh;wcv.style.width=lw*SC+'px';wcv.style.height=lh*SC+'px'}
-  const c=wc;c.imageSmoothingEnabled=false;
+  const cw=wcv.parentElement.clientWidth,ch=wcv.parentElement.clientHeight;const dpr=Math.min(3,devicePixelRatio||1);
+  SC=Math.max(2,Math.round(Math.min(cw/240,ch/160)));
+  const W=Math.round(cw*dpr),H=Math.round(ch*dpr);
+  if(wcv.width!==W||wcv.height!==H){wcv.width=W;wcv.height=H;wcv.style.width=cw+'px';wcv.style.height=ch+'px'}
+  const K=Math.max(1,Math.round(SC*dpr));LW=Math.ceil(W/K);LH=Math.ceil(H/K);
+  const c=wc;c.setTransform(K,0,0,K,0,0);c.imageSmoothingEnabled=false;
   let camX=Math.round(P.fx*16+8-LW/2),camY=Math.round(P.fy*16+8-LH/2);
   camX=clamp(camX,0,MW*16-LW);camY=clamp(camY,0,MH*16-LH);
   c.fillStyle='#1d6428';c.fillRect(0,0,LW,LH);
@@ -624,7 +626,7 @@ function drawWorld(){
     c.drawImage(arr[v],x*16-camX,y*16-camY)}
   // signs on roofs
   c.fillStyle='#ffffff';c.fillRect(24*16-camX+10,17*16-camY+2,4,12);c.fillRect(24*16-camX+6,17*16-camY+6,12,4);
-  c.font='8px "Press Start 2P"';c.fillStyle='#14141f';c.fillText('ARENA',33*16-camX+29,17*16-camY+13);c.fillStyle='#ffcb3d';c.fillText('ARENA',33*16-camX+28,17*16-camY+12);
+  c.font='7px "Press Start 2P"';c.textBaseline='alphabetic';c.fillStyle='#14141f';c.fillText('ARENA',33*16-camX+31,17*16-camY+13);c.fillStyle='#ffcb3d';c.fillText('ARENA',33*16-camX+30,17*16-camY+12);
   // entities
   const ents=[];
   for(const o of OTH.values()){if(o.fx==null)continue;ents.push({fx:o.fx,fy:o.fy,col:o.c,d:o.d,ph:o.ph,mv:o.moving,name:o.n,bt:o.bt,bub:o.bub});if(o.ld&&o.fol.fx!=null)ents.push({fx:o.fol.fx,fy:o.fol.fy,mon:o.ld})}
@@ -638,7 +640,7 @@ function drawWorld(){
     if(e.mon){const s=monSprite(e.mon,24);c.drawImage(s,X-4,Y+15-21)}
     else{const fr=e.mv?(Math.floor(e.ph/STEP*2)%2?1:2):0;c.drawImage(charSprite(e.col,e.d,fr),X,Y-2)}
     if(tget(Math.round(e.fx),Math.round(e.fy))===1)c.drawImage(TILE[1][0],0,9,16,7,X,Y+9,16,7)}
-  for(const e of ents){if(e.mon)continue;const X=e.fx*16-camX+8,Y=Math.round(e.fy*16-camY)-3;
+  for(const e of ents){if(e.mon)continue;const X=e.fx*16-camX+8,Y=Math.round(e.fy*16-camY)-2;
     if(e.legend){nameTag(c,X,Y-14,'???','#ffcb3d','');continue}
     if(e.npc){const beaten=RUN&&RUN.beat&&RUN.beat[e.npc.id];nameTag(c,X,Y,e.name,e.col,'');if(e.npc.alert&&performance.now()-e.npc.alert<1000){c.fillStyle='#14141f';c.fillRect(Math.round(X)-3,Y-24,6,11);c.fillStyle='#ffcb3d';c.fillRect(Math.round(X)-2,Y-23,4,6);c.fillRect(Math.round(X)-2,Y-16,4,2)}else if(beaten){vtText(c,'✓',X,Y-11,'#3ddc6b',10,'center')}continue}
     nameTag(c,X,Y,e.name,e.col,e.bt==='duel'?'⚔':e.bt==='wild'?'!':'');if(e.bub&&e.bub.until>performance.now())bubble(c,X,Y-10,e.bub.t)}
@@ -649,7 +651,7 @@ let ROOM=null,MYPEER=null;
 const OTH=new Map();let myBubble=null,chatN=0;
 function pres(p){if(!ROOM)return;try{ROOM.presence(p).catch(()=>{})}catch(e){}}
 function leadInfo(){return RUN&&RUN.team[0]?[RUN.team[0].s,RUN.team[0].l]:null}
-function mtInfo(){return RUN?{id:RUN.id,end:RUN.end,r:RUN.phase==='arena'?RUN.r:0,st:RUN.phase==='arena'?RUN.st:'train',w:RUN.wins,prev:RUN.prev||null}:null}
+function mtInfo(){if(RUN&&RUN.free)return{id:RUN.id,end:0,r:0,st:'free',w:0,prev:null};return RUN?{id:RUN.id,end:RUN.end,r:RUN.phase==='arena'?RUN.r:0,st:RUN.phase==='arena'?RUN.st:'train',w:RUN.wins,prev:RUN.prev||null}:null}
 function pushFull(){if(!G)return;pres({n:G.name,c:G.color,x:P.moving?P.tx:P.x,y:P.moving?P.ty:P.y,d:P.d,tr:G.tro,ld:leadInfo(),bt:B?(B.mode==='wild'?'wild':'duel'):null,mt:mtInfo()})}
 function pushMt(){pres({mt:mtInfo(),ld:leadInfo()})}
 function setConn(on,label){$('#hon').innerHTML=`<span class="dot ${on?'on':''}"></span>${label||(on?'Online':'Offline')}`}
@@ -767,13 +769,25 @@ function bindNetSettings(){
 /* ===================== MATCHES ===================== */
 const DUR_OPTS=[[3,'3 min'],[5,'5 min'],[10,'10 min']];
 function runningMatches(){const seen=new Map();for(const p of others()){const mt=p.presence.mt;if(mt&&typeof mt.id==='string'&&mt.id.length<40&&+mt.end>Date.now()+10000&&mt.st==='train'){const e=seen.get(mt.id)||{id:mt.id,end:+mt.end,names:[]};e.names.push(cleanName(p.presence.n));seen.set(mt.id,e)}}return[...seen.values()]}
+let LOBBY_MIN=true;
+function startFree(){
+  if(G.freeRun){RUN=G.freeRun;RUN.beat=RUN.beat||{};RUN.leg=RUN.leg||{};afterRunChange();toast('Welcome back! Free play continues.');return}
+  pickStarter(sid=>{RUN={id:'f'+Math.random().toString(36).slice(2,10),free:true,end:0,phase:'train',team:[newMon(sid,5)],box:[],kap:10,r:1,st:'free',wins:0,beat:{},leg:{}};G.dex[sid]=1;G.freeRun=RUN;afterRunChange();teleport(30,24);sysChat('Free play started — your team is saved. Matches can be started from the lobby anytime.')});
+}
+function afterRunChange(){save();LOBBY_MIN=true;$('#lobby').dataset.h='';renderLobby();renderTeam();updateHud();pushMt();lastPlr='';renderPlayers()}
 function renderLobby(){
-  const el=$('#lobby');if(!G||RUN){el.classList.remove('on');return}
-  const ms=runningMatches();
-  let h=`<h3>LOBBY</h3><p>Start a match: you get a fresh starter, then train and catch monsters until the timer runs out. Then everyone in the match duels in the Arena!</p>`;
+  const el=$('#lobby');if(!G||(RUN&&!RUN.free)){el.classList.remove('on');return}
+  const ms=runningMatches();let h;
+  if(RUN&&RUN.free){
+    if(LOBBY_MIN){h=`<div class="lrow"><span style="flex:1;font-family:'Press Start 2P';font-size:8px;color:var(--accent)">FREE PLAY${ms.length?` · <span style="color:var(--green)">${ms.length} MATCH${ms.length>1?'ES':''} RUNNING</span>`:''}</span><button class="btn ghost" id="lmax">MATCHES ▲</button></div>`;
+      if(el.dataset.h!==h){el.dataset.h=h;el.innerHTML=h;$('#lmax').onclick=()=>{LOBBY_MIN=false;renderLobby()}}el.classList.add('on');return}
+    h=`<div class="lrow" style="margin-bottom:6px"><h3 style="flex:1;margin:0">FREE PLAY</h3><button class="btn ghost" id="lmin">▼</button></div><p>Your free-play team is saved and waits here. Start or join a match anytime — matches use a fresh starter, so it's fair for everyone.</p>`;
+  }else h=`<h3>LOBBY</h3><p>Play freely with a team that's saved — or start a match: fresh starter, train until the timer runs out, then everyone duels in the Arena!</p><div class="lrow" style="margin-bottom:8px"><button class="btn green" id="lfree" style="flex:1">${G.freeRun?'CONTINUE FREE PLAY':'FREE PLAY'}</button></div>`;
   for(const m of ms)h+=`<div class="lrow" style="margin-bottom:8px"><span style="flex:1">${esc(m.names.slice(0,3).join(', '))}${m.names.length>3?' +'+(m.names.length-3):''} · ${fmt(m.end-Date.now())} left</span><button class="btn green" data-join="${esc(m.id)}" data-end="${m.end}">JOIN</button></div>`;
   h+=`<div class="lrow"><select id="ldur">${DUR_OPTS.map(([v,l])=>`<option value="${v}" ${v===10?'selected':''}>${l}</option>`).join('')}</select><button class="btn" id="lstart">START NEW MATCH</button></div>`;
   if(el.dataset.h!==h){el.dataset.h=h;el.innerHTML=h;
+    const lm=$('#lmin');if(lm)lm.onclick=()=>{LOBBY_MIN=true;renderLobby()};
+    const lf=$('#lfree');if(lf)lf.onclick=startFree;
     $('#lstart').onclick=()=>pickStarter(sid=>startRun('m'+Math.random().toString(36).slice(2,10),Date.now()+(+$('#ldur').value)*60000,sid));
     el.querySelectorAll('[data-join]').forEach(b=>b.onclick=()=>{const id=b.dataset.join,end=+b.dataset.end;pickStarter(sid=>startRun(id,end,sid))})}
   el.classList.add('on');
@@ -789,9 +803,10 @@ function startRun(id,end,sid,prev){
   save();renderLobby();renderTeam();updateHud();pushMt();teleport(30,24);
   sysChat(`Match started! You have ${fmt(end-Date.now())} to train. Tall grass is in every direction.`);toast('Training started! Head into the tall grass.');
 }
-function leaveRun(){RUN=null;save();$('#arena').classList.remove('on');pres({mt:null,ld:null});renderLobby();renderTeam();updateHud()}
+function leaveRun(){RUN=G.freeRun||null;if(RUN){RUN.beat=RUN.beat||{};RUN.leg=RUN.leg||{}}save();$('#arena').classList.remove('on');pres({mt:mtInfo(),ld:leadInfo()});afterRunChange();if(RUN)toast('Back to free play.')}
 function matchTick(){
-  if(!RUN||!G)return;const left=RUN.end-Date.now();const tm=$('#htimer');
+  if(!RUN||!G){$('#htimer').textContent='LOBBY';$('#htimer').classList.remove('hot');return}
+  if(RUN.free){$('#htimer').textContent='FREE PLAY';$('#htimer').classList.remove('hot');return}const left=RUN.end-Date.now();const tm=$('#htimer');
   if(RUN.phase==='train'){tm.textContent='TRAINING '+fmt(left);tm.classList.toggle('hot',left<30000);if(left<=0)enterArena()}
   else{tm.textContent=RUN.st==='champ'?'CHAMPION!':'ARENA';tm.classList.remove('hot')}
 }
@@ -846,7 +861,7 @@ let myCh=null,incoming=null;const handledCh=new Set();
 function canSpar(){return!!(RUN&&RUN.phase==='train'&&!B)}
 function challenge(peer){
   if(!canSpar()||myCh)return;const p=findPeer(peer);if(!p)return;const mt=p.presence.mt;
-  if(!mt||mt.st!=='train'||p.presence.bt){toast("That player can't battle right now.");return}
+  if(!mt||(mt.st!=='train'&&mt.st!=='free')||p.presence.bt){toast("That player can't battle right now.");return}
   const id='s'+Math.random().toString(36).slice(2,10);myCh={to:peer,id,t:Date.now()};pres({ch:{to:peer,id}});toast(`Battle request sent to ${cleanName(p.presence.n)}…`);lastPlr='';renderPlayers();
 }
 function cancelCh(msg){myCh=null;pres({ch:null});if(msg)toast(msg);lastPlr='';renderPlayers()}
@@ -870,8 +885,8 @@ function showChallenge(peer,id,name){
 }
 
 /* ===================== REAL-TIME BATTLE ENGINE ===================== */
-const AW=320,AH=180,AX0=14,AX1=306,AY0=50,AY1=170;
-function mkFighter(side,team,x,ctrl){const f={side,team,a:0,x,y:112,face:side==='L'?1:-1,cd:[0,0,0,0],dashT:0,dashCd:0,inv:1,swCd:0,flash:0,faint:0,out:false,ctrl,mvx:0,mvy:0,ddx:0,ddy:0,think:0};const i=team.findIndex(m=>m.hp>0);f.a=i<0?0:i;if(i<0)f.out=true;return f}
+const AW=240,AH=160,AX0=10,AX1=230,AY0=52,AY1=150,XL=58,XR=182;
+function mkFighter(side,team,x,ctrl){const f={side,team,a:0,x,y:102,face:side==='L'?1:-1,cd:[0,0,0,0],dashT:0,dashCd:0,inv:1,swCd:0,flash:0,faint:0,out:false,ctrl,mvx:0,mvy:0,ddx:0,ddy:0,think:0};const i=team.findIndex(m=>m.hp>0);f.a=i<0?0:i;if(i<0)f.out=true;return f}
 function act(F){return F.team[F.a]}
 function fspeed(F){return Math.min(120,48+act(F).spd*1.15)*(F.ctrl==='ai'?0.82:1)}
 function shotParams(mid){const mv=MOVES[mid]||MOVES.bump;if(mv.t==='normal')return{mel:1,sp:270,life:0.17,r:10,p:mv.p,n:1};if(mv.p>=85)return{sp:125,life:2.4,r:4,p:Math.round(mv.p*0.42),n:3};return{sp:178-mv.p,life:2.4,r:3+mv.p/25,p:mv.p,n:1}}
@@ -974,19 +989,19 @@ function startWild(zk){
   const z=ZONES[zk];const sid=pickWild(z.pool);const l=z.lv[0]+Math.floor(Math.random()*(z.lv[1]-z.lv[0]+1));
   const wild=newMon(sid,l);G.dex[sid]=G.dex[sid]||0;
   if(!RUN.team.some(m=>m.hp>0))healAll();
-  newBattle({mode:'wild',zone:zk,wild,me:mkFighter('L',RUN.team.map(battler),70,'local'),foe:mkFighter('R',[battler(wild)],250,'ai')});
-  B.foe.inv=0.6;const rr=RAR[sid];say(rr==='rare'?`✦ A RARE ${SPECIES[wild.s].n} (Lv ${l}) appeared! ✦`:rr==='uncommon'?`An uncommon ${SPECIES[wild.s].n} (Lv ${l}) appeared!`:`A wild ${SPECIES[wild.s].n} (Lv ${l}) appeared!`);if(rr==='rare')burst(250,80,'#4aa3ff',24);
+  newBattle({mode:'wild',zone:zk,wild,me:mkFighter('L',RUN.team.map(battler),XL,'local'),foe:mkFighter('R',[battler(wild)],XR,'ai')});
+  B.foe.inv=0.6;const rr=RAR[sid];say(rr==='rare'?`✦ A RARE ${SPECIES[wild.s].n} (Lv ${l}) appeared! ✦`:rr==='uncommon'?`An uncommon ${SPECIES[wild.s].n} (Lv ${l}) appeared!`:`A wild ${SPECIES[wild.s].n} (Lv ${l}) appeared!`);if(rr==='rare')burst(XR,64,'#4aa3ff',24);
 }
 function startLegend(L){
   if(!RUN.team.some(m=>m.hp>0))healAll();
   const wild=newMon(L.id,L.l);G.dex[L.id]=G.dex[L.id]||0;
-  newBattle({mode:'wild',legend:L.id,zone:L.zone,wild,me:mkFighter('L',RUN.team.map(battler),70,'local'),foe:mkFighter('R',[battler(wild)],250,'ai'),state:'count',cntEnd:performance.now()+2000});
-  say(`★ The legendary ${SPECIES[L.id].n} awakens! ★`);burst(250,80,'#ffcb3d',40);
+  newBattle({mode:'wild',legend:L.id,zone:L.zone,wild,me:mkFighter('L',RUN.team.map(battler),XL,'local'),foe:mkFighter('R',[battler(wild)],XR,'ai'),state:'count',cntEnd:performance.now()+2000});
+  say(`★ The legendary ${SPECIES[L.id].n} awakens! ★`);burst(XR,64,'#ffcb3d',40);
 }
 function startTrainer(t){
   if(!RUN.team.some(m=>m.hp>0))healAll();
   const team=t.team.map(([s,l])=>battler(newMon(s,l)));
-  newBattle({mode:'trainer',trainer:t,oppName:t.n,zone:zoneAt(t.x,t.y)||'north',me:mkFighter('L',RUN.team.map(battler),70,'local'),foe:mkFighter('R',team,250,'ai'),state:'count',cntEnd:performance.now()+1800});
+  newBattle({mode:'trainer',trainer:t,oppName:t.n,zone:zoneAt(t.x,t.y)||'north',me:mkFighter('L',RUN.team.map(battler),XL,'local'),foe:mkFighter('R',team,XR,'ai'),state:'count',cntEnd:performance.now()+1800});
   say(`${t.n} wants to battle!`);
 }
 function trainerKO(def){const idx=B.me.a;syncBack();const m=RUN.team[idx];if(m){const msgs=gainXp(m,Math.round(xpGain(def.s,def.l)*1.4));Object.assign(B.me.team[idx],battler(m));msgs.forEach(say)}}
@@ -1011,7 +1026,7 @@ function startAiDuel(){
   RUN.st='duel';pushMt();
   const n=RUN.team.length,avg=Math.round(RUN.team.reduce((a,m)=>a+m.l,0)/n)+RUN.r-1;
   const team=[];for(let i=0;i<n;i++){const s=BASES[Math.floor(Math.random()*BASES.length)];team.push(battler(newMon(s,clamp(avg+Math.floor(Math.random()*3)-1,2,60))))}
-  newBattle({mode:'ai',oppName:'Champion Bot',me:mkFighter('L',tourneyTeam(),70,'local'),foe:mkFighter('R',team,250,'ai'),state:'count',cntEnd:performance.now()+3000});
+  newBattle({mode:'ai',oppName:'Champion Bot',me:mkFighter('L',tourneyTeam(),XL,'local'),foe:mkFighter('R',team,XR,'ai'),state:'count',cntEnd:performance.now()+3000});
   say(`Round ${RUN.r}: Champion Bot challenges you!`);
 }
 function sanitizeTeam(arr){
@@ -1023,7 +1038,7 @@ function startDuel(opp,id,spar){
   if(!spar){RUN.st='duel';pushMt()}
   const op=findPeer(opp);const oppName=op?cleanName(op.presence.n):'Opponent';const left=(MYPEER||'')<opp;
   const raw=RUN.team.map(m=>[m.s,m.l,m.m.slice(0,4)]);
-  newBattle({mode:'duel',spar:!!spar,id,opp,oppName,raw,me:mkFighter(left?'L':'R',tourneyTeam(),left?70:250,'local'),foe:null,state:'wait',mySh:[],seen:new Set(),pubT:0,missing:0,t0:performance.now()});
+  newBattle({mode:'duel',spar:!!spar,id,opp,oppName,raw,me:mkFighter(left?'L':'R',tourneyTeam(),left?XL:XR,'local'),foe:null,state:'wait',mySh:[],seen:new Set(),pubT:0,missing:0,t0:performance.now()});
   say(spar?`Friendly battle: waiting for ${oppName}…`:`Round ${RUN.r}: waiting for ${oppName}…`);publishDuel(true);
 }
 function publishDuel(force){const now=performance.now();if(!force&&now-B.pubT<60)return;B.pubT=now;const F=B.me;
@@ -1033,7 +1048,7 @@ function duelSync(dt){
   if(B.state==='over')return;
   if(!du||du.id!==B.id){if(B.state==='wait'){if(performance.now()-B.t0>25000)duelResult(true,`${B.oppName} never showed up.`)}else{B.missing+=dt;if(B.missing>6)duelResult(true,`${B.oppName} left the arena.`)}return}
   B.missing=0;
-  if(!B.foe){const ot=sanitizeTeam(du.team);if(!ot)return;const left=B.me.side==='L';B.foe=mkFighter(left?'R':'L',ot,left?250:70,'remote');B.foe.x=clamp(+du.x||B.foe.x,AX0,AX1);B.foe.y=clamp(+du.y||112,AY0,AY1);
+  if(!B.foe){const ot=sanitizeTeam(du.team);if(!ot)return;const left=B.me.side==='L';B.foe=mkFighter(left?'R':'L',ot,left?XR:XL,'remote');B.foe.x=clamp(+du.x||B.foe.x,AX0,AX1);B.foe.y=clamp(+du.y||102,AY0,AY1);
     if(Array.isArray(du.sh))du.sh.forEach(e=>Array.isArray(e)&&B.seen.add(String(e[0])));B.state='count';B.cntEnd=performance.now()+3000;say(`${B.oppName} enters the arena!`);return}
   const F=B.foe;const tx=clamp(+du.x||F.x,AX0,AX1),ty=clamp(+du.y||F.y,AY0,AY1);const k=Math.min(1,dt*14);F.x+=(tx-F.x)*k;F.y+=(ty-F.y)*k;F.face=B.me.x<F.x?-1:1;
   const a=Math.floor(+du.a);if(a>=0&&a<F.team.length&&a!==F.a){F.a=a;say(`${B.oppName} sends out ${SPECIES[act(F).s].n}!`)}
@@ -1079,7 +1094,7 @@ function updateBattleUI(){
   const cap=$('#bcap');if(cap)cap.textContent=`CAPSULE (${RUN.kap})`;
 }
 const bcv=$('#bcv'),bc=bcv.getContext('2d');
-function toArena(e){const r=bcv.getBoundingClientRect();return{x:(e.clientX-r.left)/r.width*AW,y:(e.clientY-r.top)/r.height*AH+10}}
+function toArena(e){const r=bcv.getBoundingClientRect();return{x:(e.clientX-r.left)/r.width*AW,y:(e.clientY-r.top)/r.height*AH+12}}
 bcv.addEventListener('pointerdown',e=>{if(!B)return;bcv.setPointerCapture(e.pointerId);B.ptr=toArena(e)});
 bcv.addEventListener('pointermove',e=>{if(B&&B.ptr)B.ptr=toArena(e)});
 ['pointerup','pointercancel'].forEach(ev=>bcv.addEventListener(ev,()=>{if(B)B.ptr=null}));
@@ -1087,7 +1102,7 @@ const FLOORS0={north:['#5cb848','#53ad40'],east:['#3f8f3a','#378234'],south:['#e
 function pxText(c,t,x,y,col,size,align){c.font=`${size||8}px "Press Start 2P"`;c.textAlign=align||'left';c.fillStyle='#14141f';c.fillText(t,x+1,y+1);c.fillStyle=col;c.fillText(t,x,y);c.textAlign='left'}
 function vtText(c,t,x,y,col,size,align){c.font=`${size||10}px VT323`;c.textAlign=align||'left';c.fillStyle='#14141f';c.fillText(t,x+1,y+1);c.fillStyle=col;c.fillText(t,x,y);c.textAlign='left'}
 function hudPanel(c,x,y,F,right,label){
-  const mon=act(F);const w=128,h=28;const X=right?x-w:x;
+  const mon=act(F);const w=112,h=28;const X=right?x-w:x;
   c.fillStyle='#14141f';c.fillRect(X-1,y-1,w+2,h+2);c.fillStyle='#f6f1e1';c.fillRect(X,y,w,h);c.fillStyle='#d9d2bb';c.fillRect(X,y+h-2,w,2);
   vtText(c,(label?label+': ':'')+SPECIES[mon.s].n,X+4,y+10,'#14141f',10);vtText(c,'Lv'+mon.l,X+w-4,y+10,'#14141f',10,'right');
   c.fillStyle='#14141f';c.fillRect(X+4,y+13,w-8,6);c.fillStyle='#4b4f63';c.fillRect(X+5,y+14,w-10,4);
@@ -1096,11 +1111,18 @@ function hudPanel(c,x,y,F,right,label){
   vtText(c,`${mon.hp}/${mon.mhp}`,X+4,y+26,'#4b4f63',9);
   for(let i=0;i<F.team.length;i++){c.fillStyle='#14141f';c.fillRect(X+w-6-i*7,y+20,6,6);c.fillStyle=F.team[i].hp>0?'#e8453c':'#8a8ea6';c.fillRect(X+w-5-i*7,y+21,4,4)}
 }
+function sizeBattle(){
+  const wrap=$('#bwrap'),st=$('#stage');const ctl=$('#bctl').offsetHeight||0;
+  const avail=Math.max(120,st.clientHeight-ctl-40);const w=Math.max(200,Math.min(wrap.clientWidth,avail*1.5));
+  bcv.style.width=w+'px';const dpr=Math.min(3,devicePixelRatio||1);const W=Math.round(w*dpr),H=Math.round(W/1.5);
+  if(bcv.width!==W||bcv.height!==H){bcv.width=W;bcv.height=H}
+  return W/AW;
+}
 function drawBattle(){
-  if(!B)return;const c=bc;c.imageSmoothingEnabled=false;const now=performance.now();
+  if(!B)return;const c=bc;const K=sizeBattle();c.setTransform(K,0,0,K,0,0);c.imageSmoothingEnabled=false;const now=performance.now();
   const fl=FLOORS0[B.zone||'arena']||FLOORS0.arena;
   for(let y=0;y<AH;y+=16)for(let x=0;x<AW;x+=16){c.fillStyle=((x+y)/16)%2?fl[0]:fl[1];c.fillRect(x,y,16,16)}
-  if(!B.zone){c.fillStyle='#ffffff30';c.fillRect(AW/2-1,AY0-14,2,AH-AY0+14);c.strokeStyle='#ffffff30';c.lineWidth=2;c.beginPath();c.arc(AW/2,112,26,0,7);c.stroke()}
+  if(!B.zone){c.fillStyle='#ffffff30';c.fillRect(AW/2-1,AY0-14,2,AH-AY0+14);c.strokeStyle='#ffffff30';c.lineWidth=2;c.beginPath();c.arc(AW/2,101,24,0,7);c.stroke()}
   c.fillStyle='#14141f';c.fillRect(0,AY0-16,AW,2);c.fillStyle='#00000030';c.fillRect(0,0,AW,AY0-14);
   const ents=[B.me,B.foe].filter(Boolean).sort((a,b)=>a.y-b.y);
   for(const F of ents){if(F.out&&act(F).hp<=0&&F.faint<=0&&F.ctrl!=='remote')continue;const mon=act(F);if(F===B.foe&&B.catch)continue;
@@ -1122,8 +1144,8 @@ function drawBattle(){
   for(const n of B.nums){const k=(now-n.at)/900;vtText(c,n.t,Math.round(n.x),Math.round(n.y-k*14),n.c,12,'center')}
   hudPanel(c,4,4,B.me,false,'');
   if(B.foe)hudPanel(c,AW-4,4,B.foe,true,B.legend?'★':B.mode==='wild'?'Wild':'');
-  if(B.foe){const rc=rarOf(act(B.foe).s);if(RAR[act(B.foe).s]!=='common'){c.fillStyle='#14141f';c.fillRect(AW-133,34,60,9);vtText(c,rc.n.toUpperCase(),AW-130,41,rc.c,9)}}
-  if(B.mode!=='wild'&&B.zone===undefined&&B.oppName)vtText(c,'vs '+B.oppName,AW/2,12,'#ffffff',10,'center');
+  if(B.foe){const rc=rarOf(act(B.foe).s);if(RAR[act(B.foe).s]!=='common'){c.fillStyle='#14141f';c.fillRect(AW-116,34,58,9);vtText(c,rc.n.toUpperCase(),AW-113,41,rc.c,9)}}
+  if(B.mode!=='wild'&&B.zone===undefined&&B.oppName)vtText(c,'vs '+B.oppName,AW/2,46,'#ffffff',9,'center');
   const msgs=B.log.filter(m=>now-m.at<2600);msgs.forEach((m,i)=>{const y=AH-8-(msgs.length-1-i)*10;c.font='10px VT323';const w=c.measureText(m.t).width+8;c.fillStyle='#0b0d16c8';c.fillRect(Math.round(AW/2-w/2),y-8,Math.ceil(w),10);vtText(c,m.t,AW/2,y,'#ffffff',10,'center')});
   if(B.state==='count'){const n=Math.ceil((B.cntEnd-now)/1000);pxText(c,n>0?String(n):'GO!',AW/2,104,'#ffcb3d',16,'center')}
   if(B.state==='wait'){pxText(c,'WAITING FOR OPPONENT',AW/2,104,'#ffffff',8,'center')}
@@ -1153,8 +1175,8 @@ function renderTeam(){
   else{
     el.insertAdjacentHTML('beforeend',`<div class="sec">TEAM (${RUN.team.length}/6) — LEAD FIGHTS FIRST</div>`);RUN.team.forEach((m,i)=>el.appendChild(monCard(m,i,true)));
     if(RUN.box.length){el.insertAdjacentHTML('beforeend',`<div class="sec">BOX (${RUN.box.length})</div>`);RUN.box.forEach((m,i)=>el.appendChild(monCard(m,i,false)))}
-    const lb=document.createElement('button');lb.className='mini';lb.textContent='Leave match';lb.disabled=!!B;lb.onclick=()=>{openModal(`<h3>LEAVE MATCH?</h3><p>Your match team will be lost.</p><div class="acts"><button class="btn ghost" id="mno">STAY</button><button class="btn red" id="myes">LEAVE</button></div>`);$('#mno').onclick=closeModal;$('#myes').onclick=()=>{closeModal();leaveRun()}};
-    el.insertAdjacentHTML('beforeend','<div class="sec">MATCH</div>');el.appendChild(lb);
+    if(!RUN.free){const lb=document.createElement('button');lb.className='mini';lb.textContent='Leave match';lb.disabled=!!B;lb.onclick=()=>{openModal(`<h3>LEAVE MATCH?</h3><p>Your match team will be lost.</p><div class="acts"><button class="btn ghost" id="mno">STAY</button><button class="btn red" id="myes">LEAVE</button></div>`);$('#mno').onclick=closeModal;$('#myes').onclick=()=>{closeModal();leaveRun()}};
+    el.insertAdjacentHTML('beforeend','<div class="sec">MATCH</div>');el.appendChild(lb);}
   }
   el.insertAdjacentHTML('beforeend',`<div class="sec">AREAS</div><div class="small" style="line-height:1.15">${Object.values(ZONES).map(z=>`<span style="color:var(--text)">${z.n}</span> · Lv ${z.lv[0]}–${z.lv[1]}`).join('<br>')}</div>`);
   const cb=document.createElement('button');cb.className='mini';cb.textContent='⚙ Control settings';cb.style.marginTop='12px';cb.onclick=openSettings;el.appendChild(cb);
@@ -1168,12 +1190,12 @@ function renderPlayers(){
   h+=`<div class="sec">ROOM: ${esc(ROOM_ID.toUpperCase())}</div><div class="small" style="line-height:1.15;margin-bottom:8px">Everyone who opens this link at the same time plays together:<br><span style="color:var(--text);word-break:break-all">${esc(link)}</span></div><div class="lrow" style="margin-bottom:12px"><input id="proom" maxlength="32" placeholder="private room name" style="flex:1;min-width:0;background:#0b0d16;border:2px solid #000;color:var(--text);font-family:inherit;font-size:18px;padding:3px 6px"><button class="btn ghost" id="pgo">JOIN ROOM</button></div>`;
   if(!ROOM)h+=`<div class="small">Multiplayer could not start in this browser — you're playing solo (the Arena pits you against Champion Bot).</div>`;
   else{
-    const st=p=>{const mt=p.mt;if(!mt)return'in lobby';if(mt.st==='train')return`training · ${fmt(+mt.end-Date.now())}`;return({wait:'in the Arena',duel:'dueling',out:'knocked out',champ:'🏆 champion'})[mt.st]||'in a match'};
+    const st=p=>{const mt=p.mt;if(!mt)return'in lobby';if(mt.st==='free')return'free play';if(mt.st==='train')return`training · ${fmt(+mt.end-Date.now())}`;return({wait:'in the Arena',duel:'dueling',out:'knocked out',champ:'🏆 champion'})[mt.st]||'in a match'};
     if(G)h+=`<div class="plr"><span class="sw" style="background:${G.color}"></span><div class="who"><b>${esc(G.name)} (you)</b><span class="small">${st({mt:mtInfo()})} · 🏆${G.tro}</span></div></div>`;
     if(!list.length)h+=`<div class="small" style="line-height:1.15;margin-top:8px">Nobody else is here yet. Send the link above to friends — finding each other can take a few seconds.</div>`;
     for(const p of list){const pr=p.presence;const same=RUN&&pr.mt&&pr.mt.id===RUN.id;
-      const canB=canSpar()&&!myCh&&pr.mt&&pr.mt.st==='train'&&!pr.bt;const pend=myCh&&myCh.to===p.peer;
-      h+=`<div class="plr"><span class="sw" style="background:${validColor(pr.c)}"></span><div class="who"><b>${esc(cleanName(pr.n))}${p.guest?' (guest)':''}${same?' ★':''}</b><span class="small">${esc(st(pr))} · 🏆${Math.max(0,Math.floor(+pr.tr)||0)}${typeof pingOf==='function'&&pingOf(p.peer)!=null?` · <span style="color:${pingOf(p.peer)>150?'#ef4444':pingOf(p.peer)>80?'#f2c230':'#3ddc6b'}">${pingOf(p.peer)} ms</span>`:''}</span></div>${pr.mt&&pr.mt.st==='train'?`<button class="btn" data-ch="${esc(p.peer)}" ${canB?'':'disabled'}>${pend?'…':'⚔ BATTLE'}</button>`:''}</div>`}
+      const canB=canSpar()&&!myCh&&pr.mt&&(pr.mt.st==='train'||pr.mt.st==='free')&&!pr.bt;const pend=myCh&&myCh.to===p.peer;
+      h+=`<div class="plr"><span class="sw" style="background:${validColor(pr.c)}"></span><div class="who"><b>${esc(cleanName(pr.n))}${p.guest?' (guest)':''}${same?' ★':''}</b><span class="small">${esc(st(pr))} · 🏆${Math.max(0,Math.floor(+pr.tr)||0)}${typeof pingOf==='function'&&pingOf(p.peer)!=null?` · <span style="color:${pingOf(p.peer)>150?'#ef4444':pingOf(p.peer)>80?'#f2c230':'#3ddc6b'}">${pingOf(p.peer)} ms</span>`:''}</span></div>${pr.mt&&(pr.mt.st==='train'||pr.mt.st==='free')?`<button class="btn" data-ch="${esc(p.peer)}" ${canB?'':'disabled'}>${pend?'…':'⚔ BATTLE'}</button>`:''}</div>`}
     if(RUN)h+=`<div class="small" style="margin-top:6px;line-height:1.1">★ = in your match · During training you can challenge anyone who's training to a friendly real-time battle (winner gets XP).</div>`;
   }
   if(h!==lastPlr){if(document.activeElement&&document.activeElement.id==='proom')return;lastPlr=h;el.innerHTML=h;bindPlayers(el);const go=()=>{const v=($('#proom').value||'').trim().toLowerCase().replace(/[^a-z0-9_-]/g,'').slice(0,32);location.search=v?'?room='+v:''};const b=$('#pgo');if(b){b.onclick=go;$('#proom').addEventListener('keydown',e=>{if(e.key==='Enter')go()})}}
@@ -1195,7 +1217,7 @@ applyControls();
 G=loadSave();
 if(G)begin();else buildStart();
 requestAnimationFrame(frame);
-setInterval(()=>{try{if(G){matchTick();arenaTick();checkChallenges();if(!RUN)renderLobby();renderPlayers()}}catch(e){console.error(e)}},400);
+setInterval(()=>{try{if(G){matchTick();arenaTick();checkChallenges();if(!RUN||RUN.free)renderLobby();renderPlayers()}}catch(e){console.error(e)}},400);
 initRoom();
 </script>
 </body>

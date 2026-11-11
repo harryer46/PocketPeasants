@@ -60,7 +60,8 @@ Im Tab *Players* steht bei jedem Mitspieler der **Ping** (grün < 80 ms, gelb < 
 
 ## Spielablauf
 
-1. **Lobby:** Match starten (3 / 5 / 10 Min.) oder einem laufenden beitreten → Starter wählen.
+1. **Free Play:** Ohne Match einfach losspielen – dein Free-Play-Team wird gespeichert.
+   **Lobby:** Match starten (3 / 5 / 10 Min.) oder einem laufenden beitreten → frischer Starter.
 2. **Training:** Im hohen Gras wilde Monster bekämpfen und fangen (Kapseln werfen!).
    Rotes Dach = Heilzentrum. Im Tab *Players* kannst du andere Trainierende direkt
    zum **Freundschaftskampf** herausfordern (Gewinner bekommt EP).
