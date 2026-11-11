@@ -90,6 +90,8 @@ body.mob #dpad{display:grid}body.mob #help{display:none}body.mob .keys{display:n
 .tsp{flex:1}
 #tver{font-size:15px;color:var(--muted);flex-shrink:0;padding-left:2px}
 @media (max-width:1350px){.tbrand{display:none}}
+@media (max-width:1280px){#topbar .tl{display:none}}
+body.mob #topbar .tl{display:none}
 #side .tabs,#side .brand{display:none}
 .hud{top:6px}
 #bctl{display:flex;gap:8px;align-items:flex-start}
@@ -233,7 +235,7 @@ body.mob.portrait #rotate.show{display:block}
 <body>
 <div id="app">
 <div id="mainc">
-  <div id="topbar"><span class="tbrand">POCKET PEASANTS</span><span class="chip timer" id="htimer">LOBBY</span><button id="tupd" style="display:none;background:#ef4444;color:#fff">⬆ NEW VERSION — RELOAD</button><span class="tsp"></span><button data-t="lobby">🏟 LOBBY</button><button data-t="team">🎒 TEAM</button><button data-t="players">👥 PLAYERS<span id="pcount"></span></button><button data-t="chat">💬 CHAT<span id="cbadge"></span></button><button id="hdex">📖 DEX</button><button id="hmap">🗺 MAP</button><button id="hset">⚙</button><span id="tver"></span></div>
+  <div id="topbar"><span class="tbrand">POCKET PEASANTS</span><span class="chip timer" id="htimer">LOBBY</span><button id="tupd" style="display:none;background:#ef4444;color:#fff">⬆ NEW VERSION — RELOAD</button><span class="tsp"></span><button data-t="lobby">🏟 LOBBY</button><button data-t="team">🎒 TEAM</button><button data-t="players" title="Players">👥<span class="tl"> PLAYERS</span><span id="pcount"></span></button><button data-t="chat" title="Chat">💬<span class="tl"> CHAT</span><span id="cbadge"></span></button><button id="hshop" title="Shop (in town)">🛒<span class="tl"> SHOP</span></button><button id="hdex" title="Monster Dex">📖<span class="tl"> DEX</span></button><button id="hmap" title="Map">🗺<span class="tl"> MAP</span></button><button id="hset">⚙</button><span id="tver"></span></div>
   <div id="stage">
     <canvas id="world"></canvas>
     <div class="hud"><span class="chip" id="hzone">Town</span><span class="chip" id="hkap">Capsules -</span><span class="chip" id="hon"><span class="dot"></span>Solo</span></div>
@@ -317,7 +319,7 @@ const TURN_CONFIG = {
 
 /* ===================== VERSION ===================== */
 // bump with every release (MAJOR.MINOR.PATCH). Players can only share lobbies/duels with the same version.
-const VERSION='0.23.0';
+const VERSION='0.24.0';
 function cmpV(a,b){const x=String(a||'0').split('.').map(Number),y=String(b||'0').split('.').map(Number);for(let i=0;i<3;i++){const d=(x[i]||0)-(y[i]||0);if(d)return d}return 0}
 /* ===================== ERROR REPORTING ===================== */
 function showErr(m){try{const b=document.getElementById('errbox');if(!b)return;b.textContent='⚠ Error: '+String(m).slice(0,220)+' — please send this to the developer.';b.style.display='block';clearTimeout(showErr.t);showErr.t=setTimeout(()=>b.style.display='none',12000)}catch(e){}}
@@ -785,7 +787,8 @@ function begin(){
   RUN=G.run||G.freeRun||null;
   // a lobby game saved long ago is dead (its players are gone) → back to free play instead of a lonely arena
   if(RUN&&!RUN.free){const age=Date.now()-(G.t||0),over=RUN.phase!=='lobby'&&RUN.end&&Date.now()-RUN.end>20*60000;if(age>30*60000||over){RUN=G.freeRun||null;G.run=RUN;setTimeout(()=>sysChat('Your old lobby game has ended — back to free play.'),500)}}
-  if(RUN){RUN.beat=RUN.beat||{};RUN.leg=RUN.leg||{}}
+  if(RUN){RUN.beat=RUN.beat||{};RUN.leg=RUN.leg||{};if(RUN.money==null)RUN.money=100;RUN.items=RUN.items||{}}
+  if(G.freeRun&&G.freeRun!==RUN){if(G.freeRun.money==null)G.freeRun.money=100;G.freeRun.items=G.freeRun.items||{}}
   // free play has no timer and no arena (also repairs saves broken by an older version)
   if(RUN&&RUN.free){RUN.phase='train';RUN.st='free';RUN.r=1;RUN.res=[];$('#arena').classList.remove('on')}
   if(RUN&&!RUN.free&&RUN.phase==='train'&&Date.now()>=RUN.end){RUN.phase='arena_pending'}
@@ -888,6 +891,7 @@ function buildTouchButtons(){
   for(let i=0;i<4;i++){const mid=m[i];if(!mid)continue;const mv=MOVES[mid];const b=tbBtn(esc(mv.n.split(' ')[0].toUpperCase()).slice(0,8)+'<br>'+apCost(mid)+' AP','mvb',Object.assign({},spots[i],{background:TYPES[mv.t].c+'dd'}),B.tb?()=>battleMove(i):null,B.tb?null:()=>{if(B){B.aimDrag=0;battleMove(i)}},B.tb?null:aimDrag);b.dataset.i=i;el.appendChild(b)}
   if(!B.tb)el.appendChild(tbBtn('DASH','',{right:'166px',bottom:'4px',width:'60px',height:'60px'},battleDash));
   el.appendChild(tbBtn('SWAP','',{right:'140px',bottom:'80px',width:'48px',height:'48px'},battleSwitch));
+  el.appendChild(tbBtn('BAG','',{right:'146px',bottom:'140px',width:'46px',height:'46px',background:'#8b5cf6cc'},openBag));
   if(B.mode==='wild'){el.appendChild(tbBtn('◓<br>DRAG','',{right:'78px',bottom:'146px',width:'56px',height:'56px',background:'#2fb7b0cc'},capPress,()=>{if(B)B.aimDrag=0;capRelease()},B.tb?null:aimDrag));el.appendChild(tbBtn('RUN','',{right:'10px',bottom:'166px',width:'44px',height:'44px'},tryRun))}
   else if(B.mode!=='trainer')el.appendChild(tbBtn('GIVE<br>UP','',{right:'10px',bottom:'166px',width:'44px',height:'44px',background:'#ef4444cc'},forfeit));
   $('#joyhint').style.display=B.tb?'none':(JOY.active?'none':'flex');
@@ -954,7 +958,7 @@ function onArrive(){
 function healAll(){if(!RUN)return;for(const m of RUN.team.concat(RUN.box))m.hp=stats(m).mhp;RUN.kap=Math.max(RUN.kap,10);save();renderTeam();updateHud()}
 function updateHud(){
   const z=zoneAt(P.x,P.y);$('#hzone').textContent=z?ZONES[z].n:'Town';
-  $('#hkap').textContent=RUN?`Capsules ${RUN.kap}`:'No team';
+  $('#hkap').textContent=RUN?`$${money()} · ◓ ${RUN.kap}`:'No team';
   {const R=rosterIds();$('#sdex').textContent=`Dex ${R.filter(s=>G.dex[s]!==undefined).length}/${R.length}`}$('#stro').textContent=`Trophies ${G.tro}`;
 }
 
@@ -1046,7 +1050,7 @@ function renderMapLegend(){
   h+=`<div class="mleg"><b style="color:var(--accent)">LEGEND</b><br>✚ Heal Center · ⚔ Arena<br>★ Legendary shrine · ■ Trainer (✓ beaten)<br>Rings: wild levels rise with distance from town.<br>Colors: <span style="color:${RARITY.common.c}">common</span> · <span style="color:${RARITY.uncommon.c}">uncommon</span> · <span style="color:${RARITY.rare.c}">rare</span></div>`;
   $('#mapleg').innerHTML=h;
 }
-$('#hmap').onclick=toggleMap;$('#hdex').onclick=()=>{if(G)openDex()};$('#htimer').onclick=()=>{if(isMob())$('#side').classList.add('open');switchTab('lobby')};$('#mclose').onclick=closeMap;
+$('#hmap').onclick=toggleMap;$('#hdex').onclick=()=>{if(G)openDex()};$('#hshop').onclick=()=>{if(G)openShop()};$('#htimer').onclick=()=>{if(isMob())$('#side').classList.add('open');switchTab('lobby')};$('#mclose').onclick=closeMap;
 $('#mapov').addEventListener('click',e=>{if(e.target.id==='mapov')closeMap()});
 
 /* ===================== MULTIPLAYER ===================== */
@@ -1170,11 +1174,60 @@ function bindNetSettings(){
 }
 
 /* ===================== MATCHES ===================== */
-const DEF_CFG={name:'',dur:10,rounds:3,team:3,kap:10,xp:1,enc:1,leg:1,tb:0,alt:1};
+const DEF_CFG={name:'',dur:10,rounds:3,team:3,kap:10,xp:1,enc:1,leg:1,tb:0,alt:1,money:100};
+/* ===================== MONEY, ITEMS & SHOP ===================== */
+const ITEMS={
+ cap:{n:'Capsule',p:20,d:'Catches wild monsters.',i:'◓'},
+ cap5:{n:'Capsule ×5',p:90,d:'Five capsules — a little cheaper.',i:'◓'},
+ great:{n:'Great Capsule',p:50,d:'Catch rate ×1.7. Pick it from the bag in a wild battle, then throw.',i:'◒'},
+ potion:{n:'Potion',p:25,d:'Heals 20 HP.',i:'🧪',heal:20},
+ superp:{n:'Super Potion',p:60,d:'Heals 60 HP.',i:'🧪',heal:60},
+ revive:{n:'Revive',p:100,d:'Brings a fainted monster back with half its HP.',i:'✚'},
+ ether:{n:'AP Drink',p:40,d:'Battle only: refills all AP at once.',i:'⚡'},
+ candy:{n:'Rare Candy',p:250,d:'Raises a monster by one level.',i:'🍬'}};
+function money(){return RUN?(RUN.money||0):0}
+function inv(k){return RUN&&RUN.items?(RUN.items[k]||0):0}
+function earn(n,why){if(!RUN||!(n>0))return;RUN.money=(RUN.money||0)+Math.round(n);save();updateHud();const t=`+$${Math.round(n)}${why?' '+why:''}`;if(B)say(t);else toast(t)}
+function shopOK(){return RUN&&(RUN.phase==='train'||RUN.phase==='lobby')&&!B&&!zoneAt(P.x,P.y)}
+function buy(k){const it=ITEMS[k];if(!it||!RUN)return;if(!shopOK()){toast('Shops are only in town.');return}if(money()<it.p){toast('Not enough money.');return}
+  RUN.money-=it.p;if(k==='cap')RUN.kap++;else if(k==='cap5')RUN.kap+=5;else{RUN.items=RUN.items||{};RUN.items[k]=(RUN.items[k]||0)+1}save();updateHud();renderTeam();openShop()}
+function openShop(){if(!RUN){toast('Start free play or join a lobby first.');return}if(!shopOK()){toast(B?"You can't shop during a battle.":RUN.phase==='arena'?'The shop is closed during the Arena.':'Shops are only in town — head back to the center.');return}
+  openModal(`<h3>🛒 BUDGET MART</h3><p class="small" style="margin-bottom:6px">Your money: <b style="color:var(--accent);font-size:20px">$${money()}</b> · Capsules ◓ ${RUN.kap}</p>
+   ${Object.entries(ITEMS).map(([k,it])=>`<div class="mvrow" style="display:flex;align-items:center;gap:8px"><span style="font-size:22px;width:26px;text-align:center">${it.i}</span><span style="flex:1"><b>${esc(it.n)}</b> <span class="small">· owned ${k==='cap'||k==='cap5'?RUN.kap:inv(k)}</span><br><span class="small">${esc(it.d)}</span></span><button class="btn ${money()>=it.p?'':'ghost'}" data-buy="${k}" ${money()>=it.p?'':'disabled'}>$${it.p}</button></div>`).join('')}
+   <div class="acts" style="margin-top:8px"><button class="btn" id="mok">DONE</button></div>`);
+  $('#mbox').style.maxHeight='92%';$('#mbox').style.overflow='auto';document.querySelectorAll('[data-buy]').forEach(b=>b.onclick=()=>buy(b.dataset.buy));$('#mok').onclick=closeModal}
+// use an item on one of your monsters outside battle
+function useItemOn(k,m){const it=ITEMS[k];if(!inv(k)||!m)return;const st=stats(m);
+  if(it.heal){if(m.hp<=0){toast('Fainted — use a Revive.');return}if(m.hp>=st.mhp){toast('HP is already full.');return}m.hp=Math.min(st.mhp,m.hp+it.heal)}
+  else if(k==='revive'){if(m.hp>0){toast("It hasn't fainted.");return}m.hp=Math.ceil(st.mhp/2)}
+  else if(k==='candy'){const msgs=gainXp(m,Math.max(1,xpNeed(m.l)-m.xp));msgs.forEach(t=>sysChat(t))}else return;
+  RUN.items[k]--;toast(`${ITEMS[k].n} used on ${SPECIES[m.s].n}.`);changed()}
+function openItemsFor(m){const ks=['potion','superp','revive','candy'].filter(k=>inv(k)>0);
+  if(!ks.length){toast('No usable items — buy some in the town shop.');return}
+  openModal(`<h3>🎒 USE ITEM ON ${esc(SPECIES[m.s].n.toUpperCase())}</h3><div style="display:flex;flex-direction:column;gap:6px">${ks.map(k=>`<button class="btn ghost" data-ui="${k}" style="font-family:VT323;font-size:19px">${ITEMS[k].i} ${esc(ITEMS[k].n)} ×${inv(k)} — ${esc(ITEMS[k].d)}</button>`).join('')}</div><div class="acts" style="margin-top:8px"><button class="btn" id="mok">CLOSE</button></div>`);
+  document.querySelectorAll('[data-ui]').forEach(b=>b.onclick=()=>{closeModal();useItemOn(b.dataset.ui,m)});$('#mok').onclick=closeModal}
+// the bag in battle: heal the active monster, revive a benched one, refill AP, ready a Great Capsule
+function openBag(){if(!B||B.state==='over')return;if(B.tb&&B.mode==='duel'){say('No items in turn-based duels.');return}if(B.tb&&B.state!=='tbChoose')return;if(!B.tb&&(B.itemCd||0)>performance.now()){say('Wait a moment before the next item.');return}
+  const F=B.me,a=act(F),opts=[];
+  for(const k of['potion','superp'])if(inv(k)&&a.hp>0&&a.hp<a.mhp)opts.push([k,`${ITEMS[k].n} → ${SPECIES[a.s].n}`]);
+  if(inv('revive'))F.team.forEach((m,i)=>{if(i!==F.a&&m.hp<=0)opts.push(['revive:'+i,`Revive → ${SPECIES[m.s].n}`])});
+  if(inv('ether')&&!B.tb&&(F.ap??AP_MAX)<AP_MAX)opts.push(['ether','AP Drink → full AP']);
+  if(inv('great')&&B.mode==='wild'&&!B.capGreat)opts.push(['great','Great Capsule → use for the next throw']);
+  if(!opts.length){say('Nothing in the bag you can use right now.');return}
+  openModal(`<h3>🎒 BAG</h3><div style="display:flex;flex-direction:column;gap:6px">${opts.map(([k,t])=>`<button class="btn ghost" data-bag="${k}" style="font-family:VT323;font-size:19px">${ITEMS[k.split(':')[0]].i} ${esc(t)} (×${inv(k.split(':')[0])})</button>`).join('')}</div><div class="acts" style="margin-top:8px"><button class="btn" id="mok">CLOSE</button></div>`);
+  document.querySelectorAll('[data-bag]').forEach(b=>b.onclick=()=>{closeModal();bagUse(b.dataset.bag)});$('#mok').onclick=closeModal}
+function bagUse(key){if(!B)return;const[k,ix]=key.split(':'),F=B.me,a=act(F);if(!inv(k))return;
+  if(ITEMS[k].heal){const h=Math.min(ITEMS[k].heal,a.mhp-a.hp);a.hp+=h;B.nums.push({x:F.x,y:F.y-34,t:'+'+h,c:'#3ddc6b',at:performance.now()});burst(F.x,F.y-14,'#3ddc6b',12)}
+  else if(k==='revive'){const m=F.team[+ix];if(!m||m.hp>0)return;m.hp=Math.ceil(m.mhp/2);F.out=false}
+  else if(k==='ether'){F.ap=AP_MAX;burst(F.x,F.y-14,'#4aa3ff',12)}
+  else if(k==='great'){B.capGreat=1;say('Great Capsule ready — hold the capsule button to throw!');RUN.items.great--;save();return}
+  RUN.items[k]--;save();say(`Used ${ITEMS[k].n}!`);B.itemCd=performance.now()+2500;
+  if(B.mode==='duel')publishDuel(true);
+  if(B.tb){B.state='tbPlay';setTimeout(()=>{if(B&&B.state==='tbPlay')tbRun(null)},500)}}
 function cfgOf(){return(RUN&&RUN.cfg)||DEF_CFG}
 function sanitizeCfg(c){c=c&&typeof c==='object'?c:{};const n=(v,d,a,b)=>Number.isFinite(+v)&&v!==''&&v!=null?clamp(Math.floor(+v),a,b):d;
-  return{name:String(c.name||'').replace(/[\u0000-\u001f<>]/g,'').trim().slice(0,24),dur:n(c.dur,10,1,60),rounds:n(c.rounds,3,1,7),team:n(c.team,3,1,6),kap:n(c.kap,10,0,50),xp:[1,2,3].includes(+c.xp)?+c.xp:1,enc:[0.6,1,1.6].includes(+c.enc)?+c.enc:1,leg:+c.leg===0?0:1,tb:+c.tb===1?1:0,alt:+c.alt===0?0:1,host:typeof c.host==='string'?c.host.slice(0,40):''}}
-function cfgSummary(c){return`${c.tb?'turn-based':'real-time'} · ${c.rounds} round${c.rounds>1?'s':''} · team of ${c.team}${c.xp>1?` · ${c.xp}× XP`:''}${c.enc!==1?(c.enc>1?' · many encounters':' · few encounters'):''}${c.leg?'':' · no legendaries'} · ${c.kap} capsules · ${c.alt===0?'classic':'alternative'} monsters`}
+  return{name:String(c.name||'').replace(/[\u0000-\u001f<>]/g,'').trim().slice(0,24),dur:n(c.dur,10,1,60),rounds:n(c.rounds,3,1,7),team:n(c.team,3,1,6),kap:n(c.kap,10,0,50),xp:[1,2,3].includes(+c.xp)?+c.xp:1,enc:[0.6,1,1.6].includes(+c.enc)?+c.enc:1,leg:+c.leg===0?0:1,tb:+c.tb===1?1:0,alt:+c.alt===0?0:1,money:n(c.money,100,0,5000),host:typeof c.host==='string'?c.host.slice(0,40):''}}
+function cfgSummary(c){return`${c.tb?'turn-based':'real-time'} · ${c.rounds} round${c.rounds>1?'s':''} · team of ${c.team}${c.xp>1?` · ${c.xp}× XP`:''}${c.enc!==1?(c.enc>1?' · many encounters':' · few encounters'):''}${c.leg?'':' · no legendaries'} · ${c.kap} capsules · $${c.money??100} · ${c.alt===0?'classic':'alternative'} monsters`}
 function runningMatches(){const seen=new Map();for(const p of others()){const mt=p.presence.mt;if(!mt||typeof mt.id!=='string'||mt.id.length>=40||(RUN&&RUN.id===mt.id))continue;
   const open=mt.st==='lobby'||(mt.st==='train'&&+mt.end>Date.now()+10000);if(!open)continue;
   const e=seen.get(mt.id)||{id:mt.id,end:+mt.end||0,names:[],cfg:sanitizeCfg(mt.cfg),waiting:true,v:String(p.presence.v||'old').slice(0,12)};e.names.push(cleanName(p.presence.n));if(mt.st==='train'){e.waiting=false;e.end=Math.max(e.end,+mt.end)}seen.set(mt.id,e)}return[...seen.values()]}
@@ -1182,7 +1235,7 @@ function lobbyLine(m){return m.waiting?'waiting in lobby':`${fmt(m.end-Date.now(
 let LOBBY_MIN=true;
 function startFree(){
   if(G.freeRun){RUN=G.freeRun;RUN.beat=RUN.beat||{};RUN.leg=RUN.leg||{};afterRunChange();toast('Welcome back! Free play continues.');return}
-  pickStarter(sid=>{RUN={id:'f'+Math.random().toString(36).slice(2,10),free:true,end:0,phase:'train',team:[newMon(sid,START_LV)],box:[],kap:10,r:1,st:'free',res:[],beat:{},leg:{},cfg:Object.assign({},DEF_CFG,{alt:SET.alt==='0'?0:1})};G.dex[sid]=1;G.freeRun=RUN;afterRunChange();teleport(30,24);sysChat('Free play started — your team is saved. Create or join a lobby anytime.')});
+  pickStarter(sid=>{RUN={id:'f'+Math.random().toString(36).slice(2,10),free:true,end:0,phase:'train',team:[newMon(sid,START_LV)],box:[],kap:10,money:100,items:{},r:1,st:'free',res:[],beat:{},leg:{},cfg:Object.assign({},DEF_CFG,{alt:SET.alt==='0'?0:1})};G.dex[sid]=1;G.freeRun=RUN;afterRunChange();teleport(30,24);sysChat('Free play started — your team is saved. Create or join a lobby anytime.')});
 }
 function afterRunChange(){save();LOBBY_MIN=true;$('#lobby').dataset.h='';renderLobby();renderTeam();updateHud();pushMt();lastPlr='';renderPlayers()}
 function renderLobby(){
@@ -1217,13 +1270,14 @@ function openCreate(){
    ${row('Arena rounds (Swiss)',sel('crounds',[1,2,3,4,5,6,7].map(v=>[v,v+(v===3?' (default)':'')]),c.rounds))}
    ${row('Monsters per arena fight',sel('cteam',[1,2,3,4,5,6].map(v=>[v,v]),c.team))}
    ${row('Starting capsules',num('ckap',c.kap,0,50))}
+   ${row('Starting money ($)',num('cmoney',c.money??100,0,5000))}
    ${row('XP gain',sel('cxp',[[1,'normal'],[2,'2×'],[3,'3×']],c.xp))}
    ${row('Wild encounters',sel('cenc',[[0.6,'few'],[1,'normal'],[1.6,'many']],c.enc))}
    ${row('Legendary shrines',sel('cleg',[[1,'on'],[0,'off']],c.leg))}
    <div class="small" style="text-align:left;margin:6px 0 12px;line-height:1.1">Players join your lobby first; you start the game when everyone is there. Everyone starts at Lv ${START_LV}. The Arena starts when the timer ends — or earlier, once all players (2+) have walked in.</div>
    <div class="acts"><button class="btn ghost" id="mno">CANCEL</button><button class="btn green" id="myes">CREATE</button></div>`);
   $('#mno').onclick=closeModal;
-  $('#myes').onclick=()=>{const cfg=sanitizeCfg({name:$('#cname').value,dur:$('#cdur').value,rounds:$('#crounds').value,team:$('#cteam').value,kap:$('#ckap').value,xp:$('#cxp').value,enc:$('#cenc').value,leg:$('#cleg').value,tb:$('#ctb').value,alt:$('#calt').value});G.lastCfg=cfg;save();closeModal();
+  $('#myes').onclick=()=>{const cfg=sanitizeCfg({name:$('#cname').value,dur:$('#cdur').value,rounds:$('#crounds').value,team:$('#cteam').value,kap:$('#ckap').value,xp:$('#cxp').value,enc:$('#cenc').value,leg:$('#cleg').value,tb:$('#ctb').value,alt:$('#calt').value,money:$('#cmoney').value});G.lastCfg=cfg;save();closeModal();
     pickStarter(sid=>startRun('m'+Math.random().toString(36).slice(2,10),0,sid,null,Object.assign({},cfg,{host:MYPEER||'me'}),'lobby'),cfg)};
 }
 function pickStarter(cb,cfg){const alt=altOn(cfg||{alt:SET.alt==='0'?0:1});
@@ -1234,7 +1288,7 @@ function pickStarter(cb,cfg){const alt=altOn(cfg||{alt:SET.alt==='0'?0:1});
 function startRun(id,end,sid,prev,cfg,phase){
   phase=phase||'train';if(phase==='train'&&end<Date.now()+5000){toast('That game is almost over.');return}
   cfg=sanitizeCfg(cfg||DEF_CFG);
-  RUN={id,starter:sid,rs:cfg.host===(MYPEER||'me')?0:null,end:phase==='lobby'?0:end,cfg,phase,team:[newMon(sid,START_LV)],box:[],kap:cfg.kap,r:1,st:phase==='lobby'?'lobby':'train',res:[],prev:prev||null,beat:{},leg:{}};G.dex[sid]=1;$('#arena').classList.remove('on');
+  RUN={id,starter:sid,rs:cfg.host===(MYPEER||'me')?0:null,end:phase==='lobby'?0:end,cfg,phase,team:[newMon(sid,START_LV)],box:[],kap:cfg.kap,money:cfg.money??100,items:{},r:1,st:phase==='lobby'?'lobby':'train',res:[],prev:prev||null,beat:{},leg:{}};G.dex[sid]=1;$('#arena').classList.remove('on');
   save();$('#lobby').dataset.h='';renderLobby();renderTeam();updateHud();pushMt();teleport(30,24);
   if(phase==='lobby'){sysChat(`You're in the lobby${cfg.name?' "'+cfg.name+'"':''} (${cfgSummary(cfg)}). The host starts the game.`);switchTab('lobby')}
   else{sysChat(`Game${cfg.name?' "'+cfg.name+'"':''} running! ${fmt(end-Date.now())} to train (${cfgSummary(cfg)}). Walk into the Arena when you're ready.`);toast('Training started! Head into the grass.')}
@@ -1270,7 +1324,7 @@ function leaveRun(){
 // host: send everyone in this lobby back to the start (lobby phase, fresh starter, no timer)
 function resetRun(n){
   hardExit();const c=RUN.cfg,sid=RUN.starter||(RUN.team[0]&&RUN.team[0].s)||startersNow()[0];
-  Object.assign(RUN,{rs:n,phase:'lobby',st:'lobby',end:0,r:1,res:[],gaveUp:0,solo:0,pick:null,dopp:null,trophy:0,team:[newMon(sid,START_LV)],box:[],kap:c.kap,beat:{},leg:{}});
+  Object.assign(RUN,{rs:n,phase:'lobby',st:'lobby',end:0,r:1,res:[],gaveUp:0,solo:0,pick:null,dopp:null,trophy:0,team:[newMon(sid,START_LV)],box:[],kap:c.kap,money:c.money??100,items:{},beat:{},leg:{}});
   P.d='down';teleport(30,24);save();afterRunChange();switchTab('lobby');
   sysChat('The host reset the session — everyone is back at the start. The host starts the game again.');toast('Session reset — back at the start!');
 }
@@ -1347,14 +1401,14 @@ function arenaTick(){
   const pool=parts.filter(p=>p.r>=RUN.r&&p.st!=='done'&&p.st!=='pick'&&p.st!=='train'&&p.st!=='lobby'&&!p.res.some(x=>x[0]===RUN.r));const me=MYPEER||'me';
   const pr=pairRound(pool,RUN.r).find(x=>x[0]===me||x[1]===me);if(!pr)return;
   const opp=pr[0]===me?pr[1]:pr[0];
-  if(opp==='bye'){RUN.res=(RUN.res||[]).concat([[RUN.r,'bye',1]]);RUN.r++;RUN.st=RUN.r>cfgOf().rounds?'done':'wait';sysChat(`Round ${RUN.r-1}: odd number of players — you get a free win (bye).`);toast('Free win this round (bye)!');save();pushMt();$('#abox').dataset.h='';showArena();return}
+  if(opp==='bye'){RUN.res=(RUN.res||[]).concat([[RUN.r,'bye',1]]);earn(25,'bye');RUN.r++;RUN.st=RUN.r>cfgOf().rounds?'done':'wait';sysChat(`Round ${RUN.r-1}: odd number of players — you get a free win (bye).`);toast('Free win this round (bye)!');save();pushMt();$('#abox').dataset.h='';showArena();return}
   startDuel(opp,RUN.id+'-'+RUN.r+'-'+[me,opp].sort().join('-'));
 }
 function showArena(){
   const el=$('#arena');el.classList.add('on');
   const parts=participants();const R=cfgOf().rounds;const allDone=parts.every(p=>p.st==='done');
   const tab=standings(parts,99);
-  if(allDone&&!RUN.trophy&&!RUN.gaveUp&&!RUN.solo&&tab[0]&&tab[0].me&&parts.length>1){RUN.trophy=1;G.tro++;save();pres({tr:G.tro});updateHud();sysChat('🏆 You won the tournament!')}
+  if(allDone&&!RUN.trophy&&!RUN.gaveUp&&!RUN.solo&&tab[0]&&tab[0].me&&parts.length>1){RUN.trophy=1;G.tro++;save();pres({tr:G.tro});updateHud();sysChat('🏆 You won the tournament!');earn(200,'champion prize')}
   const stTxt={train:'TRAINING',pick:'PICKING',wait:'READY',duel:'DUELING',done:'FINISHED'};
   const stCol={train:'#6b7280',pick:'#8b5cf6',wait:'#3b82f6',duel:'#f0642a',done:'#3ddc6b'};
   const nameOf=id=>id==='bye'?'nobody (bye)':id==='bot'?'Arena Bot':(parts.find(p=>p.peer===id)||{n:'(left)'}).n;
@@ -1781,10 +1835,10 @@ function battleMove(i){if(!B)return;if(B.tb){tbChoose({k:'move',i});return}if(B.
 function battleDash(){if(!B||B.tb||B.state!=='fight')return;const F=B.me;if(F.dashCd>0||F.faint>0||F.out||F.st.stun>0)return;if(!F.ddx&&!F.ddy){F.ddx=F.face>0?-1:1;F.ddy=0}let dx=0,dy=0;for(const d of held){dx+=DIRS[d][0];dy+=DIRS[d][1]}if(JOY.active&&Math.hypot(JOY.x,JOY.y)>0.2){dx=JOY.x;dy=JOY.y}const L=Math.hypot(dx,dy);if(L){F.ddx=dx/L;F.ddy=dy/L}F.dashT=0.15;F.dashCd=1.0;F.inv=0.26}
 function battleSwitch(){if(B&&B.tb){tbSwitchMenu();return}if(!B||B.state!=='fight')return;const F=B.me;if(F.swCd>0||F.faint>0||F.out)return;const n=F.team.findIndex((m,i)=>i>F.a&&m.hp>0);const m=n>=0?n:F.team.findIndex((m,i)=>i!==F.a&&m.hp>0);if(m>=0)doSwitch(F,m)}
 // aiming: hold CAPSULE -> the aim line swings; release to throw. A pulsing ring on the target gives a throw bonus.
-function capPress(){if(!B||B.mode!=='wild'||B.aim)return;if(!(B.state==='fight'||(B.tb&&B.state==='tbChoose'))||B.capCd>0)return;if(RUN.kap<=0){say('No capsules left!');return}B.aim={t0:performance.now()};say('Aim… release to throw!')}
+function capPress(){if(!B||B.mode!=='wild'||B.aim)return;if(!(B.state==='fight'||(B.tb&&B.state==='tbChoose'))||B.capCd>0)return;if(RUN.kap<=0&&!B.capGreat){say('No capsules left!');return}B.aim={t0:performance.now()};say('Aim… release to throw!')}
 function aimAngle(now){const F=B.me,T=B.foe;if(!B.tb){const a=myAim();return Math.atan2(a.y,a.x)}return Math.atan2((T.y-12)-(F.y-14),T.x-F.x)+Math.sin((now-B.aim.t0)/1000*3.4)*0.55}
 function ringR(now){return 5+11*(0.5+0.5*Math.sin(now/240))}
-function capRelease(){if(!B||!B.aim)return;const now=performance.now(),a=aimAngle(now);B.aim=null;RUN.kap--;B.capCd=1.2;updateHud();
+function capRelease(){if(!B||!B.aim)return;const now=performance.now(),a=aimAngle(now);B.aim=null;if(B.capGreat){B.capGreat=0;B.greatThrown=1}else{RUN.kap--;B.greatThrown=0}B.capCd=1.2;updateHud();
   const F=B.me,sp=215;B.shots.push({cap:1,side:F.side,x:F.x,y:F.y-14,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,age:0,life:1.3,r:5,mid:'bump',flight:Math.hypot(B.foe.x-F.x,B.foe.y-F.y)/sp});
   say('Capsule thrown!');if(B.tb)B.state='tbPlay'}
 function throwCap(){capPress()}
@@ -1818,10 +1872,10 @@ function startTrainer(t){
   say(`${t.n} wants to battle!`);
 }
 function trainerKO(def){const idx=B.me.a;syncBack();const m=RUN.team[idx];if(m){const msgs=gainXp(m,Math.round(xpGain(def.s,def.l)*1.4));Object.assign(B.me.team[idx],battler(m));msgs.forEach(say)}}
-async function trainerWin(){B.state='over';finale(true);const t=B.trainer;RUN.beat[t.id]=1;RUN.kap+=t.reward;syncBack();say(`You defeated ${t.n}!`);say(`Reward: ${t.reward} capsules.`);sysChat(`You beat ${t.n} and got ${t.reward} capsules.`);updateHud();const myB=B;await sleep(2400);if(B===myB)endWild()}
+async function trainerWin(){B.state='over';finale(true);const t=B.trainer;RUN.beat[t.id]=1;RUN.kap+=t.reward;earn(t.reward*40,'from '+t.n);syncBack();say(`You defeated ${t.n}!`);say(`Reward: ${t.reward} capsules.`);sysChat(`You beat ${t.n} and got ${t.reward} capsules.`);updateHud();const myB=B;await sleep(2400);if(B===myB)endWild()}
 function syncBack(){if(B&&(B.mode==='wild'||B.mode==='trainer'))B.me.team.forEach((b,i)=>{if(RUN.team[i])RUN.team[i].hp=b.hp})}
 async function wildWin(){
-  B.state='over';finale(true);const idx=B.me.a;syncBack();const m=RUN.team[idx];if(B.legend){RUN.leg[B.legend]=1;say(`${SPECIES[B.legend].n} vanished into the light…`)}
+  B.state='over';finale(true);const idx=B.me.a;syncBack();const m=RUN.team[idx];earn(B.legend?150:6+B.wild.l*3,'prize money');if(B.legend){RUN.leg[B.legend]=1;say(`${SPECIES[B.legend].n} vanished into the light…`)}
   const msgs=m?gainXp(m,xpGain(B.wild.s,B.wild.l)):[];if(m)Object.assign(B.me.team[idx],battler(m));
   const myB=B;for(const t of msgs){say(t);await sleep(1000);if(B!==myB)return}await sleep(700);if(B===myB)endWild();
 }
@@ -1829,12 +1883,12 @@ async function wildLose(){B.state='over';finale(false);say('All your monsters fa
 function throwBonus(){const r=ringR(performance.now());if(r<8){say('Excellent throw!');return 1.6}if(r<11.5){say('Great throw!');return 1.3}return 1}
 // catch chance: low HP + weak (low level / common) -> high; full HP / strong / rare -> low. Three shake checks decide.
 function catchChance(w,bonus){const hpF=1-(w.hp/w.mhp)*0.85,lvF=clamp(1.15-w.l*0.03,0.35,1.1);return clamp(hpF*lvF*rarOf(w.s).cm*(bonus||1)+0.04,0.02,0.97)}
-function startCatch(bonus){const w=act(B.foe);const chance=catchChance(w,bonus);const q=Math.pow(chance,1/3);let sh=0;while(sh<3&&Math.random()<q)sh++;
+function startCatch(bonus){const w=act(B.foe);const chance=catchChance(w,(bonus||1)*(B.greatThrown?1.7:1));const q=Math.pow(chance,1/3);let sh=0;while(sh<3&&Math.random()<q)sh++;
   B.aim=null;B.state='catch';B.catch={t0:performance.now(),ok:sh===3,sh,x:B.foe.x,y:B.foe.y-14,gy:B.foe.y-3};B.shots=[];return;
   B.state='catch';B.catch={t0:performance.now(),ok:Math.random()<chance,x:B.foe.x,y:B.foe.y-14,gy:B.foe.y-3};B.catch.sh=B.catch.ok?3:1+Math.floor(Math.random()*2);B.shots=[]}
 function catchUpdate(now){const c=B.catch;const el=(now-c.t0)/1000;if(el<0.95+c.sh*0.7+0.2)return;
   if(c.ok&&!c.done){c.done=1;B.state='over';const m=B.wild;if(B.legend)RUN.leg[B.legend]=1;m.hp=act(B.foe).hp;G.dex[m.s]=1;syncBack();const toTeam=RUN.team.length<6;(toTeam?RUN.team:RUN.box).push(m);
-    say(`Gotcha! ${SPECIES[m.s].n} was caught!`);say(toTeam?'It joined your team.':'Your team is full — sent to the Box.');sysChat(`You caught ${SPECIES[m.s].n} (Lv ${m.l})!`);const myB=B;setTimeout(()=>{if(B===myB)endWild()},1900)}
+    say(`Gotcha! ${SPECIES[m.s].n} was caught!`);earn(5+m.l,'catch bonus');say(toTeam?'It joined your team.':'Your team is full — sent to the Box.');sysChat(`You caught ${SPECIES[m.s].n} (Lv ${m.l})!`);const myB=B;setTimeout(()=>{if(B===myB)endWild()},1900)}
   else if(!c.ok){B.state=B.tb?'tbPlay':'fight';if(B.tb)setTimeout(()=>{if(B&&B.state==='tbPlay')tbRun(null)},900);burst(c.x,c.gy-4,'#ffcb3d',16);burst(c.x,c.gy-4,'#2fb7b0',10);B.catch=null;B.foe.inv=0.8;B.foe.spawnT=performance.now();say('Oh no! It broke free!')}}
 function endWild(msg){if(!B)return;syncBack();if(msg)toast(msg);closeBattle();save();pushMt()}
 
@@ -1897,10 +1951,10 @@ function duelResult(win,why){
   if(B.mode==='duel')publishDuel(true);
   if(B.spar){
     if(win){const m=RUN.team[B.me.a]||RUN.team[0];const lv=B.foe?Math.round(B.foe.team.reduce((a,x)=>a+x.l,0)/B.foe.team.length):m.l;gainXp(m,xpGain(B.foe?act(B.foe).s:m.s,lv)+10).forEach(t=>say(t))}
-    sysChat(win?`You won the friendly battle against ${B.oppName}!`:`${B.oppName} won the friendly battle.`);save();
+    if(win)earn(30,'for the win');sysChat(win?`You won the friendly battle against ${B.oppName}!`:`${B.oppName} won the friendly battle.`);save();
     const myS=B;setTimeout(()=>{if(B===myS){closeBattle();pushMt()}},3200);return;
   }
-  const sc=win===true?1:win===false?0:0.5;RUN.res=(RUN.res||[]).concat([[RUN.r,B.opp||'bot',sc]]);
+  const sc=win===true?1:win===false?0:0.5;RUN.res=(RUN.res||[]).concat([[RUN.r,B.opp||'bot',sc]]);earn(sc===1?50:sc===0.5?20:10,'Arena prize');
   sysChat(`Round ${RUN.r}: ${sc===1?'won':sc===0?'lost':'draw'} against ${B.oppName||'opponent'}.`);
   RUN.r++;RUN.st=RUN.r>cfgOf().rounds||RUN.gaveUp?'done':'wait';
   save();const myB=B;setTimeout(()=>{if(B===myB){closeBattle();pushMt();showArena()}},2800);
@@ -1914,7 +1968,7 @@ function buildBattleUI(){
   const add=(t,cls,fn,id)=>{const b=document.createElement('button');b.className='btn '+cls;b.textContent=t;b.onclick=fn;if(id)b.id=id;row.appendChild(b)};
   if(!B.tb)add('DASH','ghost',battleDash);add('SWITCH','ghost',battleSwitch,'bsw');
   if(B.mode==='wild'){add('HOLD: CAPSULE','',()=>{},'bcap');add('RUN','ghost',tryRun)}else if(B.mode!=='trainer')add('FORFEIT','red',forfeit);
-  add('ℹ MOVES','ghost',()=>{if(B&&B.me)openMonInfo(act(B.me).s,act(B.me))});add('⚙','ghost',openSettings);
+  add('🎒 BAG','ghost',openBag);add('ℹ MOVES','ghost',()=>{if(B&&B.me)openMonInfo(act(B.me).s,act(B.me))});add('⚙','ghost',openSettings);
   el.appendChild(row);
   const K=SET.keys;
   if(B.tb)el.insertAdjacentHTML('beforeend',`<div class="keys">Turn-based · pick an action: attacks ${['a1','a2','a3','a4'].map(a=>keyLabel(K[a])).join('/')} · Switch: ${keyLabel(K.sw)}${B.mode==='wild'?` · Capsule: ${keyLabel(K.cap)} · Run: ${keyLabel(K.run)}`:''}</div>`);else
@@ -1942,7 +1996,7 @@ function updateBattleUI(){try{renderPick()}catch(e){console.error(e)}
   if(key!==B.uiKey){B.uiKey=key;btns.forEach((b,i)=>{const mid=mon.m[i];b.style.visibility=mid?'visible':'hidden';if(!mid)return;const mv=MOVES[mid];b.style.background=TYPES[mv.t].c;b.querySelector('.lbl').innerHTML=`<span class="k">${isMob()?'':esc(keyLabel(SET.keys['a'+(i+1)]))}</span> ${esc(mv.n)}<small>${esc(moveDesc(mid).replace(/^\w+ · /,''))}</small>`})}
   const lock=B.tb&&B.state!=='tbChoose';document.querySelectorAll('#bact button').forEach(b=>{if(b.textContent!=='⚙')b.disabled=lock});
   btns.forEach((b,i)=>{const mid=mon.m[i];if(!mid)return;b.querySelector('.cd').style.width=B.tb?'0%':(F.cd[i]/cdOf(mid)*100)+'%';const have=B.tb?Math.min(AP_MAX,(F.ap??AP_MAX)+TB_AP_REGEN):(F.ap??AP_MAX);b.style.filter=have<apCost(mid)?'grayscale(.8) brightness(.7)':''});
-  const cap=$('#bcap');if(cap)cap.textContent=B.aim?'RELEASE TO THROW!':`HOLD: CAPSULE (${RUN.kap})`;
+  const cap=$('#bcap');if(cap)cap.textContent=B.aim?'RELEASE TO THROW!':B.capGreat?'HOLD: GREAT CAPSULE':`HOLD: CAPSULE (${RUN.kap})`;
   if(B.aim&&performance.now()-B.aim.t0>4500)capRelease();
 }
 const bcv=$('#bcv'),bc=bcv.getContext('2d');
@@ -2111,6 +2165,7 @@ function monCard(m,i,inTeam){
   if(inTeam){if(i>0)btn('↑ Lead',()=>{RUN.team.unshift(RUN.team.splice(i,1)[0]);changed()});if(RUN.team.length>1)btn('→ Box',()=>{RUN.box.push(RUN.team.splice(i,1)[0]);changed()})}
   else btn('→ Team',()=>{RUN.team.push(RUN.box.splice(i,1)[0]);changed()},RUN.team.length>=6);
   {const b=document.createElement('button');b.className='mini';b.textContent='ℹ Details';b.onclick=()=>openMonInfo(m.s,m);acts.appendChild(b)}
+  if(RUN&&RUN.items&&['potion','superp','revive','candy'].some(k=>RUN.items[k]>0)){const b=document.createElement('button');b.className='mini';b.textContent='🎒 Item';b.disabled=!!B||RUN.phase==='arena';b.onclick=()=>openItemsFor(m);acts.appendChild(b)}
   info.appendChild(acts);d.appendChild(info);return d;
 }
 function changed(){save();renderTeam();pushMt()}
@@ -2147,7 +2202,7 @@ function openDex(){const ids=rosterIds();
   $('#mok').onclick=closeModal}
 function renderTeam(){
   if(!G)return;const el=$('#pane-team');el.innerHTML='';
-  el.insertAdjacentHTML('beforeend',`<div class="stats"><div class="stat">Trainer<b style="color:${G.color}">${esc(G.name)}</b></div><div class="stat">Trophies<b>🏆 ${G.tro}</b></div><div class="stat">Monster Dex<b>${rosterIds().filter(s=>G.dex[s]).length} / ${rosterIds().length}</b></div><div class="stat">Capsules<b>${RUN?RUN.kap:'-'}</b></div></div>`);
+  el.insertAdjacentHTML('beforeend',`<div class="stats"><div class="stat">Trainer<b style="color:${G.color}">${esc(G.name)}</b></div><div class="stat">Trophies<b>🏆 ${G.tro}</b></div><div class="stat">Monster Dex<b>${rosterIds().filter(s=>G.dex[s]).length} / ${rosterIds().length}</b></div><div class="stat">Capsules<b>◓ ${RUN?RUN.kap:'-'}</b></div><div class="stat">Money<b style="color:var(--accent)">$${RUN?money():'-'}</b></div><div class="stat">Bag<b style="font-size:17px">${RUN&&RUN.items&&Object.values(RUN.items).some(v=>v>0)?Object.entries(RUN.items).filter(e=>e[1]>0).map(([k,v])=>ITEMS[k].i+v).join(' '):'empty'}</b></div></div>`);
   if(!RUN){el.insertAdjacentHTML('beforeend',`<div class="sec">NOT IN A LOBBY</div><div class="small" style="line-height:1.1">Join or create a lobby (LOBBY tab or bottom of the map). You'll pick a starter, the host starts the game, then you train before the Arena tournament.</div>`)}
   else{
     el.insertAdjacentHTML('beforeend',`<div class="sec">TEAM (${RUN.team.length}/6) — LEAD FIGHTS FIRST</div>`);RUN.team.forEach((m,i)=>el.appendChild(monCard(m,i,true)));
