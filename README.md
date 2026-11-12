@@ -81,7 +81,7 @@ Im Tab *Spieler* steht bei jedem Mitspieler der **Ping** (grün < 80 ms, gelb < 
 4. **Rematch:** Danach „NEUE LOBBY (GLEICHE EINSTELLUNGEN)“ – die anderen sehen „REVANCHE-LOBBY BEITRETEN“.
 
 **Karte (M):** Biome, Level-Ringe, Cops, Schreine, Spieler.
-**Biome:** Nordwiese (hohes Gras), Ostwald (Farne), Südküste (Schilf), Westhügel (Geröll) – jedes mit eigenen Monstern. Je weiter von Sparhausen, desto stärker.
+**Biome:** Nordwiese (hohes Gras), Ostwald (Farne), Südküste (Schilf), Westhügel (Geröll) – jedes mit eigenen Monstern. Je weiter von Coptown, desto stärker.
 
 **Fangen:** Kapsel-Taste gedrückt halten → Ziellinie schwingt → loslassen zum Werfen. Ring am Ziel klein = Bonus. Bis zu 3 Wackler – wenig KP und schwaches Monster = hohe Chance.
 
