@@ -155,6 +155,10 @@ select{background:#0b0d16;color:var(--text);border:2px solid #000;font-family:in
 .mvrow b{font-weight:normal;font-size:19px}
 .statrow{display:grid;grid-template-columns:70px 1fr 34px;gap:6px;align-items:center;font-size:16px;text-align:left}
 .statrow i{display:block;height:6px;background:var(--blue);border:1px solid #000}
+#signbox{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);width:min(560px,94%);z-index:7;display:none;background:#f8f8f0;color:#22243a;border:4px solid #3a5aa8;outline:3px solid #000;box-shadow:4px 4px 0 #000;padding:8px 12px;font-size:19px;line-height:1.2;text-align:left;cursor:pointer}
+#signbox.on{display:block}
+#signbox b{font-family:'Press Start 2P';font-size:9px;color:#3a5aa8}
+body.mob #signbox{bottom:auto;top:50px}
 #bpick{position:absolute;left:50%;top:22%;transform:translateX(-50%);z-index:7;display:none;background:#0b0d16e8;border:3px solid #000;box-shadow:4px 4px 0 #000;padding:8px 10px;text-align:center;max-width:94%}
 #bpick.on{display:block}
 #bpick .t{font-family:'Press Start 2P';font-size:9px;color:var(--accent);margin-bottom:6px}
@@ -266,6 +270,7 @@ body.mob.portrait #rotate.show{display:block}
     <div id="mapov"><div class="mapbox"><div class="maphead"><span>WORLD MAP</span><button class="btn ghost" id="mclose">✕ CLOSE</button></div><canvas id="mapcv"></canvas><div id="mapleg"></div></div></div>
     <div id="battle"><div id="bwrap"><canvas id="bcv" width="720" height="480"></canvas><div id="bctl"><div id="bpad"></div><div id="bact"></div></div></div></div>
     <div id="bpick"></div>
+    <div id="signbox"></div>
     <div id="modal"><div class="box" id="mbox"></div></div>
     <canvas id="fxcv"></canvas>
   </div>
@@ -337,7 +342,7 @@ const TURN_CONFIG = {
 
 /* ===================== VERSION ===================== */
 // bump with every release (MAJOR.MINOR.PATCH). Players can only share lobbies/duels with the same version.
-const VERSION='0.25.0';
+const VERSION='0.26.0';
 function cmpV(a,b){const x=String(a||'0').split('.').map(Number),y=String(b||'0').split('.').map(Number);for(let i=0;i<3;i++){const d=(x[i]||0)-(y[i]||0);if(d)return d}return 0}
 /* ===================== ERROR REPORTING ===================== */
 function showErr(m){try{const b=document.getElementById('errbox');if(!b)return;b.textContent='⚠ Error: '+String(m).slice(0,220)+' — please send this to the developer.';b.style.display='block';clearTimeout(showErr.t);showErr.t=setTimeout(()=>b.style.display='none',12000)}catch(e){}}
@@ -560,7 +565,38 @@ function vnoise(seed,cell){
     if(hit<0)break;for(let i=par[hit];i!==c;i=par[i])if(!WALK0.has(MAP[i]))MAP[i]=BASE_T[BIOME[i]]||0}
 })();
 const WALK=WALK0;
-function walkable(x,y){return WALK.has(tget(x,y))}
+/* ===================== SIGNPOSTS ===================== */
+// wooden signs like in the originals: at the town exits, on both sides of every pass and in the town centre; biome name, direction, recommended level
+const SIGNS=[],SIGNSET=new Set(),BNAME=['Budget Town','North Meadow','East Woods','South Shore','West Hills'];
+function walkable(x,y){return WALK.has(tget(x,y))&&!SIGNSET.has(y*MW+x)}
+(function placeSigns(){
+  const D4=[[1,0],[-1,0],[0,1],[0,-1]],cen={},lv={};setTimeout(()=>{const sb=$('#signbox');if(sb)sb.onclick=()=>sb.classList.remove('on')},0);
+  for(let i=0;i<MW*MH;i++){if(!ENC.has(MAP[i]))continue;const b=BIOME[i],x=i%MW,y=(i-x)/MW,l=Math.round(baseLvAt(x,y));const c=cen[b]||(cen[b]={x:0,y:0,n:0});c.x+=x;c.y+=y;c.n++;const r=lv[b]||(lv[b]=[99,0]);r[0]=Math.min(r[0],l);r[1]=Math.max(r[1],l)}
+  for(const b in cen){cen[b].x/=cen[b].n;cen[b].y/=cen[b].n}
+  const reach=()=>{const seen=new Uint8Array(MW*MH),q=[24*MW+30];seen[q[0]]=1;let n=1;while(q.length){const i=q.pop(),x=i%MW,y=(i-x)/MW;for(const[dx,dy]of D4){const j=(y+dy)*MW+x+dx;if(seen[j]||!walkable(x+dx,y+dy))continue;seen[j]=1;n++;q.push(j)}}return n};
+  let base=reach();
+  const free=(x,y)=>x>2&&y>2&&x<MW-3&&y<MH-3&&WALK0.has(MAP[y*MW+x])&&MAP[y*MW+x]!==4&&!ENC.has(MAP[y*MW+x])&&!SIGNSET.has(y*MW+x)&&!SIGNSET.has(y*MW+x+1)&&!SIGNSET.has(y*MW+x-1)&&!TRAINERS.some(t=>Math.abs(t.x-x)+Math.abs(t.y-y)<2)&&!LEGENDS.some(L=>Math.abs(L.x-x)<3&&Math.abs(L.y-y)<3)&&!(Math.abs(x-30)<2&&Math.abs(y-24)<2);
+  const add=(x,y,o)=>{const i=y*MW+x;SIGNSET.add(i);if(reach()!==base-1){SIGNSET.delete(i);return false}base--;SIGNS.push(Object.assign({x,y},o));return true};
+  const near=(tx,ty,side,o)=>{for(let r=1;r<7;r++)for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++){if(Math.max(Math.abs(dx),Math.abs(dy))!==r)continue;const x=Math.round(tx)+dx,y=Math.round(ty)+dy;if(!free(x,y)||BIOME[y*MW+x]!==side)continue;if(add(x,y,o))return true}return false};
+  // town exit nearest to the centre toward biome b (walkable for Meadow/Shore, a wall for Woods/Hills)
+  const exitTo=(b,open)=>{let best=null,bd=1e9;for(let y=3;y<MH-3;y++)for(let x=3;x<MW-3;x++){if(BIOME[y*MW+x]!==0||!WALK0.has(MAP[y*MW+x]))continue;
+      const R=open?1:3;let hit=false;for(let dy=-R;dy<=R&&!hit;dy++)for(let dx=-R;dx<=R;dx++){if(Math.abs(dx)+Math.abs(dy)>R)continue;if(BIOME[(y+dy)*MW+x+dx]===b&&(!open||WALK0.has(MAP[(y+dy)*MW+x+dx]))){hit=true;break}}if(!hit)continue;const d=Math.hypot(x-30,y-24)+(MAP[y*MW+x]===4?-3:0);if(d<bd){bd=d;best={x,y}}}return best};
+  for(const b of[1,3]){const g=exitTo(b,true);if(g)near(g.x,g.y,0,{to:b,kind:'gate'})}
+  for(const[b,via]of[[2,1],[4,3]]){const g=exitTo(b,false);if(g)near(g.x,g.y,0,{to:b,kind:'wall',via})}
+  // passes: path tiles on the Meadow|Woods and Shore|Hills borders
+  for(const[a,b]of[[1,2],[3,4]]){let sx=0,sy=0,n=0;for(let y=2;y<MH-2;y++)for(let x=2;x<MW-2;x++){const i=y*MW+x;if(MAP[i]!==4||(BIOME[i]!==a&&BIOME[i]!==b))continue;if(D4.some(([dx,dy])=>{const nb=BIOME[(y+dy)*MW+x+dx];return(nb===a||nb===b)&&nb!==BIOME[i]})){sx+=x;sy+=y;n++}}
+    if(!n)continue;const px=sx/n,py=sy/n;near(px,py,a,{to:b,kind:'pass'});near(px,py,b,{to:a,kind:'back'})}
+  near(30,26,0,{kind:'town'});
+  for(const sg of SIGNS){if(sg.to==null)continue;const c=cen[sg.to];if(c){const a=Math.atan2(c.y-sg.y,c.x-sg.x),k=Math.round(a/(Math.PI/4));sg.arrow=['→','↘','↓','↙','←','↖','↑','↗'][(k+8)%8]}sg.lv=lv[sg.to]?[Math.max(1,lv[sg.to][0]-1),lv[sg.to][1]]:[1,1]}
+})();
+function signShort(sg){return sg.kind==='town'?'Budget Town':`${sg.arrow||''} ${BNAME[sg.to]} · Lv ${sg.lv[0]}–${sg.lv[1]}`}
+function signText(sg){if(sg.kind==='town')return`<b>BUDGET TOWN</b><br>"Gotta catch… whatever fits in your pocket."<br>✚ Heal Center (red roof) · ⚔ Arena (purple roof) · 🛒 Budget Mart: SHOP in the menu<br>Meadow ↑ and Shore ↓ are open. Woods and Hills lie behind them.`;
+  const z=BKEYS[sg.to],pool=z?poolOf(z):[],mons=pool.map(s=>G&&G.dex&&G.dex[s]!==undefined?SPECIES[s].n:'???').join(', ');
+  const head=`<b>${sg.arrow||''} ${BNAME[sg.to].toUpperCase()}</b> · recommended Lv ${sg.lv[0]}–${sg.lv[1]}`;
+  if(sg.kind==='wall')return`${head}<br>The ${sg.to===2?'tree line':'cliffs'} block the way from here.<br>Go through ${BNAME[sg.via]} — there is a pass on the far side.`;
+  if(sg.kind==='back')return`<b>${sg.arrow||''} ${BNAME[sg.to].toUpperCase()}</b> · Lv ${sg.lv[0]}–${sg.lv[1]}<br>Back toward ${BNAME[sg.to]} and town.`;
+  return`${head}<br>${sg.kind==='pass'?'Mountain pass — stronger monsters ahead!':'Wild monsters get stronger the farther you go.'}<br>Spotted here: ${esc(mons)}`}
+function showSign(sg){const el=$('#signbox');el.innerHTML=signText(sg);el.classList.add('on');clearTimeout(showSign.t);showSign.t=setTimeout(()=>el.classList.remove('on'),6000)}
 function zoneAt(x,y){if(x<0||y<0||x>=MW||y>=MH)return null;return BKEYS[BIOME[y*MW+x]]}
 
 /* ===================== PIXEL ART ===================== */
@@ -952,6 +988,7 @@ function legendHere(x,y){if(!RUN||RUN.phase!=='train')return null;return LEGENDS
 function trainerAt(x,y){return TRAINERS.find(t=>t.x===x&&t.y===y)||null}
 function bump(nx,ny){
   if(P.bumpCd>0)return;P.bumpCd=0.5;
+  const sg=SIGNS.find(s=>s.x===nx&&s.y===ny);if(sg){if(!$('#signbox').classList.contains('on'))showSign(sg);return}
   const t=trainerAt(nx,ny);
   if(t){if(!RUN||RUN.phase!=='train')toast(`${t.n}: "Come back when your game has started!"`);else if(RUN.beat&&RUN.beat[t.id])toast(`${t.n}: "${t.after}"`);else spotted(t);return}
   const L=LEGENDS.find(L=>L.x===nx&&L.y===ny);
@@ -994,6 +1031,7 @@ function bubble(c,x,y,txt){
   c.fillStyle='#14141f';c.fillRect(X-1,Y-1,w+2,h+2);c.fillStyle='#fff';c.fillRect(X,Y,w,h);c.fillRect(Math.round(x)-1,Y+h,3,2);
   c.fillStyle='#14141f';lines.forEach((l,i)=>c.fillText(l,X+3,Y+8+i*7-1));
 }
+function drawSignCaptions(c,camX,camY){for(const sg of SIGNS){const d=Math.hypot(sg.x-P.fx,sg.y-P.fy);if(d>3.2)continue;nameTag(c,sg.x*16-camX+8,sg.y*16-camY-1,signShort(sg),'#d9a466','')}}
 function drawWorld(){
   const cw=wcv.parentElement.clientWidth,ch=wcv.parentElement.clientHeight;const dpr=Math.min(3,devicePixelRatio||1);
   SC=Math.max(2,Math.round(Math.min(cw/240,ch/160)));
@@ -1010,6 +1048,10 @@ function drawWorld(){
   if(WORLD){const sx=Math.max(0,camX),sy=Math.max(0,camY),dx=sx-camX,dy=sy-camY,w=Math.min(LW-dx,MW*16-sx),h=Math.min(LH-dy,MH*16-sy);if(w>0&&h>0)c.drawImage(WORLD,sx,sy,w,h,dx,dy,w,h)}
   // animated water sparkle
   for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){if(tget(x,y)!==3)continue;const h=th(x,y);const ph=(T*1.3+(h%100)/100)%1;if(ph<0.5){const X=x*16-camX+(h%11)+2,Y=y*16-camY+((h>>4)%11)+2;c.fillStyle=ph<0.25?'#d8f0ff':'#8fc8f0';c.fillRect(X,Y,ph<0.25?3:2,1)}}
+  // wooden signposts
+  for(const sg of SIGNS){if(sg.x<x0-1||sg.x>x1||sg.y<y0-1||sg.y>y1)continue;const X=sg.x*16-camX,Y=sg.y*16-camY;
+    c.fillStyle='#00000040';c.fillRect(X+3,Y+13,10,2);c.fillStyle='#2a1a0c';c.fillRect(X+6,Y+6,4,9);c.fillStyle='#7a4a22';c.fillRect(X+7,Y+6,2,8);
+    c.fillStyle='#2a1a0c';c.fillRect(X+1,Y+1,14,8);c.fillStyle='#b07a3e';c.fillRect(X+2,Y+2,12,6);c.fillStyle='#d9a466';c.fillRect(X+2,Y+2,12,1);c.fillStyle='#6b4220';c.fillRect(X+4,Y+4,8,1);c.fillRect(X+4,Y+6,6,1)}
   // signs on roofs
   c.fillStyle='#ffffff';c.fillRect(24*16-camX+10,17*16-camY+2,4,12);c.fillRect(24*16-camX+6,17*16-camY+6,12,4);
   c.font='7px "Press Start 2P"';c.textBaseline='alphabetic';c.fillStyle='#14141f';c.fillText('ARENA',33*16-camX+31,17*16-camY+13);c.fillStyle='#ffcb3d';c.fillText('ARENA',33*16-camX+30,17*16-camY+12);
@@ -1031,6 +1073,7 @@ function drawWorld(){
     if(e.legend){nameTag(c,X,Y-14,'???','#ffcb3d','');continue}
     if(e.npc){const beaten=RUN&&RUN.beat&&RUN.beat[e.npc.id];nameTag(c,X,Y,e.name,e.col,'');if(e.npc.alert&&performance.now()-e.npc.alert<1000){c.fillStyle='#14141f';c.fillRect(Math.round(X)-3,Y-24,6,11);c.fillStyle='#ffcb3d';c.fillRect(Math.round(X)-2,Y-23,4,6);c.fillRect(Math.round(X)-2,Y-16,4,2)}else if(beaten){vtText(c,'✓',X,Y-11,'#3ddc6b',10,'center')}continue}
     nameTag(c,X,Y,e.name,e.col,e.bt==='duel'?'⚔':e.bt==='wild'?'!':'');if(e.bub&&e.bub.until>performance.now())bubble(c,X,Y-10,e.bub.t)}
+  drawSignCaptions(c,camX,camY);
 }
 
 /* ===================== WORLD MAP ===================== */
@@ -1050,13 +1093,14 @@ function drawMap(){
   // level rings (difficulty rises with distance from town)
   c.setLineDash([ts,ts]);c.lineWidth=Math.max(1,ts/3);
   for(const lv of[5,10,15]){const d=9+(lv-1)/0.47;c.strokeStyle='#ffffffaa';c.beginPath();c.arc((CX+.5)*ts,(CY+.5)*ts,d*ts,0,7);c.stroke();
-    c.font=`${Math.max(9,ts*2)}px VT323`;const ly=(CY+.5-d)*ts+ts*1.8;if(ly>ts){c.fillStyle='#0b0d16c0';const tw=c.measureText('Lv '+lv).width+6;c.fillRect((CX+.5)*ts-tw/2,ly-ts*1.6,tw,ts*2);c.fillStyle='#fff';c.textAlign='center';c.fillText('Lv ~'+lv,(CX+.5)*ts,ly)}}
+    c.font=`${Math.max(9,ts*2)}px VT323`;const ang=-0.42,lx=(CX+.5+Math.cos(ang)*d)*ts,ly=(CY+.5+Math.sin(ang)*d)*ts+ts*0.6;if(ly>ts*2&&lx<MW*ts-ts*2){c.fillStyle='#0b0d16c0';const tw=c.measureText('Lv ~'+lv).width+6;c.fillRect(lx-tw/2,ly-ts*1.6,tw,ts*2);c.fillStyle='#fff';c.textAlign='center';c.fillText('Lv ~'+lv,lx,ly)}}
   c.setLineDash([]);c.textAlign='center';
   const F=Math.max(9,ts*2);
   for(const[k,p]of Object.entries(BIO_C)){c.font=`${Math.max(7,Math.round(ts*1.4))}px "Press Start 2P"`;c.fillStyle='#000000a0';c.fillText(ZONES[k].n.toUpperCase(),p.x*ts+1,p.y*ts+1);c.fillStyle='#ffffff';c.fillText(ZONES[k].n.toUpperCase(),p.x*ts,p.y*ts)}
   const mark=(x,y,txt,col)=>{c.font=`${F}px VT323`;c.fillStyle='#000';c.fillText(txt,(x+.5)*ts+1,(y+.5)*ts+F/3+1);c.fillStyle=col;c.fillText(txt,(x+.5)*ts,(y+.5)*ts+F/3)};
   mark(25,19,'✚','#ffffff');mark(35.5,18,'⚔','#ffcb3d');
   for(const L of LEGENDS){const gone=RUN&&RUN.leg&&RUN.leg[L.id];mark(L.x,L.y,'★',gone?'#8a8ea6':'#ffcb3d')}
+  for(const sg of SIGNS){c.fillStyle='#000';c.fillRect(sg.x*ts-1,sg.y*ts-1,ts+2,ts+2);c.fillStyle='#d9a466';c.fillRect(sg.x*ts,sg.y*ts,ts,ts)}
   for(const t of TRAINERS){const beat=RUN&&RUN.beat&&RUN.beat[t.id];c.fillStyle='#000';c.fillRect(t.x*ts-1,t.y*ts-1,ts+2,ts+2);c.fillStyle=beat?'#8a8ea6':t.c;c.fillRect(t.x*ts,t.y*ts,ts,ts);if(beat){c.fillStyle='#3ddc6b';c.font=`${F}px VT323`;c.fillText('✓',(t.x+.5)*ts,t.y*ts-2)}}
   for(const o of OTH.values()){if(o.fx==null)continue;c.fillStyle='#000';c.fillRect(o.fx*ts-2,o.fy*ts-2,ts+4,ts+4);c.fillStyle=o.c||'#888';c.fillRect(o.fx*ts-1,o.fy*ts-1,ts+2,ts+2)}
   const blink=Math.floor(performance.now()/350)%2;c.fillStyle=blink?'#ffffff':'#000';c.fillRect(P.fx*ts-3,P.fy*ts-3,ts+6,ts+6);c.fillStyle=G.color;c.fillRect(P.fx*ts-1,P.fy*ts-1,ts+2,ts+2);
@@ -1066,7 +1110,7 @@ function renderMapLegend(){
   let h='';
   for(const[k,z]of Object.entries(ZONES)){
     h+=`<div class="mleg"><b style="color:${z.col==='#2f7a2c'?'#5fb04a':z.col}">${z.n.toUpperCase()}</b><br><span class="small">monsters hide in ${z.enc}</span><br>${poolOf(k).map(sp=>{const seen=G.dex[sp]!==undefined;const r=rarOf(sp);return`<span style="color:${r.c}">${seen?esc(SPECIES[sp].n):'???'}</span>`}).join(' · ')}</div>`}
-  h+=`<div class="mleg"><b style="color:var(--accent)">LEGEND</b><br>✚ Heal Center · ⚔ Arena<br>★ Legendary shrine · ■ Trainer (✓ beaten)<br>Rings: wild levels rise with distance from town.<br>Colors: <span style="color:${RARITY.common.c}">common</span> · <span style="color:${RARITY.uncommon.c}">uncommon</span> · <span style="color:${RARITY.rare.c}">rare</span></div>`;
+  h+=`<div class="mleg"><b style="color:var(--accent)">LEGEND</b><br>✚ Heal Center · ⚔ Arena<br>★ Legendary shrine · ■ Trainer (✓ beaten) · <span style="color:#d9a466">■</span> Signpost<br>Rings: wild levels rise with distance from town.<br>Colors: <span style="color:${RARITY.common.c}">common</span> · <span style="color:${RARITY.uncommon.c}">uncommon</span> · <span style="color:${RARITY.rare.c}">rare</span></div>`;
   $('#mapleg').innerHTML=h;
 }
 $('#hmap').onclick=toggleMap;$('#hdex').onclick=()=>{if(G)openDex()};$('#hshop').onclick=()=>{if(G)openShop()};$('#htimer').onclick=()=>{if(isMob())$('#side').classList.add('open');switchTab('lobby')};$('#mclose').onclick=closeMap;
