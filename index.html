@@ -90,8 +90,25 @@ body.mob #dpad{display:grid}body.mob #help{display:none}body.mob .keys{display:n
 .tsp{flex:1}
 #tver{font-size:15px;color:var(--muted);flex-shrink:0;padding-left:2px}
 @media (max-width:1350px){.tbrand{display:none}}
-@media (max-width:1280px){#topbar .tl{display:none}}
-body.mob #topbar .tl{display:none}
+body.mob.portrait #battle{justify-content:flex-start;padding-top:4px}
+/* phones held upright: menu bar in two rows (status + version, then all buttons spread evenly) */
+body.mob.portrait #topbar{flex-wrap:wrap;overflow:visible;row-gap:4px}
+body.mob.portrait #topbar #htimer{order:0}body.mob.portrait #topbar #tupd{order:1}body.mob.portrait #topbar .tsp{order:2}body.mob.portrait #topbar #tver{order:3}
+body.mob.portrait #topbar button:not(#tupd){order:4;flex:1 1 0;min-width:34px;padding:3px 2px;font-size:16px}
+body.mob.portrait #topbar button[data-t] .tl{display:none}
+body.mob #side{top:var(--tbh,36px)!important;height:calc(100% - var(--tbh,36px))!important}
+/* tablets: bigger thumbs controls and menu */
+@media (min-width:700px) and (min-height:700px){body.mob #tbtns{transform:scale(1.5)!important;transform-origin:100% 100%}body.mob #joy{transform:scale(1.4)}body.mob #joyhint{width:140px;height:140px;font-size:20px}body.mob #topbar button{font-size:19px!important;padding:3px 9px}body.mob #topbar .chip{font-size:19px}body.mob .hud .chip{font-size:18px}}
+body.mob.portrait #tbtns{transform:scale(1.18);transform-origin:100% 100%}
+body.mob.portrait #joy{transform:scale(1.15)}
+body.mob.portrait #joyhint{width:110px;height:110px}
+body.mob.portrait #bpick{top:12%}
+body.mob.portrait .hud{flex-wrap:wrap;max-width:60%}
+body.mob.portrait #lobby{max-width:46%}
+.box{max-width:min(520px,94vw)}
+#stage>#lobby{left:auto;right:10px;top:10px;bottom:auto;transform:none;width:min(420px,46%);max-height:calc(100% - 20px);overflow:auto}
+@media (max-width:1280px){#topbar button:not([data-t=lobby]):not([data-t=team]) .tl{display:none}}
+body.mob #topbar button:not([data-t=lobby]):not([data-t=team]) .tl{display:none}
 #side .tabs,#side .brand{display:none}
 .hud{top:6px}
 #bctl{display:flex;gap:8px;align-items:flex-start}
@@ -178,7 +195,8 @@ select{background:#0b0d16;color:var(--text);border:2px solid #000;font-family:in
 /* ===== mobile (landscape-first) layout ===== */
 body.mob{overscroll-behavior:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 body.mob #app{flex-direction:row!important}
-body.mob #mainc{height:100vh;height:100dvh}
+body.mob #mainc{flex:1 1 auto!important;width:100%;min-width:0;height:100vh!important;height:100dvh!important}
+#topbar{min-width:0}
 body.mob #stage{flex:1 1 auto!important;height:auto!important;touch-action:none}
 body.mob #topbar{padding:max(3px,env(safe-area-inset-top)) max(6px,env(safe-area-inset-right)) 3px max(6px,env(safe-area-inset-left))}
 body.mob #topbar button{font-size:15px;padding:2px 6px}body.mob .tbrand{display:none}
@@ -235,7 +253,7 @@ body.mob.portrait #rotate.show{display:block}
 <body>
 <div id="app">
 <div id="mainc">
-  <div id="topbar"><span class="tbrand">POCKET PEASANTS</span><span class="chip timer" id="htimer">LOBBY</span><button id="tupd" style="display:none;background:#ef4444;color:#fff">⬆ NEW VERSION — RELOAD</button><span class="tsp"></span><button data-t="lobby">🏟 LOBBY</button><button data-t="team">🎒 TEAM</button><button data-t="players" title="Players">👥<span class="tl"> PLAYERS</span><span id="pcount"></span></button><button data-t="chat" title="Chat">💬<span class="tl"> CHAT</span><span id="cbadge"></span></button><button id="hshop" title="Shop (in town)">🛒<span class="tl"> SHOP</span></button><button id="hdex" title="Monster Dex">📖<span class="tl"> DEX</span></button><button id="hmap" title="Map">🗺<span class="tl"> MAP</span></button><button id="hset">⚙</button><span id="tver"></span></div>
+  <div id="topbar"><span class="tbrand">POCKET PEASANTS</span><span class="chip timer" id="htimer">LOBBY</span><button id="tupd" style="display:none;background:#ef4444;color:#fff">⬆ NEW VERSION — RELOAD</button><span class="tsp"></span><button data-t="lobby" title="Lobby">🏟<span class="tl"> LOBBY</span></button><button data-t="team" title="Team">🎒<span class="tl"> TEAM</span></button><button data-t="players" title="Players">👥<span class="tl"> PLAYERS</span><span id="pcount"></span></button><button data-t="chat" title="Chat">💬<span class="tl"> CHAT</span><span id="cbadge"></span></button><button id="hshop" title="Shop (in town)">🛒<span class="tl"> SHOP</span></button><button id="hdex" title="Monster Dex">📖<span class="tl"> DEX</span></button><button id="hmap" title="Map">🗺<span class="tl"> MAP</span></button><button id="hset">⚙</button><span id="tver"></span></div>
   <div id="stage">
     <canvas id="world"></canvas>
     <div class="hud"><span class="chip" id="hzone">Town</span><span class="chip" id="hkap">Capsules -</span><span class="chip" id="hon"><span class="dot"></span>Solo</span></div>
@@ -319,7 +337,7 @@ const TURN_CONFIG = {
 
 /* ===================== VERSION ===================== */
 // bump with every release (MAJOR.MINOR.PATCH). Players can only share lobbies/duels with the same version.
-const VERSION='0.24.0';
+const VERSION='0.25.0';
 function cmpV(a,b){const x=String(a||'0').split('.').map(Number),y=String(b||'0').split('.').map(Number);for(let i=0;i<3;i++){const d=(x[i]||0)-(y[i]||0);if(d)return d}return 0}
 /* ===================== ERROR REPORTING ===================== */
 function showErr(m){try{const b=document.getElementById('errbox');if(!b)return;b.textContent='⚠ Error: '+String(m).slice(0,220)+' — please send this to the developer.';b.style.display='block';clearTimeout(showErr.t);showErr.t=setTimeout(()=>b.style.display='none',12000)}catch(e){}}
@@ -908,8 +926,9 @@ function updateTouch(){
 document.querySelectorAll('#topbar button[data-t]').forEach(b=>b.onclick=()=>{const t=b.dataset.t,sd=$('#side');if(isMob()){if(sd.classList.contains('open')&&curTab===t){sd.classList.remove('open');return}sd.classList.add('open')}switchTab(t)});
 $('#tupd').onclick=()=>location.reload();
 $('#stage').addEventListener('pointerdown',e=>{if(isMob()&&$('#side').classList.contains('open')&&!e.target.closest('#side'))$('#side').classList.remove('open')},true);
-function checkOrient(){const port=matchMedia('(orientation: portrait)').matches;document.body.classList.toggle('portrait',port);const r=$('#rotate');if(r&&port&&isMob()&&!checkOrient.dismissed)r.classList.add('show');else if(r)r.classList.remove('show')}
-addEventListener('resize',checkOrient);addEventListener('orientationchange',()=>setTimeout(checkOrient,200));
+function checkOrient(){const port=matchMedia('(orientation: portrait)').matches;document.body.classList.toggle('portrait',port);const r=$('#rotate');if(r)r.classList.remove('show');TB_KEY='';if(B)try{sizeBattle()}catch(e){}}
+addEventListener('resize',checkOrient);
+function setTbh(){try{document.documentElement.style.setProperty('--tbh',$('#topbar').offsetHeight+'px')}catch(e){}}addEventListener('resize',()=>setTimeout(setTbh,50));setInterval(setTbh,1500);addEventListener('orientationchange',()=>setTimeout(checkOrient,200));
 $('#rotok').onclick=()=>{checkOrient.dismissed=true;checkOrient()};
 // fullscreen + landscape lock (only where the browser allows it; iOS Safari does not)
 {const fb=$('#sfs');if(fb){if(document.fullscreenEnabled&&matchMedia('(pointer:coarse)').matches)fb.style.display='inline-block';
@@ -2068,7 +2087,7 @@ function hudPanel(c,x,y,F,right,label){
 }
 function sizeBattle(){
   const wrap=$('#bwrap'),st=$('#stage');const mob=isMob();const ctl=mob?0:($('#bctl').offsetHeight||0);
-  const avail=Math.max(120,st.clientHeight-ctl-(mob?0:40));const w=Math.max(200,Math.min(mob?st.clientWidth:wrap.clientWidth,avail*AW/AH));
+  const port=mob&&document.body.classList.contains('portrait');const avail=Math.max(120,(port?st.clientHeight*0.58:st.clientHeight)-ctl-(mob?0:40));const w=Math.max(200,Math.min(mob?st.clientWidth:wrap.clientWidth,avail*AW/AH));
   bcv.style.width=w+'px';const dpr=Math.min(3,devicePixelRatio||1);const W=Math.round(w*dpr),H=Math.round(W*AH/AW);
   if(bcv.width!==W||bcv.height!==H){bcv.width=W;bcv.height=H}
   return W/AW;
