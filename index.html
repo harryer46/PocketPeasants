@@ -384,7 +384,7 @@ const TURN_CONFIG = {
 
 /* ===================== VERSION ===================== */
 // bump with every release (MAJOR.MINOR.PATCH). Players can only share lobbies/duels with the same version.
-const VERSION='0.51.0';
+const VERSION='0.52.0';
 // access password: only its hash is stored here; the password itself also keys the P2P room, so clients without it cannot connect
 const PW_KEY='knast_pw',PW_H=2361915375,MAX_ROOM=10,MAX_LOBBY=5;
 function pwHash(s){let h=2166136261;s='knast:'+s;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
@@ -2174,7 +2174,7 @@ function aiUpdate(F,dt){
     F.mvx=dx/d*rad+(-dy/d)*perp*0.8;F.mvy=dy/d*rad+(dx/d)*perp*0.8;const L=Math.hypot(F.mvx,F.mvy)||1;F.mvx/=L;F.mvy/=L;
     if(Math.random()<0.7){const m=act(F);const ready=[0,1,2,3].filter(i=>{const mv=m.m[i]&&MOVES[m.m[i]];if(!mv||F.cd[i]>0||(F.ap??AP_MAX)<apCost(m.m[i]))return false;if(mv.k==='self')return mv.fx==='heal'?m.hp<m.mhp*0.45:Math.random()<0.4;return mv.k!=='melee'||d<34});if(ready.length)fire(F,ready[Math.floor(Math.random()*ready.length)])}
     if(B.mode==='ai'&&act(F).hp<act(F).mhp*0.2&&F.swCd<=0&&Math.random()<0.25){const n=F.team.findIndex((m,i)=>i!==F.a&&m.hp>act(F).hp*2);if(n>=0)doSwitch(F,n)}}
-  if(F.dashCd<=0)for(const s of B.shots)if(s.side!==F.side&&!s.cap&&Math.hypot(s.x-F.x,s.y-F.y+10)<30&&Math.random()<0.06){F.dashT=0.14;F.dashCd=1.6;F.inv=0.24;F.ddx=-s.vy/(Math.hypot(s.vx,s.vy)||1);F.ddy=s.vx/(Math.hypot(s.vx,s.vy)||1);break}
+  if(F.dashCd<=0&&(F.ap??AP_MAX)>=DASH_AP)for(const s of B.shots)if(s.side!==F.side&&!s.cap&&Math.hypot(s.x-F.x,s.y-F.y+10)<30&&Math.random()<0.06){F.ap=(F.ap??AP_MAX)-DASH_AP;F.dashT=0.14;F.dashCd=1.6;F.inv=0.24;F.ddx=-s.vy/(Math.hypot(s.vx,s.vy)||1);F.ddy=s.vx/(Math.hypot(s.vx,s.vy)||1);break}
   move(F,F.mvx,F.mvy,dt);
 }
 function bUpdate(dt){
@@ -2341,7 +2341,8 @@ function tbDuelSync(du){
 
 /* --- player actions --- */
 function battleMove(i){if(!B)return;if(B.tb){tbChoose({k:'move',i});return}if(B.state==='fight')fire(B.me,i)}
-function battleDash(){if(!B||B.tb||B.state!=='fight')return;const F=B.me;if(F.dashCd>0||F.faint>0||F.out||F.st.stun>0||F.st.sleep>0)return;if(!F.ddx&&!F.ddy){F.ddx=F.face>0?-1:1;F.ddy=0}let dx=0,dy=0;for(const d of held){dx+=DIRS[d][0];dy+=DIRS[d][1]}if(JOY.active&&Math.hypot(JOY.x,JOY.y)>0.2){dx=JOY.x;dy=JOY.y}const L=Math.hypot(dx,dy);if(L){F.ddx=dx/L;F.ddy=dy/L}F.dashT=0.15;F.dashCd=1.0;F.inv=0.26}
+const DASH_AP=20;
+function battleDash(){if(!B||B.tb||B.state!=='fight')return;const F=B.me;if(F.dashCd>0||F.faint>0||F.out||F.st.stun>0||F.st.sleep>0)return;if(!F.ddx&&!F.ddy){F.ddx=F.face>0?-1:1;F.ddy=0}let dx=0,dy=0;for(const d of held){dx+=DIRS[d][0];dy+=DIRS[d][1]}if(JOY.active&&Math.hypot(JOY.x,JOY.y)>0.2){dx=JOY.x;dy=JOY.y}const L=Math.hypot(dx,dy);if(L){F.ddx=dx/L;F.ddy=dy/L}if((F.ap??AP_MAX)<DASH_AP){F.apShake=performance.now();const n=performance.now();if(!B.apMsgT||n-B.apMsgT>1200){B.apMsgT=n;say('Nicht genug AP zum Sprinten!')}return}F.ap=(F.ap??AP_MAX)-DASH_AP;F.dashT=0.15;F.dashCd=1.0;F.inv=0.26}
 function battleSwitch(){if(B&&B.tb){tbSwitchMenu();return}if(!B||B.state!=='fight')return;const F=B.me;if(F.swCd>0||F.faint>0||F.out)return;const n=F.team.findIndex((m,i)=>i>F.a&&m.hp>0);const m=n>=0?n:F.team.findIndex((m,i)=>i!==F.a&&m.hp>0);if(m>=0)doSwitch(F,m)}
 // aiming: hold CAPSULE -> the aim line swings; release to throw. A pulsing ring on the target gives a throw bonus.
 function capPress(){if(!B||B.mode!=='wild'||B.aim)return;if(!(B.state==='fight'||(B.tb&&B.state==='tbChoose'))||B.capCd>0)return;if(RUN.kap<=0&&!B.capGreat){say('Keine Handschellen mehr!');return}B.aim={t0:performance.now()};say('Zielen… loslassen zum Werfen!')}
@@ -2504,7 +2505,7 @@ function buildBattleUI(){
   for(let i=0;i<4;i++){const b=document.createElement('button');b.className='mv';b.dataset.i=i;b.onclick=()=>battleMove(i);b.innerHTML='<span class="cd"></span><span class="lbl"></span>';el.appendChild(b)}
   const row=document.createElement('div');row.className='brow';
   const add=(t,cls,fn,id)=>{const b=document.createElement('button');b.className='btn '+cls;b.textContent=t;b.onclick=fn;if(id)b.id=id;row.appendChild(b)};
-  if(!B.tb)add('SPRINT','ghost',battleDash);add('WECHSELN','ghost',battleSwitch,'bsw');
+  if(!B.tb)add('SPRINT · '+DASH_AP+' AP','ghost',battleDash);add('WECHSELN','ghost',battleSwitch,'bsw');
   if(B.mode==='wild'){add('HALTEN: HANDSCHELLEN','',()=>{},'bcap');add('FLIEHEN','ghost',tryRun)}else if(B.mode!=='trainer')add('AUFGEBEN','red',forfeit);
   add('🎒 BEUTEL','ghost',openBag);add('ℹ ATTACKEN','ghost',()=>{if(B&&B.me)openMonInfo(act(B.me).s,act(B.me))});add('⚙','ghost',openSettings);
   el.appendChild(row);
