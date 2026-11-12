@@ -375,7 +375,7 @@ const TURN_CONFIG = {
 
 /* ===================== VERSION ===================== */
 // bump with every release (MAJOR.MINOR.PATCH). Players can only share lobbies/duels with the same version.
-const VERSION='0.38.1';
+const VERSION='0.38.2';
 function cmpV(a,b){const x=String(a||'0').split('.').map(Number),y=String(b||'0').split('.').map(Number);for(let i=0;i<3;i++){const d=(x[i]||0)-(y[i]||0);if(d)return d}return 0}
 /* ===================== ERROR REPORTING ===================== */
 function showErr(m){try{const b=document.getElementById('errbox');if(!b)return;b.textContent='⚠ Fehler: '+String(m).slice(0,220)+' — bitte an den Entwickler schicken.';b.style.display='block';clearTimeout(showErr.t);showErr.t=setTimeout(()=>b.style.display='none',12000)}catch(e){}}
@@ -1467,6 +1467,10 @@ function startFree(){
   if(G.freeRun){RUN=G.freeRun;RUN.beat=RUN.beat||{};RUN.leg=RUN.leg||{};afterRunChange();toast('Willkommen zurück! Das freie Spiel geht weiter.');return}
   {const sp_=ALT_BASES.filter(x=>RAR[x]!=='rare'),sid=sp_[Math.floor(Math.random()*sp_.length)];RUN={id:'f'+Math.random().toString(36).slice(2,10),free:true,end:0,phase:'train',team:[newMon(sid,START_LV)],box:[],kap:10,money:100,items:{},r:1,st:'free',res:[],beat:{},leg:{},cfg:Object.assign({},DEF_CFG,{alt:SET.alt==='0'?0:1})};G.dex[sid]=1;G.freeRun=RUN;afterRunChange();teleport(30,24);sysChat('Freies Spiel gestartet — dein Team wird gespeichert. Erstelle oder betrete jederzeit eine Lobby.');toast(`Dein zufälliges Start-Monster: ${SPECIES[sid].n}!`)}
 }
+// free play: throw away the free-play team and start over with a new random monster (dex and trophies stay)
+function restartFree(){if(!RUN||!RUN.free||B)return;
+  openModal(`<h3>🎲 NEU ANFANGEN?</h3><p>Dein Team, die Box, Geld, Items, besiegte Cops und Feldfähigkeiten aus dem freien Spiel werden zurückgesetzt. Du bekommst ein neues zufälliges Start-Monster.<br><span class="small">Dex und Trophäen bleiben erhalten.</span></p><div class="acts"><button class="btn ghost" id="mno">ABBRECHEN</button><button class="btn red" id="myes">NEU ANFANGEN</button></div>`);
+  $('#mno').onclick=closeModal;$('#myes').onclick=()=>{closeModal();G.freeRun=null;RUN=null;G.run=null;FIELDGONE.clear();startFree()}}
 function afterRunChange(){save();LOBBY_MIN=true;$('#lobby').dataset.h='';renderLobby();renderTeam();updateHud();pushMt();lastPlr='';renderPlayers()}
 function renderLobby(){
   const el=$('#lobby');
@@ -2775,6 +2779,7 @@ function renderTeam(){
   el.insertAdjacentHTML('beforeend',`<div class="sec">GEBIETE</div><div class="small" style="line-height:1.15">Wilde Monster werden stärker, je weiter du dich von der Stadt entfernst. Jedes Gebiet hat eigene Monster.<br>${Object.values(ZONES).map(z=>`<span style="color:var(--text)">${z.n}</span> · ${z.enc}`).join('<br>')}</div>`);
   const mb=document.createElement('button');mb.className='mini';mb.textContent='🗺 Karte öffnen (M)';mb.style.marginTop='8px';mb.onclick=openMap;el.appendChild(mb);
   const cb=document.createElement('button');cb.className='mini';cb.textContent='⚙ Steuerung';cb.style.marginTop='12px';cb.onclick=openSettings;el.appendChild(cb);
+  if(RUN&&RUN.free){const nb=document.createElement('button');nb.className='mini';nb.textContent='🎲 Neu anfangen…';nb.style.marginTop='12px';nb.style.marginRight='6px';nb.disabled=!!B;nb.onclick=restartFree;el.appendChild(nb)}
   const rb=document.createElement('button');rb.className='mini';rb.textContent='Spielstand löschen…';rb.style.marginTop='12px';rb.onclick=()=>{openModal(`<h3>SPIELSTAND LÖSCHEN?</h3><p>Name, Trophäen und Dex werden aus diesem Browser gelöscht.</p><div class="acts"><button class="btn ghost" id="mno">ABBRECHEN</button><button class="btn red" id="myes">ZURÜCKSETZEN</button></div>`);$('#mno').onclick=closeModal;$('#myes').onclick=()=>{try{localStorage.removeItem(SAVE_KEY)}catch(e){}location.reload()}};el.appendChild(rb);
 }
 let lastPlr='';
