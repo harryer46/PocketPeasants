@@ -375,7 +375,7 @@ const TURN_CONFIG = {
 
 /* ===================== VERSION ===================== */
 // bump with every release (MAJOR.MINOR.PATCH). Players can only share lobbies/duels with the same version.
-const VERSION='0.38.2';
+const VERSION='0.38.3';
 function cmpV(a,b){const x=String(a||'0').split('.').map(Number),y=String(b||'0').split('.').map(Number);for(let i=0;i<3;i++){const d=(x[i]||0)-(y[i]||0);if(d)return d}return 0}
 /* ===================== ERROR REPORTING ===================== */
 function showErr(m){try{const b=document.getElementById('errbox');if(!b)return;b.textContent='⚠ Fehler: '+String(m).slice(0,220)+' — bitte an den Entwickler schicken.';b.style.display='block';clearTimeout(showErr.t);showErr.t=setTimeout(()=>b.style.display='none',12000)}catch(e){}}
@@ -676,7 +676,7 @@ function vnoise(seed,cell){
 const WALK=WALK0;
 /* ===================== SIGNPOSTS ===================== */
 // wooden signs like in the originals: at the town exits, on both sides of every pass and in the town centre; biome name, direction, recommended level
-const SIGNS=[],SIGNSET=new Set(),BNAME=['Coptown','Nordwiese','Ostwald','Südküste','Westhügel'];
+const SIGNS=[],SIGNSET=new Set(),BNAME=['Villingen-Knastningen','Nordwiese','Ostwald','Südküste','Westhügel'];
 /* ===================== FIELD SKILLS (like the HMs of the originals) ===================== */
 // taught only by the harder trainers: CUT (Rita), SWIM (Sue), STRENGTH (Hank), FLY (Axel)
 const HM={cut:{n:'ZERSCHNEIDER',i:'✂',from:'rita',d:'Fällt die Bäumchen, die eine Abkürzung von der Stadt in den Ostwald verstecken.'},swim:{n:'SURFER',i:'🌊',from:'sue',d:'Schwimm über Seen und Flüsse.'},
@@ -717,8 +717,8 @@ function walkable(x,y){const t=tget(x,y);return(WALK.has(t)||(t===3&&hasHM('swim
   near(30,26,0,{kind:'town'});
   for(const sg of SIGNS){if(sg.to==null)continue;const c=cen[sg.to];if(c){const a=Math.atan2(c.y-sg.y,c.x-sg.x),k=Math.round(a/(Math.PI/4));sg.arrow=['→','↘','↓','↙','←','↖','↑','↗'][(k+8)%8]}sg.lv=lv[sg.to]?[Math.max(1,lv[sg.to][0]-1),lv[sg.to][1]]:[1,1]}
 })();
-function signShort(sg){return sg.kind==='town'?'Coptown':`${sg.arrow||''} ${BNAME[sg.to]} · Lv ${sg.lv[0]}–${sg.lv[1]}`}
-function signText(sg){if(sg.kind==='town')return`<b>COPTOWN</b><br>„Schnapp sie dir alle — und ab vors Gericht!“<br>🚓 Dienststelle (rotes Dach) · ⚖ Gericht (lila Dach) · 🛒 Budget-Markt: LADEN im Menü<br>Wiese ↑ und Küste ↓ sind offen. Wald und Hügel liegen dahinter.`;
+function signShort(sg){return sg.kind==='town'?'Villingen-Knastningen':`${sg.arrow||''} ${BNAME[sg.to]} · Lv ${sg.lv[0]}–${sg.lv[1]}`}
+function signText(sg){if(sg.kind==='town')return`<b>VILLINGEN-KNASTNINGEN</b><br>„Schnapp sie dir alle — und ab vors Gericht!“<br>🚓 Dienststelle (rotes Dach) · ⚖ Gericht (lila Dach) · 🛒 Budget-Markt: LADEN im Menü<br>Wiese ↑ und Küste ↓ sind offen. Wald und Hügel liegen dahinter.`;
   const z=BKEYS[sg.to],pool=z?poolOf(z):[],mons=pool.map(s=>G&&G.dex&&G.dex[s]!==undefined?SPECIES[s].n:'???').join(', ');
   const head=`<b>${sg.arrow||''} ${BNAME[sg.to].toUpperCase()}</b> · empfohlen Lv${sg.lv[0]}–${sg.lv[1]}`;
   if(sg.kind==='wall')return`${head}<br>${sg.to===2?'Die Baumreihe':'Die Klippen'} versperren hier den Weg.<br>Geh durch ${BNAME[sg.via]} — auf der anderen Seite gibt es einen Durchgang.`;
@@ -1242,7 +1242,7 @@ const BIO_C=(()=>{const acc={};for(let y=0;y<MH;y++)for(let x=0;x<MW;x++){const 
 function mapOpen(){return $('#mapov').classList.contains('on')}
 function openMap(){if(B)return;$('#mapov').classList.add('on');held.length=0;drawMap();renderMapLegend();renderFly()}
 // FLY: quick travel to town or a signpost
-function flySpots(){const out=[{n:'Coptown',x:30,y:24}];for(const sg of SIGNS){if(sg.kind==='town')continue;for(const[dx,dy]of[[0,1],[1,0],[-1,0],[0,-1]])if(walkable(sg.x+dx,sg.y+dy)){out.push({n:`Schild ${BNAME[sg.to]} (${BNAME[BIOME[sg.y*MW+sg.x]]||'Stadt'})`,x:sg.x+dx,y:sg.y+dy});break}}return out}
+function flySpots(){const out=[{n:'Villingen-Knastningen',x:30,y:24}];for(const sg of SIGNS){if(sg.kind==='town')continue;for(const[dx,dy]of[[0,1],[1,0],[-1,0],[0,-1]])if(walkable(sg.x+dx,sg.y+dy)){out.push({n:`Schild ${BNAME[sg.to]} (${BNAME[BIOME[sg.y*MW+sg.x]]||'Stadt'})`,x:sg.x+dx,y:sg.y+dy});break}}return out}
 function renderFly(){let el=$('#flybar');if(!el){el=document.createElement('div');el.id='flybar';el.style.cssText='margin:8px 0;display:flex;flex-wrap:wrap;gap:6px;justify-content:center';const mb=$('#mapov .mapbox')||$('#mapov').firstElementChild;mb.insertBefore(el,mb.children[1]||null)}
   if(!hasHM('fly')||!RUN||RUN.phase==='arena'){el.innerHTML='';return}
   el.innerHTML=`<span class="small" style="align-self:center">🕊 FLIEGEN nach:</span>`+flySpots().map((f,i)=>`<button class="btn ghost" data-fly="${i}" style="font-family:VT323,monospace;font-size:17px;padding:3px 8px">${esc(f.n)}</button>`).join('');
