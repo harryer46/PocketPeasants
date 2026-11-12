@@ -346,7 +346,7 @@ const TURN_CONFIG = {
 
 /* ===================== VERSION ===================== */
 // bump with every release (MAJOR.MINOR.PATCH). Players can only share lobbies/duels with the same version.
-const VERSION='0.31.0';
+const VERSION='0.32.0';
 function cmpV(a,b){const x=String(a||'0').split('.').map(Number),y=String(b||'0').split('.').map(Number);for(let i=0;i<3;i++){const d=(x[i]||0)-(y[i]||0);if(d)return d}return 0}
 /* ===================== ERROR REPORTING ===================== */
 function showErr(m){try{const b=document.getElementById('errbox');if(!b)return;b.textContent='⚠ Error: '+String(m).slice(0,220)+' — please send this to the developer.';b.style.display='block';clearTimeout(showErr.t);showErr.t=setTimeout(()=>b.style.display='none',12000)}catch(e){}}
@@ -1649,7 +1649,7 @@ function shotParams0(mid){const mv=MOVES[mid]||MOVES.bump;const k=mv.k||(mv.t===
 function cdOf(mid){const mv=MOVES[mid]||MOVES.bump;const base=mv.cd||(mv.k==='self'?7:mv.k==='big'?2.6:0.45+mv.p/62);return mv.k==='melee'||mv.k==='self'?base:base*1.2}
 // AP: one pool per fighter for every attack. Strong moves cost more, weak ones little; AP refill over time (real-time) or per turn (turn-based)
 const AP_MAX=100,AP_REGEN=13,TB_AP_REGEN=30;
-function apCost(mid){const mv=MOVES[mid]||MOVES.bump;if(mv.k==='self')return 22;return Math.max(8,Math.round((mv.p||30)*0.34*(mv.k==='melee'?0.8:1)))}
+function apCost(mid){const mv=MOVES[mid]||MOVES.bump;if(mv.k==='self')return 34;return Math.min(AP_MAX,Math.max(13,Math.round((mv.p||30)*0.55*(mv.k==='melee'?0.8:1))))}
 function moveDesc(mid){const mv=MOVES[mid];const k={melee:'melee',shot:'ranged',spread:'spread',multi:'rapid',big:'heavy',self:'self'}[mv.k]||'ranged';return`${TYPES[mv.t].n} · ${k}${mv.p?' · '+mv.p:''}${mv.fx?' · '+FX_TXT[mv.fx]:''} · ${apCost(mid)} AP`}
 function calcDmg(att,def,mid,p){const mv=MOVES[mid]||MOVES.bump;const e=eff(mv.t,SPECIES[def.s].t);let d=((2*att.l/5+2)*p*att.atk/Math.max(1,def.def))/50+2;d*=(mv.t===SPECIES[att.s].t?1.5:1)*e*(0.85+Math.random()*0.15)*0.55;return{d:e===0?0:Math.max(1,Math.round(d)),e}}
 function say(t){if(!B)return;if(/grew to Lv/.test(t))B.lvlFx=performance.now();if(/evolved into/.test(t))B.evoFx=performance.now();B.log.push({t,at:performance.now()});if(B.log.length>3)B.log.shift()}
