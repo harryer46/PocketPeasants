@@ -346,7 +346,7 @@ const TURN_CONFIG = {
 
 /* ===================== VERSION ===================== */
 // bump with every release (MAJOR.MINOR.PATCH). Players can only share lobbies/duels with the same version.
-const VERSION='0.29.0';
+const VERSION='0.30.0';
 function cmpV(a,b){const x=String(a||'0').split('.').map(Number),y=String(b||'0').split('.').map(Number);for(let i=0;i<3;i++){const d=(x[i]||0)-(y[i]||0);if(d)return d}return 0}
 /* ===================== ERROR REPORTING ===================== */
 function showErr(m){try{const b=document.getElementById('errbox');if(!b)return;b.textContent='⚠ Error: '+String(m).slice(0,220)+' — please send this to the developer.';b.style.display='block';clearTimeout(showErr.t);showErr.t=setTimeout(()=>b.style.display='none',12000)}catch(e){}}
@@ -882,7 +882,7 @@ function openSettings(){
   if(mob)h+=`<div class="lbl2">D-PAD SIZE</div><div class="seg">${segBtn('dp','s','SMALL',SET.dp)}${segBtn('dp','m','MEDIUM',SET.dp)}${segBtn('dp','l','LARGE',SET.dp)}</div><div class="lbl2">D-PAD SIDE</div><div class="seg">${segBtn('side','left','LEFT',SET.side)}${segBtn('side','right','RIGHT',SET.side)}</div><div class="small" style="text-align:left;margin-bottom:10px">Tip: in battles you can also hold your finger on the arena to walk there.</div>`;
   else{h+=`<div class="lbl2">KEY BINDINGS</div><div class="krow"><span>Move</span><span class="small">WASD (world: also arrows)</span></div><div class="krow"><span>Aim (battle)</span><span class="small">Arrow keys</span></div>`;
     for(const k of Object.keys(DEF_KEYS))h+=`<div class="krow"><span>${KEY_NAMES[k]}</span><button class="btn ghost" data-key="${k}">${capturing===k?'PRESS KEY…':keyLabel(SET.keys[k])}</button></div>`;}
-  h+=`<div class="lbl2">AIMING (FREE PLAY)</div><div class="seg">${segBtn('aim','0','🎯 MANUAL',SET.aim==='1'?'1':'0')}${segBtn('aim','1','AUTO-AIM',SET.aim==='1'?'1':'0')}</div>`;
+  h+=`<div class="lbl2">AIMING (FREE PLAY)</div><div class="seg">${segBtn('aim','0','8 DIRECTIONS',SET.aim||'0')}${segBtn('aim','2','FREE 360°',SET.aim||'0')}${segBtn('aim','1','AUTO-AIM',SET.aim||'0')}</div>`;
   h+=`<div class="lbl2">MONSTER SET (FREE PLAY)</div><div class="seg">${segBtn('alt','1','★ ALTERNATIVE',SET.alt==='0'?'0':'1')}${segBtn('alt','0','CLASSIC',SET.alt==='0'?'0':'1')}</div><div class="small" style="text-align:left;margin:-6px 0 10px">Lobbies choose their own set when they are created.</div>`;
   if(typeof netSettingsHtml==='function')h+=netSettingsHtml();
   h+=`<div class="acts" style="margin-top:12px"><button class="btn ghost" id="sreset">RESET</button><button class="btn" id="sdone">DONE</button></div>`;
@@ -1299,8 +1299,8 @@ function bagUse(key){if(!B)return;const[k,ix]=key.split(':'),F=B.me,a=act(F);if(
   if(B.tb){B.state='tbPlay';setTimeout(()=>{if(B&&B.state==='tbPlay')tbRun(null)},500)}}
 function cfgOf(){return(RUN&&RUN.cfg)||DEF_CFG}
 function sanitizeCfg(c){c=c&&typeof c==='object'?c:{};const n=(v,d,a,b)=>Number.isFinite(+v)&&v!==''&&v!=null?clamp(Math.floor(+v),a,b):d;
-  return{name:String(c.name||'').replace(/[\u0000-\u001f<>]/g,'').trim().slice(0,24),dur:n(c.dur,10,1,60),rounds:n(c.rounds,3,1,7),team:n(c.team,3,1,6),kap:n(c.kap,10,0,50),xp:[1,2,3].includes(+c.xp)?+c.xp:1,enc:[0.6,1,1.6].includes(+c.enc)?+c.enc:1,leg:+c.leg===0?0:1,tb:+c.tb===1?1:0,alt:+c.alt===0?0:1,aim:+c.aim===1?1:0,money:n(c.money,100,0,5000),host:typeof c.host==='string'?c.host.slice(0,40):''}}
-function cfgSummary(c){return`${c.tb?'turn-based':'real-time'} · ${c.rounds} round${c.rounds>1?'s':''} · team of ${c.team}${c.xp>1?` · ${c.xp}× XP`:''}${c.enc!==1?(c.enc>1?' · many encounters':' · few encounters'):''}${c.leg?'':' · no legendaries'} · ${c.kap} capsules · $${c.money??100} · ${c.aim===1?'auto-aim':'manual aim'} · ${c.alt===0?'classic':'alternative'} monsters`}
+  return{name:String(c.name||'').replace(/[\u0000-\u001f<>]/g,'').trim().slice(0,24),dur:n(c.dur,10,1,60),rounds:n(c.rounds,3,1,7),team:n(c.team,3,1,6),kap:n(c.kap,10,0,50),xp:[1,2,3].includes(+c.xp)?+c.xp:1,enc:[0.6,1,1.6].includes(+c.enc)?+c.enc:1,leg:+c.leg===0?0:1,tb:+c.tb===1?1:0,alt:+c.alt===0?0:1,aim:[0,1,2].includes(+c.aim)?+c.aim:0,money:n(c.money,100,0,5000),host:typeof c.host==='string'?c.host.slice(0,40):''}}
+function cfgSummary(c){return`${c.tb?'turn-based':'real-time'} · ${c.rounds} round${c.rounds>1?'s':''} · team of ${c.team}${c.xp>1?` · ${c.xp}× XP`:''}${c.enc!==1?(c.enc>1?' · many encounters':' · few encounters'):''}${c.leg?'':' · no legendaries'} · ${c.kap} capsules · $${c.money??100} · ${c.aim===1?'auto-aim':c.aim===2?'free aim 360°':'8-direction aim'} · ${c.alt===0?'classic':'alternative'} monsters`}
 function runningMatches(){const seen=new Map();for(const p of others()){const mt=p.presence.mt;if(!mt||typeof mt.id!=='string'||mt.id.length>=40||(RUN&&RUN.id===mt.id))continue;
   const open=mt.st==='lobby'||(mt.st==='train'&&+mt.end>Date.now()+10000);if(!open)continue;
   const e=seen.get(mt.id)||{id:mt.id,end:+mt.end||0,names:[],cfg:sanitizeCfg(mt.cfg),waiting:true,v:String(p.presence.v||'old').slice(0,12)};e.names.push(cleanName(p.presence.n));if(mt.st==='train'){e.waiting=false;e.end=Math.max(e.end,+mt.end)}seen.set(mt.id,e)}return[...seen.values()]}
@@ -1339,7 +1339,7 @@ function openCreate(){
    ${row('Lobby name',`<input id="cname" maxlength="24" placeholder="optional" value="${esc(c.name)}" style="width:100%;background:#0b0d16;border:2px solid #000;color:var(--text);font-family:inherit;font-size:18px;padding:2px 6px">`)}
    ${row('Monster set',sel('calt',[[1,'★ Alternative'],[0,'Classic']],c.alt))}
    ${row('Battle style',sel('ctb',[[0,'⚡ Real-time'],[1,'⏳ Turn-based']],c.tb))}
-   ${row('Aiming',sel('caim',[[0,'🎯 Manual (8 directions)'],[1,'Auto-aim']],c.aim||0))}
+   ${row('Aiming',sel('caim',[[0,'🎯 Manual (8 directions)'],[2,'🎯 Free (360°)'],[1,'Auto-aim']],c.aim||0))}
    ${row('Training time (min)',num('cdur',c.dur,1,60))}
    ${row('Arena rounds (Swiss)',sel('crounds',[1,2,3,4,5,6,7].map(v=>[v,v+(v===3?' (default)':'')]),c.rounds))}
    ${row('Monsters per arena fight',sel('cteam',[1,2,3,4,5,6].map(v=>[v,v]),c.team))}
@@ -1737,9 +1737,10 @@ function drainHeal(s,d){if(MOVES[s.mid].fx!=='drain'||!d)return;const A=s.side==
 function burst(x,y,col,n){for(let i=0;i<n;i++){const a=Math.random()*6.28,s=30+Math.random()*60;B.parts.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:0.35+Math.random()*0.25,age:0,c:col})}}
 // manual aiming (no auto-aim): arrow keys on PC, drag on an attack button on phones; the direction is kept until changed
 function myAim(){if(autoAimOn()&&B.foe){const dx=B.foe.x-B.me.x,dy=(B.foe.y-12)-(B.me.y-14),L=Math.hypot(dx,dy)||1;return{x:dx/L,y:dy/L}}if(!B.aimV){const T=B.foe;setAim(T?T.x-B.me.x:0,T?T.y-B.me.y:-1)}return B.aimV}
-function setAim(x,y){if(Math.hypot(x,y)<0.001)return;const a=Math.round(Math.atan2(y,x)/(Math.PI/4))*(Math.PI/4);B.aimV={x:Math.cos(a),y:Math.sin(a)}}
-// auto-aim (lobby option / setting for free play): attacks fly at the opponent like before
-function autoAimOn(){const c=RUN&&RUN.cfg;if(RUN&&!RUN.free&&c)return c.aim===1;return SET.aim==='1'}
+// aiming mode (lobby option / setting for free play): 0 = manual in 8 directions, 2 = free 360°, 1 = auto-aim
+function aimMode(){const c=RUN&&RUN.cfg;if(RUN&&!RUN.free&&c)return[0,1,2].includes(c.aim)?c.aim:0;return SET.aim==='1'?1:SET.aim==='2'?2:0}
+function autoAimOn(){return aimMode()===1}
+function setAim(x,y){if(Math.hypot(x,y)<0.001)return;let a=Math.atan2(y,x);if(aimMode()===0)a=Math.round(a/(Math.PI/4))*(Math.PI/4);B.aimV={x:Math.cos(a),y:Math.sin(a)}}
 function controlMe(dt){
   if(aimHeld.length&&!B.tb){let ax=0,ay=0;for(const d of aimHeld){ax+=DIRS[d][0];ay+=DIRS[d][1]}if(ax||ay)setAim(ax,ay)}
   const F=B.me;if(F.out||F.faint>0||F.st.stun>0||B.aim){F.vx=F.vy=0;return}
@@ -2077,7 +2078,7 @@ function buildBattleUI(){
   el.appendChild(row);
   const K=SET.keys;
   if(B.tb)el.insertAdjacentHTML('beforeend',`<div class="keys">Turn-based · pick an action: attacks ${['a1','a2','a3','a4'].map(a=>keyLabel(K[a])).join('/')} · Switch: ${keyLabel(K.sw)}${B.mode==='wild'?` · Capsule: ${keyLabel(K.cap)} · Run: ${keyLabel(K.run)}`:''}</div>`);else
-  el.insertAdjacentHTML('beforeend',`<div class="keys">Move: WASD (or hold on the arena) · Aim: arrow keys · Attacks: ${['a1','a2','a3','a4'].map(a=>keyLabel(K[a])).join('/')} · Dash: ${keyLabel(K.dash)} · Switch: ${keyLabel(K.sw)}${B.mode==='wild'?` · Capsule: ${keyLabel(K.cap)} · Run: ${keyLabel(K.run)}`:''}</div>`);
+  el.insertAdjacentHTML('beforeend',`<div class="keys">Move: WASD (or hold on the arena) · Aim: arrow keys (free mode: also the mouse) · Attacks: ${['a1','a2','a3','a4'].map(a=>keyLabel(K[a])).join('/')} · Dash: ${keyLabel(K.dash)} · Switch: ${keyLabel(K.sw)}${B.mode==='wild'?` · Capsule: ${keyLabel(K.cap)} · Run: ${keyLabel(K.run)}`:''}</div>`);
   const cb=$('#bcap');if(cb){cb.onclick=null;cb.addEventListener('pointerdown',e=>{e.preventDefault();capPress()});['pointerup','pointerleave','pointercancel'].forEach(ev=>cb.addEventListener(ev,()=>capRelease()))}
   placeDpad();
   B.uiKey='';
@@ -2117,7 +2118,7 @@ function updateCam(now){const C=B.cam||(B.cam={x:AW/2,y:CAMY,z:1,t:now});const d
 function w2s(x,y){const C=B.cam||{x:AW/2,y:CAMY,z:1};return[(x-C.x)*C.z+AW/2,(y-C.y)*C.z+CAMY]}
 function toArena(e){const r=bcv.getBoundingClientRect(),C=B.cam||{x:AW/2,y:CAMY,z:1};const sx=(e.clientX-r.left)/r.width*AW,sy=(e.clientY-r.top)/r.height*AH;return{x:C.x+(sx-AW/2)/C.z,y:C.y+(sy-CAMY)/C.z+18/C.z}}
 bcv.addEventListener('pointerdown',e=>{if(!B||isMob())return;bcv.setPointerCapture(e.pointerId);B.ptr=toArena(e)});
-bcv.addEventListener('pointermove',e=>{if(B&&B.ptr)B.ptr=toArena(e)});
+bcv.addEventListener('pointermove',e=>{if(B&&B.ptr)B.ptr=toArena(e);if(B&&!B.tb&&!isMob()&&aimMode()===2&&B.me){const p=toArena(e);setAim(p.x-B.me.x,p.y-18/((B.cam&&B.cam.z)||1)-(B.me.y-14))}});
 ['pointerup','pointercancel'].forEach(ev=>bcv.addEventListener(ev,()=>{if(B)B.ptr=null}));
 const BBG={};
 function battleBG(z){if(BBG[z])return BBG[z];const W=AW/2,H=AH/2,cv=mk(W,H),c=cv.getContext('2d'),id=c.createImageData(W,H),d=id.data;
