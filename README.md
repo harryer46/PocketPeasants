@@ -1,6 +1,7 @@
-# Pocket Peasants — Budget Edition™
+# Knastémon
 
-Multiplayer-Monster-Browserspiel (Pixelart, Echtzeitkämpfe, Match-Modus mit Arena-Turnier).
+Multiplayer-Monster-Browserspiel im Polizei-Look (Pixelart, Echtzeitkämpfe, Match-Modus mit Gerichtsturnier).
+Die Monster sind Paragraphen aus PolG, Grundgesetz und StGB.
 Alles steckt in **einer Datei: `index.html`** – kein Server, keine Kosten.
 
 ## Spielen
@@ -35,7 +36,7 @@ Diesen Link an Freunde schicken – fertig. Kein Claude-Konto nötig.
 - **Private Runde:** `…/PocketPeasants/?room=meinefreunde` – nur wer denselben Raumnamen nutzt,
   sieht sich. (Geht auch im Tab *Spieler* über „RAUM BETRETEN“.)
 - Das Finden kann ein paar Sekunden dauern. In sehr strengen Firmen- oder Schulnetzen
-  kann WebRTC blockiert sein – dann läuft das Spiel solo (Arena gegen Champion-Bot).
+  kann WebRTC blockiert sein – dann läuft das Spiel solo (Gericht gegen Richter-Bot).
 
 ## TURN-Ausweichserver (nur falls sich Spieler nicht sehen)
 
@@ -67,19 +68,19 @@ Im Tab *Spieler* steht bei jedem Mitspieler der **Ping** (grün < 80 ms, gelb < 
 ## Spielablauf
 
 1. **Lobby erstellen oder beitreten** (Tab *LOBBY* oder unten auf der Karte). Der Ersteller ist Host (★) und startet das Spiel, wenn alle da sind.
-   Host-Steuerung: Spiel starten, Arena für alle starten, +5 Minuten.
-   **Lobby-Parameter:** Kampfstil (Echtzeit oder rundenbasiert), Name, Trainingszeit (1–60 Min.), Arena-Runden, Monster pro Kampf, Kapseln, EP-Bonus, Begegnungsrate, Legendäre an/aus.
-   Die Arena startet, wenn der Timer abläuft – oder (ab 2 Spielern) sobald alle in die Arena gegangen sind. Bis dahin: „Warte auf andere Spieler“, Rückkehr ins Training möglich.
-   Turnier im **Schweizer System** mit Rangliste (Punkte, Buchholz). Ungerade Spielerzahl → Arena-Bot.
+   Host-Steuerung: Spiel starten, Gericht für alle eröffnen, +5 Minuten.
+   **Lobby-Parameter:** Kampfstil (Echtzeit oder rundenbasiert), Name, Trainingszeit (1–60 Min.), Verhandlungsrunden, Monster pro Kampf, Kapseln, EP-Bonus, Begegnungsrate, Legendäre an/aus.
+   Das Gericht tagt, wenn der Timer abläuft – oder (ab 2 Spielern) sobald alle ins Gericht gegangen sind. Bis dahin: „Warte auf andere Spieler“, Rückkehr ins Training möglich.
+   Turnier im **Schweizer System** mit Rangliste (Punkte, Buchholz). Ungerade Spielerzahl → Freilos.
 2. **Freies Spiel:** Ohne Match einfach losspielen – dein Team aus dem freien Spiel wird gespeichert.
    **Lobby:** Match starten (3 / 5 / 10 Min.) oder einem laufenden beitreten → frischer Starter.
-2. **Training:** Im hohen Gras wilde Monster bekämpfen und fangen (Kapseln werfen!).
-   Rotes Dach = Heilzentrum. Im Tab *Spieler* kannst du andere Trainierende direkt
+2. **Streife:** Im hohen Gras wilde Monster bekämpfen und fangen (Kapseln werfen!).
+   Rotes Dach = Dienststelle. Im Tab *Spieler* kannst du andere Trainierende direkt
    zum **Freundschaftskampf** herausfordern (Gewinner bekommt EP).
-3. **Arena:** Wenn der Timer abläuft, K.-o.-Turnier in Echtzeit. Ungerade Spielerzahl → Champion-Bot.
+3. **Gericht:** Wenn der Timer abläuft, Turnier in Echtzeit. Ungerade Spielerzahl → Freilos.
 4. **Rematch:** Danach „NEUE LOBBY (GLEICHE EINSTELLUNGEN)“ – die anderen sehen „REVANCHE-LOBBY BEITRETEN“.
 
-**Karte (M):** Biome, Level-Ringe, Trainer, Schreine, Spieler.
+**Karte (M):** Biome, Level-Ringe, Cops, Schreine, Spieler.
 **Biome:** Nordwiese (hohes Gras), Ostwald (Farne), Südküste (Schilf), Westhügel (Geröll) – jedes mit eigenen Monstern. Je weiter von Sparhausen, desto stärker.
 
 **Fangen:** Kapsel-Taste gedrückt halten → Ziellinie schwingt → loslassen zum Werfen. Ring am Ziel klein = Bonus. Bis zu 3 Wackler – wenig KP und schwaches Monster = hohe Chance.
