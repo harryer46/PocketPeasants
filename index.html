@@ -350,7 +350,7 @@ const TURN_CONFIG = {
 
 /* ===================== VERSION ===================== */
 // bump with every release (MAJOR.MINOR.PATCH). Players can only share lobbies/duels with the same version.
-const VERSION='0.34.0';
+const VERSION='0.35.0';
 function cmpV(a,b){const x=String(a||'0').split('.').map(Number),y=String(b||'0').split('.').map(Number);for(let i=0;i<3;i++){const d=(x[i]||0)-(y[i]||0);if(d)return d}return 0}
 /* ===================== ERROR REPORTING ===================== */
 function showErr(m){try{const b=document.getElementById('errbox');if(!b)return;b.textContent='⚠ Fehler: '+String(m).slice(0,220)+' — bitte an den Entwickler schicken.';b.style.display='block';clearTimeout(showErr.t);showErr.t=setTimeout(()=>b.style.display='none',12000)}catch(e){}}
@@ -1689,8 +1689,8 @@ function shotParams0(mid){const mv=MOVES[mid]||MOVES.bump;const k=mv.k||(mv.t===
   return{sp:178-mv.p,life:2.4,r:3+mv.p/25,p:mv.p,n:1}}
 function cdOf(mid){const mv=MOVES[mid]||MOVES.bump;const base=mv.cd||(mv.k==='self'?7:mv.k==='big'?2.6:0.45+mv.p/62);return mv.k==='melee'||mv.k==='self'?base:base*1.2}
 // AP: one pool per fighter for every attack. Strong moves cost more, weak ones little; AP refill over time (real-time) or per turn (turn-based)
-const AP_MAX=100,AP_REGEN=13,TB_AP_REGEN=30;
-function apCost(mid){const mv=MOVES[mid]||MOVES.bump;if(mv.k==='self')return 34;return Math.min(AP_MAX,Math.max(13,Math.round((mv.p||30)*0.55*(mv.k==='melee'?0.8:1))))}
+const AP_MAX=100,AP_REGEN=8,TB_AP_REGEN=30;
+function apCost(mid){const mv=MOVES[mid]||MOVES.bump;if(mv.k==='self')return 45;return Math.min(AP_MAX,Math.max(18,Math.round((mv.p||30)*0.8*(mv.k==='melee'?0.8:1))))}
 function moveDesc(mid){const mv=MOVES[mid];const k={melee:'Nahkampf',shot:'Fernkampf',spread:'Fächer',multi:'Salve',big:'schwer',self:'selbst'}[mv.k]||'Fernkampf';return`${TYPES[mv.t].n} · ${k}${mv.p?' · '+mv.p:''}${mv.fx?' · '+FX_TXT[mv.fx]:''} · ${apCost(mid)} AP`}
 function calcDmg(att,def,mid,p){const mv=MOVES[mid]||MOVES.bump;const e=eff(mv.t,SPECIES[def.s].t);let d=((2*att.l/5+2)*p*att.atk/Math.max(1,def.def))/50+2;d*=(mv.t===SPECIES[att.s].t?1.5:1)*e*(0.85+Math.random()*0.15)*0.55;return{d:e===0?0:Math.max(1,Math.round(d)),e}}
 function say(t){if(!B)return;if(/erreicht Lv/.test(t))B.lvlFx=performance.now();if(/entwickelt!/.test(t))B.evoFx=performance.now();B.log.push({t,at:performance.now()});if(B.log.length>3)B.log.shift()}
@@ -2015,7 +2015,7 @@ function throwCap(){capPress()}
 function throwCapOld(){if(!B||B.mode!=='wild'||B.state!=='fight'||B.capCd>0)return;if(RUN.kap<=0){say('Keine Kapseln mehr!');return}
   RUN.kap--;B.capCd=1.2;updateHud();const F=B.me,T=B.foe;let dx=T.x-F.x,dy=(T.y-12)-(F.y-12);const L=Math.hypot(dx,dy)||1;
   B.shots.push({cap:1,side:F.side,x:F.x,y:F.y-14,vx:dx/L*190,vy:dy/L*190,age:0,life:1.6,r:6,mid:'bump',flight:L/190});say('Kapsel geworfen!')}
-function tryRun(){if(B&&B.tb){tbChoose({k:'run'});return}if(!B||B.state!=='fight'||B.mode!=='wild')return;if(Math.hypot(B.me.x-B.foe.x,B.me.y-B.foe.y)>=160){B.state='flee';B.fleeT=performance.now();B.me.face=-1;B.shots=[];say('Erfolgreich geflohen!')}else say('Zu nah zum Fliehen! Geh etwas auf Abstand.')}
+function tryRun(){if(B&&B.tb){tbChoose({k:'run'});return}if(!B||B.state!=='fight'||B.mode!=='wild')return;if(Math.hypot(B.me.x-B.foe.x,B.me.y-B.foe.y)>=120){B.state='flee';B.fleeT=performance.now();B.me.face=-1;B.shots=[];say('Erfolgreich geflohen!')}else say('Zu nah zum Fliehen! Geh etwas auf Abstand.')}
 function fleeUpdate(dt){const F=B.me;F.y+=150*dt;if(Math.random()<0.5)B.parts.push({x:F.x,y:F.y-8,vx:(Math.random()-.5)*20,vy:-20-Math.random()*15,life:0.4,age:0,c:'#e8dcc0'});
   for(const p of B.parts){p.age+=dt;p.x+=p.vx*dt;p.y+=p.vy*dt}B.parts=B.parts.filter(p=>p.age<p.life);
   if(F.y>AH+50&&!B.fleeDone){B.fleeDone=true;endWild()}}
