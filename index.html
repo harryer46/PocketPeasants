@@ -382,7 +382,7 @@ const TURN_CONFIG = {
 
 /* ===================== VERSION ===================== */
 // bump with every release (MAJOR.MINOR.PATCH). Players can only share lobbies/duels with the same version.
-const VERSION='0.45.0';
+const VERSION='0.46.0';
 // access password: only its hash is stored here; the password itself also keys the P2P room, so clients without it cannot connect
 const PW_KEY='knast_pw',PW_H=2361915375,MAX_ROOM=10,MAX_LOBBY=5;
 function pwHash(s){let h=2166136261;s='knast:'+s;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
@@ -3037,9 +3037,24 @@ function openDex(){const ids=rosterIds();
   document.querySelectorAll('[data-dx]').forEach(b=>{const s=b.dataset.dx,cx=b.querySelector('canvas').getContext('2d');cx.imageSmoothingEnabled=false;if(G.dex[s]!==undefined)cx.drawImage(monSprite(s,24),0,0,52,52);else{cx.globalAlpha=0.3;cx.filter='brightness(0)';cx.drawImage(monSprite(s,24),0,0,52,52)}
     b.onclick=()=>{if(G.dex[s]===undefined){toast('Noch nicht gesehen — geh auf Entdeckungstour!');return}openMonInfo(s,null,true)}});
   $('#mok').onclick=closeModal}
+function openProfile(){if(!G)return;let sx=G.sex==='f'?'f':'m',col=G.color;
+  const render=()=>{openModal(`<h3>✏ PROFIL</h3><div style="display:flex;gap:12px;align-items:center;justify-content:center;margin-bottom:8px"><canvas id="pfprev" width="18" height="28" style="width:54px;height:84px;image-rendering:pixelated"></canvas>
+    <div style="text-align:left"><div class="small">NAME</div><input id="pfname" maxlength="16" value="${esc(G.name)}" style="width:190px;background:#0b0d16;border:2px solid #000;color:var(--text);font-family:inherit;font-size:19px;padding:3px 6px">
+    <div style="display:flex;gap:6px;margin-top:6px"><button class="btn ${sx==='m'?'green':'ghost'}" data-psx="m" style="font-size:9px;padding:6px 8px">BEAMTER</button><button class="btn ${sx==='f'?'green':'ghost'}" data-psx="f" style="font-size:9px;padding:6px 8px">BEAMTIN</button></div>
+    <div class="colors" style="margin-top:6px">${COLORS.map(c=>`<button data-pcol="${c}" class="${c===col?'sel':''}" style="background:${c}"></button>`).join('')}</div></div></div>
+    <div class="acts"><button class="btn ghost" id="mno">ABBRECHEN</button><button class="btn" id="myes">SPEICHERN</button></div>`);
+    const pc=$('#pfprev').getContext('2d');pc.clearRect(0,0,18,28);pc.drawImage(charSprite(col,'down',0,sx),0,0);
+    const inp=$('#pfname');const keep=()=>{G._pfn=inp.value};
+    document.querySelectorAll('[data-psx]').forEach(b=>b.onclick=()=>{keep();sx=b.dataset.psx;render();$('#pfname').value=G._pfn})
+    ;document.querySelectorAll('[data-pcol]').forEach(b=>b.onclick=()=>{keep();col=b.dataset.pcol;render();$('#pfname').value=G._pfn});
+    $('#mno').onclick=()=>{delete G._pfn;closeModal()};
+    const go=()=>{const nm=cleanName(inp.value);const old=G.name;G.name=nm;G.sex=sx;G.color=col;delete G._pfn;if(G.freeRun===undefined){}save();closeModal();pushFull();renderTeam();if(old!==nm)sysChat(`Du heißt jetzt ${nm}.`);toast('Profil gespeichert.')};
+    $('#myes').onclick=go;inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();e.stopPropagation();go()}});inp.focus()};
+  render()}
 function renderTeam(){
   if(!G)return;const el=$('#pane-team');el.innerHTML='';
-  el.insertAdjacentHTML('beforeend',`<div class="stats"><div class="stat">Beamter<b style="color:${G.color}">${esc(G.name)}</b></div><div class="stat">Trophäen<b>🏆 ${G.tro}</b></div><div class="stat">Monster Dex<b>${rosterIds().filter(s=>G.dex[s]).length} / ${rosterIds().length}</b></div><div class="stat">Handschellen<b>⛓ ${RUN?RUN.kap:'-'}</b></div><div class="stat">Geld<b style="color:var(--accent)">$${RUN?money():'-'}</b></div><div class="stat">Beutel<b style="font-size:17px">${RUN&&RUN.items&&Object.values(RUN.items).some(v=>v>0)?Object.entries(RUN.items).filter(e=>e[1]>0).map(([k,v])=>ITEMS[k].i+v).join(' '):'leer'}</b></div><div class="stat" style="grid-column:1/-1">Feldfähigkeiten<b style="font-size:16px">${Object.entries(HM).map(([k,h])=>hasHM(k)?`<span title="${esc(h.d)}">${h.i} ${h.n}</span>`:`<span style="color:var(--muted)" title="${esc(h.d)}">🔒 ${h.n} (${esc(TRAINERS.find(t=>t.id===h.from).n)})</span>`).join(' · ')}</b></div></div>`);
+  el.insertAdjacentHTML('beforeend',`<div class="stats"><div class="stat" id="sprof" style="cursor:pointer" title="Name, Figur und Farbe ändern">${G.sex==='f'?'Beamtin':'Beamter'} <span style="color:var(--accent)">✏</span><b style="color:${G.color}">${esc(G.name)}</b></div><div class="stat">Trophäen<b>🏆 ${G.tro}</b></div><div class="stat">Monster Dex<b>${rosterIds().filter(s=>G.dex[s]).length} / ${rosterIds().length}</b></div><div class="stat">Handschellen<b>⛓ ${RUN?RUN.kap:'-'}</b></div><div class="stat">Geld<b style="color:var(--accent)">$${RUN?money():'-'}</b></div><div class="stat">Beutel<b style="font-size:17px">${RUN&&RUN.items&&Object.values(RUN.items).some(v=>v>0)?Object.entries(RUN.items).filter(e=>e[1]>0).map(([k,v])=>ITEMS[k].i+v).join(' '):'leer'}</b></div><div class="stat" style="grid-column:1/-1">Feldfähigkeiten<b style="font-size:16px">${Object.entries(HM).map(([k,h])=>hasHM(k)?`<span title="${esc(h.d)}">${h.i} ${h.n}</span>`:`<span style="color:var(--muted)" title="${esc(h.d)}">🔒 ${h.n} (${esc(TRAINERS.find(t=>t.id===h.from).n)})</span>`).join(' · ')}</b></div></div>`);
+  {const sp=$("#sprof");if(sp)sp.onclick=openProfile}
   if(!RUN){el.insertAdjacentHTML('beforeend',`<div class="sec">IN KEINER LOBBY</div><div class="small" style="line-height:1.1">Tritt einer Lobby bei oder erstelle eine (Reiter LOBBY oder unten auf der Karte). Du wählst ein Starter-Monster, der Host startet das Spiel, dann gehst du auf Streife vor dem Gerichtsturnier.</div>`)}
   else{
     el.insertAdjacentHTML('beforeend',`<div class="sec">TEAM (${RUN.team.length}/6) — DAS ERSTE KÄMPFT ZUERST</div>`);RUN.team.forEach((m,i)=>el.appendChild(monCard(m,i,true)));
