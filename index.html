@@ -176,6 +176,9 @@ body.mob #signbox{bottom:auto;top:50px}
 /* modal & start */
 #modal{position:absolute;inset:0;background:#05070cb0;display:none;align-items:center;justify-content:center;z-index:7}
 #modal.on{display:flex}
+/* every dialog scrolls inside the screen (phones: landscape is only ~350px tall) */
+#modal{padding:8px;padding-top:max(8px,env(safe-area-inset-top));padding-bottom:max(8px,env(safe-area-inset-bottom));overflow:hidden;touch-action:pan-y}
+#modal .box{max-height:100%!important;overflow-y:auto!important;overscroll-behavior:contain;touch-action:pan-y;-webkit-overflow-scrolling:touch;margin:auto}
 .box{background:var(--panel);border:3px solid #000;box-shadow:5px 5px 0 #000;padding:16px;max-width:520px;width:92%;text-align:center}
 .box h3{font-family:'Press Start 2P';font-size:11px;margin:0 0 10px;color:var(--accent);line-height:1.5}
 .box p{color:var(--muted);font-size:19px;margin:0 0 14px;line-height:1.1}
@@ -201,7 +204,8 @@ body.mob{overscroll-behavior:none;-webkit-user-select:none;user-select:none;-web
 body.mob #app{flex-direction:row!important}
 body.mob #mainc{flex:1 1 auto!important;width:100%;min-width:0;height:100vh!important;height:100dvh!important}
 #topbar{min-width:0}
-body.mob #stage{flex:1 1 auto!important;height:auto!important;touch-action:none}
+body.mob #stage{flex:1 1 auto!important;height:auto!important}
+body.mob #world,body.mob #bcv,body.mob #touch,body.mob #battle,body.mob #fxcv{touch-action:none}
 body.mob #topbar{padding:max(3px,env(safe-area-inset-top)) max(6px,env(safe-area-inset-right)) 3px max(6px,env(safe-area-inset-left))}
 body.mob #topbar button{font-size:15px;padding:2px 6px}body.mob .tbrand{display:none}
 body.mob #side{position:fixed;top:36px;right:0;height:calc(100% - 36px);width:min(360px,88vw);z-index:8;transform:translateX(105%);transition:transform .2s;border-left:3px solid #000;padding-top:env(safe-area-inset-top);padding-right:env(safe-area-inset-right)}
@@ -257,7 +261,7 @@ body.mob.portrait #rotate.show{display:block}
 <body>
 <div id="app">
 <div id="mainc">
-  <div id="topbar"><span class="tbrand">POCKET PEASANTS</span><span class="chip timer" id="htimer">LOBBY</span><button id="tupd" style="display:none;background:#ef4444;color:#fff">⬆ NEW VERSION — RELOAD</button><span class="tsp"></span><button data-t="lobby" title="Lobby">🏟<span class="tl"> LOBBY</span></button><button data-t="team" title="Team">🎒<span class="tl"> TEAM</span></button><button data-t="players" title="Players">👥<span class="tl"> PLAYERS</span><span id="pcount"></span></button><button data-t="chat" title="Chat">💬<span class="tl"> CHAT</span><span id="cbadge"></span></button><button id="hshop" title="Shop (in town)">🛒<span class="tl"> SHOP</span></button><button id="hdex" title="Monster Dex">📖<span class="tl"> DEX</span></button><button id="hmap" title="Map">🗺<span class="tl"> MAP</span></button><button id="hset">⚙</button><span id="tver"></span></div>
+  <div id="topbar"><span class="tbrand">POCKET PEASANTS</span><span class="chip timer" id="htimer">LOBBY</span><button id="tupd" style="display:none;background:#ef4444;color:#fff">⬆ NEW VERSION — RELOAD</button><span class="tsp"></span><button data-t="lobby" title="Lobby">🏟<span class="tl"> LOBBY</span></button><button data-t="team" title="Team">🎒<span class="tl"> TEAM</span></button><button data-t="players" title="Players">👥<span class="tl"> PLAYERS</span><span id="pcount"></span></button><button data-t="chat" title="Chat">💬<span class="tl"> CHAT</span><span id="cbadge"></span></button><button id="hshop" title="Shop (in town)">🛒<span class="tl"> SHOP</span></button><button id="hdex" title="Monster Dex">📖<span class="tl"> DEX</span></button><button id="hmap" title="Map">🗺<span class="tl"> MAP</span></button><button id="hfs" title="Fullscreen" style="display:none">⛶</button><button id="hset">⚙</button><span id="tver"></span></div>
   <div id="stage">
     <canvas id="world"></canvas>
     <div class="hud"><span class="chip" id="hzone">Town</span><span class="chip" id="hkap">Capsules -</span><span class="chip" id="hon"><span class="dot"></span>Solo</span></div>
@@ -342,7 +346,7 @@ const TURN_CONFIG = {
 
 /* ===================== VERSION ===================== */
 // bump with every release (MAJOR.MINOR.PATCH). Players can only share lobbies/duels with the same version.
-const VERSION='0.27.0';
+const VERSION='0.29.0';
 function cmpV(a,b){const x=String(a||'0').split('.').map(Number),y=String(b||'0').split('.').map(Number);for(let i=0;i<3;i++){const d=(x[i]||0)-(y[i]||0);if(d)return d}return 0}
 /* ===================== ERROR REPORTING ===================== */
 function showErr(m){try{const b=document.getElementById('errbox');if(!b)return;b.textContent='⚠ Error: '+String(m).slice(0,220)+' — please send this to the developer.';b.style.display='block';clearTimeout(showErr.t);showErr.t=setTimeout(()=>b.style.display='none',12000)}catch(e){}}
@@ -353,7 +357,7 @@ setInterval(()=>{try{if(!ROOM)return;let nv=null;for(const p of others()){const 
   const b=$('#tupd');if(nv){b.style.display='';b.textContent=`⬆ v${nv} AVAILABLE — RELOAD`}else b.style.display='none'}catch(e){}},3000);
 /* ===================== DATA ===================== */
 const TYPES={normal:{n:'Normal',c:'#8b8f9c'},fire:{n:'Fire',c:'#f0642a'},water:{n:'Water',c:'#3d8bf2'},grass:{n:'Grass',c:'#2fb556'},electric:{n:'Electric',c:'#d9a90b'},rock:{n:'Rock',c:'#a2742c'},flying:{n:'Flying',c:'#7c83f0'}};
-const EFF={fire:{grass:2,water:.5,fire:.5,rock:.5},water:{fire:2,rock:2,grass:.5,water:.5},grass:{water:2,rock:2,fire:.5,grass:.5,flying:.5},electric:{water:2,flying:2,grass:.5,electric:.5,rock:0},rock:{fire:2,flying:2,grass:.5},flying:{grass:2,electric:.5,rock:.5},normal:{rock:.5}};
+const EFF={fire:{grass:2,water:.5,fire:.5,rock:.5},water:{fire:2,rock:2,grass:.5,water:.5},grass:{water:2,rock:2,fire:.5,grass:.5,flying:.5},electric:{water:2,flying:2,grass:.5,electric:.5,rock:0},rock:{fire:2,flying:2,electric:2,grass:.5},flying:{grass:2,electric:.5,rock:.5},normal:{rock:.5}};
 function eff(a,d){const r=EFF[a];return r&&r[d]!==undefined?r[d]:1}
 // k: melee | shot | spread | multi | big | self ; fx: burn | slow | stun | drain | heal | shield | haste | knock
 const MOVES={
@@ -878,6 +882,7 @@ function openSettings(){
   if(mob)h+=`<div class="lbl2">D-PAD SIZE</div><div class="seg">${segBtn('dp','s','SMALL',SET.dp)}${segBtn('dp','m','MEDIUM',SET.dp)}${segBtn('dp','l','LARGE',SET.dp)}</div><div class="lbl2">D-PAD SIDE</div><div class="seg">${segBtn('side','left','LEFT',SET.side)}${segBtn('side','right','RIGHT',SET.side)}</div><div class="small" style="text-align:left;margin-bottom:10px">Tip: in battles you can also hold your finger on the arena to walk there.</div>`;
   else{h+=`<div class="lbl2">KEY BINDINGS</div><div class="krow"><span>Move</span><span class="small">WASD (world: also arrows)</span></div><div class="krow"><span>Aim (battle)</span><span class="small">Arrow keys</span></div>`;
     for(const k of Object.keys(DEF_KEYS))h+=`<div class="krow"><span>${KEY_NAMES[k]}</span><button class="btn ghost" data-key="${k}">${capturing===k?'PRESS KEY…':keyLabel(SET.keys[k])}</button></div>`;}
+  h+=`<div class="lbl2">AIMING (FREE PLAY)</div><div class="seg">${segBtn('aim','0','🎯 MANUAL',SET.aim==='1'?'1':'0')}${segBtn('aim','1','AUTO-AIM',SET.aim==='1'?'1':'0')}</div>`;
   h+=`<div class="lbl2">MONSTER SET (FREE PLAY)</div><div class="seg">${segBtn('alt','1','★ ALTERNATIVE',SET.alt==='0'?'0':'1')}${segBtn('alt','0','CLASSIC',SET.alt==='0'?'0':'1')}</div><div class="small" style="text-align:left;margin:-6px 0 10px">Lobbies choose their own set when they are created.</div>`;
   if(typeof netSettingsHtml==='function')h+=netSettingsHtml();
   h+=`<div class="acts" style="margin-top:12px"><button class="btn ghost" id="sreset">RESET</button><button class="btn" id="sdone">DONE</button></div>`;
@@ -961,6 +966,11 @@ function updateTouch(){
 // top menu bar: on desktop it switches the side panel, on phones it opens the slide-in drawer
 document.querySelectorAll('#topbar button[data-t]').forEach(b=>b.onclick=()=>{const t=b.dataset.t,sd=$('#side');if(isMob()){if(sd.classList.contains('open')&&curTab===t){sd.classList.remove('open');return}sd.classList.add('open')}switchTab(t)});
 $('#tupd').onclick=()=>location.reload();
+// fullscreen on/off, always in the menu bar (hidden where the browser has no fullscreen, e.g. iPhone Safari)
+{const fb=$('#hfs'),de=document.documentElement,can=document.fullscreenEnabled||document.webkitFullscreenEnabled;
+ const isFs=()=>!!(document.fullscreenElement||document.webkitFullscreenElement),upd=()=>{fb.textContent=isFs()?'⛶ ✕':'⛶';fb.title=isFs()?'Exit fullscreen':'Fullscreen'};
+ if(can){fb.style.display='';upd();document.addEventListener('fullscreenchange',()=>{upd();setTimeout(()=>{try{checkOrient();setTbh()}catch(e){}},200)});document.addEventListener('webkitfullscreenchange',upd)}
+ fb.onclick=()=>{try{if(isFs())(document.exitFullscreen||document.webkitExitFullscreen).call(document);else{const r=(de.requestFullscreen||de.webkitRequestFullscreen).call(de);if(r&&r.catch)r.catch(()=>toast('Fullscreen is not available here.'))}}catch(e){toast('Fullscreen is not available here.')}}}
 $('#stage').addEventListener('pointerdown',e=>{if(isMob()&&$('#side').classList.contains('open')&&!e.target.closest('#side'))$('#side').classList.remove('open')},true);
 function checkOrient(){const port=matchMedia('(orientation: portrait)').matches;document.body.classList.toggle('portrait',port);const r=$('#rotate');if(r)r.classList.remove('show');TB_KEY='';if(B)try{sizeBattle()}catch(e){}}
 addEventListener('resize',checkOrient);
@@ -1237,7 +1247,7 @@ function bindNetSettings(){
 }
 
 /* ===================== MATCHES ===================== */
-const DEF_CFG={name:'',dur:10,rounds:3,team:3,kap:10,xp:1,enc:1,leg:1,tb:0,alt:1,money:100};
+const DEF_CFG={name:'',dur:10,rounds:3,team:3,kap:10,xp:1,enc:1,leg:1,tb:0,alt:1,money:100,aim:0};
 /* ===================== MONEY, ITEMS & SHOP ===================== */
 const ITEMS={
  cap:{n:'Capsule',p:20,d:'Catches wild monsters.',i:'◓'},
@@ -1289,8 +1299,8 @@ function bagUse(key){if(!B)return;const[k,ix]=key.split(':'),F=B.me,a=act(F);if(
   if(B.tb){B.state='tbPlay';setTimeout(()=>{if(B&&B.state==='tbPlay')tbRun(null)},500)}}
 function cfgOf(){return(RUN&&RUN.cfg)||DEF_CFG}
 function sanitizeCfg(c){c=c&&typeof c==='object'?c:{};const n=(v,d,a,b)=>Number.isFinite(+v)&&v!==''&&v!=null?clamp(Math.floor(+v),a,b):d;
-  return{name:String(c.name||'').replace(/[\u0000-\u001f<>]/g,'').trim().slice(0,24),dur:n(c.dur,10,1,60),rounds:n(c.rounds,3,1,7),team:n(c.team,3,1,6),kap:n(c.kap,10,0,50),xp:[1,2,3].includes(+c.xp)?+c.xp:1,enc:[0.6,1,1.6].includes(+c.enc)?+c.enc:1,leg:+c.leg===0?0:1,tb:+c.tb===1?1:0,alt:+c.alt===0?0:1,money:n(c.money,100,0,5000),host:typeof c.host==='string'?c.host.slice(0,40):''}}
-function cfgSummary(c){return`${c.tb?'turn-based':'real-time'} · ${c.rounds} round${c.rounds>1?'s':''} · team of ${c.team}${c.xp>1?` · ${c.xp}× XP`:''}${c.enc!==1?(c.enc>1?' · many encounters':' · few encounters'):''}${c.leg?'':' · no legendaries'} · ${c.kap} capsules · $${c.money??100} · ${c.alt===0?'classic':'alternative'} monsters`}
+  return{name:String(c.name||'').replace(/[\u0000-\u001f<>]/g,'').trim().slice(0,24),dur:n(c.dur,10,1,60),rounds:n(c.rounds,3,1,7),team:n(c.team,3,1,6),kap:n(c.kap,10,0,50),xp:[1,2,3].includes(+c.xp)?+c.xp:1,enc:[0.6,1,1.6].includes(+c.enc)?+c.enc:1,leg:+c.leg===0?0:1,tb:+c.tb===1?1:0,alt:+c.alt===0?0:1,aim:+c.aim===1?1:0,money:n(c.money,100,0,5000),host:typeof c.host==='string'?c.host.slice(0,40):''}}
+function cfgSummary(c){return`${c.tb?'turn-based':'real-time'} · ${c.rounds} round${c.rounds>1?'s':''} · team of ${c.team}${c.xp>1?` · ${c.xp}× XP`:''}${c.enc!==1?(c.enc>1?' · many encounters':' · few encounters'):''}${c.leg?'':' · no legendaries'} · ${c.kap} capsules · $${c.money??100} · ${c.aim===1?'auto-aim':'manual aim'} · ${c.alt===0?'classic':'alternative'} monsters`}
 function runningMatches(){const seen=new Map();for(const p of others()){const mt=p.presence.mt;if(!mt||typeof mt.id!=='string'||mt.id.length>=40||(RUN&&RUN.id===mt.id))continue;
   const open=mt.st==='lobby'||(mt.st==='train'&&+mt.end>Date.now()+10000);if(!open)continue;
   const e=seen.get(mt.id)||{id:mt.id,end:+mt.end||0,names:[],cfg:sanitizeCfg(mt.cfg),waiting:true,v:String(p.presence.v||'old').slice(0,12)};e.names.push(cleanName(p.presence.n));if(mt.st==='train'){e.waiting=false;e.end=Math.max(e.end,+mt.end)}seen.set(mt.id,e)}return[...seen.values()]}
@@ -1329,6 +1339,7 @@ function openCreate(){
    ${row('Lobby name',`<input id="cname" maxlength="24" placeholder="optional" value="${esc(c.name)}" style="width:100%;background:#0b0d16;border:2px solid #000;color:var(--text);font-family:inherit;font-size:18px;padding:2px 6px">`)}
    ${row('Monster set',sel('calt',[[1,'★ Alternative'],[0,'Classic']],c.alt))}
    ${row('Battle style',sel('ctb',[[0,'⚡ Real-time'],[1,'⏳ Turn-based']],c.tb))}
+   ${row('Aiming',sel('caim',[[0,'🎯 Manual (8 directions)'],[1,'Auto-aim']],c.aim||0))}
    ${row('Training time (min)',num('cdur',c.dur,1,60))}
    ${row('Arena rounds (Swiss)',sel('crounds',[1,2,3,4,5,6,7].map(v=>[v,v+(v===3?' (default)':'')]),c.rounds))}
    ${row('Monsters per arena fight',sel('cteam',[1,2,3,4,5,6].map(v=>[v,v]),c.team))}
@@ -1340,7 +1351,7 @@ function openCreate(){
    <div class="small" style="text-align:left;margin:6px 0 12px;line-height:1.1">Players join your lobby first; you start the game when everyone is there. Everyone starts at Lv ${START_LV}. The Arena starts when the timer ends — or earlier, once all players (2+) have walked in.</div>
    <div class="acts"><button class="btn ghost" id="mno">CANCEL</button><button class="btn green" id="myes">CREATE</button></div>`);
   $('#mno').onclick=closeModal;
-  $('#myes').onclick=()=>{const cfg=sanitizeCfg({name:$('#cname').value,dur:$('#cdur').value,rounds:$('#crounds').value,team:$('#cteam').value,kap:$('#ckap').value,xp:$('#cxp').value,enc:$('#cenc').value,leg:$('#cleg').value,tb:$('#ctb').value,alt:$('#calt').value,money:$('#cmoney').value});G.lastCfg=cfg;save();closeModal();
+  $('#myes').onclick=()=>{const cfg=sanitizeCfg({name:$('#cname').value,dur:$('#cdur').value,rounds:$('#crounds').value,team:$('#cteam').value,kap:$('#ckap').value,xp:$('#cxp').value,enc:$('#cenc').value,leg:$('#cleg').value,tb:$('#ctb').value,alt:$('#calt').value,money:$('#cmoney').value,aim:$('#caim').value});G.lastCfg=cfg;save();closeModal();
     pickStarter(sid=>startRun('m'+Math.random().toString(36).slice(2,10),0,sid,null,Object.assign({},cfg,{host:MYPEER||'me'}),'lobby'),cfg)};
 }
 function pickStarter(cb,cfg){const alt=altOn(cfg||{alt:SET.alt==='0'?0:1});
@@ -1725,8 +1736,10 @@ function hitLocal(T,s){
 function drainHeal(s,d){if(MOVES[s.mid].fx!=='drain'||!d)return;const A=s.side===B.me.side?B.me:B.foe;if(!A||A.ctrl==='remote')return;const m=act(A);if(m.hp<=0)return;const h=Math.max(1,Math.round(d*0.5));m.hp=Math.min(m.mhp,m.hp+h);B.nums.push({x:A.x,y:A.y-34,t:'+'+h,c:'#3ddc6b',at:performance.now()});if(B.mode==='duel'&&A===B.me)publishDuel(true)}
 function burst(x,y,col,n){for(let i=0;i<n;i++){const a=Math.random()*6.28,s=30+Math.random()*60;B.parts.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:0.35+Math.random()*0.25,age:0,c:col})}}
 // manual aiming (no auto-aim): arrow keys on PC, drag on an attack button on phones; the direction is kept until changed
-function myAim(){if(!B.aimV){const T=B.foe;const dx=T?T.x-B.me.x:0,dy=T?T.y-B.me.y:-1,L=Math.hypot(dx,dy)||1;B.aimV={x:dx/L,y:dy/L}}return B.aimV}
-function setAim(x,y){const L=Math.hypot(x,y);if(L>0.001)B.aimV={x:x/L,y:y/L}}
+function myAim(){if(autoAimOn()&&B.foe){const dx=B.foe.x-B.me.x,dy=(B.foe.y-12)-(B.me.y-14),L=Math.hypot(dx,dy)||1;return{x:dx/L,y:dy/L}}if(!B.aimV){const T=B.foe;setAim(T?T.x-B.me.x:0,T?T.y-B.me.y:-1)}return B.aimV}
+function setAim(x,y){if(Math.hypot(x,y)<0.001)return;const a=Math.round(Math.atan2(y,x)/(Math.PI/4))*(Math.PI/4);B.aimV={x:Math.cos(a),y:Math.sin(a)}}
+// auto-aim (lobby option / setting for free play): attacks fly at the opponent like before
+function autoAimOn(){const c=RUN&&RUN.cfg;if(RUN&&!RUN.free&&c)return c.aim===1;return SET.aim==='1'}
 function controlMe(dt){
   if(aimHeld.length&&!B.tb){let ax=0,ay=0;for(const d of aimHeld){ax+=DIRS[d][0];ay+=DIRS[d][1]}if(ax||ay)setAim(ax,ay)}
   const F=B.me;if(F.out||F.faint>0||F.st.stun>0||B.aim){F.vx=F.vy=0;return}
@@ -1947,10 +1960,20 @@ function startLegend(L){
   newBattle({mode:'wild',legend:L.id,zone:L.zone,wild,me:mkFighter('L',RUN.team.map(battler),XL,'local'),foe:mkFighter('R',[battler(wild)],XR,'ai'),state:'count',cntEnd:performance.now()+2000});
   say(`★ The legendary ${SPECIES[LS_].n} awakens! ★`);burst(ACX,YT-20,'#ffcb3d',40);
 }
+// trainers teach their monsters VMs: easy trainers a weaker move of another type, strong trainers the top moves of their own type plus coverage
+function vmTier(t){const b=Math.round(baseLvAt(t.x,t.y))+1;return b>=10?3:b>=5?2:1}
+function vmPick(type,lo,hi,r,not){const c=Object.keys(MOVES).filter(m=>{const v=MOVES[m];return v.t===type&&v.k!=='self'&&(v.p||0)>=lo&&(v.p||0)<=hi&&!not.includes(m)});return c.length?c[Math.floor(r()*c.length)]:null}
+function giveVMs(t,mon,i){const r=mulberry32(hashStr(t.id+':'+i)),tier=vmTier(t),own=SPECIES[mon.s].t,others=Object.keys(TYPES).filter(x=>x!==own&&x!=='normal'),cov=others[Math.floor(r()*others.length)],vms=[];
+  if(tier===1){const m=vmPick(cov,30,55,r,mon.m);if(m)vms.push(m)}
+  else if(tier===2){const a=vmPick(own,60,85,r,mon.m),b=vmPick(cov,50,75,r,mon.m);if(a)vms.push(a);if(b)vms.push(b)}
+  else{const a=vmPick(own,85,140,r,mon.m)||vmPick(own,70,140,r,mon.m),b=vmPick(cov,70,110,r,mon.m);if(a)vms.push(a);if(b)vms.push(b)}
+  for(const m of vms){if(mon.m.length<4)mon.m.push(m);else{let wi=0;for(let k=1;k<mon.m.length;k++)if((MOVES[mon.m[k]].p||0)<(MOVES[mon.m[wi]].p||0))wi=k;mon.m[wi]=m}}
+  return vms}
 function startTrainer(t){
   if(!RUN.team.some(m=>m.hp>0))healAll();
-  const team=trainerTeam(t).map(([s,l])=>battler(newMon(s,l)));
+  const vmList=[];const team=trainerTeam(t).map(([s,l],i)=>{const mon=newMon(s,l);const v=giveVMs(t,mon,i);if(v.length)vmList.push(SPECIES[s].n+': '+v.map(m=>MOVES[m].n).join(', '));return battler(mon)});
   newBattle({mode:'trainer',trainer:t,oppName:t.n,zone:zoneAt(t.x,t.y)||'north',me:mkFighter('L',RUN.team.map(battler),XL,'local'),foe:mkFighter('R',team,XR,'ai'),state:'count',cntEnd:performance.now()+2600});
+  if(vmList.length){say(`${t.n} taught VMs (${['','basic','advanced','elite'][vmTier(t)]})!`);sysChat(`${t.n}'s VMs — ${vmList.join(' · ')}`)}
   say(`${t.n} wants to battle!`);
 }
 function trainerKO(def){const idx=B.me.a;syncBack();const m=RUN.team[idx];if(m){const msgs=gainXp(m,Math.round(xpGain(def.s,def.l)*1.4));Object.assign(B.me.team[idx],battler(m));msgs.forEach(say)}}
@@ -2082,7 +2105,17 @@ function updateBattleUI(){try{renderPick()}catch(e){console.error(e)}
   if(B.aim&&performance.now()-B.aim.t0>4500)capRelease();
 }
 const bcv=$('#bcv'),bc=bcv.getContext('2d');
-function toArena(e){const r=bcv.getBoundingClientRect();return{x:(e.clientX-r.left)/r.width*AW,y:(e.clientY-r.top)/r.height*AH+18}}
+// battle camera: follows both fighters and zooms in when they are close (more on phones, most when held upright); never shows past the rim
+const CAMY=(58+AH)/2;
+function camZMax(){return isMob()?(document.body.classList.contains('portrait')?1.7:1.4):1.2}
+function updateCam(now){const C=B.cam||(B.cam={x:AW/2,y:CAMY,z:1,t:now});const dt=Math.min(0.1,(now-C.t)/1000);C.t=now;
+  const fs=[B.me,B.foe].filter(F=>F&&!(F.out&&act(F).hp<=0));let tx=AW/2,ty=CAMY,tz=1;
+  if(fs.length){const x0=Math.min(...fs.map(F=>F.x))-64,x1=Math.max(...fs.map(F=>F.x))+64,y0=Math.min(...fs.map(F=>F.y))-58,y1=Math.max(...fs.map(F=>F.y))+16;
+    tz=clamp(Math.min(AW/(x1-x0),(AH-58)/(y1-y0)),1,camZMax());tx=(x0+x1)/2;ty=(y0+y1)/2}
+  const k=C.init?Math.min(1,dt*3.2):1;C.init=1;C.z+=(tz-C.z)*k;C.x+=(tx-C.x)*k;C.y+=(ty-C.y)*k;
+  C.x=clamp(C.x,AW/2/C.z,AW-AW/2/C.z);C.y=clamp(C.y,CAMY/C.z,AH-(AH-CAMY)/C.z);return C}
+function w2s(x,y){const C=B.cam||{x:AW/2,y:CAMY,z:1};return[(x-C.x)*C.z+AW/2,(y-C.y)*C.z+CAMY]}
+function toArena(e){const r=bcv.getBoundingClientRect(),C=B.cam||{x:AW/2,y:CAMY,z:1};const sx=(e.clientX-r.left)/r.width*AW,sy=(e.clientY-r.top)/r.height*AH;return{x:C.x+(sx-AW/2)/C.z,y:C.y+(sy-CAMY)/C.z+18/C.z}}
 bcv.addEventListener('pointerdown',e=>{if(!B||isMob())return;bcv.setPointerCapture(e.pointerId);B.ptr=toArena(e)});
 bcv.addEventListener('pointermove',e=>{if(B&&B.ptr)B.ptr=toArena(e)});
 ['pointerup','pointercancel'].forEach(ev=>bcv.addEventListener(ev,()=>{if(B)B.ptr=null}));
@@ -2147,7 +2180,7 @@ function drawFinale(c,now){const f=B.fin,k=(now-f.t0)/1000;
   const sk=clamp((k-0.35)/0.45,0,1),ease=1-Math.pow(1-sk,3);const bx=-140+(UW/2+140)*ease+Math.sin(k*8)*(1-sk)*6;
   if(k>0.35){c.fillStyle='#0b0d16d8';c.fillRect(0,86,UW,26);c.fillStyle=col;c.fillRect(0,86,UW,2);c.fillRect(0,110,UW,2);
     const sc=1+Math.max(0,0.25-Math.abs(k-0.8))*1.2;c.save();c.translate(bx,104);c.scale(sc,sc);pxText(c,txt,0,0,col,14,'center');c.restore()}
-  if(f.win===true&&B.me&&act(B.me).hp>0&&k>0.4){const X=Math.round(B.me.x/UI),Y=Math.round(B.me.y/UI);c.fillStyle='#ffe14d';for(let i=0;i<8;i++){const a=i/8*6.28+k*3;c.fillRect(Math.round(X+Math.cos(a)*22),Math.round(Y-20+Math.sin(a)*14),2,2)}}
+  if(f.win===true&&B.me&&act(B.me).hp>0&&k>0.4){const[wx_,wy_]=w2s(B.me.x,B.me.y),X=Math.round(wx_/UI),Y=Math.round(wy_/UI);c.fillStyle='#ffe14d';for(let i=0;i<8;i++){const a=i/8*6.28+k*3;c.fillRect(Math.round(X+Math.cos(a)*22),Math.round(Y-20+Math.sin(a)*14),2,2)}}
 }
 function hudPanel(c,x,y,F,right,label){
   const mon=act(F);const w=112,h=33;const X=right?x-w:x;
@@ -2171,10 +2204,9 @@ function sizeBattle(){
   return W/AW;
 }
 function drawBattle(){
-  if(!B)return;const c=bc;const K=sizeBattle();c.setTransform(K,0,0,K,0,0);const _n=performance.now();if(B.shakeUntil&&_n<B.shakeUntil)c.translate(Math.round((Math.random()-.5)*4),Math.round((Math.random()-.5)*4));c.imageSmoothingEnabled=false;const now=performance.now();
+  if(!B)return;const c=bc;const K=sizeBattle();const CM=updateCam(performance.now());c.setTransform(K*CM.z,0,0,K*CM.z,K*(AW/2-CM.x*CM.z),K*(CAMY-CM.y*CM.z));const _n=performance.now();if(B.shakeUntil&&_n<B.shakeUntil)c.translate(Math.round((Math.random()-.5)*4),Math.round((Math.random()-.5)*4));c.imageSmoothingEnabled=false;const now=performance.now();
   c.drawImage(battleBG(B.zone||'arena'),0,0,AW,AH);
 
-  c.fillStyle='#0b0d16b8';c.fillRect(0,0,AW,58);c.fillStyle='#14141f';c.fillRect(0,58,AW,2);
   const ents=[B.me,B.foe].filter(Boolean).concat((B.obs||[]).filter(o=>!o.dead)).sort((a,b)=>a.y-b.y);
   for(const F of ents){if(F.kind){drawObs(c,F,now);continue}if(F.out&&act(F).hp<=0&&F.faint<=0&&F.ctrl!=='remote')continue;const mon=act(F);
     let catchK=-1;if(F===B.foe&&B.catch){const el=(now-B.catch.t0)/1000;if(el>0.4||B.catch.done)continue;catchK=el/0.4}
@@ -2233,7 +2265,8 @@ function drawBattle(){
     const tx=F.x+a.x*82,ty=F.y-14+a.y*82,px=-a.y,py=a.x;for(let k=0;k<5;k++){c.fillRect(Math.round(tx-a.x*k*2+px*k*1.5)-1,Math.round(ty-a.y*k*2+py*k*1.5)-1,2,2);c.fillRect(Math.round(tx-a.x*k*2-px*k*1.5)-1,Math.round(ty-a.y*k*2-py*k*1.5)-1,2,2)}}
   // ---- UI layer: drawn 1.5x larger than the battlefield pixels ----
   c.setTransform(K*UI,0,0,K*UI,0,0);c.imageSmoothingEnabled=false;
-  for(const n of B.nums){const k=(now-n.at)/900;vtText(c,n.t,Math.round(n.x/UI),Math.round(n.y/UI-k*14),n.c,12,'center')}
+  c.fillStyle='#0b0d16b8';c.fillRect(0,0,UW,58/UI);c.fillStyle='#14141f';c.fillRect(0,58/UI,UW,2/UI);
+  for(const n of B.nums){const k=(now-n.at)/900,[sx,sy]=w2s(n.x,n.y);vtText(c,n.t,Math.round(sx/UI),Math.round(sy/UI-k*14),n.c,12,'center')}
   if(B.tb&&B.state==='tbChoose'){const t=B.mode==='duel'?`TURN ${B.turn} · choose an action`:'Choose an action';c.fillStyle='#0b0d16c8';c.font='10px VT323';const w=c.measureText(t).width+10;c.fillRect(UW/2-w/2,46,w,11);vtText(c,t,UW/2,55,'#ffcb3d',10,'center')}
   if(B.tb&&B.state==='tbWait'){c.fillStyle='#0b0d16c8';c.fillRect(UW/2-55,46,110,11);vtText(c,'waiting for opponent…',UW/2,55,'#ffffff',10,'center')}
   hudPanel(c,4,4,B.me,false,'');
@@ -2290,10 +2323,16 @@ function openMonInfo(sid,m,back){const sp=SPECIES[sid];if(!sp)return;const caugh
   openModal(h);$('#mbox').style.maxHeight='92%';$('#mbox').style.overflow='auto';
   const c=$('#minfocv').getContext('2d');c.imageSmoothingEnabled=false;c.drawImage(monSprite(sid,24),0,0);
   $('#mok').onclick=closeModal;if(back)$('#mback').onclick=()=>openDex()}
+function openTypeChart(){const T=Object.keys(TYPES);
+  openModal(`<h3>TYPE CHART</h3><p class="small">Attack type (left) vs. defending monster type (top). ×2 super effective · ½ not very effective · 0 no effect. Same type as the attacker: ×1.5.</p>
+   <div style="overflow:auto"><table style="border-collapse:collapse;margin:6px auto;font-size:16px"><tr><td></td>${T.map(d=>`<td style="padding:2px 3px"><span class="tb" style="background:${TYPES[d].c}">${TYPES[d].n.slice(0,4).toUpperCase()}</span></td>`).join('')}</tr>
+   ${T.map(a=>`<tr><td style="text-align:right;padding:2px 4px"><span class="tb" style="background:${TYPES[a].c}">${TYPES[a].n.toUpperCase()}</span></td>${T.map(d=>{const e=eff(a,d);return`<td style="text-align:center;padding:3px 5px;border:1px solid #000;background:${e>1?'#1f6e3a':e===0?'#3a1010':e<1?'#5a2020':'#1b1e2e'}">${e>1?'×2':e===0?'0':e<1?'½':''}</td>`}).join('')}</tr>`).join('')}</table></div>
+   <div class="acts" style="margin-top:8px"><button class="btn ghost" id="mback">◀ DEX</button><button class="btn" id="mok">CLOSE</button></div>`);
+  $('#mok').onclick=closeModal;$('#mback').onclick=openDex}
 function openDex(){const ids=rosterIds();
   const seen=ids.filter(s=>G.dex[s]!==undefined).length,caught=ids.filter(s=>G.dex[s]).length;
-  openModal(`<h3>📖 MONSTER DEX</h3><p class="small" style="margin-bottom:4px">${altOn()?'Alternative':'Classic'} set · seen ${seen} · caught ${caught} / ${ids.length}</p><div id="dexgrid">${ids.map((s,i)=>{const k=G.dex[s];return`<button class="dexc ${k===undefined?'unk':''}" data-dx="${s}"><canvas width="24" height="24"></canvas>#${String(i+1).padStart(2,'0')} ${k===undefined?'???':esc(SPECIES[s].n)}${k?'<br><span class="small">◓ caught</span>':k===0?'<br><span class="small">seen</span>':''}</button>`}).join('')}</div><div class="acts"><button class="btn" id="mok">CLOSE</button></div>`);
-  $('#mbox').style.maxWidth='760px';$('#mbox').style.maxHeight='92%';$('#mbox').style.overflow='auto';
+  openModal(`<h3>📖 MONSTER DEX</h3><p class="small" style="margin-bottom:4px">${altOn()?'Alternative':'Classic'} set · seen ${seen} · caught ${caught} / ${ids.length}</p><div id="dexgrid">${ids.map((s,i)=>{const k=G.dex[s];return`<button class="dexc ${k===undefined?'unk':''}" data-dx="${s}"><canvas width="24" height="24"></canvas>#${String(i+1).padStart(2,'0')} ${k===undefined?'???':esc(SPECIES[s].n)}${k?'<br><span class="small">◓ caught</span>':k===0?'<br><span class="small">seen</span>':''}</button>`}).join('')}</div><div class="acts"><button class="btn ghost" id="mtypes">TYPE CHART</button><button class="btn" id="mok">CLOSE</button></div>`);
+  $('#mtypes').onclick=openTypeChart;$('#mbox').style.maxWidth='760px';$('#mbox').style.maxHeight='92%';$('#mbox').style.overflow='auto';
   document.querySelectorAll('[data-dx]').forEach(b=>{const s=b.dataset.dx,cx=b.querySelector('canvas').getContext('2d');cx.imageSmoothingEnabled=false;if(G.dex[s]!==undefined)cx.drawImage(monSprite(s,24),0,0);else{cx.globalAlpha=0.3;cx.filter='brightness(0)';cx.drawImage(monSprite(s,24),0,0)}
     b.onclick=()=>{if(G.dex[s]===undefined){toast('Not seen yet — go explore!');return}openMonInfo(s,null,true)}});
   $('#mok').onclick=closeModal}
