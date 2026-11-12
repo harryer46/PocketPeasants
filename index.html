@@ -62,6 +62,7 @@ canvas{image-rendering:pixelated;image-rendering:crisp-edges}
 #chatlog .m{margin-bottom:3px;word-wrap:break-word}
 #chatlog .sys{color:var(--muted)}
 #chatform{display:flex;gap:6px;padding:8px;border-top:3px solid #000}
+#panic{display:none;position:fixed;inset:0;z-index:2147483000;background:#fff;color:#111;overflow:auto;font-family:Georgia,'Times New Roman',serif;font-size:17px;line-height:1.55;-webkit-text-stroke:0;text-shadow:none}#panic .pdoc{max-width:760px;margin:0 auto;padding:40px 28px 60px}#panic .phead{font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#555;border-bottom:1px solid #ccc;padding-bottom:8px;margin-bottom:18px}#panic h1{font-size:22px;font-weight:bold;margin:0 0 6px}#panic .psub{font-family:Arial,sans-serif;font-size:12px;color:#777;margin-bottom:10px}#panic p{margin:0 0 12px;text-align:justify}#panic .pfoot{font-family:Arial,sans-serif;font-size:12px;color:#888;border-top:1px solid #ddd;margin-top:28px;padding-top:8px}
 #chatin{flex:1;background:#0b0d16;border:2px solid #000;color:var(--text);padding:4px 8px;font-size:19px;font-family:inherit;min-width:0}
 .hud{position:absolute;top:8px;left:8px;display:flex;gap:6px;flex-wrap:wrap;pointer-events:none;z-index:2}
 .chip{background:#0b0d16e0;border:2px solid #000;box-shadow:2px 2px 0 #000;padding:3px 9px;font-size:19px}
@@ -297,7 +298,7 @@ body.mob.portrait #rotate.show{display:block}
     <canvas id="world"></canvas>
     <div class="hud"><span class="chip" id="hzone">Stadt</span><span class="chip" id="hkap">Handschellen -</span><span class="chip" id="hon"><span class="dot"></span>Solo</span></div>
     <div id="toast"></div>
-    <div id="help">Pfeile/WASD: laufen · M: Karte · Gras/Farne/Schilf/Geröll: wilde Monster · Rotes Dach: Dienststelle · Enter: Chat</div>
+    <div id="help">Pfeile/WASD: laufen · M: Karte · Gras/Farne/Schilf/Geröll: wilde Monster · Rotes Dach: Dienststelle · T: Chat</div>
     <div id="dpad"><span></span><button data-d="up">▲</button><span></span><button data-d="left">◀</button><span></span><button data-d="right">▶</button><span></span><button data-d="down">▼</button><span></span></div>
     <div id="lobby"></div>
     <div id="touch"><div id="joyzone"></div><div id="joyhint">laufen</div><div id="joy"><div id="joyk"></div></div><div id="tbtns"></div></div>
@@ -379,7 +380,7 @@ const TURN_CONFIG = {
 
 /* ===================== VERSION ===================== */
 // bump with every release (MAJOR.MINOR.PATCH). Players can only share lobbies/duels with the same version.
-const VERSION='0.41.0';
+const VERSION='0.42.0';
 function cmpV(a,b){const x=String(a||'0').split('.').map(Number),y=String(b||'0').split('.').map(Number);for(let i=0;i<3;i++){const d=(x[i]||0)-(y[i]||0);if(d)return d}return 0}
 /* ===================== ERROR REPORTING ===================== */
 function showErr(m){try{const b=document.getElementById('errbox');if(!b)return;b.textContent='⚠ Fehler: '+String(m).slice(0,220)+' — bitte an den Entwickler schicken.';b.style.display='block';clearTimeout(showErr.t);showErr.t=setTimeout(()=>b.style.display='none',12000)}catch(e){}}
@@ -642,7 +643,7 @@ function gainXp(m,amt){
 const MW=60,MH=44,MAP=new Uint8Array(MW*MH);const BIOME=new Uint8Array(MW*MH);const BKEYS=[null,'north','east','south','west','knast'];
 const WALK0=new Set([0,1,4,5,7,9,12,13,14,15,17,18,19,20,22,23]);
 // extra town buildings (drawn as whole sprites; tile 21 = solid, 22/23 = doors)
-const BLDG=[{id:'shop',x:23,y:24,w:5,h:4,dx:25,door:22,n:'LADEN'},{id:'hfpol',x:32,y:24,w:7,h:4,dx:35,door:23,n:'HfPol'}];const ENC=new Set([1,17,18,19]);const BASE_T=[0,0,14,0,15],ENC_T=[0,1,17,18,19];
+const BLDG=[{id:'shop',x:23,y:24,w:5,h:4,dx:25,door:22,n:'COPSHOP'},{id:'hfpol',x:32,y:24,w:7,h:4,dx:35,door:23,n:'HfPol'}];const ENC=new Set([1,17,18,19]);const BASE_T=[0,0,14,0,15],ENC_T=[0,1,17,18,19];
 function tget(x,y){return(x<0||y<0||x>=MW||y>=MH)?2:MAP[y*MW+x]}
 function tset(x,y,v){if(x>=0&&y>=0&&x<MW&&y<MH)MAP[y*MW+x]=v}
 function vnoise(seed,cell){
@@ -754,7 +755,7 @@ function walkable(x,y){const t=tget(x,y);return(WALK.has(t)||(t===3&&hasHM('swim
     if(sg.kind==='wall')sg.field=FIELD.some(f=>f.kind===(sg.to===2?'cut':'str'))?(sg.to===2?'cut':'str'):null}
 })();
 function signShort(sg){return sg.kind==='town'?'Villingen-Knastningen':`${sg.arrow||''} ${BNAME[sg.to]} · Lv ${sg.lv[0]}–${sg.lv[1]}`}
-function signText(sg){if(sg.kind==='knast')return`<b>⛓ KNAST ⛓</b> · Lv ${sg.lv[0]}–${sg.lv[1]}<br>Justizvollzugsanstalt Villingen-Knastningen.<br>Hier sitzen nur StGB-Täter — und sie wollen raus! Nur für erfahrene Beamte.`;if(sg.kind==='town')return`<b>VILLINGEN-KNASTNINGEN</b><br>„Schnapp sie dir alle — und ab vors Gericht!“<br>🚓 Dienststelle (rotes Dach) · ⚖ Gericht (lila Dach) · 🛒 Budget-Markt: LADEN im Menü<br>Wiese ↑ und Küste ↓ sind offen. Wald und Hügel liegen dahinter.`;
+function signText(sg){if(sg.kind==='knast')return`<b>⛓ KNAST ⛓</b> · Lv ${sg.lv[0]}–${sg.lv[1]}<br>Justizvollzugsanstalt Villingen-Knastningen.<br>Hier sitzen nur StGB-Täter — und sie wollen raus! Nur für erfahrene Beamte.`;if(sg.kind==='town')return`<b>VILLINGEN-KNASTNINGEN</b><br>„Schnapp sie dir alle — und ab vors Gericht!“<br>🚓 Dienststelle (rotes Dach) · ⚖ Gericht (lila Dach) · 🛒 Copshop (Turm links) · 🎓 HfPol (rechts): Study<br>Wiese ↑ und Küste ↓ sind offen. Wald und Hügel liegen dahinter.`;
   const z=BKEYS[sg.to],pool=z?poolOf(z):[],mons=pool.map(s=>G&&G.dex&&G.dex[s]!==undefined?SPECIES[s].n:'???').join(', ');
   const head=`<b>${sg.arrow||''} ${BNAME[sg.to].toUpperCase()}</b> · empfohlen Lv${sg.lv[0]}–${sg.lv[1]}`;
   if(sg.kind==='wall')return`${head}<br>${sg.to===2?'Die Baumreihe versperrt':'Die Klippen versperren'} hier den direkten Weg.<br>Der Pfeil zeigt den Weg durch ${BNAME[sg.via]} — dort gibt es einen Durchgang.${sg.field?`<br>Abkürzung: ${sg.field==='cut'?'Bäumchen mit ✂ ZERSCHNEIDER fällen':'Felsen mit 💪 STÄRKE wegschieben'} (${esc(TRAINERS.find(t=>t.id===HM[sg.field].from).n)}).`:''}`;
@@ -1090,6 +1091,8 @@ const held=[],aimHeld=[];
 function typing(){const a=document.activeElement;return a&&(a.tagName==='INPUT'||a.tagName==='TEXTAREA'||a.tagName==='SELECT')}
 addEventListener('keydown',e=>{
   if(capturing){captureKey(e);return}
+  if(PANIC){e.preventDefault();if(e.key==='Enter'&&!e.repeat)panicOff();return}
+  if(e.key==='Enter'&&!typing()&&!e.repeat&&G){e.preventDefault();panicOn();return}
   if(typing()){if(e.key==='Escape')document.activeElement.blur();return}
   const d=KEYMAP[e.key];if(d){e.preventDefault();if(e.key.startsWith('Arrow')&&B&&!B.tb){if(!aimHeld.includes(d))aimHeld.push(d);return}if(!held.includes(d))held.push(d);return}
   if(B){if($('#modal').classList.contains('on')||$('#study').classList.contains('on'))return;const k=normKey(e.key),K=SET.keys;
@@ -1098,7 +1101,7 @@ addEventListener('keydown',e=>{
     return}
   if((e.key==='m'||e.key==='M')&&G){toggleMap();return}
   if(e.key==='Escape'&&mapOpen()){closeMap();return}
-  if(e.key==='Enter'&&G){e.preventDefault();switchTab('chat');$('#chatin').focus()}
+  if((e.key==='t'||e.key==='T')&&G){e.preventDefault();switchTab('chat');$('#chatin').focus()}
 });
 addEventListener('keyup',e=>{const d=KEYMAP[e.key];if(d){const i=held.indexOf(d);if(i>=0)held.splice(i,1);const j=aimHeld.indexOf(d);if(j>=0)aimHeld.splice(j,1)}if(B&&B.aim&&normKey(e.key)===SET.keys.cap)capRelease()});
 addEventListener('blur',()=>{held.length=0;aimHeld.length=0});
@@ -1202,7 +1205,7 @@ function teleport(x,y){P.x=P.fx=x;P.y=P.fy=y;P.moving=false;P.fol={x,y,tx:x,ty:y
 function onArrive(){
   G.x=P.x;G.y=P.y;G.d=P.d;P.steps++;if(P.steps%8===0)save();updateHud();
   const t=tget(P.x,P.y);
-  if(t===22){if(RUN)openShop();else toast('Laden — tritt einer Lobby bei oder starte das freie Spiel.')}
+  if(t===22){if(RUN)openShop();else toast('Copshop — tritt einer Lobby bei oder starte das freie Spiel.')}
   if(t===23){if(RUN)openHfPol();else toast('HfPol — tritt einer Lobby bei oder starte das freie Spiel, um zu lernen.')}
   if(t===7){if(RUN){healAll();toast('Dienststelle: Dein Team ist voll geheilt! Handschellen aufgefüllt.')}else toast('Dienststelle — tritt einer Lobby bei oder starte das freie Spiel, um ein Team zu bekommen.')}
   if(t===12){if(RUN&&RUN.phase==='lobby')toast('Das Spiel hat noch nicht begonnen — warte auf den Host.');else if(RUN&&RUN.phase==='train'&&!RUN.free)confirmEarlyArena();else if(RUN&&RUN.free)toast('Im Gericht finden Lobby-Turniere statt — erstelle oder betritt eine Lobby!');else toast('Das Gericht — tritt zuerst einer Lobby bei oder erstelle eine!')}
@@ -1256,8 +1259,8 @@ function drawWorld(){
     c.fillStyle='#2a1a0c';c.fillRect(X+1,Y+1,14,8);c.fillStyle='#b07a3e';c.fillRect(X+2,Y+2,12,6);c.fillStyle='#d9a466';c.fillRect(X+2,Y+2,12,1);c.fillStyle='#6b4220';c.fillRect(X+4,Y+4,8,1);c.fillRect(X+4,Y+6,6,1)}
   // signs on roofs
   c.font='7px "Press Start 2P",monospace';c.textBaseline='alphabetic';c.fillStyle='#14141f';c.fillText('POLIZEI',24*16-camX-11,17*16-camY+13);c.fillStyle='#ffffff';c.fillText('POLIZEI',24*16-camX-12,17*16-camY+12);c.fillStyle='#14141f';c.fillText('GERICHT',33*16-camX+24,17*16-camY+13);c.fillStyle='#ffcb3d';c.fillText('GERICHT',33*16-camX+23,17*16-camY+12);
-  c.fillStyle='#14141f';c.fillText('LADEN',23*16-camX+23,24*16-camY+14);c.fillStyle='#ffffff';c.fillText('LADEN',23*16-camX+22,24*16-camY+13);
-  c.font='10px VT323,monospace';c.textAlign='center';c.fillStyle='#ffffff';c.fillText('HfPol',32*16-camX+56,24*16-camY+41);c.textAlign='left';
+  c.font='10px VT323,monospace';c.textAlign='center';c.fillStyle='#ffffff';c.fillText('COPSHOP',23*16-camX+40,24*16-camY+43);c.textAlign='left';
+  c.font='10px VT323,monospace';c.textAlign='center';c.fillStyle='#ffffff';c.fillText('HfPol',32*16-camX+56,24*16-camY+45.5);c.textAlign='left';
   // entities
   const ents=[];
   for(const o of OTH.values()){if(o.fx==null)continue;ents.push({fx:o.fx,fy:o.fy,col:o.c,d:o.d,ph:o.ph,mv:o.moving,name:o.n,bt:o.bt,bub:o.bub});if(o.ld&&o.fol.fx!=null)ents.push({fx:o.fol.fx,fy:o.fol.fy,mon:o.ld})}
@@ -1280,7 +1283,7 @@ function drawWorld(){
 }
 
 /* ===================== WORLD MAP ===================== */
-const MCOL={21:'#3a6fd0',22:'#7c4a22',23:'#7c4a22',20:'#6b6f7a',0:'#6cc44f',1:'#3f9a30',2:'#1f5e2a',3:'#3b8fd9',4:'#e0c890',5:'#ecd79a',6:'#efe8dc',7:'#7c4a22',8:'#d23b3b',9:'#7fd060',10:'#5b4bc4',11:'#a9a9bd',12:'#2d2350',13:'#f2e7b8',14:'#3f8a3a',15:'#c4a374',16:'#6d675d',17:'#25652a',18:'#9fbf5a',19:'#9a7d50'};
+const MCOL={21:'#dcc690',22:'#7c4a22',23:'#7c4a22',20:'#6b6f7a',0:'#6cc44f',1:'#3f9a30',2:'#1f5e2a',3:'#3b8fd9',4:'#e0c890',5:'#ecd79a',6:'#efe8dc',7:'#7c4a22',8:'#d23b3b',9:'#7fd060',10:'#5b4bc4',11:'#a9a9bd',12:'#2d2350',13:'#f2e7b8',14:'#3f8a3a',15:'#c4a374',16:'#6d675d',17:'#25652a',18:'#9fbf5a',19:'#9a7d50'};
 const BIO_C=(()=>{const acc={};for(let y=0;y<MH;y++)for(let x=0;x<MW;x++){const b=BKEYS[BIOME[y*MW+x]];if(!b)continue;const a=acc[b]||(acc[b]={x:0,y:0,n:0});a.x+=x;a.y+=y;a.n++}const o={};for(const k in acc)o[k]={x:acc[k].x/acc[k].n,y:acc[k].y/acc[k].n};return o})();
 function mapOpen(){return $('#mapov').classList.contains('on')}
 function openMap(){if(B)return;$('#mapov').classList.add('on');held.length=0;drawMap();renderMapLegend();renderFly()}
@@ -1308,7 +1311,7 @@ function drawMap(){
   for(const[k,p]of Object.entries(BIO_C)){c.font=`${Math.max(7,Math.round(ts*1.4))}px "Press Start 2P",monospace`;c.fillStyle='#000000a0';c.fillText(ZONES[k].n.toUpperCase(),p.x*ts+1,p.y*ts+1);c.fillStyle='#ffffff';c.fillText(ZONES[k].n.toUpperCase(),p.x*ts,p.y*ts)}
   const mark=(x,y,txt,col)=>{c.font=`${F}px VT323,monospace`;c.fillStyle='#000';c.fillText(txt,(x+.5)*ts+1,(y+.5)*ts+F/3+1);c.fillStyle=col;c.fillText(txt,(x+.5)*ts,(y+.5)*ts+F/3)};
   mark(25,19,'✚','#ffffff');mark(35.5,18,'⚔','#ffcb3d');mark(25,25.5,'🛒','#ffffff');mark(35,25.5,'🎓','#ffffff');
-  for(let y=24;y<28;y++)for(let x=32;x<39;x++){c.fillStyle='#c9a46a';c.fillRect(x*ts,y*ts,ts,ts)}
+  for(let y=24;y<28;y++)for(let x=23;x<39;x++){if(x>27&&x<32)continue;c.fillStyle='#dcc690';c.fillRect(x*ts,y*ts,ts,ts)}
   for(const L of LEGENDS){const gone=RUN&&RUN.leg&&RUN.leg[L.id];mark(L.x,L.y,'★',gone?'#8a8ea6':'#ffcb3d')}
   for(const f of FIELD){if(FIELDGONE.has(f.id))continue;c.fillStyle='#000';c.fillRect(f.x*ts-1,f.y*ts-1,ts+2,ts+2);c.fillStyle=f.kind==='cut'?'#56a83c':'#b8bcc4';c.fillRect(f.x*ts,f.y*ts,ts,ts)}
   for(const sg of SIGNS){c.fillStyle='#000';c.fillRect(sg.x*ts-1,sg.y*ts-1,ts+2,ts+2);c.fillStyle='#d9a466';c.fillRect(sg.x*ts,sg.y*ts,ts,ts)}
@@ -1321,7 +1324,7 @@ function renderMapLegend(){
   let h='';
   for(const[k,z]of Object.entries(ZONES)){
     h+=`<div class="mleg"><b style="color:${z.col==='#2f7a2c'?'#5fb04a':z.col}">${z.n.toUpperCase()}</b><br><span class="small">Monster verstecken sich in: ${z.enc}</span><br>${poolOf(k).map(sp=>{const seen=G.dex[sp]!==undefined;const r=rarOf(sp);return`<span style="color:${r.c}">${seen?nameHtml(sp):'???'}</span>`}).join(' · ')}</div>`}
-  h+=`<div class="mleg"><b style="color:var(--accent)">LEGENDE</b><br>🚓 Dienststelle · ⚖ Gericht · 🛒 Laden · 🎓 HfPol (Study)<br>★ Legendärer Schrein · ■ Cop (✓ besiegt) ·<span style="color:#d9a466">■</span> Schild ·<span style="color:#56a83c">■</span> Bäumchen (Zerschneider) ·<span style="color:#b8bcc4">■</span> Felsbrocken<br>Ringe: Wilde Monster werden mit Abstand zur Stadt stärker.<br>Farben: <span style="color:${RARITY.common.c}">häufig</span> · <span style="color:${RARITY.uncommon.c}">ungewöhnlich</span> · <span style="color:${RARITY.rare.c}">selten</span></div>`;
+  h+=`<div class="mleg"><b style="color:var(--accent)">LEGENDE</b><br>🚓 Dienststelle · ⚖ Gericht · 🛒 Copshop · 🎓 HfPol (Study)<br>★ Legendärer Schrein · ■ Cop (✓ besiegt) ·<span style="color:#d9a466">■</span> Schild ·<span style="color:#56a83c">■</span> Bäumchen (Zerschneider) ·<span style="color:#b8bcc4">■</span> Felsbrocken<br>Ringe: Wilde Monster werden mit Abstand zur Stadt stärker.<br>Farben: <span style="color:${RARITY.common.c}">häufig</span> · <span style="color:${RARITY.uncommon.c}">ungewöhnlich</span> · <span style="color:${RARITY.rare.c}">selten</span></div>`;
   $('#mapleg').innerHTML=h;
 }
 $('#hmap').onclick=toggleMap;$('#hdex').onclick=()=>{if(G)openDex()};$('#hshop').onclick=()=>{if(G)openShop()};$('#htimer').onclick=()=>{if(isMob())$('#side').classList.add('open');switchTab('lobby')};$('#mclose').onclick=closeMap;
@@ -1464,48 +1467,46 @@ function inv(k){return RUN&&RUN.items?(RUN.items[k]||0):0}
 function earn(n,why){if(!RUN||!(n>0))return;RUN.money=(RUN.money||0)+Math.round(n);save();updateHud();const t=`+$${Math.round(n)}${why?' '+why:''}`;if(B)say(t);else toast(t)}
 
 // ---- town building sprites (16 px per tile) ----
+// style after the HfPol campus in Villingen-Schwenningen: octagonal sand-coloured towers with light, faceted roofs and rows of small windows
 let SHOPSPR=null,HFSPR=null;
+function octRows(w,h,ch){const out=[];for(let y=0;y<h;y++){const d=Math.max(0,ch-y,y-(h-1-ch));out.push([d,w-d])}return out}
+function drawTower(x,X,Y,w,roofH,wallH,opt){const F=(col,a,b,ww,hh)=>{x.fillStyle=col;x.fillRect(a,b,ww,hh)};opt=opt||{};
+  // walls (slightly rounded at the bottom corners)
+  const wr=octRows(w,wallH,2);wr.forEach(([a,b],yy)=>{if(yy<wallH-3){a=0;b=w}F('#14141f',X+a,Y+roofH-2+yy,b-a,1);if(b-a>2){const l=X+a+1,ww=b-a-2;F('#dcc690',l,Y+roofH-2+yy,ww,1);F('#c4ad78',l+Math.round(ww*0.62),Y+roofH-2+yy,ww-Math.round(ww*0.62),1);F('#e9d8a8',l,Y+roofH-2+yy,2,1)}});
+  // window rows
+  for(let r=0;r<opt.rows;r++){const wy=Y+roofH+2+r*7;if(wy+4>Y+roofH-2+wallH-3)break;for(let a=X+3;a<X+w-4;a+=5){if(opt.skip&&opt.skip(a-X,r))continue;F('#7d6a44',a,wy,4,5);F('#3b4658',a+1,wy+1,2,3);F('#8fb0d8',a+1,wy+1,1,1)}}
+  // octagonal roof: three tones for the facets, outline, ridge cap
+  octRows(w,roofH,Math.round(roofH*0.35)).forEach(([a,b],yy)=>{F('#14141f',X+a,Y+yy,b-a,1);if(b-a>2){const l=X+a+1,ww=b-a-2,t1=Math.round(w*0.36)-a,t2=Math.round(w*0.64)-a;
+    F('#f4f4f0',l,Y+yy,Math.max(0,Math.min(ww,t1)),1);if(t2>t1)F('#e1e3e1',l+Math.max(0,t1),Y+yy,Math.max(0,Math.min(ww,t2)-Math.max(0,t1)),1);F('#c6cac9',l+Math.max(0,t2),Y+yy,Math.max(0,ww-Math.max(0,t2)),1)}});
+  const cx=X+Math.round(w/2);F('#9aa0a4',cx-1,Y+1,2,roofH-3);F('#14141f',cx-3,Y+Math.round(roofH*0.35)-2,6,4);F('#b9bec2',cx-2,Y+Math.round(roofH*0.35)-1,4,2);
+  F('#b0b5b8',X+2,Y+roofH-3,w-4,1)}
 function shopSprite(){if(SHOPSPR)return SHOPSPR;const W=80,H=64,c=mk(W,H),x=c.getContext('2d');const F=(col,a,b,w,h)=>{x.fillStyle=col;x.fillRect(a,b,w,h)};
-  // roof: blue shop roof with ridges and a light front edge
-  F('#14141f',0,2,W,30);F('#2f6fd0',1,3,W-2,28);for(let y=6;y<30;y+=4)F('#2458b0',1,y,W-2,1);F('#5a92ea',1,3,W-2,2);F('#14141f',0,31,W,1);
-  // walls
-  F('#14141f',0,32,W,32);F('#f1ece0',1,32,W-2,31);F('#cfc6b0',1,60,W-2,3);
-  // striped awning
-  for(let i=0;i<W-2;i+=6){F('#d23b3b',1+i,33,3,6);F('#ffffff',4+i,33,3,6)}F('#14141f',1,39,W-2,1);for(let i=0;i<W-2;i+=6){F('#d23b3b',1+i,39,3,2);F('#14141f',1+i,41,3,1)}
-  // shop windows with goods (left and right of the door)
-  const win=(a)=>{F('#14141f',a,43,22,15);F('#8fd0ff',a+1,44,20,13);F('#c8ecff',a+1,44,6,3);
-    F('#a5784a',a+1,51,20,1);F('#a5784a',a+1,55,20,1);
-    const g=['#ffcb3d','#3ddc6b','#ef4444','#4aa3ff','#c084fc'];for(let k=0;k<5;k++){F(g[k],a+2+k*4,48,3,3);F(g[(k+2)%5],a+2+k*4,52,3,3)}};
-  win(4);win(54);
-  // glass sliding door (door tile = column 2 → x 32..47)
-  F('#14141f',33,42,14,22);F('#5a5f70',34,43,12,21);F('#9fd8ff',35,44,4,19);F('#9fd8ff',41,44,4,19);F('#d6f0ff',35,44,1,19);F('#d6f0ff',41,44,1,19);F('#14141f',40,43,1,21);
-  // little € sign over the door
-  F('#14141f',36,34,8,5);F('#ffcb3d',37,35,6,3);F('#14141f',39,35,2,3);
+  // one HfPol tower as the Copshop; the door sits in the middle (door tile = column 2 → x 32..47)
+  drawTower(x,6,2,68,26,36,{rows:4,skip:(a,r)=>r>=2&&a>24&&a<44});
+  F('#14141f',33,44,14,20);F('#5a5f70',34,45,12,19);F('#9fd8ff',35,46,4,18);F('#9fd8ff',41,46,4,18);F('#d6f0ff',35,46,1,18);F('#14141f',40,45,1,19);
+  F('#14141f',28,40,24,4);F('#1d3f8f',29,41,22,2); // blue canopy
   return SHOPSPR=c}
-// Hochschule für Polizei Villingen-Schwenningen: flat roof, timber-module facade with vertical larch slats, ribbon windows, glazed entrance with canopy and a blue name band
+// HfPol: two octagonal towers joined by the curved lecture hall with the glass stair tower in the middle (door tile = column 3 → x 48..63)
 function hfpolSprite(){if(HFSPR)return HFSPR;const W=112,H=64,c=mk(W,H),x=c.getContext('2d');const F=(col,a,b,w,h)=>{x.fillStyle=col;x.fillRect(a,b,w,h)};
-  // flat roof (seen from above): grey membrane, parapet, skylights and solar panels
-  F('#14141f',0,4,W,28);F('#9a9fa8',1,5,W-2,26);F('#b4b9c2',1,5,W-2,2);F('#7d828c',1,29,W-2,2);
-  for(let i=0;i<4;i++){F('#14141f',8+i*12,10,9,7);F('#2a3f6a',9+i*12,11,7,5);F('#4f6fa8',9+i*12,11,7,1)}
-  for(let i=0;i<3;i++){F('#14141f',64+i*14,9,11,9);F('#d9e6f5',65+i*14,10,9,7);F('#ffffff',65+i*14,10,3,2)}
-  F('#7d828c',10,21,92,1);F('#14141f',50,20,12,8);F('#6b7080',51,21,10,6); // roof hatch / technics
-  // facade: wooden slats
-  F('#14141f',0,32,W,32);F('#c9a46a',1,32,W-2,31);for(let a=2;a<W-1;a+=3)F('#b08a50',a,32,1,31);F('#e0c08a',1,32,W-2,1);F('#8a6a3a',1,61,W-2,2);
-  // two ribbon-window floors
-  const ribbon=(y)=>{for(let a=3;a<W-3;a+=11){if(a>44&&a<64)continue;F('#14141f',a,y,9,8);F('#2f4c78',a+1,y+1,7,6);F('#6f9bd6',a+1,y+1,3,2)}};ribbon(35);ribbon(48);
-  // blue name band + police star
-  F('#14141f',38,33,36,9);F('#1d3f8f',39,34,34,7);
-  // glazed entrance (door tile = column 3 → x 48..63) with canopy
-  F('#14141f',44,43,24,2);F('#d9dde4',45,43,22,1);
+  // connecting hall: low curved light roof and sand facade
+  F('#14141f',22,22,68,42);F('#eceeeb',23,23,66,9);F('#d3d6d4',23,29,66,3);F('#14141f',22,32,68,1);
+  F('#dcc690',23,33,66,30);F('#c4ad78',23,58,66,5);
+  for(const r of[0,1,2])for(let a=26;a<86;a+=5){if(a>40&&a<70)continue;F('#7d6a44',a,36+r*7,4,5);F('#3b4658',a+1,37+r*7,2,3)}
+  // towers left and right
+  drawTower(x,0,4,40,22,38,{rows:4});drawTower(x,72,4,40,22,38,{rows:4});
+  // glass stair tower with round light roof in the middle
+  F('#14141f',43,6,26,58);F('#d9dde4',44,7,24,6);F('#c3c8cf',44,11,24,2);F('#14141f',44,13,24,1);
+  F('#e9eef4',44,14,24,32);for(let a=46;a<66;a+=4)F('#7fa6cf',a,15,2,30);F('#b7d4f0',46,15,1,30);
+  F('#1d3f8f',44,46,24,1);
   F('#14141f',48,46,16,18);F('#3b5f8c',49,47,14,17);F('#9fd8ff',50,48,5,16);F('#9fd8ff',57,48,5,16);F('#d6f0ff',50,48,1,16);F('#14141f',55,47,2,17);
-  // flagpole with the Baden-Württemberg colours (black/yellow)
-  F('#14141f',104,30,1,32);F('#14141f',105,30,7,6);F('#14141f',106,31,5,2);F('#ffcb3d',106,33,5,2);
+  // blue name band above the hall facade
+  F('#14141f',43,40,26,7);F('#1d3f8f',44,41,24,5);
   return HFSPR=c}
 function shopOK(){return RUN&&(RUN.phase==='train'||RUN.phase==='lobby')&&!B&&tget(P.x,P.y)===22}
 function buy(k){const it=ITEMS[k];if(!it||!RUN)return;if(!shopOK()){toast('Läden gibt es nur in der Stadt.');return}if(money()<it.p){toast('Nicht genug Geld.');return}
   RUN.money-=it.p;if(k==='cap')RUN.kap++;else if(k==='cap5')RUN.kap+=5;else{RUN.items=RUN.items||{};RUN.items[k]=(RUN.items[k]||0)+1}save();updateHud();renderTeam();openShop()}
-function openShop(){if(!RUN){toast('Starte zuerst das freie Spiel oder tritt einer Lobby bei.');return}if(!shopOK()){toast(B?"Während eines Kampfes kannst du nicht einkaufen.":RUN.phase==='arena'?'Während des Gerichtsturniers ist der Laden geschlossen.':'Der Laden ist ein eigenes Gebäude: in der Stadt südlich der Hauptstraße, links (🛒 auf der Karte). Geh durch die Tür hinein.');return}
-  openModal(`<h3>🛒 BUDGET-MARKT</h3><p class="small" style="margin-bottom:6px">Dein Geld: <b style="color:var(--accent);font-size:20px">$${money()}</b> · Handschellen ⛓ ${RUN.kap}</p>
+function openShop(){if(!RUN){toast('Starte zuerst das freie Spiel oder tritt einer Lobby bei.');return}if(!shopOK()){toast(B?"Während eines Kampfes kannst du nicht einkaufen.":RUN.phase==='arena'?'Während des Gerichtsturniers ist der Laden geschlossen.':'Der Copshop ist ein eigenes Gebäude: in der Stadt südlich der Hauptstraße, links (🛒 auf der Karte). Geh durch die Tür hinein.');return}
+  openModal(`<h3>🛒 COPSHOP</h3><p class="small" style="margin-bottom:6px">Dein Geld: <b style="color:var(--accent);font-size:20px">$${money()}</b> · Handschellen ⛓ ${RUN.kap}</p>
    ${Object.entries(ITEMS).map(([k,it])=>`<div class="mvrow" style="display:flex;align-items:center;gap:8px"><span style="font-size:22px;width:26px;text-align:center">${it.i}</span><span style="flex:1"><b>${esc(it.n)}</b> <span class="small">· owned ${k==='cap'||k==='cap5'?RUN.kap:inv(k)}</span><br><span class="small">${esc(it.d)}</span></span><button class="btn ${money()>=it.p?'':'ghost'}" data-buy="${k}" ${money()>=it.p?'':'disabled'}>$${it.p}</button></div>`).join('')}
    <div class="acts" style="margin-top:8px"><button class="btn" id="mok">FERTIG</button></div>`);
   $('#mbox').style.maxHeight='92%';$('#mbox').style.overflow='auto';document.querySelectorAll('[data-buy]').forEach(b=>b.onclick=()=>buy(b.dataset.buy));$('#mok').onclick=closeModal}
@@ -3012,11 +3013,42 @@ $('#chatform').addEventListener('submit',e=>{e.preventDefault();const inp=$('#ch
 /* ===================== LOOP ===================== */
 let last=performance.now(),slow=0;
 function frame(now){if(!WORLD&&!BAKE_FAIL)bakeTick();const dt=Math.max(0,Math.min(0.05,(now-last)/1000));last=now;T+=dt;
-  try{if(G){if(!B)updatePlayer(dt);updateOthers(dt);if(B)bUpdate(dt);if(B&&$('#battle').classList.contains('on')){drawBattle();updateBattleUI()}else drawWorld();if(mapOpen())drawMap();
+  try{if(G){if(!B)updatePlayer(dt);updateOthers(dt);if(B&&!panicPaused())bUpdate(dt);if(B&&$('#battle').classList.contains('on')){drawBattle();updateBattleUI()}else drawWorld();if(mapOpen())drawMap();
 }}catch(e){console.error(e);if(!frame.errShown){frame.errShown=1;showErr(e.message+' (frame)')}}
   try{drawFX()}catch(e){console.error(e)}
   try{updateTouch()}catch(e){console.error(e)}
   requestAnimationFrame(frame)}
+
+
+/* ===================== NOTFALLMODUS (Enter) ===================== */
+const NORMS=[
+ ['Strafgesetzbuch (StGB)','§ 242 Diebstahl',['(1) Wer eine fremde bewegliche Sache einem anderen in der Absicht wegnimmt, die Sache sich oder einem Dritten rechtswidrig zuzueignen, wird mit Freiheitsstrafe bis zu fünf Jahren oder mit Geldstrafe bestraft.','(2) Der Versuch ist strafbar.']],
+ ['Strafgesetzbuch (StGB)','§ 223 Körperverletzung',['(1) Wer eine andere Person körperlich mißhandelt oder an der Gesundheit schädigt, wird mit Freiheitsstrafe bis zu fünf Jahren oder mit Geldstrafe bestraft.','(2) Der Versuch ist strafbar.']],
+ ['Strafgesetzbuch (StGB)','§ 185 Beleidigung',['Die Beleidigung wird mit Freiheitsstrafe bis zu einem Jahr oder mit Geldstrafe und, wenn die Beleidigung öffentlich, in einer Versammlung, durch Verbreiten eines Inhalts (§ 11 Absatz 3) oder mittels einer Tätlichkeit begangen wird, mit Freiheitsstrafe bis zu zwei Jahren oder mit Geldstrafe bestraft.']],
+ ['Strafgesetzbuch (StGB)','§ 263 Betrug',['(1) Wer in der Absicht, sich oder einem Dritten einen rechtswidrigen Vermögensvorteil zu verschaffen, das Vermögen eines anderen dadurch beschädigt, daß er durch Vorspiegelung falscher oder durch Entstellung oder Unterdrückung wahrer Tatsachen einen Irrtum erregt oder unterhält, wird mit Freiheitsstrafe bis zu fünf Jahren oder mit Geldstrafe bestraft.','(2) Der Versuch ist strafbar.'],'Auszug: Absätze 1 und 2'],
+ ['Strafgesetzbuch (StGB)','§ 303 Sachbeschädigung',['(1) Wer rechtswidrig eine fremde Sache beschädigt oder zerstört, wird mit Freiheitsstrafe bis zu zwei Jahren oder mit Geldstrafe bestraft.','(2) Ebenso wird bestraft, wer unbefugt das Erscheinungsbild einer fremden Sache nicht nur unerheblich und nicht nur vorübergehend verändert.','(3) Der Versuch ist strafbar.']],
+ ['Strafgesetzbuch (StGB)','§ 316 Trunkenheit im Verkehr',['(1) Wer im Verkehr (§§ 315 bis 315e) ein Fahrzeug führt, obwohl er infolge des Genusses alkoholischer Getränke oder anderer berauschender Mittel nicht in der Lage ist, das Fahrzeug sicher zu führen, wird mit Freiheitsstrafe bis zu einem Jahr oder mit Geldstrafe bestraft, wenn die Tat nicht in § 315a oder § 315c mit Strafe bedroht ist.','(2) Nach Absatz 1 wird auch bestraft, wer die Tat fahrlässig begeht.']],
+ ['Strafprozeßordnung (StPO)','§ 102 Durchsuchung bei Beschuldigten',['Bei dem, welcher als Täter oder Teilnehmer einer Straftat oder der Begünstigung, Strafvereitelung oder Hehlerei verdächtig ist, kann eine Durchsuchung der Wohnung und anderer Räume sowie seiner Person und der ihm gehörenden Sachen sowohl zum Zweck seiner Ergreifung als auch dann vorgenommen werden, wenn zu vermuten ist, daß die Durchsuchung zur Auffindung von Beweismitteln führen werde.']],
+ ['Strafprozeßordnung (StPO)','§ 136a Verbotene Vernehmungsmethoden; Beweisverwertungsverbote',['(1) Die Freiheit der Willensentschließung und der Willensbetätigung des Beschuldigten darf nicht beeinträchtigt werden durch Mißhandlung, durch Ermüdung, durch körperlichen Eingriff, durch Verabreichung von Mitteln, durch Quälerei, durch Täuschung oder durch Hypnose. Zwang darf nur angewandt werden, soweit das Strafverfahrensrecht dies zuläßt. Die Drohung mit einer nach seinen Vorschriften unzulässigen Maßnahme und das Versprechen eines gesetzlich nicht vorgesehenen Vorteils sind verboten.','(2) Maßnahmen, die das Erinnerungsvermögen oder die Einsichtsfähigkeit des Beschuldigten beeinträchtigen, sind nicht gestattet.','(3) Das Verbot der Absätze 1 und 2 gilt ohne Rücksicht auf die Einwilligung des Beschuldigten. Aussagen, die unter Verletzung dieses Verbots zustande gekommen sind, dürfen auch dann nicht verwertet werden, wenn der Beschuldigte der Verwertung zustimmt.']],
+ ['Strafprozeßordnung (StPO)','§ 163 Aufgaben der Polizei im Ermittlungsverfahren',['(1) Die Behörden und Beamten des Polizeidienstes haben Straftaten zu erforschen und alle keinen Aufschub gestattenden Anordnungen zu treffen, um die Verdunkelung der Sache zu verhüten. Zu diesem Zweck sind sie befugt, alle Behörden um Auskunft zu ersuchen, bei Gefahr im Verzug auch, die Auskunft zu verlangen, sowie Ermittlungen jeder Art vorzunehmen, soweit nicht andere gesetzliche Vorschriften ihre Befugnisse besonders regeln.','(2) Die Behörden und Beamten des Polizeidienstes übersenden ihre Verhandlungen ohne Verzug der Staatsanwaltschaft. Erscheint die schleunige Vornahme richterlicher Untersuchungshandlungen erforderlich, so kann die Übersendung unmittelbar an das Amtsgericht erfolgen.'],'Auszug: Absätze 1 und 2'],
+ ['Grundgesetz für die Bundesrepublik Deutschland (GG)','Art 1',['(1) Die Würde des Menschen ist unantastbar. Sie zu achten und zu schützen ist Verpflichtung aller staatlichen Gewalt.','(2) Das Deutsche Volk bekennt sich darum zu unverletzlichen und unveräußerlichen Menschenrechten als Grundlage jeder menschlichen Gemeinschaft, des Friedens und der Gerechtigkeit in der Welt.','(3) Die nachfolgenden Grundrechte binden Gesetzgebung, vollziehende Gewalt und Rechtsprechung als unmittelbar geltendes Recht.']],
+ ['Grundgesetz für die Bundesrepublik Deutschland (GG)','Art 2',['(1) Jeder hat das Recht auf die freie Entfaltung seiner Persönlichkeit, soweit er nicht die Rechte anderer verletzt und nicht gegen die verfassungsmäßige Ordnung oder das Sittengesetz verstößt.','(2) Jeder hat das Recht auf Leben und körperliche Unversehrtheit. Die Freiheit der Person ist unverletzlich. In diese Rechte darf nur auf Grund eines Gesetzes eingegriffen werden.']],
+ ['Grundgesetz für die Bundesrepublik Deutschland (GG)','Art 8',['(1) Alle Deutschen haben das Recht, sich ohne Anmeldung oder Erlaubnis friedlich und ohne Waffen zu versammeln.','(2) Für Versammlungen unter freiem Himmel kann dieses Recht durch Gesetz oder auf Grund eines Gesetzes beschränkt werden.']],
+ ['Grundgesetz für die Bundesrepublik Deutschland (GG)','Art 10',['(1) Das Briefgeheimnis sowie das Post- und Fernmeldegeheimnis sind unverletzlich.','(2) Beschränkungen dürfen nur auf Grund eines Gesetzes angeordnet werden. Dient die Beschränkung dem Schutze der freiheitlichen demokratischen Grundordnung oder des Bestandes oder der Sicherung des Bundes oder eines Landes, so kann das Gesetz bestimmen, daß sie dem Betroffenen nicht mitgeteilt wird und daß an die Stelle des Rechtsweges die Nachprüfung durch von der Volksvertretung bestellte Organe und Hilfsorgane tritt.']],
+ ['Grundgesetz für die Bundesrepublik Deutschland (GG)','Art 19',['(1) Soweit nach diesem Grundgesetz ein Grundrecht durch Gesetz oder auf Grund eines Gesetzes eingeschränkt werden kann, muß das Gesetz allgemein und nicht nur für den Einzelfall gelten. Außerdem muß das Gesetz das Grundrecht unter Angabe des Artikels nennen.','(2) In keinem Falle darf ein Grundrecht in seinem Wesensgehalt angetastet werden.','(3) Die Grundrechte gelten auch für inländische juristische Personen, soweit sie ihrem Wesen nach auf diese anwendbar sind.','(4) Wird jemand durch die öffentliche Gewalt in seinen Rechten verletzt, so steht ihm der Rechtsweg offen. Soweit eine andere Zuständigkeit nicht begründet ist, ist der ordentliche Rechtsweg gegeben. Artikel 10 Abs. 2 Satz 2 bleibt unberührt.']],
+ ['Grundgesetz für die Bundesrepublik Deutschland (GG)','Art 20',['(1) Die Bundesrepublik Deutschland ist ein demokratischer und sozialer Bundesstaat.','(2) Alle Staatsgewalt geht vom Volke aus. Sie wird vom Volke in Wahlen und Abstimmungen und durch besondere Organe der Gesetzgebung, der vollziehenden Gewalt und der Rechtsprechung ausgeübt.','(3) Die Gesetzgebung ist an die verfassungsmäßige Ordnung, die vollziehende Gewalt und die Rechtsprechung sind an Gesetz und Recht gebunden.','(4) Gegen jeden, der es unternimmt, diese Ordnung zu beseitigen, haben alle Deutschen das Recht zum Widerstand, wenn andere Abhilfe nicht möglich ist.']]
+];
+let PANIC=null;
+function panicOn(){if(PANIC)return;const N=NORMS[Math.floor(Math.random()*NORMS.length)];
+  PANIC={t0:performance.now(),title:document.title};held.length=0;aimHeld.length=0;
+  let el=$('#panic');if(!el){el=document.createElement('div');el.id='panic';document.body.appendChild(el)}
+  const sh=N[0].match(/\(([^)]+)\)$/),abbr=sh?sh[1]:'';
+  el.innerHTML=`<div class="pdoc"><div class="phead">${esc(N[0])}</div><h1>${esc(N[1])}</h1>${N[3]?`<div class="psub">${esc(N[3])}</div>`:''}${N[2].map(t=>`<p>${esc(t)}</p>`).join('')}<div class="pfoot">${esc(abbr)} · ${esc(N[1].split(' ').slice(0,2).join(' '))}</div></div>`;
+  el.style.display='block';document.title=N[1].split(' ').slice(0,2).join(' ')+' '+abbr;
+  try{if(document.activeElement)document.activeElement.blur()}catch(e){}}
+function panicOff(){if(!PANIC)return;const pause=performance.now()-PANIC.t0;document.title=PANIC.title;PANIC=null;const el=$('#panic');if(el)el.style.display='none';
+  if(B&&B.mode!=='duel'){if(B.cntEnd)B.cntEnd+=pause;if(B.vs)B.vs.t0+=pause;if(B.enterT)B.enterT+=pause;for(const F of[B.me,B.foe])if(F&&F.spawnT)F.spawnT+=pause}}
+function panicPaused(){return!!(PANIC&&B&&B.mode!=='duel')}
 
 /* ===================== BOOT ===================== */
 applyControls();
