@@ -293,7 +293,7 @@ body.mob.portrait #rotate.show{display:block}
 <body>
 <div id="app">
 <div id="mainc">
-  <div id="topbar"><span class="tbrand">KNASTÉMON</span><span class="chip timer" id="htimer">LOBBY</span><button id="tupd" style="display:none;background:#ef4444;color:#fff">⬆ NEUE VERSION — NEU LADEN</button><span class="tsp"></span><button data-t="lobby" title="Lobby">🏟<span class="tl"> LOBBY</span></button><button data-t="team" title="Team">🎒<span class="tl"> TEAM</span></button><button data-t="players" title="Spieler">👥<span class="tl"> SPIELER</span><span id="pcount"></span></button><button data-t="chat" title="Chat">💬<span class="tl"> CHAT</span><span id="cbadge"></span></button><button id="hshop" title="Laden (in der Stadt)">🛒<span class="tl"> LADEN</span></button><button id="hdex" title="Monster-Dex">📖<span class="tl"> DEX</span></button><button id="hmap" title="Karte">🗺<span class="tl"> KARTE</span></button><button id="hfs" title="Vollbild" style="display:none">⛶</button><button id="hset">⚙</button><span id="tver"></span></div>
+  <div id="topbar"><span class="tbrand">KNASTÉMON</span><span class="chip timer" id="htimer">LOBBY</span><button id="tupd" style="display:none;background:#ef4444;color:#fff">⬆ NEUE VERSION — NEU LADEN</button><span class="tsp"></span><button data-t="lobby" title="Lobby">🏟<span class="tl"> LOBBY</span></button><button data-t="team" title="Team">🎒<span class="tl"> TEAM</span></button><button data-t="players" title="Spieler">👥<span class="tl"> SPIELER</span><span id="pcount"></span></button><button data-t="chat" title="Chat">💬<span class="tl"> CHAT</span><span id="cbadge"></span></button><button id="hshop" title="Copshop (in der Stadt)">🛒<span class="tl"> LADEN</span></button><button id="hdex" title="Monster-Dex">📖<span class="tl"> DEX</span></button><button id="hmap" title="Karte">🗺<span class="tl"> KARTE</span></button><button id="hfs" title="Vollbild" style="display:none">⛶</button><button id="hbug" title="Bug melden (GitHub)">🐞</button><button id="hset">⚙</button><span id="tver"></span></div>
   <div id="stage">
     <canvas id="world"></canvas>
     <div class="hud"><span class="chip" id="hzone">Stadt</span><span class="chip" id="hkap">Handschellen -</span><span class="chip" id="hon"><span class="dot"></span>Solo</span></div>
@@ -332,6 +332,7 @@ body.mob.portrait #rotate.show{display:block}
     <canvas id="sprev" width="16" height="17"></canvas>
     <div class="field"><label>DEIN NAME</label><input id="sname" maxlength="16" placeholder="z. B. Harald"></div>
     <div class="field"><label>DEINE FARBE</label><div class="colors" id="scolors"></div></div>
+    <div class="field" id="spwf"><label>PASSWORT</label><input id="spw" type="password" maxlength="24" placeholder="Zugangspasswort" autocomplete="off"></div>
     <div id="loadbar"><i></i></div>
     <div class="small" id="sver" style="margin:-6px 0 10px"></div>
     <button class="btn" id="sgo" style="font-size:12px;padding:13px 22px">SPIELEN</button> <button class="btn ghost" id="sfs" style="font-size:10px;padding:13px 14px;display:none">⛶ VOLLBILD</button>
@@ -380,7 +381,13 @@ const TURN_CONFIG = {
 
 /* ===================== VERSION ===================== */
 // bump with every release (MAJOR.MINOR.PATCH). Players can only share lobbies/duels with the same version.
-const VERSION='0.43.0';
+const VERSION='0.44.0';
+// access password: only its hash is stored here; the password itself also keys the P2P room, so clients without it cannot connect
+const PW_KEY='knast_pw',PW_H=2361915375,MAX_ROOM=10,MAX_LOBBY=5;
+function pwHash(s){let h=2166136261;s='knast:'+s;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
+function pwCheck(v){return!!v&&pwHash(v)===PW_H}
+function pwGet(){try{const v=localStorage.getItem(PW_KEY)||'';return pwCheck(v)?v:''}catch(e){return''}}
+function pwOK(){return!!pwGet()}
 function cmpV(a,b){const x=String(a||'0').split('.').map(Number),y=String(b||'0').split('.').map(Number);for(let i=0;i<3;i++){const d=(x[i]||0)-(y[i]||0);if(d)return d}return 0}
 /* ===================== ERROR REPORTING ===================== */
 function showErr(m){try{const b=document.getElementById('errbox');if(!b)return;b.textContent='⚠ Fehler: '+String(m).slice(0,220)+' — bitte an den Entwickler schicken.';b.style.display='block';clearTimeout(showErr.t);showErr.t=setTimeout(()=>b.style.display='none',12000)}catch(e){}}
@@ -1017,8 +1024,10 @@ function buildStart(){
   COLORS.forEach(col=>{const b=document.createElement('button');b.style.background=col;if(col===pickColor)b.classList.add('sel');b.onclick=()=>{pickColor=col;[...cw.children].forEach(x=>x.classList.remove('sel'));b.classList.add('sel');prev()};cw.appendChild(b)});
   prev();
   // a new session always starts here: a lobby from an earlier session is not resumed (free-play team, dex and trophies are kept)
-  $('#sgo').onclick=()=>{const nm=cleanName($('#sname').value);if(G){G.name=nm;G.color=pickColor;G.x=30;G.y=24;G.d='down';G.run=G.freeRun||null}else G={name:nm,color:pickColor,dex:{},tro:0,x:30,y:24,d:'down',run:null};save();begin()};
-  $('#sname').addEventListener('keydown',e=>{if(e.key==='Enter')$('#sgo').click()});
+  $('#sgo').onclick=()=>{if(!pwOK()){const v=($('#spw').value||'').trim().toUpperCase();if(!pwCheck(v)){toast('Falsches Passwort.');$('#spw').focus();return}try{localStorage.setItem(PW_KEY,v)}catch(e){}if(!ROOM)initRoom()}
+    const nm=cleanName($('#sname').value);if(G){G.name=nm;G.color=pickColor;G.x=30;G.y=24;G.d='down';G.run=G.freeRun||null}else G={name:nm,color:pickColor,dex:{},tro:0,x:30,y:24,d:'down',run:null};save();begin()};
+  $('#sname').addEventListener('keydown',e=>{if(e.key==='Enter')$('#sgo').click()});$('#spw').addEventListener('keydown',e=>{if(e.key==='Enter')$('#sgo').click()});
+  if(pwOK())$('#spwf').style.display='none';
 }
 function begin(){
   $('#start').classList.add('off');
@@ -1327,7 +1336,7 @@ function renderMapLegend(){
   h+=`<div class="mleg"><b style="color:var(--accent)">LEGENDE</b><br>🚓 Dienststelle · ⚖ Gericht · 🛒 Copshop · 🎓 HfPol (Study)<br>★ Legendärer Schrein · ■ Cop (✓ besiegt) ·<span style="color:#d9a466">■</span> Schild ·<span style="color:#56a83c">■</span> Bäumchen (Zerschneider) ·<span style="color:#b8bcc4">■</span> Felsbrocken<br>Ringe: Wilde Monster werden mit Abstand zur Stadt stärker.<br>Farben: <span style="color:${RARITY.common.c}">häufig</span> · <span style="color:${RARITY.uncommon.c}">ungewöhnlich</span> · <span style="color:${RARITY.rare.c}">selten</span></div>`;
   $('#mapleg').innerHTML=h;
 }
-$('#hmap').onclick=toggleMap;$('#hdex').onclick=()=>{if(G)openDex()};$('#hshop').onclick=()=>{if(G)openShop()};$('#htimer').onclick=()=>{if(isMob())$('#side').classList.add('open');switchTab('lobby')};$('#mclose').onclick=closeMap;
+$('#hmap').onclick=toggleMap;$('#hbug').onclick=bugReport;$('#hdex').onclick=()=>{if(G)openDex()};$('#hshop').onclick=()=>{if(G)openShop()};$('#htimer').onclick=()=>{if(isMob())$('#side').classList.add('open');switchTab('lobby')};$('#mclose').onclick=closeMap;
 $('#mapov').addEventListener('click',e=>{if(e.target.id==='mapov')closeMap()});
 
 /* ===================== MULTIPLAYER ===================== */
@@ -1335,12 +1344,13 @@ let ROOM=null,MYPEER=null;
 const OTH=new Map();let myBubble=null,chatN=0;
 function pres(p){if(!ROOM)return;try{ROOM.presence(p).catch(()=>{})}catch(e){}}
 function leadInfo(){return RUN&&RUN.team[0]?[RUN.team[0].s,RUN.team[0].l]:null}
-function mtInfo(){if(RUN&&RUN.free)return{id:RUN.id,end:0,r:0,st:'free',prev:null};return RUN?{id:RUN.id,end:RUN.end,r:RUN.phase==='arena'?RUN.r:0,st:RUN.phase==='arena'?RUN.st:RUN.phase==='lobby'?'lobby':'train',prev:RUN.prev||null,res:RUN.res||[],cfg:RUN.cfg,rs:RUN.rs||0,rd:RUN.rdy?1:0}:null}
+function mtInfo(){if(RUN&&RUN.free)return{id:RUN.id,end:0,r:0,st:'free',prev:null};return RUN?{id:RUN.id,end:RUN.end,r:RUN.phase==='arena'?RUN.r:0,st:RUN.phase==='arena'?RUN.st:RUN.phase==='lobby'?'lobby':'train',prev:RUN.prev||null,res:RUN.res||[],cfg:RUN.cfg,rs:RUN.rs||0,rd:RUN.rdy?1:0,jt:RUN.jt||0}:null}
 function pushFull(){if(!G)return;pres({v:VERSION,n:G.name,c:G.color,x:P.moving?P.tx:P.x,y:P.moving?P.ty:P.y,d:P.d,tr:G.tro,ld:leadInfo(),bt:B?(B.mode==='wild'?'wild':'duel'):null,mt:mtInfo()})}
 function pushMt(){pres({mt:mtInfo(),ld:leadInfo()})}
 function setConn(on,label){$('#hon').innerHTML=`<span class="dot ${on?'on':''}"></span>${label||(on?'Online':'Offline')}`}
 async function initRoom(){
   setConn(false,'Verbinde…');
+  if(!pwOK()){setConn(false,'Passwort fehlt');return}
   try{TURN_ACTIVE=await getTurnServers()}catch(e){TURN_ACTIVE=[]}
   try{ROOM=makeP2PRoom(ROOM_ID,TURN_ACTIVE);ROOM.onPeers(onRoomPeers);setConnLabel();pushFull()}
   catch(e){console.error(e);ROOM=null;setConn(false,'Solo (offline)')}
@@ -1394,10 +1404,10 @@ async function getTurnServers(){
 }
 function makeP2PRoom(roomId,turn){
   const TR=window.Trystero;
-  const cfg={appId:'discountmon-budget-edition-v1'};if(turn&&turn.length)cfg.turnConfig=turn;
+  const cfg={appId:'discountmon-budget-edition-v1',password:pwGet()||undefined};if(turn&&turn.length)cfg.turnConfig=turn;
   const room=TR.joinRoom(cfg,roomId,{onJoinError:d=>{JOIN_ERRORS++;console.warn('join error',d);if(JOIN_ERRORS===1||JOIN_ERRORS%5===0)toast(turn&&turn.length?'Ein Spieler konnte sich nicht einmal über TURN verbinden. Prüfe die TURN-Einstellungen.':'Ein Spieler konnte sich nicht direkt verbinden. Richte einen TURN-Fallback ein: ⚙ STEUERUNG → NETZWERK.');setConnLabel()}});
   const act=room.makeAction('pres');const png=room.makeAction('png');const me=TR.selfId;
-  let mine={};const others=new Map();const RTT=new Map();let snap=Object.freeze([]);const hs=[],cs=[];let lastSend=0,pending=false,lastFull=0,sent={};const SJ={};
+  let mine={jt:Date.now()};const others=new Map();const RTT=new Map();let snap=Object.freeze([]);const hs=[],cs=[];let lastSend=0,pending=false,lastFull=0,sent={};const SJ={};
   // bandwidth: only changed keys are sent (one level deep for objects like the duel state); a full snapshot every 15 s heals anything missed
   const js=v=>{try{return JSON.stringify(v)}catch(e){return''}};
   function diff(){const out={},del=[],part={};let any=false;
@@ -1481,6 +1491,17 @@ function afkGo(){if(AFK||!ROOM)return;AFK=true;try{ROOM.leave()}catch(e){}ROOM=n
   el.innerHTML='💤 <b>Du warst eine Weile inaktiv</b><br>Die Verbindung zu den anderen Spielern wurde getrennt, um Datenvolumen zu sparen.<br><span style="color:#ffcb3d">Drück eine Taste oder tippe, um wieder zu verbinden.</span>';el.style.display='block'}
 function afkBack(){if(!AFK)return;AFK=false;const el=document.getElementById('afkban');if(el)el.style.display='none';LAST_ACT=Date.now();
   try{ROOM=makeP2PRoom(ROOM_ID,TURN_ACTIVE);ROOM.onPeers(onRoomPeers);setConnLabel();pushFull();toast('Wieder verbunden.')}catch(e){console.error(e);ROOM=null;setConn(false,'Solo (offline)')}}
+
+// ---- room cap: at most MAX_ROOM players; the latest arrivals step back and retry later ----
+let FULL=false;
+setInterval(()=>{if(!ROOM||AFK||FULL)return;const ps=ROOM.peers();if(ps.length<=MAX_ROOM)return;
+  const order=ps.slice().sort((a,b)=>((+a.presence.jt||9e15)-(+b.presence.jt||9e15))||(a.peer<b.peer?-1:1));const i=order.findIndex(p=>p.isMe);
+  if(i>=MAX_ROOM&&!(typeof B!=='undefined'&&B&&B.mode==='duel'))roomFull()},2000);
+function roomFull(){FULL=true;try{ROOM.leave()}catch(e){}ROOM=null;setConn(false,'Server voll');
+  let el=document.getElementById('afkban');if(!el){el=document.createElement('div');el.id='afkban';el.style.cssText='position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:9000;background:#14141f;border:3px solid #000;box-shadow:4px 4px 0 #000;color:#fff;padding:16px 20px;text-align:center;font-family:VT323,monospace;font-size:20px;max-width:90vw';document.body.appendChild(el)}
+  el.innerHTML=`🚧 <b>Server voll</b><br>Es sind schon ${MAX_ROOM} Spieler online. Du kannst solange solo weiterspielen.<br><button class="btn" id="fullretry" style="margin-top:8px">ERNEUT VERSUCHEN</button> <button class="btn ghost" id="fullx" style="margin-top:8px">SOLO WEITER</button>`;el.style.display='block';
+  document.getElementById('fullretry').onclick=()=>{el.style.display='none';FULL=false;try{ROOM=makeP2PRoom(ROOM_ID,TURN_ACTIVE);ROOM.onPeers(onRoomPeers);setConnLabel();pushFull()}catch(e){ROOM=null}};
+  document.getElementById('fullx').onclick=()=>{el.style.display='none'}}
 
 /* ===================== MATCHES ===================== */
 const DEF_CFG={name:'',dur:10,rounds:3,team:3,kap:10,xp:1,enc:1,leg:1,tb:0,alt:1,money:100,aim:0};
@@ -1599,7 +1620,7 @@ function renderLobby(){
       if(el.dataset.h!==h){el.dataset.h=h;el.innerHTML=h;$('#lmax').onclick=()=>{LOBBY_MIN=false;renderLobby()}}el.classList.add('on');return}
     h=`<div class="lrow" style="margin-bottom:6px"><h3 style="flex:1;margin:0">LOBBYS</h3><button class="btn ghost" id="lmin">▼</button></div><p>Dein Team aus dem freien Spiel bleibt gespeichert. Tritt einer Lobby bei oder erstelle eine: Alle bekommen ein neues Starter-Monster, gehen auf Streife und kämpfen dann in einem Gerichtsturnier im Schweizer System.</p>`;
   }else h=`<h3>LOBBY</h3><p>Spiel frei mit einem gespeicherten Team — oder tritt einer Lobby bei bzw. erstelle eine: neues Starter-Monster, Streife bis der Timer abläuft, dann ein Gerichtsturnier im Schweizer System mit Rangliste.</p><div class="lrow" style="margin-bottom:8px"><button class="btn green" id="lfree" style="flex:1">${G.freeRun?'FREIES SPIEL FORTSETZEN':'FREIES SPIEL'}</button></div>`;
-  for(const m of ms)h+=`<div class="lrow" style="margin-bottom:8px;align-items:flex-start"><span style="flex:1;line-height:1.05"><span style="color:var(--text)">${esc(m.cfg.name||m.names.slice(0,2).join(', '))}</span> · ${lobbyLine(m)} · ${m.names.length} Spieler<br><span class="small">${esc(cfgSummary(m.cfg))}</span></span>${m.v===VERSION?`<button class="btn green" data-join="${esc(m.id)}">BEITRETEN</button>`:verLock(m)}</div>`;
+  for(const m of ms)h+=`<div class="lrow" style="margin-bottom:8px;align-items:flex-start"><span style="flex:1;line-height:1.05"><span style="color:var(--text)">${esc(m.cfg.name||m.names.slice(0,2).join(', '))}</span> · ${lobbyLine(m)} · ${m.names.length}/${MAX_LOBBY} Spieler<br><span class="small">${esc(cfgSummary(m.cfg))}</span></span>${m.v!==VERSION?verLock(m):m.names.length>=MAX_LOBBY?`<button class="btn ghost" disabled>VOLL ${MAX_LOBBY}/${MAX_LOBBY}</button>`:`<button class="btn green" data-join="${esc(m.id)}">BEITRETEN</button>`}</div>`;
   h+=`<div class="lrow"><button class="btn" id="lcreate" style="flex:1">＋ LOBBY ERSTELLEN</button></div>`;
   if(el.dataset.h!==h){el.dataset.h=h;el.innerHTML=h;
     const lm=$('#lmin');if(lm)lm.onclick=()=>{LOBBY_MIN=true;renderLobby()};
@@ -1639,13 +1660,14 @@ function pickStarter(cb,cfg){const alt=altOn(cfg||{alt:SET.alt==='0'?0:1});
 function startRun(id,end,sid,prev,cfg,phase){
   phase=phase||'train';if(phase==='train'&&end<Date.now()+5000){toast('Dieses Spiel ist fast vorbei.');return}
   cfg=sanitizeCfg(cfg||DEF_CFG);
-  RUN={id,starter:sid,rs:cfg.host===(MYPEER||'me')?0:null,end:phase==='lobby'?0:end,cfg,phase,team:[newMon(sid,START_LV)],box:[],kap:cfg.kap,money:cfg.money??100,items:{},r:1,st:phase==='lobby'?'lobby':'train',res:[],prev:prev||null,beat:{},leg:{}};G.dex[sid]=1;$('#arena').classList.remove('on');
+  RUN={id,jt:Date.now(),starter:sid,rs:cfg.host===(MYPEER||'me')?0:null,end:phase==='lobby'?0:end,cfg,phase,team:[newMon(sid,START_LV)],box:[],kap:cfg.kap,money:cfg.money??100,items:{},r:1,st:phase==='lobby'?'lobby':'train',res:[],prev:prev||null,beat:{},leg:{}};G.dex[sid]=1;$('#arena').classList.remove('on');
   save();$('#lobby').dataset.h='';renderLobby();renderTeam();updateHud();pushMt();teleport(30,24);
   if(phase==='lobby'){sysChat(`Du bist in der Lobby${cfg.name?' „'+cfg.name+'“':''} (${cfgSummary(cfg)}). Der Host startet das Spiel.`);switchTab('lobby')}
   else{sysChat(`Spiel${cfg.name?' "'+cfg.name+'"':''} läuft! ${fmt(end-Date.now())} Training (${cfgSummary(cfg)}). Geh ins Gericht, wenn du bereit bist.`);toast('Streife gestartet! Ab ins hohe Gras.')}
 }
 function verLock(m){return`<button class="btn ghost" disabled title="Alle in einer Lobby brauchen dieselbe Version">v${esc(m.v)}</button>`}
 function joinLobby(id){const m=runningMatches().find(x=>x.id===id);if(!m){toast('Diese Lobby gibt es nicht mehr.');return}
+  if(m.names.length>=MAX_LOBBY){toast(`Diese Lobby ist voll (max. ${MAX_LOBBY} Spieler).`);return}
   if(m.v!==VERSION){toast(cmpV(m.v,VERSION)>0?`Diese Lobby läuft auf v${m.v} — lade die Seite neu, um zu aktualisieren (du hast v${VERSION}).`:`Diese Lobby läuft auf einer älteren Version (v${m.v}). Ihre Spieler müssen neu laden.`);return}pickStarter(sid=>startRun(m.id,m.end,sid,null,m.cfg,m.waiting?'lobby':'train'),sanitizeCfg(m.cfg))}
 // host = creator while present, otherwise the member with the lowest id (same answer on every client)
 function hostPeer(){if(!RUN||RUN.free)return null;const ids=participants().map(p=>p.peer);if(RUN.cfg.host&&ids.includes(RUN.cfg.host))return RUN.cfg.host;return ids.sort()[0]}
@@ -1681,7 +1703,10 @@ function resetRun(n){
 }
 function hostReset(){if(!isHost())return;openModal(`<h3>SITZUNG ZURÜCKSETZEN?</h3><p>Alle in dieser Lobby gehen zurück zum Start: neues Starter-Monster, keine Fänge, Timer und Urteile gelöscht. Danach könnt ihr neu starten.</p><div class="acts"><button class="btn ghost" id="mno">ABBRECHEN</button><button class="btn red" id="myes">ZURÜCKSETZEN</button></div>`);
   $('#mno').onclick=closeModal;$('#myes').onclick=()=>{closeModal();resetRun((RUN.rs||0)+1)}}
-function matchTick(){
+function lobbyCapCheck(){if(!RUN||RUN.free||RUN.phase==='arena')return;const parts=participants();if(parts.length<=MAX_LOBBY)return;
+  const order=parts.slice().sort((a,b)=>(a.jt||0)-(b.jt||0)||(a.peer<b.peer?-1:1));const i=order.findIndex(p=>p.me);
+  if(i>=MAX_LOBBY&&Date.now()-(RUN.jt||0)<60000){leaveRun();toast(`Die Lobby war schon voll (max. ${MAX_LOBBY} Spieler).`)}}
+function matchTick(){try{lobbyCapCheck()}catch(e){console.error(e)}
   if(!RUN||!G){$('#htimer').textContent='LOBBY';$('#htimer').classList.remove('hot');return}
   if(RUN.free){$('#htimer').textContent='FREIES SPIEL';$('#htimer').classList.remove('hot');return}const tm=$('#htimer');
   syncHost();const left=RUN.end-Date.now();if(RUN.phase==='lobby'){tm.textContent=`LOBBY · ${participants().length} WARTEN`;tm.classList.remove('hot');return}
@@ -1715,8 +1740,8 @@ function cleanRes(a){return Array.isArray(a)?a.slice(0,12).filter(x=>Array.isArr
 const PACT=new Map(),DECT=new Map();
 function peerStale(p,ms){const a=PACT.get(p.peer);return!!a&&!p.me&&Date.now()-a.t>ms}
 function participants(){
-  const list=[{peer:MYPEER||'me',me:true,n:G.name,c:G.color,r:RUN.r,st:RUN.st,res:RUN.res||[],rd:RUN.rdy?1:0}];
-  for(const p of others()){const mt=p.presence.mt;if(mt&&mt.id===RUN.id){const e={peer:p.peer,n:cleanName(p.presence.n),c:validColor(p.presence.c),r:Math.floor(+mt.r)||0,st:typeof mt.st==='string'?mt.st:'train',res:cleanRes(mt.res),rd:mt.rd?1:0};list.push(e);
+  const list=[{peer:MYPEER||'me',me:true,n:G.name,c:G.color,r:RUN.r,st:RUN.st,res:RUN.res||[],rd:RUN.rdy?1:0,jt:RUN.jt||0}];
+  for(const p of others()){const mt=p.presence.mt;if(mt&&mt.id===RUN.id){const e={peer:p.peer,n:cleanName(p.presence.n),c:validColor(p.presence.c),r:Math.floor(+mt.r)||0,st:typeof mt.st==='string'?mt.st:'train',res:cleanRes(mt.res),rd:mt.rd?1:0,jt:+mt.jt||0};list.push(e);
     const sig=e.st+'|'+e.r+'|'+e.res.length,a=PACT.get(p.peer);if(!a||a.sig!==sig)PACT.set(p.peer,{sig,t:Date.now()})}}
   return list;
 }
@@ -3051,6 +3076,14 @@ function frame(now){if(!WORLD&&!BAKE_FAIL)bakeTick();const dt=Math.max(0,Math.mi
   try{updateTouch()}catch(e){console.error(e)}
   requestAnimationFrame(frame)}
 
+
+// bug report: opens a prefilled GitHub issue (version, browser, game state) in a new tab
+function bugReport(){
+  const st=[`Version: v${VERSION}`,`Browser: ${navigator.userAgent}`,`Bildschirm: ${innerWidth}×${innerHeight}${matchMedia&&matchMedia('(pointer:coarse)').matches?' (Touch)':''}`,
+    `Modus: ${!RUN?'—':RUN.free?'Freies Spiel':'Lobby ('+RUN.phase+(RUN.cfg&&RUN.cfg.tb?', rundenbasiert':', Echtzeit')+')'}`,`Kampf: ${B?B.mode+'/'+B.state:'—'}`,`Ort: ${P.x},${P.y}`,`Verbindung: ${ROOM?'online':'offline'}${typeof TURN_ACTIVE!=='undefined'&&TURN_ACTIVE.length?' · TURN':''}`].join('\n');
+  const body=`**Was ist passiert?**\n\n\n**Was hätte passieren sollen?**\n\n\n**Schritte zum Nachstellen**\n1. \n2. \n\n---\n<details><summary>Technische Infos (automatisch)</summary>\n\n\`\`\`\n${st}\n\`\`\`\n</details>`;
+  const url='https://github.com/harryer46/PocketPeasants/issues/new?labels=bug&title='+encodeURIComponent(`[Bug] v${VERSION}: `)+'&body='+encodeURIComponent(body);
+  const w=window.open(url,'_blank','noopener');if(!w)location.href=url}
 
 /* ===================== NOTFALLMODUS (Enter) ===================== */
 const NORMS=[
