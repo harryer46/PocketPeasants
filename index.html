@@ -382,7 +382,7 @@ const TURN_CONFIG = {
 
 /* ===================== VERSION ===================== */
 // bump with every release (MAJOR.MINOR.PATCH). Players can only share lobbies/duels with the same version.
-const VERSION='0.48.0';
+const VERSION='0.49.0';
 // access password: only its hash is stored here; the password itself also keys the P2P room, so clients without it cannot connect
 const PW_KEY='knast_pw',PW_H=2361915375,MAX_ROOM=10,MAX_LOBBY=5;
 function pwHash(s){let h=2166136261;s='knast:'+s;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
@@ -1222,9 +1222,9 @@ function updatePlayer(dt){
     if(P.mt>=1){P.moving=false;P.x=P.tx;P.y=P.ty;P.fx=P.x;P.fy=P.y;onArrive();if(B)return}
     else{P.fx=P.sx+(P.tx-P.sx)*P.mt;P.fy=P.sy+(P.ty-P.sy)*P.mt}}
   if(!P.moving&&!B&&!modalOpen()&&!P.lock){const d=heldDir();if(d){const turned=P.d!==d;P.d=d;const[dx,dy]=DIRS[d];const nx=P.x+dx,ny=P.y+dy;
-    if(walkable(nx,ny)&&!trainerAt(nx,ny)&&!LEGENDS.some(L=>L.x===nx&&L.y===ny)){P.moving=true;P.mt=0;P.sx=P.x;P.sy=P.y;P.tx=nx;P.ty=ny;P.fol.tx=P.x;P.fol.ty=P.y;pres({x:nx,y:ny,d})}else{if(trainerAt(nx,ny)||LEGENDS.some(L=>L.x===nx&&L.y===ny))bump(nx,ny);if(turned)pres({d})}}}
+    if(walkable(nx,ny)&&!trainerAt(nx,ny)&&!LEGENDS.some(L=>L.x===nx&&L.y===ny)){P.moving=true;P.mt=0;P.sx=P.x;P.sy=P.y;P.tx=nx;P.ty=ny;P.fol.tx=P.x;P.fol.ty=P.y;trailPush(P,P.x,P.y);pres({x:nx,y:ny,d})}else{if(trainerAt(nx,ny)||LEGENDS.some(L=>L.x===nx&&L.y===ny))bump(nx,ny);if(turned)pres({d})}}}
   P.bumpCd=Math.max(0,(P.bumpCd||0)-dt);
-  approach(P.fol,dt);
+  approach(P.fol,dt);if(P.fols)for(const f of P.fols)approach(f,dt);
 }
 function approach(o,dt){if(o.fx==null){o.fx=o.x;o.fy=o.y}const dx=o.tx-o.fx,dy=o.ty-o.fy,dist=Math.hypot(dx,dy);if(dist>3){o.fx=o.tx;o.fy=o.ty;return}const sp=dt/STEP*1.05;if(dist<=sp){o.fx=o.tx;o.fy=o.ty}else{o.fx+=dx/dist*sp;o.fy+=dy/dist*sp}}
 function legendHere(x,y){if(!RUN||RUN.phase!=='train')return null;return LEGENDS.find(L=>L.x===x&&L.y===y&&!(RUN.leg&&RUN.leg[L.id]))||null}
@@ -1248,7 +1248,7 @@ function checkSight(){
     for(let k=1;k<=4;k++){const x=t.x+dx*k,y=t.y+dy*k;if(!walkable(x,y))break;if(x===P.x&&y===P.y){spotted(t);return true}}}
   return false;
 }
-function teleport(x,y){P.x=P.fx=x;P.y=P.fy=y;P.moving=false;P.fol={x,y,tx:x,ty:y};G.x=x;G.y=y;pres({x,y,d:P.d})}
+function teleport(x,y){P.x=P.fx=x;P.y=P.fy=y;P.moving=false;P.fol={x,y,tx:x,ty:y};trailReset(P,x,y);G.x=x;G.y=y;pres({x,y,d:P.d})}
 function onArrive(){
   G.x=P.x;G.y=P.y;G.d=P.d;P.steps++;if(P.steps%8===0)save();updateHud();
   const t=tget(P.x,P.y);
@@ -1310,8 +1310,8 @@ function drawWorld(){
   c.font='10px VT323,monospace';c.textAlign='center';c.fillStyle='#ffffff';c.fillText('HfPol',32*16-camX+56,24*16-camY+45.5);c.textAlign='left';
   // entities
   const ents=[];
-  for(const o of OTH.values()){if(o.fx==null)continue;ents.push({fx:o.fx,fy:o.fy,col:o.c,sx:o.sx,d:o.d,ph:o.ph,mv:o.moving,name:o.n,bt:o.bt,bub:o.bub});if(o.ld&&o.fol.fx!=null)ents.push({fx:o.fol.fx,fy:o.fol.fy,mon:o.ld})}
-  if(G){ents.push({fx:P.fx,fy:P.fy,col:G.color,sx:G.sex,d:P.d,ph:P.ph,mv:P.moving,name:G.name+' (du)',bt:B?(B.mode==='wild'?'wild':'duel'):null,bub:myBubble,me:1});if(RUN&&RUN.team[0]&&P.fol.fx!=null&&tget(Math.round(P.fol.fx),Math.round(P.fol.fy))!==3&&(Math.abs(P.fol.fx-P.fx)+Math.abs(P.fol.fy-P.fy)>0.3))ents.push({fx:P.fol.fx,fy:P.fol.fy,mon:RUN.team[0].s})}
+  for(const o of OTH.values()){if(o.fx==null)continue;ents.push({fx:o.fx,fy:o.fy,col:o.c,sx:o.sx,d:o.d,ph:o.ph,mv:o.moving,name:o.n,bt:o.bt,bub:o.bub});if(o.lf)folEnts(o,o.lf,ents,o.fx,o.fy);else if(o.ld&&o.fol.fx!=null)ents.push({fx:o.fol.fx,fy:o.fol.fy,mon:o.ld})}
+  if(G){ents.push({fx:P.fx,fy:P.fy,col:G.color,sx:G.sex,d:P.d,ph:P.ph,mv:P.moving,name:G.name+' (du)',bt:B?(B.mode==='wild'?'wild':'duel'):null,bub:myBubble,me:1});if(RUN)folEnts(P,folInfo(),ents,P.fx,P.fy)}
   for(const t of TRAINERS)ents.push({fx:t.x,fy:t.y,col:t.c,sx:/^\S+in\s/.test(t.n)?'f':'m',d:t.d,ph:0,mv:false,name:t.n,npc:t,bt:null});
   for(const L of LEGENDS){const gone=(RUN&&RUN.leg&&RUN.leg[L.id])||!cfgOf().leg;if(!gone)ents.push({fx:L.x,fy:L.y,legend:L})}
   ents.sort((a,b)=>a.fy-b.fy);
@@ -1382,9 +1382,16 @@ let ROOM=null,MYPEER=null;
 const OTH=new Map();let myBubble=null,chatN=0;
 function pres(p){if(!ROOM)return;try{ROOM.presence(p).catch(()=>{})}catch(e){}}
 function leadInfo(){return RUN&&RUN.team[0]?[RUN.team[0].s,RUN.team[0].l]:null}
+// followers: up to 3 team monsters walk behind the player along the last tiles they stepped on (only the species list is shared, positions are derived locally)
+function folCount(){const f=RUN&&RUN.cfg&&RUN.cfg.fol!=null?+RUN.cfg.fol:3;return clamp(isNaN(f)?3:f,0,3)}
+function folInfo(){if(!RUN)return null;const n=Math.min(folCount(),RUN.team.length);return n?RUN.team.slice(0,n).map(m=>m.s):[]}
+function trailPush(o,x,y){o.trail=o.trail||[];o.trail.unshift({x,y});if(o.trail.length>4)o.trail.length=4;o.fols=o.fols||[];for(let k=0;k<3;k++){const t=o.trail[k];if(!t)break;const f=o.fols[k]||(o.fols[k]={x:t.x,y:t.y,fx:t.x,fy:t.y,tx:t.x,ty:t.y});f.tx=t.x;f.ty=t.y}}
+function trailReset(o,x,y){o.trail=[];o.fols=[];for(let k=0;k<3;k++)o.fols[k]={x,y,fx:x,fy:y,tx:x,ty:y}}
+function folEnts(o,list,ents,px,py){if(!list||!list.length||!o.fols)return;for(let k=0;k<list.length&&k<3;k++){const f=o.fols[k];if(!f||f.fx==null||!SPECIES[list[k]])continue;
+  const prev=k===0?{fx:px,fy:py}:o.fols[k-1];if(Math.abs(f.fx-prev.fx)+Math.abs(f.fy-prev.fy)<0.3)continue;if(tget(Math.round(f.fx),Math.round(f.fy))===3)continue;ents.push({fx:f.fx,fy:f.fy,mon:list[k]})}}
 function mtInfo(){if(RUN&&RUN.free)return{id:RUN.id,end:0,r:0,st:'free',prev:null};return RUN?{id:RUN.id,end:RUN.end,r:RUN.phase==='arena'?RUN.r:0,st:RUN.phase==='arena'?RUN.st:RUN.phase==='lobby'?'lobby':'train',prev:RUN.prev||null,res:RUN.res||[],cfg:RUN.cfg,rs:RUN.rs||0,rd:RUN.rdy?1:0,jt:RUN.jt||0}:null}
-function pushFull(){if(!G)return;pres({v:VERSION,n:G.name,c:G.color,sx:G.sex==='f'?'f':'m',x:P.moving?P.tx:P.x,y:P.moving?P.ty:P.y,d:P.d,tr:G.tro,ld:leadInfo(),bt:B?(B.mode==='wild'?'wild':'duel'):null,mt:mtInfo()})}
-function pushMt(){pres({mt:mtInfo(),ld:leadInfo()})}
+function pushFull(){if(!G)return;pres({v:VERSION,lf:folInfo(),n:G.name,c:G.color,sx:G.sex==='f'?'f':'m',x:P.moving?P.tx:P.x,y:P.moving?P.ty:P.y,d:P.d,tr:G.tro,ld:leadInfo(),bt:B?(B.mode==='wild'?'wild':'duel'):null,mt:mtInfo()})}
+function pushMt(){pres({mt:mtInfo(),ld:leadInfo(),lf:folInfo()})}
 function setConn(on,label){$('#hon').innerHTML=`<span class="dot ${on?'on':''}"></span>${label||(on?'Online':'Offline')}`}
 async function initRoom(){
   setConn(false,'Verbinde…');
@@ -1406,7 +1413,8 @@ function syncOther(p){
   const pr=p.presence||{};if(typeof pr.x!=='number'||typeof pr.y!=='number')return;
   let o=OTH.get(p.peer);const tx=clamp(Math.round(pr.x),0,MW-1),ty=clamp(Math.round(pr.y),0,MH-1);const name=cleanName(pr.n);
   if(!o){o={fx:tx,fy:ty,tx,ty,ph:0,moving:false,chatI:pr.chat&&pr.chat.i,n:name,fol:{x:tx,y:ty,tx,ty},seenMt:null};OTH.set(p.peer,o);const g=GONE.get(p.peer);if(g){clearTimeout(g.tm);GONE.delete(p.peer);plog('[peer] kurz getrennt, wieder da',p.peer,name,Math.round((Date.now()-g.t)/1000)+'s')}else{plog('[peer] neu',p.peer,name,'v'+(pr.v||'?'));sysChat(`${name} ist der Welt beigetreten.`)}}
-  if(tx!==o.tx||ty!==o.ty){o.fol.tx=o.tx;o.fol.ty=o.ty}
+  if(tx!==o.tx||ty!==o.ty){o.fol.tx=o.tx;o.fol.ty=o.ty;if(Math.abs(tx-o.tx)+Math.abs(ty-o.ty)>3)trailReset(o,tx,ty);else trailPush(o,o.tx,o.ty)}
+  o.lf=Array.isArray(pr.lf)?pr.lf.filter(x=>typeof x==='string'&&SPECIES[x]).slice(0,3):null;
   o.tx=tx;o.ty=ty;o.d=DIRS[pr.d]?pr.d:'down';o.n=name;o.c=validColor(pr.c);o.sx=pr.sx==='f'?'f':'m';o.bt=pr.bt==='duel'||pr.bt==='wild'?pr.bt:null;
   o.ld=Array.isArray(pr.ld)&&SPECIES[pr.ld[0]]?pr.ld[0]:null;
   if(pr.chat&&typeof pr.chat.t==='string'&&pr.chat.i!==o.chatI){o.chatI=pr.chat.i;const t=pr.chat.t.slice(0,120);o.bub={t,until:performance.now()+6000};addChat(o.n,o.c,t,true)}
@@ -1414,10 +1422,10 @@ function syncOther(p){
 }
 function updateOthers(dt){
   for(const o of OTH.values()){const dx=o.tx-o.fx,dy=o.ty-o.fy,dist=Math.hypot(dx,dy);
-    if(dist>4){o.fx=o.tx;o.fy=o.ty;o.moving=false;o.fol.fx=o.tx;o.fol.fy=o.ty;o.fol.tx=o.tx;o.fol.ty=o.ty}
+    if(dist>4){o.fx=o.tx;o.fy=o.ty;o.moving=false;o.fol.fx=o.tx;o.fol.fy=o.ty;o.fol.tx=o.tx;o.fol.ty=o.ty;trailReset(o,o.tx,o.ty)}
     else if(dist>0.01){const sp=dt/STEP*1.15*(dist>1.5?1.6:1);if(dist<=sp){o.fx=o.tx;o.fy=o.ty}else{o.fx+=dx/dist*sp;o.fy+=dy/dist*sp}o.moving=true;o.ph+=dt}
     else o.moving=false;
-    approach(o.fol,dt)}
+    approach(o.fol,dt);if(o.fols)for(const f of o.fols)approach(f,dt)}
 }
 
 
@@ -1551,7 +1559,7 @@ function roomFull(){plog('[raum] voll — zurückgetreten');FULL=true;try{ROOM.l
   document.getElementById('fullx').onclick=()=>{el.style.display='none'}}
 
 /* ===================== MATCHES ===================== */
-const DEF_CFG={name:'',dur:10,rounds:3,team:3,kap:10,xp:1,enc:1,leg:1,tb:0,alt:1,money:100,aim:0};
+const DEF_CFG={name:'',dur:10,rounds:3,team:3,kap:10,xp:1,enc:1,leg:1,tb:0,alt:1,money:100,aim:0,fol:3};
 /* ===================== MONEY, ITEMS & SHOP ===================== */
 const ITEMS={
  cap:{n:'Handschellen',p:20,d:'Damit nimmst du wilde Monster fest.',i:'⛓'},
@@ -1673,7 +1681,7 @@ function bagUse(key){if(!B)return;const[k,ix]=key.split(':'),F=B.me,a=act(F);if(
   if(B.tb){B.state='tbPlay';setTimeout(()=>{if(B&&B.state==='tbPlay')tbRun(null)},500)}}
 function cfgOf(){return(RUN&&RUN.cfg)||DEF_CFG}
 function sanitizeCfg(c){c=c&&typeof c==='object'?c:{};const n=(v,d,a,b)=>Number.isFinite(+v)&&v!==''&&v!=null?clamp(Math.floor(+v),a,b):d;
-  return{name:String(c.name||'').replace(/[\u0000-\u001f<>]/g,'').trim().slice(0,24),dur:n(c.dur,10,1,60),rounds:n(c.rounds,3,1,7),team:n(c.team,3,1,6),kap:n(c.kap,10,0,50),xp:[1,2,3].includes(+c.xp)?+c.xp:1,enc:[0.6,1,1.6].includes(+c.enc)?+c.enc:1,leg:+c.leg===0?0:1,tb:+c.tb===1?1:0,alt:+c.alt===0?0:1,aim:[0,1,2].includes(+c.aim)?+c.aim:0,money:n(c.money,100,0,5000),host:typeof c.host==='string'?c.host.slice(0,40):''}}
+  return{name:String(c.name||'').replace(/[\u0000-\u001f<>]/g,'').trim().slice(0,24),dur:n(c.dur,10,1,60),rounds:n(c.rounds,3,1,7),team:n(c.team,3,1,6),kap:n(c.kap,10,0,50),xp:[1,2,3].includes(+c.xp)?+c.xp:1,enc:[0.6,1,1.6].includes(+c.enc)?+c.enc:1,leg:+c.leg===0?0:1,tb:+c.tb===1?1:0,alt:+c.alt===0?0:1,aim:[0,1,2].includes(+c.aim)?+c.aim:0,money:n(c.money,100,0,5000),fol:n(c.fol,3,0,3),host:typeof c.host==='string'?c.host.slice(0,40):''}}
 function cfgSummary(c){return`${c.tb?'rundenbasiert':'Echtzeit'} · ${c.rounds} Runde${c.rounds>1?'n':''} · Team aus ${c.team}${c.xp>1?` · ${c.xp}× EP`:''}${c.enc!==1?(c.enc>1?' · viele Begegnungen':' · wenige Begegnungen'):''}${c.leg?'':' · ohne Legendäre'} · ${c.kap} Handschellen · $${c.money??100} · ${c.aim===1?'Auto-Zielen':c.aim===2?'freies Zielen 360°':'Zielen in 8 Richtungen'}`}
 function runningMatches(){const seen=new Map();for(const p of others()){const mt=p.presence.mt;if(!mt||typeof mt.id!=='string'||mt.id.length>=40||(RUN&&RUN.id===mt.id))continue;
   const open=mt.st==='lobby'||(mt.st==='train'&&+mt.end>Date.now()+10000);if(!open)continue;
@@ -1721,6 +1729,7 @@ function openCreate(){
    ${row('Trainingszeit (Min.)',num('cdur',c.dur,1,60))}
    ${row('Verhandlungsrunden (Schweizer System)',sel('crounds',[1,2,3,4,5,6,7].map(v=>[v,v+(v===3?' (Standard)':'')]),c.rounds))}
    ${row('Monster pro Gerichtskampf',sel('cteam',[1,2,3,4,5,6].map(v=>[v,v]),c.team))}
+   ${row('Begleiter in der Welt',sel('cfol',[[0,'keine'],[1,'1'],[2,'2'],[3,'3']],c.fol??3))}
    ${row('Start-Handschellen',num('ckap',c.kap,0,50))}
    ${row('Startgeld ($)',num('cmoney',c.money??100,0,5000))}
    ${row('EP-Gewinn',sel('cxp',[[1,'normal'],[2,'2×'],[3,'3×']],c.xp))}
@@ -1729,7 +1738,7 @@ function openCreate(){
    <div class="small" style="text-align:left;margin:6px 0 12px;line-height:1.1">Zuerst treten die Spieler deiner Lobby bei; du startest das Spiel, wenn alle da sind. Alle beginnen mit Lv ${START_LV}. Das Gericht tagt, wenn der Timer abläuft — oder früher, sobald alle Spieler (2+) drin sind und ✔ BEREIT gesetzt haben.</div>
    <div class="acts"><button class="btn ghost" id="mno">ABBRECHEN</button><button class="btn green" id="myes">ERSTELLEN</button></div>`);
   $('#mno').onclick=closeModal;
-  $('#myes').onclick=()=>{const cfg=sanitizeCfg({name:$('#cname').value,dur:$('#cdur').value,rounds:$('#crounds').value,team:$('#cteam').value,kap:$('#ckap').value,xp:$('#cxp').value,enc:$('#cenc').value,leg:$('#cleg').value,tb:$('#ctb').value,money:$('#cmoney').value,aim:$('#caim').value});G.lastCfg=cfg;save();closeModal();
+  $('#myes').onclick=()=>{const cfg=sanitizeCfg({name:$('#cname').value,dur:$('#cdur').value,rounds:$('#crounds').value,team:$('#cteam').value,kap:$('#ckap').value,xp:$('#cxp').value,enc:$('#cenc').value,leg:$('#cleg').value,tb:$('#ctb').value,money:$('#cmoney').value,aim:$('#caim').value,fol:$('#cfol').value});G.lastCfg=cfg;save();closeModal();
     pickStarter(sid=>startRun('m'+Math.random().toString(36).slice(2,10),0,sid,null,Object.assign({},cfg,{host:MYPEER||'me'}),'lobby'),cfg)};
 }
 function pickStarter(cb,cfg){const alt=altOn(cfg||{alt:SET.alt==='0'?0:1});
@@ -1770,7 +1779,7 @@ function hardExit(){
 }
 function leaveRun(){
   hardExit();RUN=G.freeRun||null;if(RUN){RUN.beat=RUN.beat||{};RUN.leg=RUN.leg||{}}
-  P.d='down';teleport(30,24);save();pres({mt:mtInfo(),ld:leadInfo()});afterRunChange();
+  P.d='down';teleport(30,24);save();pres({mt:mtInfo(),ld:leadInfo(),lf:folInfo()});afterRunChange();
   switchTab('lobby');if(isMob())$('#side').classList.add('open');
   if(RUN)toast('Zurück am Start — freies Spiel. Tritt jederzeit einer Lobby bei oder erstelle eine.');else startFree();
 }
@@ -2073,7 +2082,7 @@ function newBattle(o){try{if(typing())document.activeElement.blur()}catch(e){}
     const introMs=1000+vx;if(realState==='count')B.cntEnd=Math.max(B.cntEnd||0,now+introMs+1600);
     setTimeout(()=>{if(B===myB&&B.state==='intro'){if(realState==='fight'&&B.mode==='wild'&&!B.tb&&B.me.team.filter(m=>m.hp>0).length>1){B.state='count';B.cntEnd=performance.now()+2600}else B.state=realState}},introMs)},undefined,350);
 }
-function closeBattle(){const myB=B;if(!myB)return;myB.closing=true;$('#bpick').classList.remove('on');transition('fade',()=>{if(B===myB)B=null;placeDpad();$('#battle').classList.remove('on');$('#stage').style.transform='';pres({bt:null,du:null,ld:leadInfo()});renderTeam();updateHud()},300,350)}
+function closeBattle(){const myB=B;if(!myB)return;myB.closing=true;$('#bpick').classList.remove('on');transition('fade',()=>{if(B===myB)B=null;placeDpad();$('#battle').classList.remove('on');$('#stage').style.transform='';pres({bt:null,du:null,ld:leadInfo(),lf:folInfo()});renderTeam();updateHud()},300,350)}
 function fire(F,i,remote){
   const bt=act(F);const mid=bt.m[i];if(!mid||F.cd[i]>0||F.faint>0||F.out||F.st.stun>0)return;
   const cost=apCost(mid);if(F.ctrl!=='remote'){if((F.ap??AP_MAX)<cost){if(F===B.me){F.apShake=performance.now();const n=performance.now();if(!B.apMsgT||n-B.apMsgT>1200){B.apMsgT=n;say('Nicht genug AP!')}}return}F.ap=(F.ap??AP_MAX)-cost}
