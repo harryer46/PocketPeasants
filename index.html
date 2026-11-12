@@ -350,7 +350,7 @@ const TURN_CONFIG = {
 
 /* ===================== VERSION ===================== */
 // bump with every release (MAJOR.MINOR.PATCH). Players can only share lobbies/duels with the same version.
-const VERSION='0.36.0';
+const VERSION='0.36.1';
 function cmpV(a,b){const x=String(a||'0').split('.').map(Number),y=String(b||'0').split('.').map(Number);for(let i=0;i<3;i++){const d=(x[i]||0)-(y[i]||0);if(d)return d}return 0}
 /* ===================== ERROR REPORTING ===================== */
 function showErr(m){try{const b=document.getElementById('errbox');if(!b)return;b.textContent='⚠ Fehler: '+String(m).slice(0,220)+' — bitte an den Entwickler schicken.';b.style.display='block';clearTimeout(showErr.t);showErr.t=setTimeout(()=>b.style.display='none',12000)}catch(e){}}
@@ -785,11 +785,11 @@ function shadePixels(d,op,W,H,dark){
     const below=at(x,y-1);const f=below?0.32:0.45;
     d[i*4]=Math.min(src[n*4]*f,dark?dark[0]+30:255);d[i*4+1]=Math.min(src[n*4+1]*f,dark?dark[1]+30:255);d[i*4+2]=Math.min(src[n*4+2]*f+8,dark?dark[2]+40:255);d[i*4+3]=255}
 }
-// trainer sprites (14x15 + outline)
+// police officer sprites (player and cops; the chosen colour is the cap band) 14x15 + outline
 const CH={
- down:["....HHHHHH....","...HHHHHHHH...","..HHHHHHHHHH..","..DDDDDDDDDD..","..KSSSSSSSSK..","..SSESSSSESS..","..SSSSSSSSSS..","...SSSSSSSS...","..HHHHHHHHHH..",".SHHHHWWHHHHS.",".SHHHHHHHHHHS.","..HHHHHHHHHH..","...PPPPPPPP...","...PPP..PPP...","...BBB..BBB..."],
- up:["....HHHHHH....","...HHHHHHHH...","..HHHHHHHHHH..","..HHHHHHHHHH..","..KKKKKKKKKK..","..KKKKKKKKKK..","..KKKKKKKKKK..","...KKKKKKKK...","..HHHHHHHHHH..",".SHHHHHHHHHHS.",".SHHHHHHHHHHS.","..HHHHHHHHHH..","...PPPPPPPP...","...PPP..PPP...","...BBB..BBB..."],
- side:["....HHHHHH....","...HHHHHHHH...","..HHHHHHHHHH..","..DDDDDDDDDDDD","..KKKSSSSSSS..","..KKSSSSSESS..","..KKSSSSSSSS..","...SSSSSSSS...","...HHHHHHHH...","...HHHHHHHH...","...HSSHHHHH...","...HHHHHHHH...","....PPPPPP....","....PPPPPP....","....BBBBBB...."]
+ down:["....NNNNNN....","...NNNYYNNN...","..NNNNYYNNNN..","..CCCCCCCCCC..","..VVVVVVVVVV..","..KSSSSSSSSK..","..SSESSSSESS..","...SSSSSSSS...","..UUUUUUUUUU..",".SUUUUUUUYUUS.",".SUUUUUUUUUUS.","..BBBBBYBBBB..","...PPPPPPPP...","...PPP..PPP...","...BBB..BBB..."],
+ up:["....NNNNNN....","...NNNNNNNN...","..NNNNNNNNNN..","..CCCCCCCCCC..","..NNNNNNNNNN..","..KKKKKKKKKK..","..KKKKKKKKKK..","...KKKKKKKK...","..UUUUUUUUUU..",".SUUUUUUUUUUS.",".SUUUUUUUUUUS.","..BBBBBBBBBB..","...PPPPPPPP...","...PPP..PPP...","...BBB..BBB..."],
+ side:["....NNNNNN....","...NNNNNNYN...","..NNNNNNNNNN..","..CCCCCCCCCC..","..NNNNNNVVVVVV","..KKKSSSSSSS..","..KKSSSSSESS..","...SSSSSSSS...","...UUUUUUUU...","...UUUUUUYU...","...USSUUUUU...","...BBBBBBBB...","....PPPPPP....","....PPPPPP....","....BBBBBB...."]
 };
 const CHS={};
 function charSprite(col,dir,fr){
@@ -797,7 +797,7 @@ function charSprite(col,dir,fr){
   const base=dir==='left'||dir==='right'?'side':dir;const rows=CH[base].slice();
   if(fr&&base!=='side'){if(fr===1){rows[13]="...PPP..BBB...";rows[14]="...BBB........"}else{rows[13]="...BBB..PPP...";rows[14]="........BBB..."}}
   if(fr&&base==='side'){if(fr===1){rows[13]="...PP....PP...";rows[14]="...BB....BB..."}else{rows[13]="....PPPPPP....";rows[14]=".....BBBB....."}}
-  const pal={H:col,D:shade(col,-0.35),S:'#f3c6a0',E:'#1b1b2a',K:'#5a3520',P:'#2b3150',B:'#1b1b2a',W:'#ffffff'};
+  const pal={C:col,N:'#1d2856',Y:'#f2c230',V:'#14141f',U:'#26387a',S:'#f3c6a0',E:'#1b1b2a',K:'#5a3520',P:'#1b2244',B:'#14141f',W:'#ffffff'};
   const c=mk(16,17),x=c.getContext('2d');const op=new Uint8Array(16*17);
   rows.forEach((r,y)=>[...r].forEach((ch,xx)=>{if(pal[ch]){x.fillStyle=pal[ch];x.fillRect(xx+1,y+1,1,1);op[(y+1)*16+xx+1]=1}}));
   {const id=x.getImageData(0,0,16,17);shadePixels(id.data,op,16,17,null);x.putImageData(id,0,0)}
