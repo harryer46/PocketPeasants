@@ -384,7 +384,7 @@ const TURN_CONFIG = {
 
 /* ===================== VERSION ===================== */
 // bump with every release (MAJOR.MINOR.PATCH). Players can only share lobbies/duels with the same version.
-const VERSION='0.54.0';
+const VERSION='0.55.0';
 // access password: only its hash is stored here; the password itself also keys the P2P room, so clients without it cannot connect
 const PW_KEY='knast_pw',PW_H=2361915375,MAX_ROOM=10,MAX_LOBBY=5;
 function pwHash(s){let h=2166136261;s='knast:'+s;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
@@ -609,10 +609,12 @@ const CX=30,CY=23;
 function distC(x,y){return Math.hypot(x-CX,y-CY)}
 // difficulty: Lv 1–2 right outside town, rising with distance; harder biomes add a bonus that grows with distance
 const BIO_LV={north:0,south:1,east:2,west:4};
+// minimum wild level per area (also near the town edge)
+const BIO_MIN={north:3,south:5,east:6,west:8,knast:26};
 function baseLvAt(x,y){const d=distC(x,y),ramp=clamp((d-9)/10,0,1);return 1+Math.max(0,d-9)*0.47+(BIO_LV[zoneAt(x,y)]||0)*ramp}
 const KNAST_LV=[26,34];
-function lvAt(x,y){if(zoneAt(x,y)==='knast')return KNAST_LV[0]+Math.floor(Math.random()*(KNAST_LV[1]-KNAST_LV[0]+1));return clamp(Math.round(baseLvAt(x,y)+Math.random()*1.4-0.7),1,30)}
-function trainerTeam(t){const lo=Math.min(...t.team.map(e=>e[1])),b=Math.max(1,Math.round(baseLvAt(t.x,t.y))+1);const pool=altOn()?poolOf(zoneAt(t.x,t.y)||'north'):null;
+function lvAt(x,y){if(zoneAt(x,y)==='knast')return KNAST_LV[0]+Math.floor(Math.random()*(KNAST_LV[1]-KNAST_LV[0]+1));return clamp(Math.max(BIO_MIN[zoneAt(x,y)]||1,Math.round(baseLvAt(x,y)+Math.random()*1.4-0.7)),1,30)}
+function trainerTeam(t){const lo=Math.min(...t.team.map(e=>e[1])),b=Math.max(BIO_MIN[zoneAt(t.x,t.y)]||1,Math.round(baseLvAt(t.x,t.y))+1);const pool=altOn()?poolOf(zoneAt(t.x,t.y)||'north'):null;
   return t.team.map(([s,l],i)=>[pool?pool[(i+t.id.length)%pool.length]:s,clamp(b+(l-lo),1,30)])}
 function pickWild(pool,boost){boost=boost||1;const w=s=>rarOf(s).w*(RAR[s]==='rare'?boost:1);const tot=pool.reduce((a,s)=>a+w(s),0);let r=Math.random()*tot;for(const s of pool){r-=w(s);if(r<=0)return s}return pool[0]}
 // legendary shrines (one encounter per player per match)
@@ -765,7 +767,7 @@ function walkable(x,y){const t=tget(x,y);return(WALK.has(t)||(t===3&&hasHM('swim
 })();
 (function placeSigns(){
   const D4=[[1,0],[-1,0],[0,1],[0,-1]],cen={},lv={};setTimeout(()=>{const sb=$('#signbox');if(sb)sb.onclick=()=>sb.classList.remove('on')},0);
-  for(let i=0;i<MW*MH;i++){if(!ENC.has(MAP[i]))continue;const b=BIOME[i],x=i%MW,y=(i-x)/MW,l=Math.round(baseLvAt(x,y));const c=cen[b]||(cen[b]={x:0,y:0,n:0});c.x+=x;c.y+=y;c.n++;const r=lv[b]||(lv[b]=[99,0]);r[0]=Math.min(r[0],l);r[1]=Math.max(r[1],l)}
+  for(let i=0;i<MW*MH;i++){if(!ENC.has(MAP[i]))continue;const b=BIOME[i],x=i%MW,y=(i-x)/MW,l=Math.max(BIO_MIN[BKEYS[b]]||1,Math.round(baseLvAt(x,y)));const c=cen[b]||(cen[b]={x:0,y:0,n:0});c.x+=x;c.y+=y;c.n++;const r=lv[b]||(lv[b]=[99,0]);r[0]=Math.min(r[0],l);r[1]=Math.max(r[1],l)}
   for(const b in cen){cen[b].x/=cen[b].n;cen[b].y/=cen[b].n}
   const reach=()=>{const seen=new Uint8Array(MW*MH),q=[24*MW+30];seen[q[0]]=1;let n=1;while(q.length){const i=q.pop(),x=i%MW,y=(i-x)/MW;for(const[dx,dy]of D4){const j=(y+dy)*MW+x+dx;if(seen[j]||!walkable(x+dx,y+dy))continue;seen[j]=1;n++;q.push(j)}}return n};
   let base=reach();
@@ -786,7 +788,7 @@ function walkable(x,y){const t=tget(x,y);return(WALK.has(t)||(t===3&&hasHM('swim
   const ARW=['→','↘','↓','↙','←','↖','↑','↗'],dirTo=(fx,fy,tx,ty)=>ARW[(Math.round(Math.atan2(ty-fy,tx-fx)/(Math.PI/4))+8)%8];
   const route=(sx,sy,goal)=>{const par=new Int32Array(MW*MH).fill(-1),q=[];for(const[dx,dy]of D4){const x=sx+dx,y=sy+dy;if(walkable(x,y)){const j=y*MW+x;par[j]=j;q.push(j)}}
     for(let h=0;h<q.length;h++){const i=q[h],x=i%MW,y=(i-x)/MW;if(goal(i))return{i,par};for(const[dx,dy]of D4){const nx=x+dx,ny=y+dy,j=ny*MW+nx;if(nx<1||ny<1||nx>=MW-1||ny>=MH-1||par[j]>=0||!walkable(nx,ny))continue;par[j]=i;q.push(j)}}return null};
-  for(const sg of SIGNS){if(sg.to==null||sg.kind==='knast')continue;sg.lv=lv[sg.to]?[Math.max(1,lv[sg.to][0]-1),lv[sg.to][1]]:[1,1];
+  for(const sg of SIGNS){if(sg.to==null||sg.kind==='knast')continue;sg.lv=lv[sg.to]?[Math.max(BIO_MIN[BKEYS[sg.to]]||1,lv[sg.to][0]-1),lv[sg.to][1]]:[1,1];
     const target=sg.kind==='back'?0:sg.to;const r=route(sg.x,sg.y,i=>BIOME[i]===target&&(target!==sg.to||ENC.has(MAP[i])||BIOME[i]!==BIOME[sg.y*MW+sg.x]));
     if(r){const path=[];for(let i=r.i;;i=r.par[i]){path.unshift(i);if(r.par[i]===i)break}const p=path[Math.min(path.length-1,10)],px=p%MW,py=(p-px)/MW;sg.arrow=dirTo(sg.x,sg.y,px,py);sg.steps=path.length}
     else{const c=cen[sg.to];if(c)sg.arrow=dirTo(sg.x,sg.y,c.x,c.y)}
@@ -2361,8 +2363,8 @@ function tbDuelSync(du){
 
 /* --- player actions --- */
 function battleMove(i){if(!B)return;if(B.tb){tbChoose({k:'move',i});return}if(B.state==='fight')fire(B.me,i)}
-const DASH_AP=16;
-function battleDash(){if(!B||B.tb||B.state!=='fight')return;const F=B.me;if(F.dashCd>0||F.faint>0||F.out||F.st.stun>0||F.st.sleep>0||F.hitstun>0)return;if(!F.ddx&&!F.ddy){F.ddx=F.face>0?-1:1;F.ddy=0}let dx=0,dy=0;for(const d of held){dx+=DIRS[d][0];dy+=DIRS[d][1]}if(JOY.active&&Math.hypot(JOY.x,JOY.y)>0.2){dx=JOY.x;dy=JOY.y}const L=Math.hypot(dx,dy);if(L){F.ddx=dx/L;F.ddy=dy/L}if((F.ap??AP_MAX)<DASH_AP){F.apShake=performance.now();const n=performance.now();if(!B.apMsgT||n-B.apMsgT>1200){B.apMsgT=n;say('Nicht genug AP zum Sprinten!')}return}F.ap=(F.ap??AP_MAX)-DASH_AP;F.dashT=0.15;F.dashCd=1.0;F.inv=0.26}
+const DASH_AP=0;
+function battleDash(){if(!B||B.tb||B.state!=='fight')return;const F=B.me;if(F.dashCd>0||F.faint>0||F.out||F.st.stun>0||F.st.sleep>0||F.hitstun>0)return;if(!F.ddx&&!F.ddy){F.ddx=F.face>0?-1:1;F.ddy=0}let dx=0,dy=0;for(const d of held){dx+=DIRS[d][0];dy+=DIRS[d][1]}if(JOY.active&&Math.hypot(JOY.x,JOY.y)>0.2){dx=JOY.x;dy=JOY.y}const L=Math.hypot(dx,dy);if(L){F.ddx=dx/L;F.ddy=dy/L}if(DASH_AP&&(F.ap??AP_MAX)<DASH_AP){F.apShake=performance.now();const n=performance.now();if(!B.apMsgT||n-B.apMsgT>1200){B.apMsgT=n;say('Nicht genug AP zum Sprinten!')}return}F.ap=(F.ap??AP_MAX)-DASH_AP;F.dashT=0.15;F.dashCd=1.0;F.inv=0.26}
 function battleSwitch(){if(B&&B.tb){tbSwitchMenu();return}if(!B||B.state!=='fight')return;const F=B.me;if(F.swCd>0||F.faint>0||F.out)return;const n=F.team.findIndex((m,i)=>i>F.a&&m.hp>0);const m=n>=0?n:F.team.findIndex((m,i)=>i!==F.a&&m.hp>0);if(m>=0)doSwitch(F,m)}
 // aiming: hold CAPSULE -> the aim line swings; release to throw. A pulsing ring on the target gives a throw bonus.
 function capPress(){if(!B||B.mode!=='wild'||B.aim)return;if(!(B.state==='fight'||(B.tb&&B.state==='tbChoose'))||B.capCd>0)return;if(RUN.kap<=0&&!B.capGreat){say('Keine Handschellen mehr!');return}B.aim={t0:performance.now()};say('Zielen… loslassen zum Werfen!')}
@@ -2525,7 +2527,7 @@ function buildBattleUI(){
   for(let i=0;i<4;i++){const b=document.createElement('button');b.className='mv';b.dataset.i=i;b.onclick=()=>battleMove(i);b.innerHTML='<span class="cd"></span><span class="lbl"></span>';el.appendChild(b)}
   const row=document.createElement('div');row.className='brow';
   const add=(t,cls,fn,id)=>{const b=document.createElement('button');b.className='btn '+cls;b.textContent=t;b.onclick=fn;if(id)b.id=id;row.appendChild(b)};
-  if(!B.tb)add('SPRINT · '+DASH_AP+' AP','ghost',battleDash);add('WECHSELN','ghost',battleSwitch,'bsw');
+  if(!B.tb)add(DASH_AP?'SPRINT · '+DASH_AP+' AP':'SPRINT','ghost',battleDash);add('WECHSELN','ghost',battleSwitch,'bsw');
   if(B.mode==='wild'){add('HALTEN: HANDSCHELLEN','',()=>{},'bcap');add('FLIEHEN','ghost',tryRun)}else if(B.mode!=='trainer')add('AUFGEBEN','red',forfeit);
   add('🎒 BEUTEL','ghost',openBag);add('ℹ ATTACKEN','ghost',()=>{if(B&&B.me)openMonInfo(act(B.me).s,act(B.me))});add('⚙','ghost',openSettings);
   el.appendChild(row);
