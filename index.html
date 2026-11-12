@@ -284,7 +284,7 @@ body.mob.portrait #rotate.show{display:block}
   </div>
 </div>
   <aside id="side">
-    <div class="brand"><h1>KNAST-<br>ÉMON<br><span style="font-size:7px;color:#9aa1bd">§ POLIZEI-EDITION</span></h1><div class="sub"><span id="sdex">Dex 0/14</span><span id="stro">Trophäen 0</span></div></div>
+    <div class="brand"><h1 style="white-space:nowrap">KNASTÉMON<br><span style="font-size:7px;color:#9aa1bd">§ POLIZEI-EDITION</span></h1><div class="sub"><span id="sdex">Dex 0/14</span><span id="stro">Trophäen 0</span></div></div>
     <div class="tabs"><button data-t="team" class="act">TEAM</button><button data-t="players">SPIELER</button><button data-t="lobby">LOBBY</button><button data-t="chat">CHAT</button></div>
     <div class="pane act" id="pane-team"></div>
     <div class="pane" id="pane-players"></div>
@@ -296,7 +296,7 @@ body.mob.portrait #rotate.show{display:block}
 <div id="rotate"><div class="px" style="font-size:10px;color:var(--accent);margin-bottom:8px">↻ HANDY DREHEN</div><div class="small">Knastémon spielt sich am besten im Querformat.</div><button class="btn ghost" id="rotok" style="margin-top:10px">TROTZDEM SPIELEN</button></div><div id="errbox"></div>
 <div id="start">
   <div class="sbox">
-    <h1>KNAST-<br>ÉMON</h1>
+    <h1 style="white-space:nowrap">KNASTÉMON</h1>
     <div class="tag2" style="font-family:'Press Start 2P',monospace;font-size:9px;color:#ef4444;margin:-4px 0 14px">§ POLIZEI-EDITION · JETZT MIT NOCH MEHR PARAGRAPHEN!</div>
     <div class="tag2">Schnapp sie dir alle — und ab vors Gericht! Geh 10 Minuten auf Streife, nimm Monster fest und stell dich dann im Gericht allen anderen — in Echtzeit.</div>
     <canvas id="sprev" width="16" height="17"></canvas>
@@ -350,7 +350,7 @@ const TURN_CONFIG = {
 
 /* ===================== VERSION ===================== */
 // bump with every release (MAJOR.MINOR.PATCH). Players can only share lobbies/duels with the same version.
-const VERSION='0.36.2';
+const VERSION='0.36.3';
 function cmpV(a,b){const x=String(a||'0').split('.').map(Number),y=String(b||'0').split('.').map(Number);for(let i=0;i<3;i++){const d=(x[i]||0)-(y[i]||0);if(d)return d}return 0}
 /* ===================== ERROR REPORTING ===================== */
 function showErr(m){try{const b=document.getElementById('errbox');if(!b)return;b.textContent='⚠ Fehler: '+String(m).slice(0,220)+' — bitte an den Entwickler schicken.';b.style.display='block';clearTimeout(showErr.t);showErr.t=setTimeout(()=>b.style.display='none',12000)}catch(e){}}
