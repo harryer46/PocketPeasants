@@ -380,7 +380,7 @@ const TURN_CONFIG = {
 
 /* ===================== VERSION ===================== */
 // bump with every release (MAJOR.MINOR.PATCH). Players can only share lobbies/duels with the same version.
-const VERSION='0.42.0';
+const VERSION='0.43.0';
 function cmpV(a,b){const x=String(a||'0').split('.').map(Number),y=String(b||'0').split('.').map(Number);for(let i=0;i<3;i++){const d=(x[i]||0)-(y[i]||0);if(d)return d}return 0}
 /* ===================== ERROR REPORTING ===================== */
 function showErr(m){try{const b=document.getElementById('errbox');if(!b)return;b.textContent='⚠ Fehler: '+String(m).slice(0,220)+' — bitte an den Entwickler schicken.';b.style.display='block';clearTimeout(showErr.t);showErr.t=setTimeout(()=>b.style.display='none',12000)}catch(e){}}
@@ -1397,23 +1397,40 @@ function makeP2PRoom(roomId,turn){
   const cfg={appId:'discountmon-budget-edition-v1'};if(turn&&turn.length)cfg.turnConfig=turn;
   const room=TR.joinRoom(cfg,roomId,{onJoinError:d=>{JOIN_ERRORS++;console.warn('join error',d);if(JOIN_ERRORS===1||JOIN_ERRORS%5===0)toast(turn&&turn.length?'Ein Spieler konnte sich nicht einmal über TURN verbinden. Prüfe die TURN-Einstellungen.':'Ein Spieler konnte sich nicht direkt verbinden. Richte einen TURN-Fallback ein: ⚙ STEUERUNG → NETZWERK.');setConnLabel()}});
   const act=room.makeAction('pres');const png=room.makeAction('png');const me=TR.selfId;
-  let mine={};const others=new Map();const RTT=new Map();let snap=Object.freeze([]);const hs=[],cs=[];let lastSend=0,pending=false;
+  let mine={};const others=new Map();const RTT=new Map();let snap=Object.freeze([]);const hs=[],cs=[];let lastSend=0,pending=false,lastFull=0,sent={};const SJ={};
+  // bandwidth: only changed keys are sent (one level deep for objects like the duel state); a full snapshot every 15 s heals anything missed
+  const js=v=>{try{return JSON.stringify(v)}catch(e){return''}};
+  function diff(){const out={},del=[],part={};let any=false;
+    for(const k in mine){const v=mine[k],j=js(v);if(SJ[k]===j)continue;any=true;const o=sent[k];
+      if(v&&o&&typeof v==='object'&&typeof o==='object'&&!Array.isArray(v)&&!Array.isArray(o)&&v.id===o.id){const sub={};for(const q in v){if(js(v[q])!==js(o[q]))sub[q]=v[q]}for(const q in o)if(!(q in v))sub[q]=null;part[k]=sub}
+      else out[k]=v;SJ[k]=j;sent[k]=v}
+    for(const k in sent)if(!(k in mine)){del.push(k);delete sent[k];delete SJ[k];any=true}
+    if(!any)return null;const m={};if(Object.keys(out).length)m.s=out;if(del.length)m.d=del;if(Object.keys(part).length)m.p=part;return m}
+  function fullMsg(){for(const k in mine){sent[k]=mine[k];SJ[k]=js(mine[k])}for(const k in sent)if(!(k in mine)){delete sent[k];delete SJ[k]}return{_f:1,s:mine}}
   function entry(id,p,isMe){return Object.freeze({peer:id,by:null,isMe,sameTab:isMe,kind:'viewer',guest:false,presence:p,updatedAt:Date.now()})}
   function rebuild(j,l){const arr=[entry(me,Object.freeze({...mine}),true)];for(const[id,p]of others)arr.push(entry(id,p,false));snap=Object.freeze(arr);const ch={peers:snap,joined:j||[],left:l||[],updated:[]};hs.forEach(h=>{try{h(ch)}catch(e){console.error(e)}})}
-  function flush(){pending=false;lastSend=performance.now();try{act.send(mine)}catch(e){}}
-  room.onPeerJoin=id=>{try{act.send(mine,{target:id})}catch(e){}cs.forEach(h=>h(true))};
+  function flush(full){pending=false;const now=performance.now();if(!others.size&&!full){lastSend=now;return}
+    let m;if(full||now-lastFull>15000){m=fullMsg();lastFull=now}else m=diff();if(!m)return;lastSend=now;try{act.send(m)}catch(e){}}
+  room.onPeerJoin=id=>{try{act.send({_f:1,s:mine},{target:id})}catch(e){}cs.forEach(h=>h(true))};
   room.onPeerLeave=id=>{RTT.delete(id);if(others.delete(id))rebuild([],[{peer:id}])};
-  act.onMessage=(data,info)=>{const id=info&&info.peerId;if(!id||!data||typeof data!=='object'||Array.isArray(data))return;try{if(JSON.stringify(data).length>8000)return}catch(e){return}const isNew=!others.has(id);others.set(id,Object.freeze(data));rebuild(isNew?[{peer:id}]:[],[])};
+  act.onMessage=(data,info)=>{const id=info&&info.peerId;if(!id||!data||typeof data!=='object'||Array.isArray(data))return;try{if(JSON.stringify(data).length>8000)return}catch(e){return}const isNew=!others.has(id);
+    let st;if(data._f&&data.s&&typeof data.s==='object')st={...data.s};
+    else if(data.s||data.d||data.p){st={...(others.get(id)||{})};if(data.s&&typeof data.s==='object')Object.assign(st,data.s);if(Array.isArray(data.d))for(const k of data.d)delete st[k];
+      if(data.p&&typeof data.p==='object')for(const k in data.p){const sub=data.p[k];if(!sub||typeof sub!=='object')continue;const o={...(st[k]&&typeof st[k]==='object'?st[k]:{})};for(const q in sub){if(sub[q]===null)delete o[q];else o[q]=sub[q]}st[k]=o}}
+    else st={...data};
+    others.set(id,Object.freeze(st));rebuild(isNew?[{peer:id}]:[],[])};
   png.onMessage=(d,info)=>{const id=info&&info.peerId;if(!id||!d)return;if(typeof d.q==='number'){try{png.send({a:d.q},{target:id})}catch(e){}}else if(typeof d.a==='number'){const r=Math.round(performance.now()-d.a);if(r>=0&&r<10000)RTT.set(id,RTT.has(id)?Math.round(RTT.get(id)*0.6+r*0.4):r)}};
-  setInterval(flush,3000);
-  setInterval(()=>{if(others.size){try{png.send({q:performance.now()})}catch(e){}}},2000);
+  let dead=false;
+  const t1=setInterval(()=>{if(!dead)flush()},5000);
+  const t2=setInterval(()=>{if(!dead&&others.size&&!document.hidden){try{png.send({q:performance.now()})}catch(e){}}},5000);
   addEventListener('pagehide',()=>{try{room.leave()}catch(e){}});
   return{
     presence(patch){for(const k in patch){if(patch[k]===null)delete mine[k];else mine[k]=patch[k]}rebuild();const now=performance.now();if(now-lastSend>66)flush();else if(!pending){pending=true;setTimeout(flush,66-(now-lastSend))}return Promise.resolve()},
     peers(){return snap},
     onPeers(h){hs.push(h);setTimeout(()=>{rebuild()},0);return()=>{}},
     onConnection(h){cs.push(h);setTimeout(()=>h(true),0);return()=>{}},
-    rtt(id){return RTT.has(id)?RTT.get(id):null}
+    rtt(id){return RTT.has(id)?RTT.get(id):null},
+    leave(){dead=true;clearInterval(t1);clearInterval(t2);try{room.leave()}catch(e){}const gone=[...others.keys()].map(peer=>({peer}));others.clear();RTT.clear();rebuild([],gone)}
   };
 }
 function pingOf(id){return ROOM&&ROOM.rtt?ROOM.rtt(id):null}
@@ -1449,6 +1466,21 @@ function bindNetSettings(){
   $('#ntclr').onclick=()=>{['nturl','ntuser','ntpass','ntapi'].forEach(i=>$('#'+i).value='');saveNet({});out.textContent='Geleert — drücke SPEICHERN & NEU VERBINDEN.'};
   $('#nts').onclick=()=>{saveNet(readNetForm());save();location.reload()};
 }
+
+// ---- AFK: idle or hidden tabs leave the room (saves TURN data); any key, click or touch reconnects ----
+let LAST_ACT=Date.now(),HID_SINCE=0,AFK=false;
+function markActive(){LAST_ACT=Date.now();if(AFK)afkBack()}
+['keydown','pointerdown','touchstart','wheel'].forEach(ev=>addEventListener(ev,markActive,{passive:true,capture:true}));
+let _pm=0;addEventListener('pointermove',()=>{const n=Date.now();if(n-_pm>2000){_pm=n;markActive()}},{passive:true});
+document.addEventListener('visibilitychange',()=>{if(document.hidden)HID_SINCE=Date.now();else{HID_SINCE=0;markActive()}});
+function afkLimits(){const tour=typeof RUN!=='undefined'&&RUN&&!RUN.free&&(RUN.phase==='train'||RUN.phase==='arena'||RUN.phase==='lobby');return tour?{idle:30*60e3,hid:30*60e3}:{idle:10*60e3,hid:4*60e3}}
+setInterval(()=>{if(AFK||!ROOM)return;if(typeof B!=='undefined'&&B&&B.mode==='duel'&&B.state!=='over')return;const L=afkLimits(),n=Date.now();
+  if(n-LAST_ACT>L.idle||(HID_SINCE&&n-HID_SINCE>L.hid))afkGo()},15000);
+function afkGo(){if(AFK||!ROOM)return;AFK=true;try{ROOM.leave()}catch(e){}ROOM=null;setConn(false,'💤 AFK — getrennt');
+  let el=document.getElementById('afkban');if(!el){el=document.createElement('div');el.id='afkban';el.style.cssText='position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:9000;background:#14141f;border:3px solid #000;box-shadow:4px 4px 0 #000;color:#fff;padding:16px 20px;text-align:center;font-family:VT323,monospace;font-size:20px;max-width:90vw';document.body.appendChild(el)}
+  el.innerHTML='💤 <b>Du warst eine Weile inaktiv</b><br>Die Verbindung zu den anderen Spielern wurde getrennt, um Datenvolumen zu sparen.<br><span style="color:#ffcb3d">Drück eine Taste oder tippe, um wieder zu verbinden.</span>';el.style.display='block'}
+function afkBack(){if(!AFK)return;AFK=false;const el=document.getElementById('afkban');if(el)el.style.display='none';LAST_ACT=Date.now();
+  try{ROOM=makeP2PRoom(ROOM_ID,TURN_ACTIVE);ROOM.onPeers(onRoomPeers);setConnLabel();pushFull();toast('Wieder verbunden.')}catch(e){console.error(e);ROOM=null;setConn(false,'Solo (offline)')}}
 
 /* ===================== MATCHES ===================== */
 const DEF_CFG={name:'',dur:10,rounds:3,team:3,kap:10,xp:1,enc:1,leg:1,tb:0,alt:1,money:100,aim:0};
