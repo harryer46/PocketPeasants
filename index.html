@@ -284,6 +284,9 @@ body.mob.portrait #rotate.show{display:block}
 #chatpop .cp.out{opacity:0;transform:translateX(30px)}
 @keyframes cpin{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:none}}
 .psfx{font-weight:bold;-webkit-text-stroke:.5px currentColor}
+#updban{position:fixed;left:50%;top:calc(10px + env(safe-area-inset-top));transform:translateX(-50%);z-index:80;display:none;align-items:center;gap:10px;background:#2a0c0c;border:3px solid #ef4444;box-shadow:4px 4px 0 #000;color:#fff;padding:8px 12px;font-family:VT323,monospace;font-size:19px;line-height:1.1;max-width:94vw;animation:cpin .3s ease-out}
+#updban.on{display:flex}#updban .ui{font-family:'Press Start 2P',monospace;font-size:22px;color:#fff;background:#ef4444;border:2px solid #000;width:34px;height:34px;display:flex;align-items:center;justify-content:center;flex-shrink:0;animation:updp 1s infinite}
+@keyframes updp{50%{transform:scale(1.15)}}
 </style>
 </head>
 <body>
@@ -375,15 +378,22 @@ const TURN_CONFIG = {
 
 /* ===================== VERSION ===================== */
 // bump with every release (MAJOR.MINOR.PATCH). Players can only share lobbies/duels with the same version.
-const VERSION='0.38.3';
+const VERSION='0.39.1';
 function cmpV(a,b){const x=String(a||'0').split('.').map(Number),y=String(b||'0').split('.').map(Number);for(let i=0;i<3;i++){const d=(x[i]||0)-(y[i]||0);if(d)return d}return 0}
 /* ===================== ERROR REPORTING ===================== */
 function showErr(m){try{const b=document.getElementById('errbox');if(!b)return;b.textContent='⚠ Fehler: '+String(m).slice(0,220)+' — bitte an den Entwickler schicken.';b.style.display='block';clearTimeout(showErr.t);showErr.t=setTimeout(()=>b.style.display='none',12000)}catch(e){}}
 addEventListener('error',e=>showErr((e.message||'error')+(e.lineno?' @'+e.lineno:'')));
 addEventListener('unhandledrejection',e=>showErr(e.reason&&e.reason.message||e.reason||'Promise-Fehler'));
 document.addEventListener('visibilitychange',()=>{if(document.hidden||!B)return;const n=performance.now();B.lqT=n;B.tbT=n;if(B.t0)B.t0=Math.max(B.t0,n-20000)});
+// new version on the server → big "!" banner (reload needed)
+let UPD_SEEN=null;
+async function checkUpdate(){if(!/^https?:/.test(location.protocol))return;try{const r=await fetch(location.origin+location.pathname+'?u='+Date.now(),{cache:'no-store'});if(!r.ok)return;const t=await r.text();const m=t.match(/const VERSION='([0-9.]+)'/);if(m&&cmpV(m[1],VERSION)>0)showUpdate(m[1])}catch(e){}}
+function showUpdate(v){if(UPD_SEEN===v)return;UPD_SEEN=v;let el=$('#updban');if(!el){el=document.createElement('div');el.id='updban';document.body.appendChild(el)}
+  el.innerHTML=`<span class="ui">!</span><div><b>Neue Version v${esc(v)} verfügbar</b><br><span class="small">Du spielst v${esc(VERSION)}. Bitte neu laden — sonst kannst du keinen Lobbys mit der neuen Version beitreten.</span></div><button class="btn" id="updgo">NEU LADEN</button><button class="btn ghost" id="updx">✕</button>`;el.classList.add('on');
+  $('#updgo').onclick=()=>location.reload();$('#updx').onclick=()=>el.classList.remove('on');const b=$('#tupd');if(b){b.style.display='';b.textContent=`⬆ v${v} — NEU LADEN`}}
+setTimeout(checkUpdate,20000);setInterval(checkUpdate,180000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUpdate()});
 setInterval(()=>{try{if(!ROOM)return;let nv=null;for(const p of others()){const v=p.presence.v;if(typeof v==='string'&&v.length<12&&cmpV(v,VERSION)>0&&(!nv||cmpV(v,nv)>0))nv=v}
-  const b=$('#tupd');if(nv){b.style.display='';b.textContent=`⬆ v${nv} AVAILABLE — RELOAD`}else b.style.display='none'}catch(e){}},3000);
+  const b=$('#tupd');if(nv){b.style.display='';b.textContent=`⬆ v${nv} — NEU LADEN`;showUpdate(nv)}else if(!UPD_SEEN)b.style.display='none'}catch(e){}},3000);
 /* ===================== DATA ===================== */
 const TYPES={normal:{n:'Normal',c:'#8b8f9c'},fire:{n:'Feuer',c:'#f0642a'},water:{n:'Wasser',c:'#3d8bf2'},grass:{n:'Pflanze',c:'#2fb556'},electric:{n:'Elektro',c:'#d9a90b'},rock:{n:'Gestein',c:'#a2742c'},flying:{n:'Flug',c:'#7c83f0'}};
 const EFF={fire:{grass:2,water:.5,fire:.5,rock:.5},water:{fire:2,rock:2,grass:.5,water:.5},grass:{water:2,rock:2,fire:.5,grass:.5,flying:.5},electric:{water:2,flying:2,grass:.5,electric:.5,rock:0},rock:{fire:2,flying:2,electric:2,grass:.5},flying:{grass:2,electric:.5,rock:.5},normal:{rock:.5}};
@@ -538,7 +548,8 @@ const ALT_STARTERS=['harrymon','goeggeli','pfisterio','zenerentner','aaronia','i
 const ALT_POOLS={north:['zenerentner','aaronia','owigon','filzhund','gleichlinge','posttaube','meinungseule','langfinger','poebelblase','fragfuchs','fotodachs','lupenkauz','ermittlerhund','handschuhwasch'],
  east:['aaronia','ibumon','platzfuchs','kistenwasch','sichereule','freiheitsmarder','fragfuchs','sprayzi','pruegelklops','heimkroete','bodycamar','identiluchs','protokollfuchs','stoerkeiler','asservadler','verbotsnatter'],
  south:['zenerentner','promillo','ausweisadler','erkennungsleon','glaubine','posttaube','faelschling','sprayzi','owigon','zellbaer','wuerdeadler','probenwolf','handschuhwasch','asservadler','protokollfuchs'],
- west:['ibumon','pruegelklops','platzfuchs','kistenwasch','langfinger','faelschling','ausweisadler','heimkroete','rechtsritter','bundesadler','stoerkeiler','identiluchs','probenwolf','ermittlerhund','verbotsnatter']};
+ west:['ibumon','pruegelklops','platzfuchs','kistenwasch','langfinger','faelschling','ausweisadler','heimkroete','rechtsritter','bundesadler','stoerkeiler','identiluchs','probenwolf','ermittlerhund','verbotsnatter'],
+ knast:['langfinger','schwindelfuchs','pruegelklops','schlaegerkopf','promillo','bleifuss','poebelblase','geruechtling','faelschling','sprayzi']};
 const ALT_LEG={thunderroc:'boorberg',solarion:'arenamon',abyssfin:'zhang'};
 const ALT_IM={};function imgKey(sid){const v=SPECIES[sid].img;return v===1?sid:v}
 for(const k in ALT_IMG){const im=new Image();im.onload=()=>{const drop=o=>{for(const key in o){const sid=key.split(':')[0];if(SPECIES[sid]&&SPECIES[sid].img&&imgKey(sid)===k)delete o[key]}};drop(SPR);if(typeof WSPR!=='undefined')drop(WSPR)};im.src=ALT_IMG[k];ALT_IM[k]=im}
@@ -562,14 +573,16 @@ const ZONES={
  north:{n:'Nordwiese',col:'#7fd060',enc:'hohes Gras',pool:[]},
  east:{n:'Ostwald',col:'#2f7a2c',enc:'Farne',pool:[]},
  south:{n:'Südküste',col:'#3b8fd9',enc:'Schilf',pool:[]},
- west:{n:'Westhügel',col:'#b89a6a',enc:'Geröll',pool:[]}
+ west:{n:'Westhügel',col:'#b89a6a',enc:'Geröll',pool:[]},
+ knast:{n:'Knast',col:'#8e929c',enc:'Zellentrakt',pool:[]}
 };
 const CX=30,CY=23;
 function distC(x,y){return Math.hypot(x-CX,y-CY)}
 // difficulty: Lv 1–2 right outside town, rising with distance; harder biomes add a bonus that grows with distance
 const BIO_LV={north:0,south:1,east:2,west:4};
 function baseLvAt(x,y){const d=distC(x,y),ramp=clamp((d-9)/10,0,1);return 1+Math.max(0,d-9)*0.47+(BIO_LV[zoneAt(x,y)]||0)*ramp}
-function lvAt(x,y){return clamp(Math.round(baseLvAt(x,y)+Math.random()*1.4-0.7),1,30)}
+const KNAST_LV=[26,34];
+function lvAt(x,y){if(zoneAt(x,y)==='knast')return KNAST_LV[0]+Math.floor(Math.random()*(KNAST_LV[1]-KNAST_LV[0]+1));return clamp(Math.round(baseLvAt(x,y)+Math.random()*1.4-0.7),1,30)}
 function trainerTeam(t){const lo=Math.min(...t.team.map(e=>e[1])),b=Math.max(1,Math.round(baseLvAt(t.x,t.y))+1);const pool=altOn()?poolOf(zoneAt(t.x,t.y)||'north'):null;
   return t.team.map(([s,l],i)=>[pool?pool[(i+t.id.length)%pool.length]:s,clamp(b+(l-lo),1,30)])}
 function pickWild(pool,boost){boost=boost||1;const w=s=>rarOf(s).w*(RAR[s]==='rare'?boost:1);const tot=pool.reduce((a,s)=>a+w(s),0);let r=Math.random()*tot;for(const s of pool){r-=w(s);if(r<=0)return s}return pool[0]}
@@ -621,8 +634,8 @@ function gainXp(m,amt){
 
 /* ===================== MAP ===================== */
 // 0 grass,1 tall,2 tree,3 water,4 path,5 sand,6 wall,7 heal door,8 roof,9 flowers,10 arena roof,11 arena wall,12 arena door
-const MW=60,MH=44,MAP=new Uint8Array(MW*MH);const BIOME=new Uint8Array(MW*MH);const BKEYS=[null,'north','east','south','west'];
-const WALK0=new Set([0,1,4,5,7,9,12,13,14,15,17,18,19]);const ENC=new Set([1,17,18,19]);const BASE_T=[0,0,14,0,15],ENC_T=[0,1,17,18,19];
+const MW=60,MH=44,MAP=new Uint8Array(MW*MH);const BIOME=new Uint8Array(MW*MH);const BKEYS=[null,'north','east','south','west','knast'];
+const WALK0=new Set([0,1,4,5,7,9,12,13,14,15,17,18,19,20]);const ENC=new Set([1,17,18,19]);const BASE_T=[0,0,14,0,15],ENC_T=[0,1,17,18,19];
 function tget(x,y){return(x<0||y<0||x>=MW||y>=MH)?2:MAP[y*MW+x]}
 function tset(x,y,v){if(x>=0&&y>=0&&x<MW&&y<MH)MAP[y*MW+x]=v}
 function vnoise(seed,cell){
@@ -664,6 +677,11 @@ function vnoise(seed,cell){
      for(const[dx,dy]of D){const nb=BIOME[(y+dy)*MW+x+dx];if(nb===b)continue;const k=b<nb?b+'-'+nb:nb+'-'+b;if(BAR[k]!==undefined){bar.push([x,y,k]);break}}}
    for(const[x,y,k]of bar){const d=distC(x,y);tset(x,y,PASS[k]&&d>16.5&&d<19.5?4:BAR[k])}}
   for(let y=0;y<MH;y++)for(let x=0;x<MW;x++)if(x<2||y<2||x>=MW-2||y>=MH-2)tset(x,y,BIOME[y*MW+x]===4?16:2);
+  // KNAST: walled prison yard in the far north-west of the hills; cell-block floor (tile 20) = encounters with StGB offenders only
+  for(let y=3;y<=11;y++)for(let x=4;x<=14;x++){const wall=y===3||y===11||x===4||x===14;tset(x,y,wall?11:20);BIOME[y*MW+x]=5}
+  for(const[x,y]of[[9,6],[9,7],[9,8]])tset(x,y,11);   // a cell block in the middle
+  tset(9,11,4);for(let y=12;y<=22;y++){tset(9,y,4);if(tget(8,y)===16||tget(8,y)===2)tset(8,y,15);if(tget(10,y)===16||tget(10,y)===2)tset(10,y,15)}
+  tset(10,12,15);
   // make sure every walkable spot can be reached from town: carve the shortest way through obstacles into any cut-off pocket
   const D4=[[1,0],[-1,0],[0,1],[0,-1]];
   for(let it=0;it<60;it++){const seen=new Uint8Array(MW*MH),q=[24*MW+30];seen[q[0]]=1;
@@ -676,7 +694,7 @@ function vnoise(seed,cell){
 const WALK=WALK0;
 /* ===================== SIGNPOSTS ===================== */
 // wooden signs like in the originals: at the town exits, on both sides of every pass and in the town centre; biome name, direction, recommended level
-const SIGNS=[],SIGNSET=new Set(),BNAME=['Villingen-Knastningen','Nordwiese','Ostwald','Südküste','Westhügel'];
+const SIGNS=[],SIGNSET=new Set(),BNAME=['Villingen-Knastningen','Nordwiese','Ostwald','Südküste','Westhügel','Knast'];
 /* ===================== FIELD SKILLS (like the HMs of the originals) ===================== */
 // taught only by the harder trainers: CUT (Rita), SWIM (Sue), STRENGTH (Hank), FLY (Axel)
 const HM={cut:{n:'ZERSCHNEIDER',i:'✂',from:'rita',d:'Fällt die Bäumchen, die eine Abkürzung von der Stadt in den Ostwald verstecken.'},swim:{n:'SURFER',i:'🌊',from:'sue',d:'Schwimm über Seen und Flüsse.'},
@@ -715,10 +733,11 @@ function walkable(x,y){const t=tget(x,y);return(WALK.has(t)||(t===3&&hasHM('swim
   for(const[a,b]of[[1,2],[3,4]]){let sx=0,sy=0,n=0;for(let y=2;y<MH-2;y++)for(let x=2;x<MW-2;x++){const i=y*MW+x;if(MAP[i]!==4||(BIOME[i]!==a&&BIOME[i]!==b))continue;if(D4.some(([dx,dy])=>{const nb=BIOME[(y+dy)*MW+x+dx];return(nb===a||nb===b)&&nb!==BIOME[i]})){sx+=x;sy+=y;n++}}
     if(!n)continue;const px=sx/n,py=sy/n;near(px,py,a,{to:b,kind:'pass'});near(px,py,b,{to:a,kind:'back'})}
   near(30,26,0,{kind:'town'});
-  for(const sg of SIGNS){if(sg.to==null)continue;const c=cen[sg.to];if(c){const a=Math.atan2(c.y-sg.y,c.x-sg.x),k=Math.round(a/(Math.PI/4));sg.arrow=['→','↘','↓','↙','←','↖','↑','↗'][(k+8)%8]}sg.lv=lv[sg.to]?[Math.max(1,lv[sg.to][0]-1),lv[sg.to][1]]:[1,1]}
+  SIGNS.push({x:10,y:12,kind:'knast',to:5,arrow:'↑',lv:KNAST_LV.slice()});SIGNSET.add(12*MW+10);
+  for(const sg of SIGNS){if(sg.to==null||sg.kind==='knast')continue;const c=cen[sg.to];if(c){const a=Math.atan2(c.y-sg.y,c.x-sg.x),k=Math.round(a/(Math.PI/4));sg.arrow=['→','↘','↓','↙','←','↖','↑','↗'][(k+8)%8]}sg.lv=lv[sg.to]?[Math.max(1,lv[sg.to][0]-1),lv[sg.to][1]]:[1,1]}
 })();
 function signShort(sg){return sg.kind==='town'?'Villingen-Knastningen':`${sg.arrow||''} ${BNAME[sg.to]} · Lv ${sg.lv[0]}–${sg.lv[1]}`}
-function signText(sg){if(sg.kind==='town')return`<b>VILLINGEN-KNASTNINGEN</b><br>„Schnapp sie dir alle — und ab vors Gericht!“<br>🚓 Dienststelle (rotes Dach) · ⚖ Gericht (lila Dach) · 🛒 Budget-Markt: LADEN im Menü<br>Wiese ↑ und Küste ↓ sind offen. Wald und Hügel liegen dahinter.`;
+function signText(sg){if(sg.kind==='knast')return`<b>⛓ KNAST ⛓</b> · Lv ${sg.lv[0]}–${sg.lv[1]}<br>Justizvollzugsanstalt Villingen-Knastningen.<br>Hier sitzen nur StGB-Täter — und sie wollen raus! Nur für erfahrene Beamte.`;if(sg.kind==='town')return`<b>VILLINGEN-KNASTNINGEN</b><br>„Schnapp sie dir alle — und ab vors Gericht!“<br>🚓 Dienststelle (rotes Dach) · ⚖ Gericht (lila Dach) · 🛒 Budget-Markt: LADEN im Menü<br>Wiese ↑ und Küste ↓ sind offen. Wald und Hügel liegen dahinter.`;
   const z=BKEYS[sg.to],pool=z?poolOf(z):[],mons=pool.map(s=>G&&G.dex&&G.dex[s]!==undefined?SPECIES[s].n:'???').join(', ');
   const head=`<b>${sg.arrow||''} ${BNAME[sg.to].toUpperCase()}</b> · empfohlen Lv${sg.lv[0]}–${sg.lv[1]}`;
   if(sg.kind==='wall')return`${head}<br>${sg.to===2?'Die Baumreihe':'Die Klippen'} versperren hier den Weg.<br>Geh durch ${BNAME[sg.via]} — auf der anderen Seite gibt es einen Durchgang.`;
@@ -874,6 +893,7 @@ function buildTiles(){
   TILE[6]=[tileCanvas(x=>wall(x,'#efe8dc','#bfb6a2')),tileCanvas(x=>{wall(x,'#efe8dc','#bfb6a2');x.fillStyle='#3c3c4c';x.fillRect(3,3,10,8);x.fillStyle='#8fd0ff';x.fillRect(4,4,8,6);x.fillStyle='#c8ecff';x.fillRect(4,4,3,2)})];
   TILE[11]=[tileCanvas(x=>{wall(x,'#a9a9bd','#77778c');x.fillStyle='#8e8ea3';for(let y=0;y<14;y+=4){x.fillRect(0,y,16,1);x.fillRect((y%8)?4:12,y,1,4)}}),tileCanvas(x=>{wall(x,'#a9a9bd','#77778c');x.fillStyle='#ffcb3d';x.fillRect(5,3,6,6);x.fillStyle='#9a5b00';x.fillRect(7,5,2,2)})];
   TILE[7]=[tileCanvas(x=>{wall(x,'#efe8dc','#bfb6a2');x.fillStyle='#3a2210';x.fillRect(2,1,12,15);x.fillStyle='#7c4a22';x.fillRect(3,2,10,14);x.fillStyle='#9a5d2c';x.fillRect(3,2,1,14);x.fillStyle='#ffd23f';x.fillRect(11,9,1,1)})];
+  TILE[20]=[0,1,2].map(v=>tileCanvas(x=>{x.fillStyle='#7d818c';x.fillRect(0,0,16,16);x.fillStyle='#8e929c';x.fillRect(1,1,7,7);x.fillRect(9,1,6,7);x.fillRect(1,9,7,6);x.fillRect(9,9,6,6);x.fillStyle='#5d616b';x.fillRect(0,8,16,1);x.fillRect(8,0,1,16);if(v===1){x.fillStyle='#6a6e78';x.fillRect(3,3,2,1);x.fillRect(11,12,3,1)}if(v===2){x.fillStyle='#a3a7b0';x.fillRect(2,10,1,1);x.fillRect(12,3,1,1)}}));
   TILE[12]=[tileCanvas(x=>{wall(x,'#a9a9bd','#77778c');x.fillStyle='#1b1430';x.fillRect(0,1,16,15);x.fillStyle='#2d2350';x.fillRect(1,2,14,14)})];
   TILE[13]=[tileCanvas(x=>{x.fillStyle='#cfc8ae';x.fillRect(0,0,16,16);x.fillStyle='#b5ad90';x.fillRect(0,0,16,1);x.fillRect(0,0,1,16);x.fillStyle='#e6dfc6';x.fillRect(15,0,1,16);x.fillRect(0,15,16,1);x.fillStyle='#d9a90b';x.fillRect(7,7,2,2)})];
   TILE[14]=[0,1,2].map(v=>tileCanvas(x=>{x.fillStyle='#3f8f3a';x.fillRect(0,0,16,16);const r=mulberry32(v+300);for(let i=0;i<7;i++)P1(x,Math.floor(r()*16),Math.floor(r()*16),i%3?'#357a31':'#4fa046')}));
@@ -910,13 +930,13 @@ function* bakeWorldGen(){
   const T=(x,y)=>tget(Math.floor(x/16),Math.floor(y/16));
   for(let py=0;py<H;py++){if((py&7)===0)yield py/H*0.9;for(let px=0;px<W;px++){
     const ox=(jx(px,py)-0.5)*7,oy=(jy(px,py)-0.5)*7;let t=T(px+ox,py+oy);const t0=T(px,py);
-    if(t0===6||t0===7||t0===8||t0===10||t0===11||t0===12)t=t0;
+    if(t0===6||t0===7||t0===8||t0===10||t0===11||t0===12||t0===20)t=t0;
     const tx=clamp(Math.floor((px+ox)/16),0,MW-1),ty=clamp(Math.floor((py+oy)/16),0,MH-1),b=BIOME[ty*MW+tx];
     const dth=BAYER[(py&3)*4+(px&3)]*0.22;let v=nL(px,py)*0.62+nS(px,py)*0.38+dth;let pal;
     if(t===3){pal=RGB.water;v=nW(px,py+((px*7)%3))*0.7+0.15+dth;
       const nearLand=[[-2,0],[2,0],[0,-2],[0,2]].some(([a,c])=>T(px+a+ox*0.3,py+c+oy*0.3)!==3);if(nearLand){const o=(py*W+px)*4;d[o]=200;d[o+1]=232;d[o+2]=245;d[o+3]=255;continue}}
     else if(t===5)pal=RGB.sand;else if(t===18)pal=nD(px,py)>0.5?RGB.sand:RGB.shore;
-    else if(t===4||t===7||t===12)pal=RGB.dirt;else if(t===13)pal=RGB.stone;
+    else if(t===4||t===7||t===12)pal=RGB.dirt;else if(t===13||t===20)pal=RGB.stone;
     else{pal=b===2?RGB.forest:b===3?RGB.shore:b===4?RGB.hills:RGB.meadow;
       if(t===1||t===17)v-=0.18;
       if((b===4&&nD(px,py)>0.52)||((b<=1||b===3)&&nD(px,py)>0.74&&t!==1&&t!==17)||(t===19&&nD(px,py)>0.4))pal=RGB.dirt;}
@@ -924,7 +944,7 @@ function* bakeWorldGen(){
   gc.putImageData(id,0,0);yield 0.92;
   const r=mulberry32(777);
   // buildings / doors keep their tiles; soft shadow under buildings
-  for(let y=0;y<MH;y++)for(let x=0;x<MW;x++){const t=tget(x,y);if([6,7,8,10,11,12].includes(t)){const arr=TILE[t];let v=t===6?((y===19&&x!==25)?1:0):t===11?((x===34||x===37)&&y===19?1:0):0;gc.drawImage(arr[Math.min(v,arr.length-1)],x*16,y*16)}}
+  for(let y=0;y<MH;y++)for(let x=0;x<MW;x++){const t=tget(x,y);if([6,7,8,10,11,12,20].includes(t)){const arr=TILE[t];let v=t===6?((y===19&&x!==25)?1:0):t===11?((x===34||x===37)&&y===19?1:0):0;gc.drawImage(arr[Math.min(v,arr.length-1)],x*16,y*16)}}
   gc.fillStyle='rgba(20,30,10,0.28)';gc.fillRect(22*16,21*16,6*16,4);gc.fillRect(33*16,21*16,6*16,4);
   // ground details: tufts, flowers, pebbles
   for(let y=0;y<MH;y++)for(let x=0;x<MW;x++){const t=tget(x,y),b=BIOME[y*MW+x];
@@ -1054,7 +1074,7 @@ addEventListener('keydown',e=>{
   if(capturing){captureKey(e);return}
   if(typing()){if(e.key==='Escape')document.activeElement.blur();return}
   const d=KEYMAP[e.key];if(d){e.preventDefault();if(e.key.startsWith('Arrow')&&B&&!B.tb){if(!aimHeld.includes(d))aimHeld.push(d);return}if(!held.includes(d))held.push(d);return}
-  if(B){if(modalOpen())return;const k=normKey(e.key),K=SET.keys;
+  if(B){if($('#modal').classList.contains('on')||$('#study').classList.contains('on'))return;const k=normKey(e.key),K=SET.keys;
     for(let i=0;i<4;i++)if(k===K['a'+(i+1)]){e.preventDefault();battleMove(i);return}
     if(k===K.dash){e.preventDefault();battleDash()}else if(k===K.sw)battleSwitch();else if(k===K.cap){if(!e.repeat)capPress()}else if(k===K.run)tryRun();
     return}
@@ -1064,6 +1084,7 @@ addEventListener('keydown',e=>{
 });
 addEventListener('keyup',e=>{const d=KEYMAP[e.key];if(d){const i=held.indexOf(d);if(i>=0)held.splice(i,1);const j=aimHeld.indexOf(d);if(j>=0)aimHeld.splice(j,1)}if(B&&B.aim&&normKey(e.key)===SET.keys.cap)capRelease()});
 addEventListener('blur',()=>{held.length=0;aimHeld.length=0});
+['#stage','#battle'].forEach(sel=>{const el=$(sel);if(el)el.addEventListener('pointerdown',e=>{if(typing()&&!e.target.closest('input,select,textarea'))document.activeElement.blur()})});
 document.querySelectorAll('#dpad button').forEach(b=>{const d=b.dataset.d;
   b.addEventListener('pointerdown',e=>{e.preventDefault();if(!held.includes(d))held.push(d)});
   const up=()=>{const i=held.indexOf(d);if(i>=0)held.splice(i,1)};['pointerup','pointerleave','pointercancel'].forEach(ev=>b.addEventListener(ev,up))});
@@ -1166,7 +1187,7 @@ function onArrive(){
   if(t===7){if(RUN){healAll();toast('Dienststelle: Dein Team ist voll geheilt! Handschellen aufgefüllt.')}else toast('Dienststelle — tritt einer Lobby bei oder starte das freie Spiel, um ein Team zu bekommen.')}
   if(t===12){if(RUN&&RUN.phase==='lobby')toast('Das Spiel hat noch nicht begonnen — warte auf den Host.');else if(RUN&&RUN.phase==='train'&&!RUN.free)confirmEarlyArena();else if(RUN&&RUN.free)toast('Im Gericht finden Lobby-Turniere statt — erstelle oder betritt eine Lobby!');else toast('Das Gericht — tritt zuerst einer Lobby bei oder erstelle eine!')}
   if(checkSight())return;
-  if(ENC.has(t)&&RUN&&RUN.phase==='train'){const z=zoneAt(P.x,P.y);if(z&&Math.random()<0.13*cfgOf().enc)startWild(z)}
+  if((ENC.has(t)||t===20)&&RUN&&RUN.phase==='train'){const z=zoneAt(P.x,P.y);if(z&&Math.random()<(t===20?0.16:0.13)*cfgOf().enc)startWild(z)}
 }
 function healAll(){if(!RUN)return;for(const m of RUN.team.concat(RUN.box))m.hp=stats(m).mhp;RUN.kap=Math.max(RUN.kap,10);save();renderTeam();updateHud()}
 function updateHud(){
@@ -1237,7 +1258,7 @@ function drawWorld(){
 }
 
 /* ===================== WORLD MAP ===================== */
-const MCOL={0:'#6cc44f',1:'#3f9a30',2:'#1f5e2a',3:'#3b8fd9',4:'#e0c890',5:'#ecd79a',6:'#efe8dc',7:'#7c4a22',8:'#d23b3b',9:'#7fd060',10:'#5b4bc4',11:'#a9a9bd',12:'#2d2350',13:'#f2e7b8',14:'#3f8a3a',15:'#c4a374',16:'#6d675d',17:'#25652a',18:'#9fbf5a',19:'#9a7d50'};
+const MCOL={20:'#6b6f7a',0:'#6cc44f',1:'#3f9a30',2:'#1f5e2a',3:'#3b8fd9',4:'#e0c890',5:'#ecd79a',6:'#efe8dc',7:'#7c4a22',8:'#d23b3b',9:'#7fd060',10:'#5b4bc4',11:'#a9a9bd',12:'#2d2350',13:'#f2e7b8',14:'#3f8a3a',15:'#c4a374',16:'#6d675d',17:'#25652a',18:'#9fbf5a',19:'#9a7d50'};
 const BIO_C=(()=>{const acc={};for(let y=0;y<MH;y++)for(let x=0;x<MW;x++){const b=BKEYS[BIOME[y*MW+x]];if(!b)continue;const a=acc[b]||(acc[b]={x:0,y:0,n:0});a.x+=x;a.y+=y;a.n++}const o={};for(const k in acc)o[k]={x:acc[k].x/acc[k].n,y:acc[k].y/acc[k].n};return o})();
 function mapOpen(){return $('#mapov').classList.contains('on')}
 function openMap(){if(B)return;$('#mapov').classList.add('on');held.length=0;drawMap();renderMapLegend();renderFly()}
@@ -1787,7 +1808,7 @@ const OBK={rock:{mat:'rock',hp:70,r:12},boulder:{mat:'rock',hp:110,r:14},crystal
   bush:{mat:'plant',hp:14,r:9},flower:{mat:'plant',hp:8,r:8},fern:{mat:'plant',hp:12,r:9},reeds:{mat:'plant',hp:10,r:8},shrub:{mat:'plant',hp:10,r:8},
   stump:{mat:'wood',hp:45,r:11},log:{mat:'wood',hp:55,r:13},drift:{mat:'wood',hp:30,r:12},crate:{mat:'wood',hp:35,r:10}};
 const ZONE_OBS={north:[['bush',2,3],['flower',1,2],['rock',1,1]],east:[['stump',2,2],['fern',2,3],['log',1,1]],south:[['reeds',2,3],['drift',1,2],['coral',1,1]],
-  west:[['boulder',2,2],['rock',1,1],['crystal',1,1],['shrub',1,1]],arena:[['pillar',2,2],['crate',2,3]]};
+  west:[['boulder',2,2],['rock',1,1],['crystal',1,1],['shrub',1,1]],arena:[['pillar',2,2],['crate',2,3]],knast:[['pillar',3,3],['crate',1,2]]};
 function genObs(seed,zone){const r=mulberry32(seed>>>0),out=[];const kinds=[];for(const[k,a,b]of(ZONE_OBS[zone]||ZONE_OBS.north)){const n=a+Math.floor(r()*(b-a+1));for(let i=0;i<n;i++)kinds.push(k)}
   let id=0;for(const kind of kinds){const K=OBK[kind],rad=K.r;for(let t=0;t<140;t++){const a=r()*6.283,q=0.2+r()*0.68,x=ACX+Math.cos(a)*ARX*q,y=ACY+Math.sin(a)*ARY*q;
       if(Math.hypot(x-ACX,(y-YT)*1.3)<48||Math.hypot(x-ACX,(y-YB)*1.3)<48)continue;if(out.some(o=>Math.hypot(o.x-x,(o.y-y)*1.3)<o.r+rad+24))continue;
@@ -1832,7 +1853,7 @@ function obsSprite(kind,v,stage){const k=kind+v+stage;if(OBSPR[k])return OBSPR[k
 function drawObs(c,o,now){const st=o.hp<o.max*0.34?2:o.hp<o.max*0.7?1:0;const s=obsSprite(o.kind,o.v,st);let sx=0;if(o.hitT&&now-o.hitT<160)sx=Math.round(Math.sin(now/18)*2);
   c.fillStyle='rgba(10,20,8,0.28)';c.beginPath();c.ellipse(o.x,o.y+2,o.r+2,4,0,0,7);c.fill();c.drawImage(s,Math.round(o.x-16+sx),Math.round(o.y-26),32,32);
   if((o.mat||o.kind)!=='plant'&&o.hp<o.max){c.fillStyle='#14141f';c.fillRect(Math.round(o.x-11),Math.round(o.y-30),22,4);c.fillStyle='#c9c9c9';c.fillRect(Math.round(o.x-10),Math.round(o.y-29),Math.round(20*o.hp/o.max),2)}}
-function newBattle(o){
+function newBattle(o){try{if(typing())document.activeElement.blur()}catch(e){}
   B=Object.assign({shots:[],parts:[],nums:[],log:[],state:'fight',ptr:null,capCd:0,sid:0,vshots:[]},o);held.length=0;
   if(B.tb===undefined)B.tb=!!(RUN&&!RUN.free&&RUN.cfg&&RUN.cfg.tb);
   if(B.tb){B.me.x=ACX;B.me.y=YB;if(B.foe){B.foe.x=ACX;B.foe.y=YT}if(B.state==='fight'||B.state==='count')B.state='tbChoose';B.turn=1;B.tbActs={}}
@@ -2370,7 +2391,7 @@ function sizeBattle(){
 }
 function drawBattle(){
   if(!B)return;const c=bc;const K=sizeBattle();const CM=updateCam(performance.now());c.setTransform(K*CM.z,0,0,K*CM.z,K*(AW/2-CM.x*CM.z),K*(CAMY-CM.y*CM.z));const _n=performance.now();if(B.shakeUntil&&_n<B.shakeUntil)c.translate(Math.round((Math.random()-.5)*4),Math.round((Math.random()-.5)*4));c.imageSmoothingEnabled=false;const now=performance.now();
-  c.drawImage(battleBG(B.zone||'arena'),0,0,AW,AH);
+  c.drawImage(battleBG(B.zone==='knast'?'arena':(B.zone||'arena')),0,0,AW,AH);
 
   const ents=[B.me,B.foe].filter(Boolean).concat((B.obs||[]).filter(o=>!o.dead)).sort((a,b)=>a.y-b.y);
   for(const F of ents){if(F.kind){drawObs(c,F,now);continue}if(F.out&&act(F).hp<=0&&F.faint<=0&&F.ctrl!=='remote')continue;const mon=act(F);
@@ -2838,7 +2859,7 @@ function chatPop(name,col,t){let box=$('#chatpop');if(!box){box=document.createE
   setTimeout(()=>d.classList.add('out'),5200);setTimeout(()=>d.remove(),5800)}
 function addChat(name,col,t,remote){if(remote)chatPop(name,col,t);const l=$('#chatlog');const d=document.createElement('div');d.className='m';d.innerHTML=`<span style="color:${validColor(col)}">${esc(name)}:</span> ${esc(t)}`;l.appendChild(d);l.scrollTop=l.scrollHeight;if(curTab!=='chat'){unread++;$('#cbadge').innerHTML=`<span class="badge">${unread}</span>`}}
 function sysChat(t){const l=$('#chatlog');const d=document.createElement('div');d.className='m sys';d.textContent='» '+t;l.appendChild(d);l.scrollTop=l.scrollHeight}
-$('#chatform').addEventListener('submit',e=>{e.preventDefault();const inp=$('#chatin');const t=inp.value.replace(/[\u0000-\u001f]/g,'').trim().slice(0,120);if(!t||!G)return;inp.value='';chatN++;pres({chat:{i:Date.now()%1e9+chatN,t}});myBubble={t,until:performance.now()+6000};addChat(G.name,G.color,t)});
+$('#chatform').addEventListener('submit',e=>{e.preventDefault();const inp=$('#chatin');const t=inp.value.replace(/[\u0000-\u001f]/g,'').trim().slice(0,120);if(!t||!G)return;inp.value='';chatN++;pres({chat:{i:Date.now()%1e9+chatN,t}});inp.blur();myBubble={t,until:performance.now()+6000};addChat(G.name,G.color,t)});
 
 /* ===================== LOOP ===================== */
 let last=performance.now(),slow=0;
