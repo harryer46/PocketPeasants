@@ -384,7 +384,7 @@ const TURN_CONFIG = {
 
 /* ===================== VERSION ===================== */
 // bump with every release (MAJOR.MINOR.PATCH). Players can only share lobbies/duels with the same version.
-const VERSION='0.56.0';
+const VERSION='0.56.1';
 // access password: only its hash is stored here; the password itself also keys the P2P room, so clients without it cannot connect
 const PW_KEY='knast_pw',PW_H=2361915375,MAX_ROOM=10,MAX_LOBBY=5;
 function pwHash(s){let h=2166136261;s='knast:'+s;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
@@ -414,7 +414,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden||!B)return;
 let UPD_SEEN=null;
 async function checkUpdate(){if(!/^https?:/.test(location.protocol))return;try{const r=await fetch(location.origin+location.pathname+'?u='+Date.now(),{cache:'no-store'});if(!r.ok)return;const t=await r.text();const m=t.match(/const VERSION='([0-9.]+)'/);if(m&&cmpV(m[1],VERSION)>0)showUpdate(m[1])}catch(e){}}
 function showUpdate(v){if(UPD_SEEN===v)return;UPD_SEEN=v;let el=$('#updban');if(!el){el=document.createElement('div');el.id='updban';document.body.appendChild(el)}
-  el.innerHTML=`<span class="ui">!</span><div><b>Neue Version v${esc(v)} verfügbar</b><br><span class="small">Du spielst v${esc(VERSION)}. Bitte neu laden — sonst kannst du keinen Lobbys mit der neuen Version beitreten.</span></div><button class="btn" id="updgo">NEU LADEN</button><button class="btn ghost" id="updx">✕</button>`;el.classList.add('on');
+  el.innerHTML=`<span class="ui">!</span><div><b>Neue Version v${esc(v)} verfügbar</b><br><span class="small">Du spielst v${esc(VERSION)}. Bitte neu laden — dein Spielstand und ein laufendes Lobby-Spiel bleiben erhalten.</span></div><button class="btn" id="updgo">NEU LADEN</button><button class="btn ghost" id="updx">✕</button>`;el.classList.add('on');
   $('#updgo').onclick=()=>location.reload();$('#updx').onclick=()=>el.classList.remove('on');const b=$('#tupd');if(b){b.style.display='';b.textContent=`⬆ v${v} — NEU LADEN`}}
 setTimeout(checkUpdate,20000);setInterval(checkUpdate,180000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUpdate()});
 setInterval(()=>{try{if(!ROOM)return;let nv=null;for(const p of others()){const v=p.presence.v;if(typeof v==='string'&&v.length<12&&cmpV(v,VERSION)>0&&(!nv||cmpV(v,nv)>0))nv=v}
@@ -1081,7 +1081,7 @@ function buildStart(){
   prev();
   // a new session always starts here: a lobby from an earlier session is not resumed (free-play team, dex and trophies are kept)
   $('#sgo').onclick=()=>{if(!pwOK()){const v=($('#spw').value||'').trim().toUpperCase();if(!pwCheck(v)){toast('Falsches Passwort.');$('#spw').focus();return}try{localStorage.setItem(PW_KEY,v)}catch(e){}if(!ROOM)initRoom()}
-    const nm=cleanName($('#sname').value);if(G){G.name=nm;G.color=pickColor;G.sex=pickSex;G.x=30;G.y=24;G.d='down';G.run=G.freeRun||null}else G={name:nm,color:pickColor,sex:pickSex,dex:{},tro:0,x:30,y:24,d:'down',run:null};save();begin()};
+    const nm=cleanName($('#sname').value);if(G){G.name=nm;G.color=pickColor;G.sex=pickSex;G.x=30;G.y=24;G.d='down';const live=G.run&&!G.run.free&&Date.now()-(G.t||0)<30*60000&&!(G.run.phase!=='lobby'&&G.run.end&&Date.now()-G.run.end>20*60000);G.run=live?G.run:(G.freeRun||null)}else G={name:nm,color:pickColor,sex:pickSex,dex:{},tro:0,x:30,y:24,d:'down',run:null};RUN=G.run||G.freeRun||null;save();begin()};
   $('#sname').addEventListener('keydown',e=>{if(e.key==='Enter')$('#sgo').click()});$('#spw').addEventListener('keydown',e=>{if(e.key==='Enter')$('#sgo').click()});
   if(pwOK())$('#spwf').style.display='none';
 }
@@ -1094,6 +1094,8 @@ function begin(){
   for(const R of[G.run,G.freeRun])if(R&&Array.isArray(R.team)){const fix=m=>{if(m&&SPECIES[m.s])return m;if(!m)return null;const pool=ALT_BASES;const n=newMon(pool[Math.floor(Math.random()*pool.length)],clamp(+m.l||START_LV,1,60));n.hp=stats(n).mhp;return n};
     R.team=R.team.map(fix).filter(Boolean);R.box=(R.box||[]).map(fix).filter(Boolean);if(!R.team.length)R.team=[newMon(ALT_STARTERS[0],START_LV)]}
   if(RUN){RUN.beat=RUN.beat||{};RUN.leg=RUN.leg||{};if(RUN.money==null)RUN.money=100;RUN.items=RUN.items||{}}
+  // a running lobby survives a reload (e.g. after an update): an interrupted duel or pick goes back to waiting
+  if(RUN&&!RUN.free){if(RUN.st==='duel'||RUN.st==='pick')RUN.st=RUN.phase==='arena'?'wait':RUN.st;RUN.rdy=0;plog('[lobby] nach Neuladen fortgesetzt',RUN.id,RUN.phase);setTimeout(()=>sysChat('Dein Lobby-Spiel geht weiter — Team und Fortschritt sind erhalten.'),600)}
   if(G.freeRun&&G.freeRun!==RUN){if(G.freeRun.money==null)G.freeRun.money=100;G.freeRun.items=G.freeRun.items||{}}
   // free play has no timer and no arena (also repairs saves broken by an older version)
   if(RUN&&RUN.free){RUN.phase='train';RUN.st='free';RUN.r=1;RUN.res=[];$('#arena').classList.remove('on')}
