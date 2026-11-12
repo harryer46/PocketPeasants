@@ -342,7 +342,7 @@ const TURN_CONFIG = {
 
 /* ===================== VERSION ===================== */
 // bump with every release (MAJOR.MINOR.PATCH). Players can only share lobbies/duels with the same version.
-const VERSION='0.26.0';
+const VERSION='0.27.0';
 function cmpV(a,b){const x=String(a||'0').split('.').map(Number),y=String(b||'0').split('.').map(Number);for(let i=0;i<3;i++){const d=(x[i]||0)-(y[i]||0);if(d)return d}return 0}
 /* ===================== ERROR REPORTING ===================== */
 function showErr(m){try{const b=document.getElementById('errbox');if(!b)return;b.textContent='⚠ Error: '+String(m).slice(0,220)+' — please send this to the developer.';b.style.display='block';clearTimeout(showErr.t);showErr.t=setTimeout(()=>b.style.display='none',12000)}catch(e){}}
@@ -1610,37 +1610,56 @@ function moveDesc(mid){const mv=MOVES[mid];const k={melee:'melee',shot:'ranged',
 function calcDmg(att,def,mid,p){const mv=MOVES[mid]||MOVES.bump;const e=eff(mv.t,SPECIES[def.s].t);let d=((2*att.l/5+2)*p*att.atk/Math.max(1,def.def))/50+2;d*=(mv.t===SPECIES[att.s].t?1.5:1)*e*(0.85+Math.random()*0.15)*0.55;return{d:e===0?0:Math.max(1,Math.round(d)),e}}
 function say(t){if(!B)return;if(/grew to Lv/.test(t))B.lvlFx=performance.now();if(/evolved into/.test(t))B.evoFx=performance.now();B.log.push({t,at:performance.now()});if(B.log.length>3)B.log.shift()}
 // destructible obstacles: rocks take many hits, plants few (fire burns plants fast). Same layout for both duel players.
-function genObs(seed,zone){const r=mulberry32(seed>>>0),out=[];const nR=2+Math.floor(r()*2)+(zone==='west'?1:0),nP=2+Math.floor(r()*2)+(zone==='east'||zone==='south'?1:0);
-  const kinds=[...Array(nR).fill('rock'),...Array(nP).fill('plant')];let id=0;
-  for(const kind of kinds){const rad=kind==='rock'?12:9;for(let t=0;t<120;t++){const a=r()*6.283,q=0.2+r()*0.68,x=ACX+Math.cos(a)*ARX*q,y=ACY+Math.sin(a)*ARY*q;
+// destructible obstacles, themed per location. mat decides what hurts it: plants & wood burn, rock resists fire but cracks under rock/water
+const OBK={rock:{mat:'rock',hp:70,r:12},boulder:{mat:'rock',hp:110,r:14},crystal:{mat:'rock',hp:55,r:10},coral:{mat:'rock',hp:45,r:10},pillar:{mat:'rock',hp:150,r:11},
+  bush:{mat:'plant',hp:14,r:9},flower:{mat:'plant',hp:8,r:8},fern:{mat:'plant',hp:12,r:9},reeds:{mat:'plant',hp:10,r:8},shrub:{mat:'plant',hp:10,r:8},
+  stump:{mat:'wood',hp:45,r:11},log:{mat:'wood',hp:55,r:13},drift:{mat:'wood',hp:30,r:12},crate:{mat:'wood',hp:35,r:10}};
+const ZONE_OBS={north:[['bush',2,3],['flower',1,2],['rock',1,1]],east:[['stump',2,2],['fern',2,3],['log',1,1]],south:[['reeds',2,3],['drift',1,2],['coral',1,1]],
+  west:[['boulder',2,2],['rock',1,1],['crystal',1,1],['shrub',1,1]],arena:[['pillar',2,2],['crate',2,3]]};
+function genObs(seed,zone){const r=mulberry32(seed>>>0),out=[];const kinds=[];for(const[k,a,b]of(ZONE_OBS[zone]||ZONE_OBS.north)){const n=a+Math.floor(r()*(b-a+1));for(let i=0;i<n;i++)kinds.push(k)}
+  let id=0;for(const kind of kinds){const K=OBK[kind],rad=K.r;for(let t=0;t<140;t++){const a=r()*6.283,q=0.2+r()*0.68,x=ACX+Math.cos(a)*ARX*q,y=ACY+Math.sin(a)*ARY*q;
       if(Math.hypot(x-ACX,(y-YT)*1.3)<48||Math.hypot(x-ACX,(y-YB)*1.3)<48)continue;if(out.some(o=>Math.hypot(o.x-x,(o.y-y)*1.3)<o.r+rad+24))continue;
-      out.push({id:id++,kind,x:Math.round(x),y:Math.round(y),r:rad,hp:kind==='rock'?70:14,max:kind==='rock'?70:14,v:Math.floor(r()*3)});break}}
+      out.push({id:id++,kind,mat:K.mat,x:Math.round(x),y:Math.round(y),r:rad,hp:K.hp,max:K.hp,v:Math.floor(r()*3)});break}}
   return out}
 function obsPush(F){if(!B||!B.obs)return;for(const o of B.obs){if(o.dead)continue;let dx=F.x-o.x,dy=(F.y-o.y)*1.4;const d=Math.hypot(dx,dy),min=o.r+8;if(d<min){if(d<0.01){dx=1;dy=0}const L=Math.hypot(dx,dy);F.x=o.x+dx/L*min;F.y=o.y+dy/L*min/1.4}}}
 function shotVsObs(s){if(!B.obs)return false;for(const o of B.obs){if(o.dead)continue;if(Math.hypot(s.x-o.x,s.y-(o.y-8))<o.r+(s.r||4)){s.dead=1;hitObs(o,s);return true}}return false}
-function hitObs(o,s){const mv=MOVES[s.mid]||{p:30,t:'normal'};let dmg=Math.max(4,(mv.p||30)*0.45);if(o.kind==='plant'&&mv.t==='fire')dmg*=2.5;if(o.kind==='rock'&&(mv.t==='rock'||mv.t==='water'))dmg*=1.4;
-  o.hp-=dmg;o.hitT=performance.now();burst(o.x,o.y-8,o.kind==='rock'?'#9aa0a6':'#5fa236',6);if(o.hp<=0)breakObs(o)}
-function breakObs(o){if(o.dead)return;o.dead=1;o.hp=0;burst(o.x,o.y-8,o.kind==='rock'?'#8a8a8a':'#4f8f2e',22);burst(o.x,o.y-8,o.kind==='rock'?'#d0d0c8':'#ffd23f',8);
-  say(o.kind==='rock'?'A rock shatters!':'A plant gets shredded!');if(B.mode==='duel'){B.obGone=B.obGone||[];if(!B.obGone.includes(o.id)){B.obGone.push(o.id);publishDuel(true)}}}
+function hitObs(o,s){const mv=MOVES[s.mid]||{p:30,t:'normal'};let dmg=Math.max(4,(mv.p||30)*0.45);const m=o.mat||(o.kind==='rock'?'rock':'plant');
+  if(m==='plant'&&mv.t==='fire')dmg*=2.5;if(m==='wood'&&mv.t==='fire')dmg*=2;if(m==='rock'&&(mv.t==='rock'||mv.t==='water'))dmg*=1.4;if(m==='rock'&&mv.t==='fire')dmg*=0.6;
+  o.hp-=dmg;o.hitT=performance.now();burst(o.x,o.y-8,m==='rock'?'#9aa0a6':m==='wood'?'#a0703a':'#5fa236',6);if(o.hp<=0)breakObs(o)}
+function breakObs(o){if(o.dead)return;o.dead=1;o.hp=0;const m=o.mat||'rock';burst(o.x,o.y-8,m==='rock'?'#8a8a8a':m==='wood'?'#7a4a22':'#4f8f2e',22);burst(o.x,o.y-8,m==='rock'?'#d0d0c8':m==='wood'?'#d9a466':'#ffd23f',8);
+  say(m==='rock'?`The ${o.kind==='rock'?'rock':o.kind} shatters!`:m==='wood'?`The ${o.kind==='drift'?'driftwood':o.kind} splinters!`:`The ${o.kind} gets shredded!`);if(B.mode==='duel'){B.obGone=B.obGone||[];if(!B.obGone.includes(o.id)){B.obGone.push(o.id);publishDuel(true)}}}
 const OBSPR={};
 function obsSprite(kind,v,stage){const k=kind+v+stage;if(OBSPR[k])return OBSPR[k];const W=16,H=16,c=mk(W,H),x=c.getContext('2d'),id=x.createImageData(W,H),d=id.data;const rr=mulberry32(hashStr(k));
-  const put=(X,Y,col)=>{if(X<0||Y<0||X>=W||Y>=H)return;const o=(Y*W+X)*4;d[o]=col[0];d[o+1]=col[1];d[o+2]=col[2];d[o+3]=255};
-  if(kind==='rock'){const cx=8,cy=9,rx=7-(v===2?1:0),ry=5.5+(v===1?1:0);
-    for(let Y=0;Y<H;Y++)for(let X=0;X<W;X++){const dx=(X-cx)/rx,dy=(Y-cy)/ry,q=dx*dx+dy*dy;if(q>1)continue;let val=0.62-(dx+dy)*0.33+BAYER[(Y&3)*4+(X&3)]*0.18;if(q>0.72)val-=0.38;
-      let pal=RGB.rock;if(dy<-0.45&&rr()<0.7)pal=RGB.moss;put(X,Y,pal[clamp(Math.floor(val*pal.length),0,pal.length-1)])}
-    // cracks grow with damage
-    const dark=hex2rgb('#2a2a30');for(let i=0;i<stage*3;i++){let X=5+Math.floor(rr()*6),Y=6+Math.floor(rr()*5);for(let j=0;j<3;j++){const dx=(X-cx)/rx,dy=(Y-cy)/ry;if(dx*dx+dy*dy<0.8)put(X,Y,dark);X+=rr()<0.5?1:-1;Y+=rr()<0.6?1:0}}}
-  else{const leaf=RGB.leaf,fl=[hex2rgb(v===0?'#ff7aa8':v===1?'#ffd23f':'#ffffff'),hex2rgb('#fff3a3')];
-    const blobs=[[8,10,5],[5,8,3.5],[11,8,3.5],[8,6,3.5]];
-    for(let Y=0;Y<H;Y++)for(let X=0;X<W;X++){let best=9;for(const[bx,by,br]of blobs){const q=((X-bx)**2+(Y-by)**2)/(br*br);if(q<best)best=q}if(best>1)continue;
-      let val=0.6-((X-8)+(Y-8))/14*0.5+BAYER[(Y&3)*4+(X&3)]*0.25;if(best>0.75)val-=0.4;put(X,Y,leaf[clamp(Math.floor(val*leaf.length),0,leaf.length-1)])}
-    if(stage<2)for(let i=0;i<4-stage*2;i++){const X=4+Math.floor(rr()*8),Y=5+Math.floor(rr()*6);put(X,Y,fl[0]);put(X+1,Y,fl[1])}}
-  // 1px dark outline
+  const P=a=>a.map(hex2rgb),put=(X,Y,col)=>{X=Math.round(X);Y=Math.round(Y);if(X<0||Y<0||X>=W||Y>=H)return;const o=(Y*W+X)*4;d[o]=col[0];d[o+1]=col[1];d[o+2]=col[2];d[o+3]=255};
+  const shade=(pal,val)=>pal[clamp(Math.floor(val*pal.length),0,pal.length-1)],dth=(X,Y)=>BAYER[(Y&3)*4+(X&3)]*0.18;
+  const ell=(cx,cy,rx,ry,pal,top)=>{for(let Y=0;Y<H;Y++)for(let X=0;X<W;X++){const dx=(X-cx)/rx,dy=(Y-cy)/ry,q=dx*dx+dy*dy;if(q>1)continue;let val=0.62-(dx+dy)*0.33+dth(X,Y);if(q>0.72)val-=0.38;put(X,Y,top&&dy<-0.45&&rr()<0.7?shade(top,val):shade(pal,val))}};
+  const blobs=(bl,pal)=>{for(let Y=0;Y<H;Y++)for(let X=0;X<W;X++){let best=9;for(const[bx,by,br]of bl){const q=((X-bx)**2+(Y-by)**2)/(br*br);if(q<best)best=q}if(best>1)continue;let val=0.6-((X-8)+(Y-8))/14*0.5+dth(X,Y)*1.4;if(best>0.75)val-=0.4;put(X,Y,shade(pal,val))}};
+  const cracks=(n,cx,cy,rx,ry)=>{const dk=hex2rgb('#2a2a30');for(let i=0;i<n;i++){let X=cx-3+Math.floor(rr()*6),Y=cy-3+Math.floor(rr()*5);for(let j=0;j<3;j++){const dx=(X-cx)/rx,dy=(Y-cy)/ry;if(dx*dx+dy*dy<0.8)put(X,Y,dk);X+=rr()<0.5?1:-1;Y+=rr()<0.6?1:0}}};
+  const dots=(n,cols,area)=>{for(let i=0;i<n;i++){const X=area[0]+Math.floor(rr()*area[2]),Y=area[1]+Math.floor(rr()*area[3]);put(X,Y,cols[i%cols.length])}};
+  const wood=P(['#3a2410','#5e3a1a','#8a5a2b','#b07a3e','#d9a466']),stone=P(['#3c3f48','#5c606b','#80858f','#a9adb5','#d0d3d8']);
+  switch(kind){
+   case'rock':ell(8,9,7-(v===2?1:0),5.5+(v===1?1:0),RGB.rock,RGB.moss);cracks(stage*3,8,9,7,5.5);break;
+   case'boulder':ell(8,9,7.6,6.4,RGB.rock);ell(5,7,2.4,2,RGB.rock);cracks(stage*4,8,9,7.6,6.4);break;
+   case'crystal':{const cy=P(['#123a52','#1f6e94','#3fb0d8','#9ae6f8','#e6fbff']);for(const[bx,h,w]of[[5,9,2],[8,12,2.5],[11,8,2]]){for(let Y=14-h;Y<15;Y++)for(let X=Math.round(bx-w);X<=Math.round(bx+w);X++){const t=(Y-(14-h))/h,ww=w*Math.min(1,t*2.2);if(Math.abs(X-bx)>ww)continue;put(X,Y,shade(cy,0.75-(X-bx)/w*0.3-t*0.3+dth(X,Y)))}}cracks(stage*2,8,10,5,5);break}
+   case'coral':ell(8,10,6.5,4.6,P(['#4a1a2c','#8c3550','#c95f7c','#f29aae','#ffd2da']));dots(5,P(['#ffffff','#ffe0e8']),[4,7,8,5]);cracks(stage*2,8,10,6.5,4.6);break;
+   case'pillar':for(let Y=2;Y<15;Y++)for(let X=4;X<12;X++){let val=0.75-(X-4)/8*0.55+dth(X,Y);if(Y<4)val+=0.15;if(X===4||X===11)val-=0.3;put(X,Y,shade(stone,val))}for(let X=3;X<13;X++){put(X,2,shade(stone,0.9));put(X,14,shade(stone,0.3))}cracks(stage*3,8,9,4,6);break;
+   case'bush':blobs([[8,10,5],[5,8,3.5],[11,8,3.5],[8,6,3.5]],RGB.leaf);if(stage<2)dots(4-stage*2,P([v===0?'#ff7aa8':v===1?'#ffd23f':'#ffffff','#fff3a3']),[4,5,8,6]);break;
+   case'flower':blobs([[8,12,5],[5,11,3],[11,11,3]],RGB.leaf);if(stage<2)dots(9-stage*4,P(['#ff5d8f','#ffd23f','#ffffff','#b48cff']),[3,8,10,6]);break;
+   case'fern':{const fp=RGB.leafF;for(let f=0;f<5;f++){const a=-Math.PI/2+(f-2)*0.42,L=7-Math.abs(f-2);for(let t=0;t<=L;t++){const X=8+Math.cos(a)*t,Y=14+Math.sin(a)*t;put(X,Y,shade(fp,0.7-t/L*0.3));if(t>1&&t%2===0){put(X-1,Y,shade(fp,0.45));put(X+1,Y,shade(fp,0.55))}}}if(stage>0)dots(stage*3,P(['#5b4a1e']),[4,7,8,7]);break}
+   case'reeds':{const st=P(['#2f5a1c','#4f8a2c','#7ab846']),top=P(['#3a2410','#6b4220']);for(let k2=0;k2<5-stage;k2++){const X=4+k2*2+(k2%2),h=8+Math.floor(rr()*4);for(let Y=15-h;Y<15;Y++)put(X,Y,shade(st,0.4+(Y%3)*0.2));put(X,15-h,top[1]);put(X,16-h,top[0]);put(X,17-h,top[1])}break}
+   case'shrub':blobs([[8,11,4.5],[5,10,3],[11,10,3]],P(['#3a3a14','#5e5e22','#848436','#a8a24a']));dots(3,P(['#5a3a14']),[5,8,6,5]);break;
+   case'stump':for(let Y=6;Y<15;Y++)for(let X=3;X<13;X++){const dx=(X-8)/5;if(Math.abs(dx)>1)continue;put(X,Y,shade(wood,0.5-dx*0.25+dth(X,Y)-(Math.abs(dx)>0.8?0.25:0)))}
+     for(let Y=3;Y<9;Y++)for(let X=3;X<13;X++){const dx=(X-8)/5,dy=(Y-6)/2.6,q=dx*dx+dy*dy;if(q>1)continue;put(X,Y,shade(wood,q>0.7?0.55:(Math.round(Math.sqrt(q)*3)%2?0.8:0.95)))}cracks(stage*2,8,10,5,4);break;
+   case'log':for(let Y=7;Y<14;Y++)for(let X=1;X<14;X++){const dy=(Y-10.5)/3.5;if(Math.abs(dy)>1)continue;put(X,Y,shade(wood,0.55-dy*0.3+dth(X,Y)-(Math.abs(dy)>0.75?0.25:0)))}
+     for(let Y=7;Y<14;Y++)for(let X=12;X<16;X++){const dx=(X-13.5)/2.2,dy=(Y-10.5)/3.5,q=dx*dx+dy*dy;if(q>1)continue;put(X,Y,shade(wood,Math.round(Math.sqrt(q)*3)%2?0.75:0.95))}cracks(stage*2,7,10,6,3);break;
+   case'drift':{const dw=P(['#5a5048','#8a7e70','#b8ac9a','#ddd3c2']);for(let X=1;X<15;X++){const Y0=10+Math.round(Math.sin(X*0.6)*1.2);for(let Y=Y0-1;Y<=Y0+1;Y++)put(X,Y,shade(dw,Y===Y0-1?0.85:Y===Y0?0.6:0.35))}for(let t=0;t<4;t++){put(5-t,9-t,dw[2]);put(11+t*0.5,9-t,dw[2])}cracks(stage*2,8,10,6,2);break}
+   case'crate':for(let Y=4;Y<15;Y++)for(let X=3;X<14;X++){let val=0.6+dth(X,Y)-(X-3)/11*0.2;if(X===3||X===13||Y===4||Y===14)val=0.2;else if(Y===9||X===8)val=0.35;else if((X+Y)%4===0)val-=0.12;put(X,Y,shade(wood,val))}cracks(stage*3,8,9,5,5);break;
+   default:ell(8,9,6,5,RGB.rock)}
   const src=new Uint8ClampedArray(d);for(let Y=0;Y<H;Y++)for(let X=0;X<W;X++){const o=(Y*W+X)*4;if(src[o+3])continue;const n=[[1,0],[-1,0],[0,1],[0,-1]].some(([a,b])=>{const X2=X+a,Y2=Y+b;return X2>=0&&Y2>=0&&X2<W&&Y2<H&&src[(Y2*W+X2)*4+3]});if(n){d[o]=20;d[o+1]=22;d[o+2]=26;d[o+3]=255}}
   x.putImageData(id,0,0);OBSPR[k]=c;return c}
 function drawObs(c,o,now){const st=o.hp<o.max*0.34?2:o.hp<o.max*0.7?1:0;const s=obsSprite(o.kind,o.v,st);let sx=0;if(o.hitT&&now-o.hitT<160)sx=Math.round(Math.sin(now/18)*2);
   c.fillStyle='rgba(10,20,8,0.28)';c.beginPath();c.ellipse(o.x,o.y+2,o.r+2,4,0,0,7);c.fill();c.drawImage(s,Math.round(o.x-16+sx),Math.round(o.y-26),32,32);
-  if(o.kind==='rock'&&o.hp<o.max){c.fillStyle='#14141f';c.fillRect(Math.round(o.x-11),Math.round(o.y-30),22,4);c.fillStyle='#c9c9c9';c.fillRect(Math.round(o.x-10),Math.round(o.y-29),Math.round(20*o.hp/o.max),2)}}
+  if((o.mat||o.kind)!=='plant'&&o.hp<o.max){c.fillStyle='#14141f';c.fillRect(Math.round(o.x-11),Math.round(o.y-30),22,4);c.fillStyle='#c9c9c9';c.fillRect(Math.round(o.x-10),Math.round(o.y-29),Math.round(20*o.hp/o.max),2)}}
 function newBattle(o){
   B=Object.assign({shots:[],parts:[],nums:[],log:[],state:'fight',ptr:null,capCd:0,sid:0,vshots:[]},o);held.length=0;
   if(B.tb===undefined)B.tb=!!(RUN&&!RUN.free&&RUN.cfg&&RUN.cfg.tb);
@@ -2074,21 +2093,36 @@ function battleBG(z){if(BBG[z])return BBG[z];const W=AW/2,H=AH/2,cv=mk(W,H),c=cv
   // round arena seen from above: floor oval (a bit larger than where the feet may go), a rim, scenery outside
   const cx=ACX/2,cy=(ACY-10)/2,rx=(ARX+20)/2,ry=(ARY+22)/2;
   for(let y=0;y<H;y++)for(let x=0;x<W;x++){const dth=BAYER[(y&3)*4+(x&3)]*0.22,e=((x-cx)/rx)**2+((y-cy)/ry)**2;let v,pal;
+    // floor of the round arena, themed per location
     if(e<1){v=nL(x,y)*0.62+nS(x,y)*0.38+dth;pal=gp;
-      if(z==='arena'){pal=RGB.stone;v=0.5+nS(x,y)*0.28+dth+(e>0.82?-0.12:0)}
-      else if(z==='south'&&nD(x,y)>0.55)pal=RGB.sand;else if(nD(x,y)>(z==='west'?0.5:0.68))pal=RGB.dirt;
-      if(e>0.9&&z!=='arena')v-=0.18}
-    else if(e<1.16){pal=z==='arena'?RGB.stone:z==='south'?RGB.sand:RGB.rock;v=0.25+nS(x,y)*0.35+dth-(y<cy?0.15:0)+(e<1.05?0.25:0)}
+      if(z==='arena'){pal=RGB.stone;v=0.52+nS(x,y)*0.22+dth+(e>0.82?-0.12:0)-((x%9===0||y%7===0)?0.16:0)}
+      else if(z==='south'){pal=RGB.sand;v=0.45+nL(x,y)*0.35+dth-(e>0.78?0.22:0)}
+      else if(z==='east'){pal=nD(x,y)>0.5?RGB.dirt:RGB.forest;v=nL(x,y)*0.5+nS(x,y)*0.3+dth-(pal===RGB.dirt?0.12:0)}
+      else if(z==='west'){pal=nD(x,y)>0.62?RGB.hills:RGB.dirt;v=0.3+nS(x,y)*0.45+dth}
+      else if(nD(x,y)>0.68)pal=RGB.dirt;
+      if(e>0.9&&z!=='arena'&&z!=='south')v-=0.18}
+    // rim: flower hedge (meadow), roots (woods), surf (shore), cliffs (hills), stone wall (arena)
+    else if(e<1.16){if(z==='north'){pal=RGB.leaf;v=0.25+nS(x,y)*0.5+dth}else if(z==='east'){pal=RGB.dirt;v=0.06+nS(x,y)*0.3+dth*0.6}
+      else if(z==='south'){pal=RGB.water;v=0.62+nS(x,y)*0.3+dth}else if(z==='arena'){pal=RGB.stone;v=0.3+nS(x,y)*0.3+dth+(e<1.05?0.3:0)-(y<cy?0.1:0)}
+      else{pal=RGB.rock;v=0.2+nS(x,y)*0.45+dth-(y<cy?0.15:0)+(e<1.05?0.25:0)}}
     else{if(z==='south'){pal=RGB.water;v=0.35+nL(x,y)*0.4+dth*0.6}else if(z==='arena'){pal=RGB.stone;v=0.12+((x+y*3)%5===0?0.25:0)+nS(x,y)*0.15}
       else if(z==='west'){pal=RGB.hills;v=0.15+nL(x,y)*0.5+dth}else{pal=z==='east'?RGB.forest:RGB.meadow;v=0.1+nL(x,y)*0.45+dth}}
     const cc=pal[clamp(Math.floor(v*pal.length),0,pal.length-1)],o=(y*W+x)*4;d[o]=cc[0];d[o+1]=cc[1];d[o+2]=cc[2];d[o+3]=255}
-  const r=mulberry32(seed+9),outside=(x,y,m)=>((x-cx)/(rx+m))**2+((y-cy)/(ry+m))**2>1;
+  const r=mulberry32(seed+9),outside=(x,y,m)=>((x-cx)/(rx+m))**2+((y-cy)/(ry+m))**2>1,onRim=(x,y)=>{const e=((x-cx)/rx)**2+((y-cy)/ry)**2;return e>=1&&e<1.16};
   if(z==='north'||z==='east'){const lp=z==='east'?RGB.leafF:RGB.leaf;for(let i=0;i<70;i++){const x=Math.floor(r()*W),y=Math.floor(r()*H);if(outside(x,y,6))paintCanopy(d,W,H,x,y,4+Math.floor(r()*3),lp,seed+i*7)}}
   c.putImageData(id,0,0);
   if(z==='west'){for(let i=0;i<26;i++){const x=Math.floor(r()*W),y=Math.floor(r()*H);if(outside(x,y,5))paintRock(c,x,y,2+Math.floor(r()*3),r)}}
   if(z==='south'){c.fillStyle='#ffffff55';for(let i=0;i<40;i++){const x=Math.floor(r()*W),y=Math.floor(r()*H);if(outside(x,y,4))c.fillRect(x,y,2+Math.floor(r()*3),1)}}
   if(z==='arena'){const cols=['#ef4444','#3b82f6','#ffcb3d','#3ddc6b','#a855f7','#f2f2f2'];for(let i=0;i<260;i++){const x=Math.floor(r()*W),y=Math.floor(r()*H);if(outside(x,y,3)){c.fillStyle=cols[i%cols.length];c.fillRect(x,y,1,1);c.fillStyle='#e8c9a0';c.fillRect(x,y-1,1,1)}}
     c.fillStyle='#ffffff50';for(let a=0;a<96;a++){const t=a/96*6.283;c.fillRect(Math.round(cx+Math.cos(t)*14),Math.round(cy+Math.sin(t)*9),1,1)}c.fillRect(Math.round(cx-rx+6),Math.round(cy),Math.round(rx*2-12),1)}
+  // rim details
+  for(let i=0;i<900;i++){const x=Math.floor(r()*W),y=Math.floor(r()*H);if(!onRim(x,y))continue;
+    if(z==='north'&&i%3===0){c.fillStyle=['#ff7aa8','#ffd23f','#ffffff','#b48cff'][i%4];c.fillRect(x,y,1,1)}
+    else if(z==='south'&&i%2===0){c.fillStyle='#ffffffb0';c.fillRect(x,y,1+(i%3===0?1:0),1)}
+    else if(z==='east'&&i%5===0){c.fillStyle='#2a1a0c';c.fillRect(x,y,2,1)}
+    else if(z==='west'&&i%6===0){c.fillStyle='#e0e0d8';c.fillRect(x,y,1,1)}}
+  if(z==='west')for(let i=0;i<60;i++){const x=Math.floor(r()*W),y=Math.floor(r()*H);if(!outside(x,y,-3)){c.fillStyle=i%2?'#8a8a86':'#5e5e5a';c.fillRect(x,y,1,1)}}
+  if(z==='east')for(let i=0;i<40;i++){const x=Math.floor(r()*W),y=Math.floor(r()*H);if(!outside(x,y,-3)){c.fillStyle=i%2?'#a06a2a':'#c98a3a';c.fillRect(x,y,1,1)}}
   for(let i=0;i<18&&z!=='arena';i++){const x=Math.floor(r()*W),y=Math.floor(r()*H);if(!outside(x,y,-4)){c.fillStyle=z==='east'?'#1d4416':'#3a7424';c.fillRect(x,y,1,1);c.fillRect(x+1,y-1,1,1)}}
   BBG[z]=cv;return cv}
 const FLOORS0={north:['#5cb848','#53ad40'],east:['#3f8f3a','#378234'],south:['#ecd79a','#e2cb8a'],west:['#c9a66b','#bb985f'],arena:['#8a8ea6','#7d8199']};
