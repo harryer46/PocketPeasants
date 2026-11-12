@@ -350,7 +350,7 @@ const TURN_CONFIG = {
 
 /* ===================== VERSION ===================== */
 // bump with every release (MAJOR.MINOR.PATCH). Players can only share lobbies/duels with the same version.
-const VERSION='0.36.1';
+const VERSION='0.36.2';
 function cmpV(a,b){const x=String(a||'0').split('.').map(Number),y=String(b||'0').split('.').map(Number);for(let i=0;i<3;i++){const d=(x[i]||0)-(y[i]||0);if(d)return d}return 0}
 /* ===================== ERROR REPORTING ===================== */
 function showErr(m){try{const b=document.getElementById('errbox');if(!b)return;b.textContent='⚠ Fehler: '+String(m).slice(0,220)+' — bitte an den Entwickler schicken.';b.style.display='block';clearTimeout(showErr.t);showErr.t=setTimeout(()=>b.style.display='none',12000)}catch(e){}}
@@ -482,6 +482,8 @@ altMon("poebelblase",Object.assign({"n": "Pöbelblase", "law": "§ 185 StGB · B
 altMon("geruechtling",Object.assign({"n": "Gerüchtling", "law": "§ 186 StGB · Üble Nachrede", "t": "electric", "img": "s186", "c": ["#9f8c8f", "#fbf8f1", "#141414"], "b": [64, 80, 58, 84], "xp": 125, "an": "float", "sc": 1, "faceR": 1},{ls:LS.L_poebel}),'common');
 altMon("faelschling",Object.assign({"n": "Fälschling", "law": "§ 267 StGB · Urkundenfälschung", "t": "grass", "img": "s267", "c": ["#be4530", "#fef0d3", "#141414"], "b": [58, 62, 62, 52], "xp": 70, "an": "sway", "sc": 1},{ls:LS.grassSt}),'uncommon');
 altMon("sprayzi",Object.assign({"n": "Sprayzi", "law": "§ 303 StGB · Sachbeschädigung", "t": "water", "img": "s303", "c": ["#a64f95", "#faf6ea", "#141414"], "b": [48, 56, 44, 58], "xp": 56, "an": "squirm", "sc": 1},{ls:LS.waterSt}),'common');
+// paragraph as name suffix: "Owigon §26", "Würdeadler Art.1", "Langfinger §242"
+for(const k in SPECIES){const sp=SPECIES[k];if(!sp.law)continue;const m=sp.law.match(/^(§|Art\.)\s*(\d+[a-z]?)/);if(m)sp.n+=' '+(m[1]==='§'?'§':'Art.')+m[2]}
 const ALT_IDS=new Set(['harrymon','harrymonx','goeggeli','goeggelix','pfisterio','pfisteriox','zenerentner','steini','aaronia','gianlueckmon','ibumon','owigon','ausweisadler','platzfuchs','sperrschild','drohnix','zellbaer','filzhund','kistenwasch','wohnkroete','sichereule','beschlagigel','erkennungsleon','fragfuchs','einwilligfee','bodycamar','wuerdeadler','freiheitsmarder','gleichlinge','glaubine','meinungseule','demofuchs','posttaube','heimkroete','rechtsritter','bundesadler','langfinger','schwindelfuchs','pruegelklops','schlaegerkopf','promillo','bleifuss','poebelblase','geruechtling','faelschling','sprayzi','arenamon','zhang','boorberg']);
 const ALT_STARTERS=['harrymon','goeggeli','pfisterio'];
 const ALT_POOLS={north:['zenerentner','aaronia','owigon','filzhund','gleichlinge','posttaube','meinungseule','langfinger','poebelblase','fragfuchs'],
@@ -2383,7 +2385,7 @@ function drawBattle(){
   const stTag={burn:['BRN','#ff8a3d'],slow:['SLW','#6db6f0'],stun:['STN','#ffe14d'],shield:['SHD','#9fd2ff'],haste:['HST','#3ddc6b']};
   const tags=(F,x,right)=>{const ks=F.ctrl==='remote'?(F.stShow||[]):Object.keys(F.st).filter(k=>F.st[k]>0);ks.forEach((k,i)=>{const[t,col]=stTag[k];const X=right?x-24-i*24:x+i*24;c.fillStyle='#14141f';c.fillRect(X,40,22,9);vtText(c,t,X+11,47,col,9,'center')})};
   tags(B.me,4,false);if(B.foe)tags(B.foe,UW-4-62,true);
-  if(B.foe)hudPanel(c,UW-4,4,B.foe,true,B.legend?'★':B.mode==='wild'?'Wild':'');
+  if(B.foe)hudPanel(c,UW-4,4,B.foe,true,B.legend?'★':'');
   if(B.foe&&B.mode==='wild'){const rc=rarOf(act(B.foe).s);if(RAR[act(B.foe).s]!=='common'){c.fillStyle='#14141f';c.fillRect(UW-116,40,58,9);vtText(c,rc.n.toUpperCase(),UW-113,47,rc.c,9)}}
   if(B.mode!=='wild'&&B.zone===undefined&&B.oppName)vtText(c,'gegen '+B.oppName,UW/2,48,'#ffffff',9,'center');
   const msgs=B.log.filter(m=>now-m.at<2600);msgs.forEach((m,i)=>{const y=UH-6-(msgs.length-1-i)*10;c.font='10px VT323,monospace';const w=c.measureText(m.t).width+8;c.fillStyle='#0b0d16c8';c.fillRect(Math.round(UW/2-w/2),y-8,Math.ceil(w),10);vtText(c,m.t,UW/2,y,'#ffffff',10,'center')});
