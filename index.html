@@ -261,6 +261,7 @@ body.mob.portrait #rotate.show{display:block}
   #bact{grid-template-columns:repeat(2,1fr)}
   .keys{display:none}
 }
+#cquiz{position:absolute;inset:0;background:#0a0c14d8;display:none;align-items:center;justify-content:center;z-index:7;padding:8px;overflow:auto}#cquiz.on{display:flex}#cqbox{width:min(560px,96%)}#cqbox .cqt{height:8px;background:#14141f;border:2px solid #000;margin:6px 0}#cqbox .cqt i{display:block;height:100%;background:#ffcb3d}
 #study{position:absolute;inset:0;background:#0a0c14f2;display:none;align-items:center;justify-content:center;z-index:6;padding:8px;overflow:auto}
 #study.on{display:flex}
 #sbox{width:100%;max-width:620px;display:flex;flex-direction:column;gap:8px}
@@ -308,6 +309,7 @@ body.mob.portrait #rotate.show{display:block}
     <div id="bpick"></div>
     <div id="signbox"></div>
     <div id="study"><div id="sbox"></div></div>
+    <div id="cquiz"><div id="cqbox"></div></div>
     <div id="modal"><div class="box" id="mbox"></div></div>
     <canvas id="fxcv"></canvas>
   </div>
@@ -382,7 +384,7 @@ const TURN_CONFIG = {
 
 /* ===================== VERSION ===================== */
 // bump with every release (MAJOR.MINOR.PATCH). Players can only share lobbies/duels with the same version.
-const VERSION='0.49.0';
+const VERSION='0.50.0';
 // access password: only its hash is stored here; the password itself also keys the P2P room, so clients without it cannot connect
 const PW_KEY='knast_pw',PW_H=2361915375,MAX_ROOM=10,MAX_LOBBY=5;
 function pwHash(s){let h=2166136261;s='knast:'+s;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
@@ -1142,6 +1144,7 @@ addEventListener('keydown',e=>{
   if(e.key==='Enter'&&!typing()&&!e.repeat&&G){e.preventDefault();panicOn();return}
   if(typing()){if(e.key==='Escape')document.activeElement.blur();return}
   const d=KEYMAP[e.key];if(d){e.preventDefault();if(e.key.startsWith('Arrow')&&B&&!B.tb){if(!aimHeld.includes(d))aimHeld.push(d);return}if(!held.includes(d))held.push(d);return}
+  if(B&&CQ){const n=+e.key;if(n>=1&&n<=4&&!CQ.done){e.preventDefault();cqAnswer(CQ.order[n-1])}return}
   if(B){if($('#modal').classList.contains('on')||$('#study').classList.contains('on'))return;const k=normKey(e.key),K=SET.keys;
     for(let i=0;i<4;i++)if(k===K['a'+(i+1)]){e.preventDefault();battleMove(i);return}
     if(k===K.dash){e.preventDefault();battleDash()}else if(k===K.sw)battleSwitch();else if(k===K.cap){if(!e.repeat)capPress()}else if(k===K.run)tryRun();
@@ -2082,7 +2085,7 @@ function newBattle(o){try{if(typing())document.activeElement.blur()}catch(e){}
     const introMs=1000+vx;if(realState==='count')B.cntEnd=Math.max(B.cntEnd||0,now+introMs+1600);
     setTimeout(()=>{if(B===myB&&B.state==='intro'){if(realState==='fight'&&B.mode==='wild'&&!B.tb&&B.me.team.filter(m=>m.hp>0).length>1){B.state='count';B.cntEnd=performance.now()+2600}else B.state=realState}},introMs)},undefined,350);
 }
-function closeBattle(){const myB=B;if(!myB)return;myB.closing=true;$('#bpick').classList.remove('on');transition('fade',()=>{if(B===myB)B=null;placeDpad();$('#battle').classList.remove('on');$('#stage').style.transform='';pres({bt:null,du:null,ld:leadInfo(),lf:folInfo()});renderTeam();updateHud()},300,350)}
+function closeBattle(){const myB=B;if(!myB)return;myB.closing=true;if(CQ){CQ.done=true;CQ=null}$('#cquiz').classList.remove('on');$('#bpick').classList.remove('on');transition('fade',()=>{if(B===myB)B=null;placeDpad();$('#battle').classList.remove('on');$('#stage').style.transform='';pres({bt:null,du:null,ld:leadInfo(),lf:folInfo()});renderTeam();updateHud()},300,350)}
 function fire(F,i,remote){
   const bt=act(F);const mid=bt.m[i];if(!mid||F.cd[i]>0||F.faint>0||F.out||F.st.stun>0)return;
   const cost=apCost(mid);if(F.ctrl!=='remote'){if((F.ap??AP_MAX)<cost){if(F===B.me){F.apShake=performance.now();const n=performance.now();if(!B.apMsgT||n-B.apMsgT>1200){B.apMsgT=n;say('Nicht genug AP!')}}return}F.ap=(F.ap??AP_MAX)-cost}
@@ -2391,9 +2394,28 @@ function startCatch(bonus){const w=act(B.foe);const chance=catchChance(w,(bonus|
   B.aim=null;B.state='catch';B.catch={t0:performance.now(),ok:sh===3,sh,x:B.foe.x,y:B.foe.y-14,gy:B.foe.y-3};B.shots=[];return;
   B.state='catch';B.catch={t0:performance.now(),ok:Math.random()<chance,x:B.foe.x,y:B.foe.y-14,gy:B.foe.y-3};B.catch.sh=B.catch.ok?3:1+Math.floor(Math.random()*2);B.shots=[]}
 function catchUpdate(now){const c=B.catch;const el=(now-c.t0)/1000;if(el<0.95+c.sh*0.7+0.2)return;
+  // the cuffs held — now a question about the paragraph decides: right → arrested, wrong or too slow → it breaks free and flees
+  if(c.ok&&!c.done&&!c.qz){c.qz=1;const myB=B;catchQuiz(B.wild.s,ok=>{if(B!==myB||!B.catch)return;if(ok)c.qok=1;else{c.done=1;B.state='over';burst(c.x,c.gy-4,'#ffcb3d',16);B.catch=null;say(`Falsch! ${SPECIES[B.wild.s].n} reißt sich los und flieht!`);setTimeout(()=>{if(B===myB)endWild()},1600)}});return}
+  if(c.ok&&!c.done&&!c.qok)return;
   if(c.ok&&!c.done){c.done=1;B.state='over';const m=B.wild;if(B.legend)RUN.leg[B.legend]=1;m.hp=act(B.foe).hp;G.dex[m.s]=1;syncBack();const toTeam=RUN.team.length<6;(toTeam?RUN.team:RUN.box).push(m);
     say(`Geschafft! ${SPECIES[m.s].n} wurde festgenommen!`);earn(5+m.l,'Festnahmebonus');say(toTeam?'Es ist jetzt in deinem Team.':'Dein Team ist voll — ab in die Box.');sysChat(`Du hast ${SPECIES[m.s].n} (Lv ${m.l}) festgenommen!`);const myB=B;setTimeout(()=>{if(B===myB)endWild()},1900)}
   else if(!c.ok){B.state=B.tb?'tbPlay':'fight';if(B.tb)setTimeout(()=>{if(B&&B.state==='tbPlay')tbRun(null)},900);burst(c.x,c.gy-4,'#ffcb3d',16);burst(c.x,c.gy-4,'#2fb7b0',10);B.catch=null;B.foe.inv=0.8;B.foe.spawnT=performance.now();say('Oh nein! Es hat sich befreit!')}}
+let CQ=null;
+function catchQuiz(sid,cb){
+  let pool=QZ[sid]?QZ[sid].map(q=>({src:sid,q})):null;if(!pool){const keys=Object.keys(QZ).filter(k=>SPECIES[k]);const k=keys[Math.floor(Math.random()*keys.length)];pool=QZ[k].map(q=>({src:k,q}))}
+  const it=pool[Math.floor(Math.random()*pool.length)],order=shuffleArr([0,1,2,3]);const T=15000;
+  CQ={it,order,end:performance.now()+T,cb,done:false};held.length=0;aimHeld.length=0;
+  const law=SPECIES[it.src].law||'';
+  $('#cqbox').innerHTML=`<div class="sdlg"><span class="slaw">⛓ FESTNAHME — ${esc(law||nameHtml(it.src))}</span><br>${esc(it.q[0])}<div class="cqt"><i id="cqbar"></i></div><div class="small" id="cqtime" style="text-align:right">15 s</div><div id="cqexp"></div></div>
+    <div class="sans">${order.map((k,j)=>`<button class="sa" data-ck="${k}"><span class="sk">${j+1}</span>${esc(it.q[1][k])}</button>`).join('')}</div><div class="sacts" id="cqact"></div>`;
+  $('#cquiz').classList.add('on');document.querySelectorAll('[data-ck]').forEach(b=>b.onclick=()=>cqAnswer(+b.dataset.ck));cqTick()}
+function cqTick(){if(!CQ||CQ.done)return;const now=performance.now();if(PANIC){CQ.end+=50;setTimeout(cqTick,50);return}
+  const left=Math.max(0,CQ.end-now),bar=$('#cqbar');if(bar){bar.style.width=(left/150)+'%';bar.style.background=left<5000?'#ef4444':'#ffcb3d'}const tt=$('#cqtime');if(tt)tt.textContent=Math.ceil(left/1000)+' s';
+  if(left<=0){cqAnswer(-1);return}setTimeout(cqTick,50)}
+function cqAnswer(k){if(!CQ||CQ.done)return;CQ.done=true;const ok=k===0,it=CQ.it;
+  document.querySelectorAll('[data-ck]').forEach(b=>{const kk=+b.dataset.ck;b.disabled=true;b.classList.add(kk===0?'ok':kk===k?'bad':'dim')});
+  $('#cqexp').innerHTML=`<div class="sexp ${ok?'ok':'bad'}">${ok?'✓ Richtig — Festnahme!':k<0?'⏱ Zeit abgelaufen!':'✗ Falsch.'} ${esc(it.q[2])}</div>`;
+  const cb=CQ.cb;setTimeout(()=>{$('#cquiz').classList.remove('on');CQ=null;cb(ok)},ok?1400:2600)}
 function endWild(msg){if(!B)return;syncBack();if(msg)toast(msg);closeBattle();save();pushMt()}
 
 /* --- duels (AI + PvP) --- */
