@@ -168,6 +168,14 @@ body.mob #signbox{bottom:auto;top:50px}
 #bpick.on{display:block}
 #bpick .t{font-family:'Press Start 2P',monospace;font-size:9px;color:var(--accent);margin-bottom:6px}
 #bpick .row{display:flex;gap:6px;justify-content:center;flex-wrap:wrap}
+#bpick .reel{display:flex;align-items:center;justify-content:center;gap:6px}
+#bpick .rc{background:#1a1f33;border:2px solid #000;padding:4px 6px;width:118px;cursor:pointer;transition:transform .12s}
+#bpick .rc.side{opacity:.55;transform:scale(.82)}#bpick .rc.mid{border-color:var(--accent);box-shadow:0 0 0 2px #000,0 0 12px #ffcb3d66}
+#bpick .rc canvas{width:52px;height:52px;image-rendering:pixelated}#bpick .rn{font-family:VT323,monospace;font-size:17px;line-height:1}
+#bpick .rh{height:4px;background:#000;margin-top:3px}#bpick .rh i{display:block;height:100%}
+#bpick .ra{background:#14141f;border:2px solid #000;color:var(--accent);font-size:16px;padding:6px 8px;cursor:pointer}
+#bpick .reel.spinR .rc{animation:rspR .16s ease-out}#bpick .reel.spinL .rc{animation:rspL .16s ease-out}
+@keyframes rspR{from{transform:translateX(40px)}}@keyframes rspL{from{transform:translateX(-40px)}}
 #bpick button{background:var(--panel2);border:2px solid #000;box-shadow:2px 2px 0 #000;color:var(--text);font-family:inherit;font-size:17px;padding:4px 6px;min-width:84px;touch-action:manipulation}
 #bpick button.sel{border-color:var(--accent);background:#3a3410}
 #bpick canvas{display:block;margin:0 auto;width:40px;height:40px;image-rendering:pixelated}
@@ -294,7 +302,7 @@ body.mob.portrait #rotate.show{display:block}
 <body>
 <div id="app">
 <div id="mainc">
-  <div id="topbar"><span class="tbrand">KNASTÉMON</span><span class="chip timer" id="htimer">LOBBY</span><button id="tupd" style="display:none;background:#ef4444;color:#fff">⬆ NEUE VERSION — NEU LADEN</button><span class="tsp"></span><button data-t="lobby" title="Lobby">🏟<span class="tl"> LOBBY</span></button><button data-t="team" title="Team">🎒<span class="tl"> TEAM</span></button><button data-t="players" title="Spieler">👥<span class="tl"> SPIELER</span><span id="pcount"></span></button><button data-t="chat" title="Chat">💬<span class="tl"> CHAT</span><span id="cbadge"></span></button><button id="hshop" title="Copshop (in der Stadt)">🛒<span class="tl"> LADEN</span></button><button id="hdex" title="Monster-Dex">📖<span class="tl"> DEX</span></button><button id="hmap" title="Karte">🗺<span class="tl"> KARTE</span></button><button id="hfs" title="Vollbild" style="display:none">⛶</button><button id="hbug" title="Bug melden (GitHub)">🐞</button><button id="hset">⚙</button><span id="tver"></span></div>
+  <div id="topbar"><span class="tbrand">KNASTÉMON</span><span class="chip timer" id="htimer">LOBBY</span><button id="tupd" style="display:none;background:#ef4444;color:#fff">⬆ NEUE VERSION — NEU LADEN</button><span class="tsp"></span><button data-t="lobby" title="Lobby">🏟<span class="tl"> LOBBY</span></button><button data-t="team" title="Team">🎒<span class="tl"> TEAM</span></button><button data-t="players" title="Spieler">👥<span class="tl"> SPIELER</span><span id="pcount"></span></button><button data-t="chat" title="Chat">💬<span class="tl"> CHAT</span><span id="cbadge"></span></button><button id="hshop" title="Copshop (in der Stadt)">🛒<span class="tl"> LADEN</span></button><button id="hdex" title="Monster-Dex">📖<span class="tl"> DEX</span></button><button id="hmap" title="Karte">🗺<span class="tl"> KARTE</span></button><button id="hfs" title="Vollbild" style="display:none">⛶</button><button id="hsave" title="Spielstand jetzt speichern">💾</button><button id="hbug" title="Bug melden (GitHub)">🐞</button><button id="hset">⚙</button><span id="tver"></span></div>
   <div id="stage">
     <canvas id="world"></canvas>
     <div class="hud"><span class="chip" id="hzone">Stadt</span><span class="chip" id="hkap">Handschellen -</span><span class="chip" id="hon"><span class="dot"></span>Solo</span></div>
@@ -384,7 +392,7 @@ const TURN_CONFIG = {
 
 /* ===================== VERSION ===================== */
 // bump with every release (MAJOR.MINOR.PATCH). Players can only share lobbies/duels with the same version.
-const VERSION='0.59.0';
+const VERSION='0.61.0';
 // access password: only its hash is stored here; the password itself also keys the P2P room, so clients without it cannot connect
 const PW_KEY='knast_pw',PW_H=2361915375,MAX_ROOM=10,MAX_LOBBY=5;
 function pwHash(s){let h=2166136261;s='knast:'+s;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
@@ -1127,7 +1135,7 @@ function begin(){
   // saves from before Knastémon may still hold the removed classic monsters → swap them for a base of the same level
   for(const R of[G.run,G.freeRun])if(R&&Array.isArray(R.team)){const fix=m=>{if(m&&SPECIES[m.s])return m;if(!m)return null;const pool=ALT_BASES;const n=newMon(pool[Math.floor(Math.random()*pool.length)],clamp(+m.l||START_LV,1,60));n.hp=stats(n).mhp;return n};
     R.team=R.team.map(fix).filter(Boolean);R.box=(R.box||[]).map(fix).filter(Boolean);if(!R.team.length)R.team=[newMon(ALT_STARTERS[0],START_LV)]}
-  if(RUN){RUN.beat=RUN.beat||{};RUN.leg=RUN.leg||{};if(RUN.money==null)RUN.money=100;RUN.items=RUN.items||{}}
+  if(RUN){RUN.beat=RUN.beat||{};RUN.leg=RUN.leg||{};if(RUN.money==null)RUN.money=100;RUN.items=RUN.items||{};RUN.box=RUN.box||[];if(RUN.team.length>TEAM_MAX)RUN.box.push(...RUN.team.splice(TEAM_MAX))}
   // a running lobby survives a reload (e.g. after an update): an interrupted duel or pick goes back to waiting
   if(RUN&&!RUN.free){if(RUN.st==='duel'||RUN.st==='pick')RUN.st=RUN.phase==='arena'?'wait':RUN.st;RUN.rdy=0;plog('[lobby] nach Neuladen fortgesetzt',RUN.id,RUN.phase);setTimeout(()=>sysChat('Dein Lobby-Spiel geht weiter — Team und Fortschritt sind erhalten.'),600)}
   if(G.freeRun&&G.freeRun!==RUN){if(G.freeRun.money==null)G.freeRun.money=100;G.freeRun.items=G.freeRun.items||{}}
@@ -1143,10 +1151,10 @@ function begin(){
 
 /* ===================== CONTROL SETTINGS ===================== */
 const SET_KEY='discountmon-controls';
-const DEF_KEYS={a1:'1',a2:'2',a3:'3',a4:'4',dash:' ',sw:'q',cap:'c',run:'r'};
+const DEF_KEYS={a1:'1',a2:'2',a3:'3',a4:'4',dash:' ',sw:'x',cap:'c',run:'r'};
 const KEY_NAMES={a1:'Attacke 1',a2:'Attacke 2',a3:'Attacke 3',a4:'Attacke 4',dash:'Sprint / Ausweichen',sw:'Monster wechseln',cap:'Handschellen werfen',run:'Fliehen'};
 let SET={ctrl:'auto',dp:'m',side:'right',keys:{...DEF_KEYS}};
-try{const v=JSON.parse(localStorage.getItem(SET_KEY)||'null');if(v)SET={...SET,...v,keys:{...DEF_KEYS,...(v.keys||{})}}}catch(e){}
+try{const v=JSON.parse(localStorage.getItem(SET_KEY)||'null');if(v)SET={...SET,...v,keys:{...DEF_KEYS,...(v.keys||{})}};if(SET.keys.sw==='q')SET.keys.sw='x'}catch(e){}
 function saveSet(){try{localStorage.setItem(SET_KEY,JSON.stringify(SET))}catch(e){}}
 function isMob(){return SET.ctrl==='mobile'||(SET.ctrl==='auto'&&matchMedia('(pointer:coarse)').matches)}
 function normKey(k){return k.length===1?k.toLowerCase():k}
@@ -1169,12 +1177,13 @@ function openSettings(){
   h+=`<div class="lbl2">ZIELEN (FREIES SPIEL)</div><div class="seg">${segBtn('aim','0','8 RICHTUNGEN',SET.aim||'0')}${segBtn('aim','2','FREI 360°',SET.aim||'0')}${segBtn('aim','1','AUTO-ZIELEN',SET.aim||'0')}</div>`;
   
   if(typeof netSettingsHtml==='function')h+=netSettingsHtml();
+  h+=`<div class="lbl2">SPIELSTAND</div><div class="seg"><button class="btn" id="ssave">💾 JETZT SPEICHERN</button><button class="btn ghost" id="sexp">⬇ EXPORTIEREN</button><button class="btn ghost" id="simp">⬆ IMPORTIEREN</button></div><div class="small" style="margin:2px 0 6px">Export = Sicherungsdatei zum Aufheben oder für ein anderes Gerät.</div>`;
   h+=`<div class="lbl2">FEHLERSUCHE</div><div class="seg"><button class="btn" id="slog">🧾 PROTOKOLL HERUNTERLADEN</button></div>`;
   h+=`<div class="acts" style="margin-top:12px"><button class="btn ghost" id="sreset">ZURÜCKSETZEN</button><button class="btn" id="sdone">FERTIG</button></div>`;
   openModal(h);if(typeof bindNetSettings==='function')bindNetSettings();
   document.querySelectorAll('#mbox [data-g]').forEach(b=>b.onclick=()=>{SET[b.dataset.g]=b.dataset.v;saveSet();if(b.dataset.g==='alt'&&RUN&&RUN.free){RUN.cfg=Object.assign({},RUN.cfg,{alt:+b.dataset.v});save();renderTeam();toast(+b.dataset.v?'Alternative Monster im freien Spiel!':'Klassische Monster im freien Spiel.')}applyControls();openSettings()});
   document.querySelectorAll('#mbox [data-key]').forEach(b=>b.onclick=()=>{capturing=b.dataset.key;openSettings()});
-  {const lb=$('#slog');if(lb)lb.onclick=downloadLog}
+  {const lb=$('#slog');if(lb)lb.onclick=downloadLog;$('#ssave').onclick=manualSave;$('#sexp').onclick=exportSave;$('#simp').onclick=importSave}
   $('#sreset').onclick=()=>{SET={ctrl:'auto',dp:'m',side:'right',keys:{...DEF_KEYS}};capturing=null;saveSet();applyControls();openSettings()};
   $('#sdone').onclick=()=>{capturing=null;closeModal()};
 }
@@ -1197,10 +1206,13 @@ addEventListener('keydown',e=>{
   if(PANIC){e.preventDefault();if(e.key==='Enter'&&!e.repeat)panicOff();return}
   if(e.key==='Enter'&&!typing()&&!e.repeat&&G){e.preventDefault();panicOn();return}
   if(typing()){if(e.key==='Escape')document.activeElement.blur();return}
+  // slot-machine reel open: A/D (and ←/→) spin it instead of moving
+  if(B&&!B.tb&&!CQ&&pickMode()&&!(pickMode()==='lead'&&B.leadPicked)&&!$('#modal').classList.contains('on')){const kk=e.key.toLowerCase();if(kk==='a'||e.key==='ArrowLeft'){e.preventDefault();reelSpin(-1);return}if(kk==='d'||e.key==='ArrowRight'){e.preventDefault();reelSpin(1);return}}
   const d=KEYMAP[e.key];if(d){e.preventDefault();if(e.key.startsWith('Arrow')&&B&&!B.tb){if(!aimHeld.includes(d))aimHeld.push(d);return}if(!held.includes(d))held.push(d);return}
   if(B&&CQ){const n=+e.key;if(n>=1&&n<=4&&!CQ.done){e.preventDefault();cqAnswer(CQ.order[n-1])}return}
   if(!B&&CQ&&$('#cquiz').classList.contains('on')){const n=+e.key;if(n>=1&&n<=4&&!CQ.done&&CQ_PICK){e.preventDefault();CQ_PICK(CQ.order[n-1])}else if((e.key===' '||e.key==='Enter')&&CQ.done&&$('#cqnext')){e.preventDefault();$('#cqnext').click()}return}
   if(B){if($('#modal').classList.contains('on')||$('#study').classList.contains('on'))return;const k=normKey(e.key),K=SET.keys;
+    if(pickMode()&&!(pickMode()==='lead'&&B.leadPicked)){const kk=e.key.toLowerCase();if(kk==='a'||e.key==='ArrowLeft'){e.preventDefault();reelSpin(-1);return}if(kk==='d'||e.key==='ArrowRight'){e.preventDefault();reelSpin(1);return}if(k===K.sw){e.preventDefault();reelConfirm();return}if(e.key==='Escape'&&B.qsel){B.qsel=false;return}if(B.qsel)return}
     if((B.qsel&&B.state==='fight')||(B.leadWait&&B.state==='count')){const n=+e.key;if(n>=1&&n<=6){e.preventDefault();const alive=B.me.team.map((m,i)=>i).filter(i=>B.me.team[i].hp>0);const i=alive[n-1];if(i!=null){if(B.qsel)quickPick(i);else{const b=document.querySelector(`#bpick [data-pk="${i}"]`);if(b)b.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}))}}return}if(e.key==='Escape'&&B.qsel){B.qsel=false;return}}
     for(let i=0;i<4;i++)if(k===K['a'+(i+1)]){e.preventDefault();battleMove(i);return}
     if(k===K.dash){e.preventDefault();battleDash()}else if(k===K.sw)battleSwitch();else if(k===K.cap){if(!e.repeat)capPress()}else if(k===K.run)tryRun();
@@ -1371,7 +1383,7 @@ function drawWorld(){
   const ents=[];
   for(const o of OTH.values()){if(o.fx==null)continue;ents.push({fx:o.fx,fy:o.fy,col:o.c,sx:o.sx,d:o.d,ph:o.ph,mv:o.moving,name:o.n,bt:o.bt,bub:o.bub});if(o.lf)folEnts(o,o.lf,ents,o.fx,o.fy);else if(o.ld&&o.fol.fx!=null)ents.push({fx:o.fol.fx,fy:o.fol.fy,mon:o.ld})}
   if(G){ents.push({fx:P.fx,fy:P.fy,col:G.color,sx:G.sex,d:P.d,ph:P.ph,mv:P.moving,name:G.name+' (du)',bt:B?(B.mode==='wild'?'wild':'duel'):null,bub:myBubble,me:1});if(RUN)folEnts(P,folInfo(),ents,P.fx,P.fy)}
-  for(const t of tollSpots()){const paid=tollPaid(t.b);let fx=t.x,fy=t.y;if(paid){for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]])if(walkable(t.x+dx,t.y+dy)&&BIOME[(t.y+dy)*MW+t.x+dx]===t.b&&!(dx===0&&dy===0)){const side=DIRS[t.d];if(side&&dx===side[0]&&dy===side[1])continue;fx=t.x+dx;fy=t.y+dy;break}}ents.push({fx,fy,col:t.c,sx:/^Lehrerin/.test(t.n)?'f':'m',d:t.d,npc:t,name:t.n})}
+  for(const t of tollSpots()){const paid=tollPaid(t.b);let fx=t.x,fy=t.y;if(paid){for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]])if(walkable(t.x+dx,t.y+dy)&&BIOME[(t.y+dy)*MW+t.x+dx]===t.b&&!(dx===0&&dy===0)){const side=DIRS[t.d];if(side&&dx===side[0]&&dy===side[1])continue;fx=t.x+dx;fy=t.y+dy;break}}ents.push({fx,fy,col:t.c,sx:/Würde|Strafe/.test(t.n)?'f':'m',d:t.d,npc:t,name:t.n})}
   for(const t of TRAINERS)ents.push({fx:t.x,fy:t.y,col:t.c,sx:/^\S+in\s/.test(t.n)?'f':'m',d:t.d,ph:0,mv:false,name:t.n,npc:t,bt:null});
   for(const L of LEGENDS){const gone=(RUN&&RUN.leg&&RUN.leg[L.id])||!cfgOf().leg;if(!gone)ents.push({fx:L.x,fy:L.y,legend:L})}
   ents.sort((a,b)=>a.fy-b.fy);
@@ -1434,7 +1446,7 @@ function renderMapLegend(){
   h+=`<div class="mleg"><b style="color:var(--accent)">LEGENDE</b><br>🚓 Dienststelle · ⚖ Gericht · 🛒 Copshop · 🎓 HfPol (Study)<br>★ Legendärer Schrein · ■ Cop (✓ besiegt) ·<span style="color:#d9a466">■</span> Schild ·<span style="color:#56a83c">■</span> Bäumchen (Zerschneider) ·<span style="color:#b8bcc4">■</span> Felsbrocken<br>Ringe: Wilde Monster werden mit Abstand zur Stadt stärker.<br>Farben: <span style="color:${RARITY.common.c}">häufig</span> · <span style="color:${RARITY.uncommon.c}">ungewöhnlich</span> · <span style="color:${RARITY.rare.c}">selten</span></div>`;
   $('#mapleg').innerHTML=h;
 }
-$('#hmap').onclick=toggleMap;$('#hbug').onclick=()=>{openModal(`<h3>🐞 BUG MELDEN</h3><p>Lade zuerst das Protokoll herunter und hänge die Datei im GitHub-Ticket an (per Drag & Drop ins Textfeld). Es enthält Verbindungs- und Fehlerereignisse — keine Passwörter.</p><div class="acts"><button class="btn ghost" id="blog">🧾 PROTOKOLL</button><button class="btn" id="bgo">TICKET ÖFFNEN</button></div><div class="acts"><button class="btn ghost" id="mno">SCHLIESSEN</button></div>`);$('#blog').onclick=downloadLog;$('#bgo').onclick=()=>{closeModal();bugReport()};$('#mno').onclick=closeModal};$('#hdex').onclick=()=>{if(G)openDex()};$('#hshop').onclick=()=>{if(G)openShop()};$('#htimer').onclick=()=>{if(isMob())$('#side').classList.add('open');switchTab('lobby')};$('#mclose').onclick=closeMap;
+$('#hmap').onclick=toggleMap;$('#hsave').onclick=manualSave;$('#hbug').onclick=()=>{openModal(`<h3>🐞 BUG MELDEN</h3><p>Lade zuerst das Protokoll herunter und hänge die Datei im GitHub-Ticket an (per Drag & Drop ins Textfeld). Es enthält Verbindungs- und Fehlerereignisse — keine Passwörter.</p><div class="acts"><button class="btn ghost" id="blog">🧾 PROTOKOLL</button><button class="btn" id="bgo">TICKET ÖFFNEN</button></div><div class="acts"><button class="btn ghost" id="mno">SCHLIESSEN</button></div>`);$('#blog').onclick=downloadLog;$('#bgo').onclick=()=>{closeModal();bugReport()};$('#mno').onclick=closeModal};$('#hdex').onclick=()=>{if(G)openDex()};$('#hshop').onclick=()=>{if(G)openShop()};$('#htimer').onclick=()=>{if(isMob())$('#side').classList.add('open');switchTab('lobby')};$('#mclose').onclick=closeMap;
 $('#mapov').addEventListener('click',e=>{if(e.target.id==='mapov')closeMap()});
 
 /* ===================== MULTIPLAYER ===================== */
@@ -1741,7 +1753,7 @@ function bagUse(key){if(!B)return;const[k,ix]=key.split(':'),F=B.me,a=act(F);if(
   if(B.tb){B.state='tbPlay';setTimeout(()=>{if(B&&B.state==='tbPlay')tbRun(null)},500)}}
 function cfgOf(){return(RUN&&RUN.cfg)||DEF_CFG}
 function sanitizeCfg(c){c=c&&typeof c==='object'?c:{};const n=(v,d,a,b)=>Number.isFinite(+v)&&v!==''&&v!=null?clamp(Math.floor(+v),a,b):d;
-  return{name:String(c.name||'').replace(/[\u0000-\u001f<>]/g,'').trim().slice(0,24),dur:n(c.dur,10,1,60),rounds:n(c.rounds,3,1,7),team:n(c.team,3,1,6),kap:n(c.kap,10,0,50),xp:[1,2,3].includes(+c.xp)?+c.xp:1,enc:[0.6,1,1.6].includes(+c.enc)?+c.enc:1,leg:+c.leg===0?0:1,tb:+c.tb===1?1:0,alt:+c.alt===0?0:1,aim:[0,1,2].includes(+c.aim)?+c.aim:0,money:n(c.money,100,0,5000),fol:n(c.fol,3,0,3),host:typeof c.host==='string'?c.host.slice(0,40):''}}
+  return{name:String(c.name||'').replace(/[\u0000-\u001f<>]/g,'').trim().slice(0,24),dur:n(c.dur,10,1,60),rounds:n(c.rounds,3,1,7),team:n(c.team,3,1,3),kap:n(c.kap,10,0,50),xp:[1,2,3].includes(+c.xp)?+c.xp:1,enc:[0.6,1,1.6].includes(+c.enc)?+c.enc:1,leg:+c.leg===0?0:1,tb:+c.tb===1?1:0,alt:+c.alt===0?0:1,aim:[0,1,2].includes(+c.aim)?+c.aim:0,money:n(c.money,100,0,5000),fol:n(c.fol,3,0,3),host:typeof c.host==='string'?c.host.slice(0,40):''}}
 function cfgSummary(c){return`${c.tb?'rundenbasiert':'Echtzeit'} · ${c.rounds} Runde${c.rounds>1?'n':''} · Team aus ${c.team}${c.xp>1?` · ${c.xp}× EP`:''}${c.enc!==1?(c.enc>1?' · viele Begegnungen':' · wenige Begegnungen'):''}${c.leg?'':' · ohne Legendäre'} · ${c.kap} Handschellen · $${c.money??100} · ${c.aim===1?'Auto-Zielen':c.aim===2?'freies Zielen 360°':'Zielen in 8 Richtungen'}`}
 function runningMatches(){const seen=new Map();for(const p of others()){const mt=p.presence.mt;if(!mt||typeof mt.id!=='string'||mt.id.length>=40||(RUN&&RUN.id===mt.id))continue;
   const open=mt.st==='lobby'||(mt.st==='train'&&+mt.end>Date.now()+10000);if(!open)continue;
@@ -1788,7 +1800,7 @@ function openCreate(){
    ${row('Zielen',sel('caim',[[0,'🎯 Manuell (8 Richtungen)'],[2,'🎯 Frei (360°)'],[1,'Auto-Zielen']],c.aim||0))}
    ${row('Trainingszeit (Min.)',num('cdur',c.dur,1,60))}
    ${row('Verhandlungsrunden (Schweizer System)',sel('crounds',[1,2,3,4,5,6,7].map(v=>[v,v+(v===3?' (Standard)':'')]),c.rounds))}
-   ${row('Monster pro Gerichtskampf',sel('cteam',[1,2,3,4,5,6].map(v=>[v,v]),c.team))}
+   ${row('Monster pro Gerichtskampf',sel('cteam',[1,2,3].map(v=>[v,v]),Math.min(3,c.team)))}
    ${row('Begleiter in der Welt',sel('cfol',[[0,'keine'],[1,'1'],[2,'2'],[3,'3']],c.fol??3))}
    ${row('Start-Handschellen',num('ckap',c.kap,0,50))}
    ${row('Startgeld ($)',num('cmoney',c.money??100,0,5000))}
@@ -2202,14 +2214,24 @@ function hitLocal(T,s){
 function drainHeal(s,d){if(MOVES[s.mid].fx!=='drain'||!d)return;const A=s.side===B.me.side?B.me:B.foe;if(!A||A.ctrl==='remote')return;const m=act(A);if(m.hp<=0)return;const h=Math.max(1,Math.round(d*0.5));m.hp=Math.min(m.mhp,m.hp+h);B.nums.push({x:A.x,y:A.y-34,t:'+'+h,c:'#3ddc6b',at:performance.now()});if(B.mode==='duel'&&A===B.me)publishDuel(true)}
 function burst(x,y,col,n){for(let i=0;i<n;i++){const a=Math.random()*6.28,s=30+Math.random()*60;B.parts.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:0.35+Math.random()*0.25,age:0,c:col})}}
 // manual aiming (no auto-aim): arrow keys on PC, drag on an attack button on phones; the direction is kept until changed
-function myAim(){if(autoAimOn()&&B.foe){const dx=B.foe.x-B.me.x,dy=(B.foe.y-12)-(B.me.y-14),L=Math.hypot(dx,dy)||1;return{x:dx/L,y:dy/L}}if(!B.aimV){const T=B.foe;setAim(T?T.x-B.me.x:0,T?T.y-B.me.y:-1)}return B.aimV}
+// auto-aim: leads the target (intercept with the real projectile speed and the target's smoothed velocity)
+function autoAimTarget(){const T=B.foe,M=B.me;const dx0=T.x-M.x,dy0=(T.y-12)-(M.y-14);const tv=B.tv||{x:0,y:0};
+  const ms=act(M)?act(M).m.map(m=>shotParams(m)).filter(p=>p&&!p.mel&&!p.self&&p.sp):[];const v=ms.length?ms.reduce((a,p)=>a+p.sp,0)/ms.length:260;
+  const a=tv.x*tv.x+tv.y*tv.y-v*v,b=2*(dx0*tv.x+dy0*tv.y),c=dx0*dx0+dy0*dy0;let t=0;
+  if(Math.abs(a)<1e-6)t=b?-c/b:0;else{const D=b*b-4*a*c;if(D>=0){const r1=(-b-Math.sqrt(D))/(2*a),r2=(-b+Math.sqrt(D))/(2*a);t=Math.min(...[r1,r2].filter(x=>x>0),9)}}
+  t=clamp(isFinite(t)?t:0,0,0.8);return Math.atan2(dy0+tv.y*t,dx0+tv.x*t)}
+function myAim(){if(autoAimOn()&&B.foe){if(B.autoAng==null)B.autoAng=autoAimTarget();return{x:Math.cos(B.autoAng),y:Math.sin(B.autoAng)}}if(!B.aimV){const T=B.foe;setAim(T?T.x-B.me.x:0,T?T.y-B.me.y:-1)}return B.aimV}
 // aiming mode (lobby option / setting for free play): 0 = manual in 8 directions, 2 = free 360°, 1 = auto-aim
 function aimMode(){const c=RUN&&RUN.cfg;if(RUN&&!RUN.free&&c)return[0,1,2].includes(c.aim)?c.aim:0;return SET.aim==='1'?1:SET.aim==='2'?2:0}
 function autoAimOn(){return aimMode()===1}
 function setAim(x,y){if(Math.hypot(x,y)<0.001)return;let a=Math.atan2(y,x);if(aimMode()===0)a=Math.round(a/(Math.PI/4))*(Math.PI/4);B.aimV={x:Math.cos(a),y:Math.sin(a)}}
 function controlMe(dt){
+  if(autoAimOn()&&B.foe&&!B.tb){const T=B.foe,k=1-Math.exp(-dt*6);B.tv=B.tv||{x:0,y:0};B.tv.x+=((T.vx||0)-B.tv.x)*k;B.tv.y+=((T.vy||0)-B.tv.y)*k;
+    // aim inertia: the crosshair follows like a damped spring (lags behind quick direction changes)
+    const want=autoAimTarget();if(B.autoAng==null){B.autoAng=want;B.autoW=0}let d=want-B.autoAng;d=Math.atan2(Math.sin(d),Math.cos(d));
+    B.autoW=(B.autoW||0)+(d*38-B.autoW*11)*dt;B.autoW=clamp(B.autoW,-5,5);B.autoAng+=B.autoW*dt}
   if(aimHeld.length&&!B.tb){let ax=0,ay=0;for(const d of aimHeld){ax+=DIRS[d][0];ay+=DIRS[d][1]}if(ax||ay)setAim(ax,ay)}
-  const F=B.me;if(F.out||F.faint>0||F.st.stun>0||F.st.sleep>0||F.hitstun>0||B.aim){F.vx=F.vy=0;return}
+  const F=B.me;if(F.out||F.faint>0||F.st.stun>0||F.st.sleep>0||F.hitstun>0||B.aim||B.qsel){F.vx=F.vy=0;return}
   let dx=0,dy=0,sc=1;for(const d of held){dx+=DIRS[d][0];dy+=DIRS[d][1]}
   if(JOY.active&&!dx&&!dy){const m=Math.hypot(JOY.x,JOY.y);if(m>0.18){dx=JOY.x;dy=JOY.y;sc=clamp((m-0.18)/0.55,0.3,1)}}
   if(B.ptr&&!dx&&!dy){const ex=B.ptr.x-F.x,ey=B.ptr.y-F.y;if(Math.hypot(ex,ey)>3){dx=ex;dy=ey}}
@@ -2403,9 +2425,12 @@ function tbDuelSync(du){
 
 /* --- player actions --- */
 function battleMove(i){if(!B)return;if(B.tb){tbChoose({k:'move',i});return}if(B.state==='fight')fire(B.me,i)}
-const DASH_AP=0;
+const DASH_AP=0,TEAM_MAX=3;
+// the arena edge: fleeing and switching only work there
+function atEdge(F){const dx=(F.x-ACX)/ARX,dy=(F.y-ACY)/ARY;return Math.hypot(dx,dy)>=0.86}
 function battleDash(){if(!B||B.tb||B.state!=='fight')return;const F=B.me;if(F.dashCd>0||F.faint>0||F.out||F.st.stun>0||F.st.sleep>0||F.hitstun>0)return;if(!F.ddx&&!F.ddy){F.ddx=F.face>0?-1:1;F.ddy=0}let dx=0,dy=0;for(const d of held){dx+=DIRS[d][0];dy+=DIRS[d][1]}if(JOY.active&&Math.hypot(JOY.x,JOY.y)>0.2){dx=JOY.x;dy=JOY.y}const L=Math.hypot(dx,dy);if(L){F.ddx=dx/L;F.ddy=dy/L}if(DASH_AP&&(F.ap??AP_MAX)<DASH_AP){F.apShake=performance.now();const n=performance.now();if(!B.apMsgT||n-B.apMsgT>1200){B.apMsgT=n;say('Nicht genug AP zum Sprinten!')}return}F.ap=(F.ap??AP_MAX)-DASH_AP;F.dashT=0.15;F.dashCd=1.0;F.inv=0.26;F.noRegen=3}
-function battleSwitch(){if(B&&B.tb){tbSwitchMenu();return}if(!B||B.state!=='fight')return;const F=B.me;if(F.faint>0||F.out)return;if(!F.team.some((m,i)=>i!==F.a&&m.hp>0)){say('Kein anderes Monster einsatzbereit.');return}B.qsel=!B.qsel;$('#bpick').dataset.k=''}
+function battleSwitch(){if(B&&B.tb){tbSwitchMenu();return}if(!B)return;if(B.state==='fight'&&B.qsel){reelConfirm();return}if(B.state!=='fight')return;const F=B.me;if(F.faint>0||F.out)return;if(!F.team.some((m,i)=>i!==F.a&&m.hp>0)){say('Kein anderes Monster einsatzbereit.');return}
+  if(!atEdge(F)){say('Zum Wechseln an den Rand der Arena laufen!');return}B.qsel=true;B.reel=null;held.length=0;$('#bpick').dataset.k=''}
 function quickPick(i){const F=B.me;B.qsel=false;$('#bpick').dataset.k='';if(i===F.a||!F.team[i]||F.team[i].hp<=0)return;if(F.swCd>0){say('Wechsel gleich wieder möglich…');return}doSwitch(F,i)}
 // aiming: hold CAPSULE -> the aim line swings; release to throw. A pulsing ring on the target gives a throw bonus.
 function capPress(){if(!B||B.mode!=='wild'||B.aim)return;if(!(B.state==='fight'||(B.tb&&B.state==='tbChoose'))||B.capCd>0)return;if(RUN.kap<=0&&!B.capGreat){say('Keine Handschellen mehr!');return}B.aim={t0:performance.now()};say('Zielen… loslassen zum Werfen!')}
@@ -2418,7 +2443,15 @@ function throwCap(){capPress()}
 function throwCapOld(){if(!B||B.mode!=='wild'||B.state!=='fight'||B.capCd>0)return;if(RUN.kap<=0){say('Keine Handschellen mehr!');return}
   RUN.kap--;B.capCd=1.2;updateHud();const F=B.me,T=B.foe;let dx=T.x-F.x,dy=(T.y-12)-(F.y-12);const L=Math.hypot(dx,dy)||1;
   B.shots.push({cap:1,side:F.side,x:F.x,y:F.y-14,vx:dx/L*190,vy:dy/L*190,age:0,life:1.6,r:6,mid:'bump',flight:L/190});say('Handschellen geworfen!')}
-function tryRun(){if(B&&B.tb){tbChoose({k:'run'});return}if(!B||B.state!=='fight'||B.mode!=='wild')return;if(Math.hypot(B.me.x-B.foe.x,B.me.y-B.foe.y)>=120){B.state='flee';B.fleeT=performance.now();B.me.face=-1;B.shots=[];say('Erfolgreich geflohen!')}else say('Zu nah zum Fliehen! Geh etwas auf Abstand.')}
+function fleeItem(sid){const it=secondChanceItem(sid);if(it){it.q[0]=it.q[0].replace('Zweite Chance! ','');return it}const pool=QZ[sid]||Object.values(QZ).flat().map(q=>q);const q=QZ[sid]?QZ[sid][Math.floor(Math.random()*QZ[sid].length)]:pool[Math.floor(Math.random()*pool.length)];return{src:sid,q}}
+function tryRun(){if(B&&B.tb){tbChoose({k:'run'});return}if(!B||B.state!=='fight'||B.mode!=='wild')return;
+  if(!atEdge(B.me)){say('Lauf an den Rand der Arena, um zu fliehen!');return}
+  const myB=B;B.state='fleeq';const it=fleeItem(act(B.foe).s),order=shuffleArr([0,1,2,3]);
+  CQ={it,order,end:performance.now()+3000,T:3000,done:false,cb:ok=>{if(B!==myB)return;if(ok){B.state='flee';B.fleeT=performance.now();B.me.face=-1;B.shots=[];say('Erfolgreich geflohen!')}else{B.state='fight';say('Flucht gescheitert!')}}};held.length=0;aimHeld.length=0;
+  $('#cqbox').innerHTML=`<div class="sdlg"><span class="slaw">🏃 FLUCHT — 3 SEKUNDEN</span><br>${esc(it.q[0])}<div class="cqt"><i id="cqbar"></i></div><div class="small" id="cqtime" style="text-align:right">3 s</div><div id="cqexp"></div></div>
+    <div class="sans">${order.map((k,j)=>`<button class="sa" data-ck="${k}"><span class="sk">${j+1}</span>${esc(it.q[1][k])}</button>`).join('')}</div><div class="sacts" id="cqact"></div>`;
+  $('#cquiz').classList.add('on');document.querySelectorAll('[data-ck]').forEach(b=>b.onclick=()=>cqAnswer(+b.dataset.ck));cqTick();return;
+  if(false){B.state='flee';B.fleeT=performance.now();B.me.face=-1;B.shots=[];say('Erfolgreich geflohen!')}else say('Zu nah zum Fliehen! Geh etwas auf Abstand.')}
 function fleeUpdate(dt){const F=B.me;F.y+=150*dt;if(Math.random()<0.5)B.parts.push({x:F.x,y:F.y-8,vx:(Math.random()-.5)*20,vy:-20-Math.random()*15,life:0.4,age:0,c:'#e8dcc0'});
   for(const p of B.parts){p.age+=dt;p.x+=p.vx*dt;p.y+=p.vy*dt}B.parts=B.parts.filter(p=>p.age<p.life);
   if(F.y>AH+50&&!B.fleeDone){B.fleeDone=true;endWild()}}
@@ -2499,7 +2532,7 @@ function catchUpdate(now){const c=B.catch;const el=(now-c.t0)/1000;if(el<0.95+c.
   // the cuffs held — now a question about the paragraph decides: right → arrested, wrong or too slow → it breaks free and flees
   if(c.ok&&!c.done&&!c.qz){c.qz=1;const myB=B;catchQuiz(B.wild.s,ok=>{if(B!==myB||!B.catch)return;if(ok)c.qok=1;else{c.done=1;B.state='over';burst(c.x,c.gy-4,'#ffcb3d',16);B.catch=null;say(`Falsch! ${SPECIES[B.wild.s].n} reißt sich los und flieht!`);setTimeout(()=>{if(B===myB)endWild()},1600)}});return}
   if(c.ok&&!c.done&&!c.qok)return;
-  if(c.ok&&!c.done){c.done=1;B.state='over';const m=B.wild;if(B.legend)RUN.leg[B.legend]=1;m.hp=act(B.foe).hp;G.dex[m.s]=1;syncBack();const toTeam=RUN.team.length<6;(toTeam?RUN.team:RUN.box).push(m);
+  if(c.ok&&!c.done){c.done=1;B.state='over';const m=B.wild;if(B.legend)RUN.leg[B.legend]=1;m.hp=act(B.foe).hp;G.dex[m.s]=1;syncBack();const toTeam=RUN.team.length<TEAM_MAX;(toTeam?RUN.team:RUN.box).push(m);
     say(`Geschafft! ${SPECIES[m.s].n} wurde festgenommen!`);earn(5+m.l,'Festnahmebonus');say(toTeam?'Es ist jetzt in deinem Team.':'Dein Team ist voll — ab in die Box.');sysChat(`Du hast ${SPECIES[m.s].n} (Lv ${m.l}) festgenommen!`);const myB=B;setTimeout(()=>{if(B===myB)endWild()},1900)}
   else if(!c.ok){B.state=B.tb?'tbPlay':'fight';if(B.tb)setTimeout(()=>{if(B&&B.state==='tbPlay')tbRun(null)},900);burst(c.x,c.gy-4,'#ffcb3d',16);burst(c.x,c.gy-4,'#2fb7b0',10);B.catch=null;B.foe.inv=0.8;B.foe.spawnT=performance.now();say('Oh nein! Es hat sich befreit!')}}
 let CQ=null;
@@ -2606,20 +2639,38 @@ function buildBattleUI(){
   B.uiKey='';
 }
 // choose the lead during the start countdown, or the next monster during a round pause
-function renderPick(){const el=$('#bpick');if(!el)return;let mode=null;
-  if(B&&!B.tb&&B.me&&!B.closing){const alive=B.me.team.map((m,i)=>i).filter(i=>B.me.team[i].hp>0);
-    if(B.state==='count'&&!B.leadDone&&alive.length>1)mode='lead';else if(B.state==='break'&&B.brk&&B.brk.me&&alive.length>1)mode='next';else if(B.state==='break'&&B.brk&&!B.brk.me&&alive.length>1)mode='swap';else if(B.state==='fight'&&B.qsel&&alive.length>1)mode='quick'}
+// monster choice as a slot-machine reel: A/D (or ◀ ▶) spin left/right, X or a tap on the middle card confirms
+function pickMode(){if(!(B&&!B.tb&&B.me&&!B.closing))return null;const alive=B.me.team.filter(m=>m.hp>0).length;
+  if(B.state==='count'&&!B.leadDone&&alive>1)return'lead';if(B.state==='break'&&B.brk&&B.brk.me&&alive>1)return'next';if(B.state==='break'&&B.brk&&!B.brk.me&&alive>1)return'swap';if(B.state==='fight'&&B.qsel&&alive>1)return'quick';return null}
+function reelList(){return B.me.team.map((m,i)=>i).filter(i=>B.me.team[i].hp>0)}
+function reelInit(mode){const L=reelList();let cur=mode==='next'?L.find(i=>i!==B.me.a)??L[0]:B.me.a;if(!L.includes(cur))cur=L[0];B.reel={mode,pos:L.indexOf(cur),dir:0}}
+function reelSpin(d){const mode=pickMode();if(!mode)return;if(!B.reel||B.reel.mode!==mode)reelInit(mode);const L=reelList();B.reel.pos=(B.reel.pos+d+L.length)%L.length;B.reel.dir=d;$('#bpick').dataset.k=''}
+function reelConfirm(){const mode=pickMode();if(!mode)return;if(!B.reel||B.reel.mode!==mode)reelInit(mode);const i=reelList()[B.reel.pos];if(i==null)return;B.reel=null;
+  if(mode==='quick'){quickPick(i);return}
+  if(mode==='lead'){if(i!==B.me.a){B.me.a=i;B.me.spawnT=performance.now()+480;say(`Los, ${SPECIES[act(B.me).s].n}!`);if(B.mode==='duel')publishDuel(true)}if(B.leadWait){B.leadWait=false;B.leadDone=1;B.cntEnd=performance.now()+3000}else B.leadPicked=1}
+  else if(mode==='swap'){B.brk.mine=i;if(B.mode!=='duel')B.brk.end=Math.min(B.brk.end,performance.now()+300)}
+  else if(mode==='next'){B.brk.choice=i;B.brk.end=Math.min(B.brk.end,performance.now()+500)}
+  $('#bpick').dataset.k=''}
+function renderPick(){const el=$('#bpick');if(!el)return;const mode=pickMode();
   if(mode!=='quick'&&B)B.qsel=false;
-  if(!mode){if(el.classList.contains('on')){el.classList.remove('on');el.dataset.k=''}return}
-  const noT=B.mode!=='duel',sel=mode==='lead'||mode==='quick'?B.me.a:mode==='swap'?(B.brk.mine??B.me.a):(B.brk.choice??-1),left=mode==='quick'||noT?'':Math.max(0,Math.ceil(((mode==='lead'?B.cntEnd:B.brk.end)-performance.now())/1000));
-  const key=mode+sel+B.me.team.map(m=>m.s+m.hp).join()+left;if(el.dataset.k===key)return;el.dataset.k=key;
-  el.innerHTML=`<div class="t">${mode==='lead'?'WER BEGINNT? — TIPPEN ZUM BESTÄTIGEN':mode==='swap'?'GEGNER WECHSELT — DU AUCH?':mode==='quick'?'WECHSELN':'NÄCHSTES WÄHLEN'}${left!==''?' · '+left:''}</div><div class="row">${B.me.team.map((m,i)=>m.hp>0?`<button data-pk="${i}" class="${i===sel?'sel':''}"><canvas width="52" height="52"></canvas>${nameHtml(m.s)}<br><span class="small">${i===B.me.a&&(mode==='swap'||mode==='quick'||mode==='lead')?(mode==='quick'?'aktiv':'BEHALTEN'):'Lv '+m.l} · ${m.hp}/${m.mhp}</span></button>`:'').join('')}</div>${mode==='quick'?'<div class="small" style="margin-top:4px">Tasten 1–6 · Wechseltaste schließt</div>':''}`;
-  el.querySelectorAll('[data-pk]').forEach(b=>{const cx=b.querySelector('canvas').getContext('2d');cx.imageSmoothingEnabled=false;cx.drawImage(monSprite(B.me.team[+b.dataset.pk].s,24),0,0,cx.canvas.width,cx.canvas.height);
-    b.onpointerdown=e=>{e.preventDefault();e.stopPropagation();const i=+b.dataset.pk;if(!B)return;
-      if(B.state==='fight'&&B.qsel){quickPick(i);return}
-      if(B.state==='count'&&!B.leadDone){if(i!==B.me.a){B.me.a=i;B.me.spawnT=performance.now()+480;say(`Los, ${SPECIES[act(B.me).s].n}!`);if(B.mode==='duel')publishDuel(true)}if(B.leadWait){B.leadWait=false;B.leadDone=1;B.cntEnd=performance.now()+3000}}
-      else if(B.state==='break'&&B.brk&&!B.brk.me){B.brk.mine=i;if(B.mode!=='duel')B.brk.end=Math.min(B.brk.end,performance.now()+300)}
-      else if(B.state==='break'&&B.brk){B.brk.choice=i;B.brk.end=Math.min(B.brk.end,performance.now()+500)}el.dataset.k=''}});
+  if(!mode||(mode==='lead'&&B.leadPicked)){if(el.classList.contains('on')){el.classList.remove('on');el.dataset.k=''}if(B&&!mode)B.reel=null;return}
+  if(!B.reel||B.reel.mode!==mode)reelInit(mode);
+  const L=reelList(),n=L.length,pos=B.reel.pos,timed=B.mode==='duel'&&mode!=='quick';
+  const left=timed?Math.max(0,Math.ceil(((mode==='lead'?B.cntEnd:B.brk.end)-performance.now())/1000)):'';
+  const key=mode+pos+n+B.me.a+B.me.team.map(m=>m.s+m.hp).join()+left;if(el.dataset.k===key)return;el.dataset.k=key;
+  const card=(off,cls)=>{const i=L[((pos+off)%n+n)%n],m=B.me.team[i];const act_=i===B.me.a;
+    return`<div class="rc ${cls}" data-rk="${off}"><canvas width="52" height="52"></canvas><div class="rn">${nameHtml(m.s)}</div><div class="small">Lv ${m.l} · ${m.hp}/${m.mhp}${act_&&mode!=='next'?' · aktiv':''}</div><div class="rh"><i style="width:${Math.round(m.hp/m.mhp*100)}%;background:${m.hp/m.mhp>0.5?'#3ddc6b':m.hp/m.mhp>0.2?'#ffcb3d':'#ef4444'}"></i></div></div>`};
+  const title=mode==='lead'?'WER BEGINNT?':mode==='swap'?'GEGNER WECHSELT — DU AUCH?':mode==='quick'?'WECHSELN':'NÄCHSTES MONSTER';
+  const curI=L[pos],btxt=mode==='swap'&&curI===B.me.a?'BEHALTEN':mode==='quick'&&curI===B.me.a?'ABBRECHEN':'LOS!';
+  el.innerHTML=`<div class="t">${title}${left!==''?' · '+left:''}</div>
+    <div class="reel ${B.reel.dir>0?'spinR':B.reel.dir<0?'spinL':''}"><button class="ra" data-rd="-1">◀</button>${n>2?card(-1,'side'):''}${card(0,'mid')}${n>1?card(1,'side'):''}<button class="ra" data-rd="1">▶</button></div>
+    <button class="btn" id="rgo" style="margin-top:6px">${btxt} <span class="small">(${esc(keyLabel(SET.keys.sw))})</span></button>
+    <div class="small" style="margin-top:4px">A / D drehen · ${esc(keyLabel(SET.keys.sw))} bestätigen${mode==='quick'?' · Esc schließt':''}</div>`;
+  B.reel.dir=0;
+  el.querySelectorAll('.rc').forEach(c=>{const off=+c.dataset.rk,i=L[((pos+off)%n+n)%n];const cx=c.querySelector('canvas').getContext('2d');cx.imageSmoothingEnabled=false;cx.drawImage(monSprite(B.me.team[i].s,24),0,0,52,52);
+    c.onpointerdown=e=>{e.preventDefault();e.stopPropagation();if(off===0)reelConfirm();else reelSpin(off)}});
+  el.querySelectorAll('[data-rd]').forEach(b=>b.onpointerdown=e=>{e.preventDefault();e.stopPropagation();reelSpin(+b.dataset.rd)});
+  $('#rgo').onpointerdown=e=>{e.preventDefault();e.stopPropagation();reelConfirm()};
   el.classList.add('on')}
 function updateBattleUI(){try{renderPick()}catch(e){console.error(e)}
   const F=B.me;const mon=act(F);const key=mon.s+F.a+mon.m.join();
@@ -2864,6 +2915,7 @@ function drawBattle(){
   const msgs=B.log.filter(m=>now-m.at<2600);msgs.forEach((m,i)=>{const y=UH-6-(msgs.length-1-i)*10;c.font='10px VT323,monospace';const w=c.measureText(m.t).width+8;c.fillStyle='#0b0d16c8';c.fillRect(Math.round(UW/2-w/2),y-8,Math.ceil(w),10);vtText(c,m.t,UW/2,y,'#ffffff',10,'center')});
   if(B.state==='count'&&!B.leadWait){const n=Math.ceil((B.cntEnd-now)/1000);pxText(c,n>0?String(n):'LOS!',UW/2,UH/2+8,'#ffcb3d',16,'center')}
   if(B.state==='wait'){pxText(c,'WARTE AUF GEGNER',UW/2,UH/2+4,'#ffffff',8,'center')}
+  if(B.state==='fight'&&!B.tb&&B.me&&!B.me.out&&atEdge(B.me)&&!B.qsel){const x=B.me.x/UI,y=(B.me.y-64)/UI;const a=0.65+Math.sin(now/180)*0.35;c.globalAlpha=a;vtText(c,`⇄ ${keyLabel(SET.keys.sw)}${B.mode==='wild'?' · 🏃 '+keyLabel(SET.keys.run):''}`,x,y,'#ffcb3d',10,'center');c.globalAlpha=1}
   if(B.enc)drawEncounter(c,now);
   if(B.vs)drawVS(c,now);
   if(B.resumeEnd&&now<B.resumeEnd){const n=Math.ceil((B.resumeEnd-now)/1000);c.fillStyle='#0b0d1690';c.fillRect(0,0,UW,UH);pxText(c,String(n),UW/2,UH/2+10,'#ffcb3d',24,'center');vtText(c,'Gleich geht es weiter…',UW/2,UH/2+26,'#ffffff',10,'center')}
@@ -2916,7 +2968,7 @@ function monCard(m,i,inTeam){
   info.innerHTML=`<div class="nm"><span>${nameHtml(m.s)}</span><span class="lv">Lv ${m.l}</span></div><span class="tb" style="background:${TYPES[sp.t].c}">${TYPES[sp.t].n.toUpperCase()}</span> <span class="tb" style="background:${rarOf(m.s).c};color:#14141f">${rarOf(m.s).n.toUpperCase()}</span> <span class="small">KP ${m.hp}/${st.mhp}</span><div class="bar"><i style="width:${r*100}%;background:${hpColor(r)}"></i></div><div class="bar xp"><i style="width:${Math.min(100,m.xp/xpNeed(m.l)*100)}%"></i></div><div class="small" style="margin-top:3px">${m.m.map(x=>MOVES[x].n).join(' · ')}</div>`;
   const acts=document.createElement('div');const btn=(t,fn,dis)=>{const b=document.createElement('button');b.className='mini';b.textContent=t;b.disabled=!!dis||!!B||(RUN&&RUN.phase==='arena');b.onclick=fn;acts.appendChild(b)};
   if(inTeam){if(i>0)btn('↑ Nach vorn',()=>{RUN.team.unshift(RUN.team.splice(i,1)[0]);changed()});if(RUN.team.length>1)btn('→ Box',()=>{RUN.box.push(RUN.team.splice(i,1)[0]);changed()})}
-  else btn('→ Team',()=>{RUN.team.push(RUN.box.splice(i,1)[0]);changed()},RUN.team.length>=6);
+  else btn('→ Team',()=>{RUN.team.push(RUN.box.splice(i,1)[0]);changed()},RUN.team.length>=TEAM_MAX);
   {const b=document.createElement('button');b.className='mini';b.textContent='ℹ Details';b.onclick=()=>openMonInfo(m.s,m);acts.appendChild(b)}
   {const b=document.createElement('button');b.className='mini';b.textContent='📚 Study';b.disabled=!!B||RUN.phase==='arena';b.title=SPECIES[m.s].law?'Quiz zu '+SPECIES[m.s].law:'Quiz mit zufälligen Paragraphen';b.onclick=()=>openStudy(m);acts.appendChild(b)}
   if(RUN&&RUN.items&&['potion','superp','revive','candy'].some(k=>RUN.items[k]>0)){const b=document.createElement('button');b.className='mini';b.textContent='🎒 Item';b.disabled=!!B||RUN.phase==='arena';b.onclick=()=>openItemsFor(m);acts.appendChild(b)}
@@ -3359,7 +3411,7 @@ const STVO_QZ=[
  ["Welche Pflicht regelt § 4 Abs. 1 StVO?",["Ausreichenden Abstand zum vorausfahrenden Fahrzeug halten","Das Rechtsfahrgebot","Die Beleuchtungspflicht","Das Halten an Bushaltestellen"],"Abstandsgebot."]
 ];
 const TOLL_LAW={2:'GG',3:'PolG',4:'StVO',5:'StPO',6:'StGB'};
-const TOLL_NAME={2:'Lehrerin Dr. Würde',3:'Lehrer Gefahr',4:'Fahrlehrer Blinker',5:'Lehrer Prozess',6:'Lehrerin Strafe'};
+const TOLL_NAME={2:'Prof. Dr. Würde',3:'Prof. Gefahr',4:'Prof. Blinker',5:'Prof. Prozess',6:'Prof. Strafe'};
 const TOLL_AREA={2:'den Ostwald',3:'die Südküste',4:'die Westhügel',5:'den Knast',6:'den Zellentrakt'};
 const TOLL_FEE=300;
 function lawOf(sid){const L=(SPECIES[sid]&&SPECIES[sid].law)||'';const m=L.match(/^(?:§|Art\.)\s*\d+[a-z]?\s+([A-Za-zÄÖÜäöü]+)/);return m?m[1]:null}
@@ -3382,9 +3434,16 @@ function tollBlock(nx,ny){if(!RUN||RUN.phase==='arena'||RUN.phase==='lobby')retu
   if(!b||tollPaid(b))return false;
   if(performance.now()-TOLL_BUSY>800&&!modalOpen()&&!CQ){TOLL_BUSY=performance.now();tollDialog(b)}return true}
 function tollDialog(b){const law=TOLL_LAW[b],nm=TOLL_NAME[b];
-  openModal(`<h3>🎓 ${esc(nm)} — ${esc(law)}</h3><p>„Halt! Wer in ${esc(TOLL_AREA[b]||'dieses Gebiet')} will, beweist erst sein Wissen im <b>${esc(law)}</b>. Drei Fragen — alle richtig, und du darfst passieren.“</p>
-   <div class="acts"><button class="btn ghost" id="mno">ZURÜCK</button><button class="btn" id="myes">PRÜFUNG STARTEN</button></div>`);
-  $('#mno').onclick=closeModal;$('#myes').onclick=()=>{closeModal();tollQuiz(b)}}
+  const money=RUN.money||0;
+  openModal(`<h3>🎓 ${esc(nm)} — ${esc(law)}</h3><p>„Halt! Wer in ${esc(TOLL_AREA[b]||'dieses Gebiet')} will, kommt an mir nicht so einfach vorbei. Wie hätten wir’s denn gern?“</p>
+   <div style="display:flex;flex-direction:column;gap:6px;text-align:left">
+    <button class="btn" id="tex">📝 KLAUSUR <span class="small">— 3 Fragen zum ${esc(law)}, alle richtig = frei</span></button>
+    <button class="btn ${money>=TOLL_FEE?'':'ghost'}" id="tpay" ${money>=TOLL_FEE?'':'disabled'}>💰 BESTECHEN <span class="small">— ${TOLL_FEE} $${money>=TOLL_FEE?'':' (du hast '+money+' $)'}</span></button>
+    <button class="btn red" id="tfight">⚔ KÄMPFEN <span class="small">— gegen starke ${esc(law)}-Paragrafen</span></button></div>
+   <div class="acts"><button class="btn ghost" id="mno">ZURÜCK</button></div>`);
+  $('#mno').onclick=closeModal;$('#tex').onclick=()=>{closeModal();tollQuiz(b)};
+  $('#tpay').onclick=()=>{if((RUN.money||0)<TOLL_FEE)return;RUN.money-=TOLL_FEE;updateHud();closeModal();tollPass(b,`${TOLL_FEE} $ — ich habe nichts gesehen`)};
+  $('#tfight').onclick=()=>{closeModal();tollFight(b)}}
 function tollQuiz(b){const law=TOLL_LAW[b],pool=shuffleArr(lawQuestions(law)).slice(0,3);let i=0;
   const ask=()=>{const it=pool[i],order=shuffleArr([0,1,2,3]);CQ={it,order,end:Infinity,done:false,cb:null};
     $('#cqbox').innerHTML=`<div class="sdlg"><span class="slaw">🎓 ${esc(TOLL_NAME[b])} · ${esc(law)} · Frage ${i+1}/3${it.src?' · '+esc(SPECIES[it.src].law||''):''}</span><br>${esc(it.q[0])}<div id="cqexp"></div></div>
@@ -3399,15 +3458,23 @@ function tollQuiz(b){const law=TOLL_LAW[b],pool=shuffleArr(lawQuestions(law)).sl
 let CQ_PICK=null;
 function tollPass(b,why){RUN.toll=RUN.toll||{};RUN.toll[b]=1;save();sysChat(`${TOLL_NAME[b]}: „${why}. Du darfst passieren!“`);toast(`Weg in ${TOLL_AREA[b]||'das Gebiet'} frei!`)}
 function tollFail(b){const money=RUN.money||0;
-  openModal(`<h3>🎓 NICHT BESTANDEN</h3><p>${esc(TOLL_NAME[b])}: „Das reicht noch nicht. Entweder du zahlst ${TOLL_FEE} $ Lehrgangsgebühr — oder du stellst dich meinen Paragrafen aus dem <b>${esc(TOLL_LAW[b])}</b>.“</p>
-   <div class="acts"><button class="btn ${money>=TOLL_FEE?'':'ghost'}" id="tpay" ${money>=TOLL_FEE?'':'disabled'}>${TOLL_FEE} $ ZAHLEN${money>=TOLL_FEE?'':' (du hast '+money+' $)'}</button><button class="btn red" id="tfight">KÄMPFEN</button></div><div class="acts"><button class="btn ghost" id="mno">ZURÜCK</button></div>`);
-  $('#mno').onclick=closeModal;$('#tpay').onclick=()=>{if((RUN.money||0)<TOLL_FEE)return;RUN.money-=TOLL_FEE;updateHud();closeModal();tollPass(b,`${TOLL_FEE} $ erhalten`)};
+  openModal(`<h3>🎓 NICHT BESTANDEN</h3><p>${esc(TOLL_NAME[b])}: „Das reicht noch nicht. Entweder ein kleines ‚Geschenk‘ über ${TOLL_FEE} $ — oder du stellst dich meinen Paragrafen aus dem <b>${esc(TOLL_LAW[b])}</b>.“</p>
+   <div class="acts"><button class="btn ${money>=TOLL_FEE?'':'ghost'}" id="tpay" ${money>=TOLL_FEE?'':'disabled'}>💰 ${TOLL_FEE} $ BESTECHEN${money>=TOLL_FEE?'':' (du hast '+money+' $)'}</button><button class="btn red" id="tfight">KÄMPFEN</button></div><div class="acts"><button class="btn ghost" id="mno">ZURÜCK</button></div>`);
+  $('#mno').onclick=closeModal;$('#tpay').onclick=()=>{if((RUN.money||0)<TOLL_FEE)return;RUN.money-=TOLL_FEE;updateHud();closeModal();tollPass(b,`${TOLL_FEE} $ — ich habe nichts gesehen`)};
   $('#tfight').onclick=()=>{closeModal();tollFight(b)}}
 function tollFight(b){const t=tollSpots().find(x=>x.b===b);const pool=lawSpecies(TOLL_LAW[b]);if(!t||!pool.length){tollPass(b,'Na gut');return}
   const alive=RUN.team.filter(m=>m.hp>0),n=clamp(alive.length||1,1,3),top=Math.max(...RUN.team.map(m=>m.l));
   const team=[];for(let i=0;i<n;i++)team.push([pool[Math.floor(Math.random()*pool.length)],clamp(top+1+(i===n-1?1:0),2,60)]);
   const tr={id:'toll'+b,toll:b,fixed:true,x:t.x,y:t.y,n:TOLL_NAME[b],c:t.c,d:t.d,team,reward:1,line:`Dann zeige ich dir, was im ${TOLL_LAW[b]} steht!`,after:'Du darfst passieren.'};
   startTrainer(tr)}
+
+// manual save + backup file (export/import)
+function manualSave(){if(!G){toast('Noch kein Spielstand.');return}NO_SAVE=false;try{save();const raw=localStorage.getItem(SAVE_KEY);if(!raw)throw new Error('leer');toast('💾 Spielstand gespeichert ('+new Date().toTimeString().slice(0,5)+')')}catch(e){toast('Speichern fehlgeschlagen: '+e.message)}}
+function exportSave(){if(!G){toast('Noch kein Spielstand.');return}save();try{const raw=localStorage.getItem(SAVE_KEY);const data=JSON.stringify({app:'knastemon',v:VERSION,at:new Date().toISOString(),save:JSON.parse(raw)});
+  const b=new Blob([data],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='knastemon-spielstand-'+(G.name||'spieler').replace(/[^a-z0-9]+/gi,'_')+'-'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},2000);toast('Sicherungsdatei heruntergeladen.')}catch(e){toast('Export fehlgeschlagen: '+e.message)}}
+function importSave(){const inp=document.createElement('input');inp.type='file';inp.accept='.json,application/json';inp.onchange=()=>{const f=inp.files&&inp.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);const sv=d&&d.app==='knastemon'?d.save:d;if(!sv||typeof sv!=='object'||!sv.name)throw new Error('keine Knastémon-Sicherung');
+    openModal(`<h3>⬆ SPIELSTAND IMPORTIEREN</h3><p>Sicherung von <b>${esc(sv.name)}</b>${d.at?' vom '+esc(new Date(d.at).toLocaleString('de-DE')):''}${d.v?' (v'+esc(d.v)+')':''} laden? Dein aktueller Spielstand wird ersetzt.</p><div class="acts"><button class="btn ghost" id="mno">ABBRECHEN</button><button class="btn" id="myes">LADEN</button></div>`);
+    $('#mno').onclick=closeModal;$('#myes').onclick=()=>{NO_SAVE=true;try{localStorage.setItem(SAVE_KEY,JSON.stringify(sv))}catch(e){toast('Import fehlgeschlagen: '+e.message);NO_SAVE=false;return}location.reload()}}catch(e){toast('Import fehlgeschlagen: '+e.message)}};r.readAsText(f)};inp.click()}
 
 /* ===================== NOTFALLMODUS (Enter) ===================== */
 const NORMS=[
