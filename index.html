@@ -384,7 +384,7 @@ const TURN_CONFIG = {
 
 /* ===================== VERSION ===================== */
 // bump with every release (MAJOR.MINOR.PATCH). Players can only share lobbies/duels with the same version.
-const VERSION='0.58.0';
+const VERSION='0.59.0';
 // access password: only its hash is stored here; the password itself also keys the P2P room, so clients without it cannot connect
 const PW_KEY='knast_pw',PW_H=2361915375,MAX_ROOM=10,MAX_LOBBY=5;
 function pwHash(s){let h=2166136261;s='knast:'+s;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
@@ -610,7 +610,7 @@ function distC(x,y){return Math.hypot(x-CX,y-CY)}
 // difficulty: Lv 1–2 right outside town, rising with distance; harder biomes add a bonus that grows with distance
 const BIO_LV={north:0,south:1,east:2,west:4};
 // minimum wild level per area (also near the town edge)
-const BIO_MIN={north:3,south:5,east:6,west:8,knast:26};
+const BIO_MIN={north:3,south:7,east:6,west:8,knast:26};
 function baseLvAt(x,y){const d=distC(x,y),ramp=clamp((d-9)/10,0,1);return 1+Math.max(0,d-9)*0.47+(BIO_LV[zoneAt(x,y)]||0)*ramp}
 const KNAST_LV=[26,34];
 function lvAt(x,y){if(zoneAt(x,y)==='knast')return KNAST_LV[0]+Math.floor(Math.random()*(KNAST_LV[1]-KNAST_LV[0]+1));return clamp(Math.max(BIO_MIN[zoneAt(x,y)]||1,Math.round(baseLvAt(x,y)+Math.random()*1.4-0.7)),1,30)}
@@ -680,7 +680,7 @@ function gainXp(m,amt){
 
 /* ===================== MAP ===================== */
 // 0 grass,1 tall,2 tree,3 water,4 path,5 sand,6 wall,7 heal door,8 roof,9 flowers,10 arena roof,11 arena wall,12 arena door
-const MW=60,MH=44,MAP=new Uint8Array(MW*MH);const BIOME=new Uint8Array(MW*MH);const BKEYS=[null,'north','east','south','west','knast'];
+const MW=60,MH=44,MAP=new Uint8Array(MW*MH);const GATES=[];const BIOME=new Uint8Array(MW*MH);const BKEYS=[null,'north','east','south','west','knast'];
 const WALK0=new Set([0,1,4,5,7,9,12,13,14,15,17,18,19,20,22,23]);
 // extra town buildings (drawn as whole sprites; tile 21 = solid, 22/23 = doors)
 const BLDG=[{id:'shop',x:23,y:24,w:5,h:4,dx:25,door:22,n:'COPSHOP'},{id:'hfpol',x:32,y:24,w:7,h:4,dx:35,door:23,n:'HfPol'}];const ENC=new Set([1,17,18,19]);const BASE_T=[0,0,14,0,15],ENC_T=[0,1,17,18,19];
@@ -732,6 +732,25 @@ function vnoise(seed,cell){
   for(const[x,y]of[[9,6],[9,7],[9,8]])tset(x,y,11);   // a cell block in the middle
   tset(9,11,4);for(let y=12;y<=22;y++){tset(9,y,4);if(tget(8,y)===16||tget(8,y)===2)tset(8,y,15);if(tget(10,y)===16||tget(10,y)===2)tset(10,y,15)}
   tset(10,12,15);
+  // GATES: town → Nordwiese is free; everything further is reached through single choke points guarded by teachers
+  {const W0=i=>WALK0.has(MAP[i]),D2=[[1,0],[0,1]];
+   const cross=(a,b)=>{const out=[];for(let y=2;y<MH-2;y++)for(let x=2;x<MW-2;x++){const i=y*MW+x;if(!W0(i))continue;for(const[dx,dy]of D2){const j=(y+dy)*MW+x+dx;if(!W0(j))continue;const bi=BIOME[i],bj=BIOME[j];if(bi===a&&bj===b)out.push([i,j]);else if(bi===b&&bj===a)out.push([j,i])}}return out};
+   const block=i=>{MAP[i]=2};
+   // town → Südküste closed
+   for(const[,j]of cross(0,3))block(j);
+   // keep one crossing per pair (prefer a path tile), close the others on the far side
+   const keep=(a,b)=>{const cs=cross(a,b);if(!cs.length)return null;cs.sort((p,q)=>(MAP[q[1]]===4)-(MAP[p[1]]===4)||Math.abs(cs.length/2-cs.indexOf(p))-Math.abs(cs.length/2-cs.indexOf(q)));const g=cs[0];
+     for(let it=0;it<6;it++){const left=cross(a,b).filter(([i,j])=>!(i===g[0]&&j===g[1]));if(!left.length)break;for(const[i,j]of left){if(j!==g[1])block(j);else if(i!==g[0])block(i)}}
+     // also make sure the gate is a true choke point: close far-side neighbours of the gate that touch side a
+     return g[1]};
+   const gE=keep(1,2),gW=keep(3,4);
+   // corridor Ostwald → Südküste (new): shortest straight-ish carve between the two areas, owned by the woods
+   let best=null;for(let i=0;i<MW*MH;i++){if(BIOME[i]!==2||!W0(i))continue;const x=i%MW,y=(i-x)/MW;if(y<30)continue;for(let j=0;j<MW*MH;j++){if(BIOME[j]!==3||!W0(j))continue;const u=j%MW,v=(j-u)/MW;const d=Math.abs(u-x)+Math.abs(v-y);if(!best||d<best.d)best={d,x,y,u,v}}}
+   let gS=null;if(best){let x=best.x,y=best.y;while(x!==best.u||y!==best.v){if(x!==best.u)x+=Math.sign(best.u-x);else y+=Math.sign(best.v-y);const k=y*MW+x;if(x===best.u&&y===best.v){gS=k;break}if(!W0(k)||BIOME[k]!==2){MAP[k]=4;BIOME[k]=2}}}
+   // Knast: inner cell block reachable only through one door
+   for(let x=5;x<=13;x++)tset(x,9,x===9?20:11);for(const[x,y]of[[9,6],[9,7],[9,8]])tset(x,y,20);
+   GATES.push({b:2,i:gE},{b:3,i:gS},{b:4,i:gW},{b:5,i:11*MW+9},{b:6,i:9*MW+9});
+  }
   // make sure every walkable spot can be reached from town: carve the shortest way through obstacles into any cut-off pocket
   const D4=[[1,0],[-1,0],[0,1],[0,-1]];
   for(let it=0;it<60;it++){const seen=new Uint8Array(MW*MH),q=[24*MW+30];seen[q[0]]=1;
@@ -740,6 +759,21 @@ function vnoise(seed,cell){
     const par=new Int32Array(MW*MH).fill(-1),bq=[c];par[c]=c;let hit=-1;
     for(let h=0;h<bq.length&&hit<0;h++){const i=bq[h],x=i%MW,y=(i-x)/MW;for(const[dx,dy]of D4){const nx=x+dx,ny=y+dy;if(nx<2||ny<2||nx>=MW-2||ny>=MH-2)continue;const j=ny*MW+nx;if(par[j]>=0)continue;par[j]=i;if(seen[j]){hit=j;break}bq.push(j)}}
     if(hit<0)break;for(let i=par[hit];i!==c;i=par[i])if(!WALK0.has(MAP[i]))MAP[i]=BASE_T[BIOME[i]]||0}
+  // the carving above may have opened extra biome crossings next to the gates → close them again; pockets that become
+  // unreachable are connected through their own biome only (or filled with trees)
+  {const W0=i=>WALK0.has(MAP[i]),gateSet=new Set(GATES.map(g=>g.i));
+   const reach=()=>{const seen=new Uint8Array(MW*MH),q=[24*MW+30];seen[q[0]]=1;while(q.length){const i=q.pop(),x=i%MW,y=(i-x)/MW;for(const[dx,dy]of D4){const j=(y+dy)*MW+x+dx;if(seen[j]||!W0(j))continue;seen[j]=1;q.push(j)}}return seen};
+   const allowed=(a,b)=>a===b||(Math.min(a,b)===0&&Math.max(a,b)===1);
+   for(let it=0;it<8;it++){let changed=false;
+     for(let y=2;y<MH-2;y++)for(let x=2;x<MW-2;x++){const i=y*MW+x;if(!W0(i))continue;for(const[dx,dy]of D4){const j=(y+dy)*MW+x+dx;if(!W0(j))continue;const a=BIOME[i],b=BIOME[j];if(allowed(a,b)||gateSet.has(i)||gateSet.has(j))continue;
+       // close the tile on the "later" side (higher biome index, but never town/north)
+       const k=(b>a?j:i);if(BIOME[k]<=1)continue;MAP[k]=2;changed=true}}
+     const seen=reach();
+     for(let i=0;i<MW*MH;i++){if(!W0(i)||seen[i])continue;const x0=i%MW,y0=(i-x0)/MW;if(x0<2||y0<2||x0>=MW-2||y0>=MH-2)continue;const bb=BIOME[i];
+       const par=new Int32Array(MW*MH).fill(-1),bq=[i];par[i]=i;let hit=-1;
+       for(let h=0;h<bq.length&&hit<0;h++){const c=bq[h],x=c%MW,y=(c-x)/MW;for(const[dx,dy]of D4){const nx=x+dx,ny=y+dy;if(nx<2||ny<2||nx>=MW-2||ny>=MH-2)continue;const j=ny*MW+nx;if(par[j]>=0||BIOME[j]!==bb)continue;par[j]=c;if(seen[j]){hit=j;break}bq.push(j)}}
+       if(hit>=0){for(let c=par[hit];c!==i;c=par[c])if(!W0(c))MAP[c]=BASE_T[bb]||0}else MAP[i]=2;changed=true;break}
+     if(!changed)break}}
 })();
 const WALK=WALK0;
 /* ===================== SIGNPOSTS ===================== */
@@ -3324,24 +3358,31 @@ const STVO_QZ=[
  ["Wer muss während der Fahrt vorgeschriebene Sicherheitsgurte anlegen?",["Alle Fahrzeugführer und Mitfahrer auf Sitzen mit Gurt","Nur der Fahrer","Nur Kinder","Niemand innerorts"],"§ 21a Abs. 1 StVO."],
  ["Welche Pflicht regelt § 4 Abs. 1 StVO?",["Ausreichenden Abstand zum vorausfahrenden Fahrzeug halten","Das Rechtsfahrgebot","Die Beleuchtungspflicht","Das Halten an Bushaltestellen"],"Abstandsgebot."]
 ];
-const TOLL_LAW={1:'GG',2:'PolG',3:'StVO',4:'StPO',5:'StGB'};
-const TOLL_NAME={1:'Lehrerin Dr. Würde',2:'Lehrer Gefahr',3:'Fahrlehrer Blinker',4:'Lehrer Prozess',5:'Lehrerin Strafe'};
+const TOLL_LAW={2:'GG',3:'PolG',4:'StVO',5:'StPO',6:'StGB'};
+const TOLL_NAME={2:'Lehrerin Dr. Würde',3:'Lehrer Gefahr',4:'Fahrlehrer Blinker',5:'Lehrer Prozess',6:'Lehrerin Strafe'};
+const TOLL_AREA={2:'den Ostwald',3:'die Südküste',4:'die Westhügel',5:'den Knast',6:'den Zellentrakt'};
 const TOLL_FEE=300;
 function lawOf(sid){const L=(SPECIES[sid]&&SPECIES[sid].law)||'';const m=L.match(/^(?:§|Art\.)\s*\d+[a-z]?\s+([A-Za-zÄÖÜäöü]+)/);return m?m[1]:null}
 function lawSpecies(law){if(law==='StVO')return['promillo','bleifuss','owigon'].filter(s=>SPECIES[s]);return Object.keys(SPECIES).filter(s=>ALT_IDS.has(s)&&RAR[s]!=='legendary'&&lawOf(s)===law)}
 function lawQuestions(law){if(law==='StVO')return STVO_QZ.map(q=>({src:null,q}));const out=[];for(const s of lawSpecies(law))for(const q of QZ[s]||[])out.push({src:s,q});return out}
 let TOLLS=null;
-function tollSpots(){if(TOLLS)return TOLLS;TOLLS=[];const seen=new Uint8Array(MW*MH),q=[[30,24]];seen[24*MW+30]=1;const got={};
-  while(q.length){const[x,y]=q.shift();for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]]){const nx=x+dx,ny=y+dy;if(nx<0||ny<0||nx>=MW||ny>=MH)continue;const k=ny*MW+nx;if(seen[k]||!walkable(nx,ny))continue;seen[k]=1;
-    const b=BIOME[k],pb=BIOME[y*MW+x];if(b>=1&&b<=5&&pb!==b&&!got[b]){got[b]=1;TOLLS.push({b,x:nx,y:ny,id:'toll'+b,n:TOLL_NAME[b]+' ('+TOLL_LAW[b]+')',c:'#7a5a3a',d:dx===1?'left':dx===-1?'right':dy===1?'up':'down'})}q.push([nx,ny])}}
+function tollSpots(){if(TOLLS)return TOLLS;TOLLS=[];
+  // face the side the visitor comes from: the neighbour that is closest to town by walking distance
+  const dist=new Int32Array(MW*MH).fill(-1),q=[24*MW+30];dist[q[0]]=0;for(let h=0;h<q.length;h++){const i=q[h],x=i%MW,y=(i-x)/MW;for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]]){const nx=x+dx,ny=y+dy,j=ny*MW+nx;if(nx<0||ny<0||nx>=MW||ny>=MH||dist[j]>=0||!WALK0.has(MAP[j]))continue;dist[j]=dist[i]+1;q.push(j)}}
+  for(const g of GATES){if(g.i==null)continue;const x=g.i%MW,y=(g.i-x)/MW;let d='down',bd=1e9;for(const[dx,dy,dn]of[[1,0,'right'],[-1,0,'left'],[0,1,'down'],[0,-1,'up']]){const j=(y+dy)*MW+x+dx;if(dist[j]>=0&&dist[j]<bd){bd=dist[j];d=dn}}
+    TOLLS.push({b:g.b,x,y,id:'toll'+g.b,n:TOLL_NAME[g.b]+' ('+TOLL_LAW[g.b]+')',c:'#7a5a3a',d})}
   return TOLLS}
 function tollPaid(b){return!!(RUN&&RUN.toll&&RUN.toll[b])}
 function tollAt(x,y){return tollSpots().find(t=>t.x===x&&t.y===y)}
 let TOLL_BUSY=0;
-function tollBlock(nx,ny){if(!RUN||RUN.phase==='arena'||RUN.phase==='lobby')return false;const b=BIOME[ny*MW+nx];if(!(b>=1&&b<=5)||BIOME[P.y*MW+P.x]===b||tollPaid(b))return false;
+function tollBlock(nx,ny){if(!RUN||RUN.phase==='arena'||RUN.phase==='lobby')return false;
+  const g=tollSpots().find(t=>t.x===nx&&t.y===ny);let b=g?g.b:null;
+  // entering an area by another way (field-skill shortcuts) also needs that area's teacher
+  if(!b){const nb=BIOME[ny*MW+nx];if(nb>=2&&nb<=5&&BIOME[P.y*MW+P.x]!==nb&&TOLL_LAW[nb])b=nb}
+  if(!b||tollPaid(b))return false;
   if(performance.now()-TOLL_BUSY>800&&!modalOpen()&&!CQ){TOLL_BUSY=performance.now();tollDialog(b)}return true}
-function tollDialog(b){const law=TOLL_LAW[b],nm=TOLL_NAME[b],area=BNAME[b]||'';
-  openModal(`<h3>🎓 ${esc(nm)} — ${esc(law)}</h3><p>„Halt! Wer ${esc(area?'in '+area:'hier')} hinein will, beweist erst sein Wissen im <b>${esc(law)}</b>. Drei Fragen — alle richtig, und du darfst passieren.“</p>
+function tollDialog(b){const law=TOLL_LAW[b],nm=TOLL_NAME[b];
+  openModal(`<h3>🎓 ${esc(nm)} — ${esc(law)}</h3><p>„Halt! Wer in ${esc(TOLL_AREA[b]||'dieses Gebiet')} will, beweist erst sein Wissen im <b>${esc(law)}</b>. Drei Fragen — alle richtig, und du darfst passieren.“</p>
    <div class="acts"><button class="btn ghost" id="mno">ZURÜCK</button><button class="btn" id="myes">PRÜFUNG STARTEN</button></div>`);
   $('#mno').onclick=closeModal;$('#myes').onclick=()=>{closeModal();tollQuiz(b)}}
 function tollQuiz(b){const law=TOLL_LAW[b],pool=shuffleArr(lawQuestions(law)).slice(0,3);let i=0;
@@ -3356,7 +3397,7 @@ function tollQuiz(b){const law=TOLL_LAW[b],pool=shuffleArr(lawQuestions(law)).sl
     $('#cqnext').onclick=()=>{if(ok&&i<2){i++;ask();return}$('#cquiz').classList.remove('on');CQ=null;if(ok)tollPass(b,'Prüfung bestanden');else tollFail(b)}};
   CQ_PICK=pick;ask()}
 let CQ_PICK=null;
-function tollPass(b,why){RUN.toll=RUN.toll||{};RUN.toll[b]=1;save();sysChat(`${TOLL_NAME[b]}: „${why}. Du darfst passieren!“`);toast(`${BNAME[b]||'Gebiet'} freigeschaltet!`)}
+function tollPass(b,why){RUN.toll=RUN.toll||{};RUN.toll[b]=1;save();sysChat(`${TOLL_NAME[b]}: „${why}. Du darfst passieren!“`);toast(`Weg in ${TOLL_AREA[b]||'das Gebiet'} frei!`)}
 function tollFail(b){const money=RUN.money||0;
   openModal(`<h3>🎓 NICHT BESTANDEN</h3><p>${esc(TOLL_NAME[b])}: „Das reicht noch nicht. Entweder du zahlst ${TOLL_FEE} $ Lehrgangsgebühr — oder du stellst dich meinen Paragrafen aus dem <b>${esc(TOLL_LAW[b])}</b>.“</p>
    <div class="acts"><button class="btn ${money>=TOLL_FEE?'':'ghost'}" id="tpay" ${money>=TOLL_FEE?'':'disabled'}>${TOLL_FEE} $ ZAHLEN${money>=TOLL_FEE?'':' (du hast '+money+' $)'}</button><button class="btn red" id="tfight">KÄMPFEN</button></div><div class="acts"><button class="btn ghost" id="mno">ZURÜCK</button></div>`);
