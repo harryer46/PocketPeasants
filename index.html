@@ -384,7 +384,7 @@ const TURN_CONFIG = {
 
 /* ===================== VERSION ===================== */
 // bump with every release (MAJOR.MINOR.PATCH). Players can only share lobbies/duels with the same version.
-const VERSION='0.57.0';
+const VERSION='0.58.0';
 // access password: only its hash is stored here; the password itself also keys the P2P room, so clients without it cannot connect
 const PW_KEY='knast_pw',PW_H=2361915375,MAX_ROOM=10,MAX_LOBBY=5;
 function pwHash(s){let h=2166136261;s='knast:'+s;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
@@ -2428,7 +2428,33 @@ async function wildWin(){
   const msgs=m?gainXp(m,xpGain(B.wild.s,B.wild.l)):[];if(m)Object.assign(B.me.team[idx],battler(m));
   const myB=B;for(const t of msgs){say(t);await sleep(1000);if(B!==myB)return}await sleep(700);if(B===myB)endWild();
 }
-async function wildLose(){B.state='over';finale(false);say('Alle deine Monster sind besiegt…');const myB=B;await sleep(2400);if(B!==myB)return;endWild();healAll();teleport(25,21);toast('Du bist zurück zur Dienststelle geeilt.')}
+// second chance (once per battle): lost against a paragraph monster → name its paragraph within 5 s → 25 % HP back after a 3-2-1
+function lawTitle(sid){const L=(SPECIES[sid]&&SPECIES[sid].law)||'';const i=L.indexOf(' · ');return i>0?{head:L.slice(0,i),title:L.slice(i+3)}:null}
+// extra real paragraph titles as plausible wrong answers
+const LAW_TITLES={StGB:['Fahrlässige Körperverletzung','Schwere Körperverletzung','Körperverletzung mit Todesfolge','Gefährliche Körperverletzung','Raub','Räuberischer Diebstahl','Diebstahl mit Waffen','Besonders schwerer Fall des Diebstahls','Unterschlagung','Computerbetrug','Erpressung','Hehlerei','Nötigung','Bedrohung','Hausfriedensbruch','Verleumdung','Üble Nachrede','Fälschung technischer Aufzeichnungen','Gemeinschädliche Sachbeschädigung','Datenveränderung','Gefährdung des Straßenverkehrs','Gefährliche Eingriffe in den Straßenverkehr','Unerlaubtes Entfernen vom Unfallort','Verbotene Kraftfahrzeugrennen','Vollrausch','Beleidigung'],
+  StPO:['Untersuchung anderer Personen','Molekulargenetische Untersuchung','Durchsuchung bei anderen Personen','Verfahren bei der Durchsuchung','Beschlagnahmeverbot','Vorläufige Festnahme','Vernehmung des Beschuldigten','Verbotene Vernehmungsmethoden','Haftbefehl','Zeugnisverweigerungsrecht','Erkennungsdienstliche Maßnahmen','Aufgaben der Polizei im Ermittlungsverfahren'],
+  PolG:['Gewahrsam','Sicherstellung','Beschlagnahme','Durchsuchung von Sachen','Durchsuchung von Personen','Erkennungsdienstliche Maßnahmen','Vorladung','Meldeauflage','Personenfeststellung','Elektronische Aufenthaltsüberwachung'],
+  GG:['Schutz der Familie','Versammlungsfreiheit','Vereinigungsfreiheit','Freizügigkeit','Berufsfreiheit','Meinungsfreiheit','Eigentum','Asylrecht','Petitionsrecht','Gleichheit vor dem Gesetz','Rechtsweggarantie','Menschenwürde','Unverletzlichkeit der Wohnung','Brief-, Post- & Fernmeldegeheimnis']};
+function secondChanceItem(sid){const t=lawTitle(sid);if(!t)return null;const book=lawOf(sid);const words=t.title.toLowerCase().split(/[^a-zäöüß]+/).filter(w=>w.length>4);
+  const norm=x=>x.toLowerCase().replace(/&/g,'und').replace(/[^a-zäöüß]/g,'');const same=new Set(LAW_TITLES[book]||[]);
+  const seenN=new Set();const cands=[...new Set([...Object.keys(SPECIES).filter(s=>s!==sid&&lawTitle(s)).map(s=>lawTitle(s).title),...Object.values(LAW_TITLES).flat()])].filter(x=>{const n=norm(x);if(seenN.has(n))return false;seenN.add(n);return true}).filter(x=>norm(x)!==norm(t.title)&&!norm(t.title).includes(norm(x))&&!(norm(x).includes(norm(t.title))&&norm(t.title).length>12));
+  const score=x=>{const lx=x.toLowerCase();let sc=0;for(const w of words){if(lx.includes(w))sc+=3;else if(lx.includes(w.slice(0,6)))sc+=1}return sc+(Math.random()*0.9)};
+  const ranked=cands.map(x=>({x,sc:score(x)+(same.has(x)||Object.keys(SPECIES).some(s=>lawTitle(s)&&lawTitle(s).title===x&&lawOf(s)===book)?0.8:0)})).sort((a,b)=>b.sc-a.sc);
+  const wrong=ranked.slice(0,3).map(r=>r.x);if(wrong.length<3)return null;
+  return{src:sid,q:[`Zweite Chance! Wie heißt ${t.head}?`,[t.title,...wrong],`${t.head}: ${t.title}.`]}}
+function secondChance(sid,cb){const it=secondChanceItem(sid);if(!it){cb(false);return}const order=shuffleArr([0,1,2,3]),T=5000;
+  CQ={it,order,end:performance.now()+T,cb,done:false};held.length=0;aimHeld.length=0;
+  $('#cqbox').innerHTML=`<div class="sdlg"><span class="slaw">⚡ ZWEITE CHANCE — 5 SEKUNDEN</span><br>${esc(it.q[0])}<div class="cqt"><i id="cqbar"></i></div><div class="small" id="cqtime" style="text-align:right">5 s</div><div id="cqexp"></div></div>
+    <div class="sans">${order.map((k,j)=>`<button class="sa" data-ck="${k}"><span class="sk">${'ABCD'[j]}</span>${esc(it.q[1][k])}</button>`).join('')}</div><div class="sacts" id="cqact"></div>`;
+  $('#cquiz').classList.add('on');document.querySelectorAll('[data-ck]').forEach(b=>b.onclick=()=>cqAnswer(+b.dataset.ck));CQ.T=T;cqTick()}
+async function wildLose(){
+  if(B&&!B.second&&B.foe&&act(B.foe)&&lawTitle(act(B.foe).s)){B.second=1;const myB=B;B.state='second';say('Alle deine Monster sind besiegt — zweite Chance!');
+    const ok=await new Promise(r=>secondChance(act(B.foe).s,r));if(B!==myB)return;
+    if(ok){const F=B.me;const i=F.team[F.a]?F.a:0;const m=F.team[i];m.hp=Math.max(1,Math.round(m.mhp*0.25));F.a=i;F.out=false;F.faint=0;F.inv=1;F.spawnT=performance.now()+480;F.cd=[0.3,0.3,0.3,0.3];
+      if(B.mode==='wild'||B.mode==='trainer'){const rm=RUN.team[i];if(rm)rm.hp=m.hp}
+      say(`${SPECIES[m.s].n} rappelt sich mit 25 % KP wieder auf!`);if(B.tb){B.state='tbChoose'}else{B.state='count';B.leadDone=1;B.leadWait=false;B.cntEnd=performance.now()+3000}return}
+    B.state='fight'}
+  B.state='over';finale(false);say('Alle deine Monster sind besiegt…');const myB=B;await sleep(2400);if(B!==myB)return;endWild();healAll();teleport(25,21);toast('Du bist zurück zur Dienststelle geeilt.')}
 function throwBonus(){const r=ringR(performance.now());if(r<8){say('Hervorragender Wurf!');return 1.6}if(r<11.5){say('Toller Wurf!');return 1.3}return 1}
 // catch chance: low HP + weak (low level / common) -> high; full HP / strong / rare -> low. Three shake checks decide.
 function catchChance(w,bonus){const hpF=1-(w.hp/w.mhp)*0.85,lvF=clamp(1.15-w.l*0.03,0.35,1.1);return clamp(hpF*lvF*rarOf(w.s).cm*(bonus||1)+0.04,0.02,0.97)}
@@ -2452,12 +2478,12 @@ function catchQuiz(sid,cb){
     <div class="sans">${order.map((k,j)=>`<button class="sa" data-ck="${k}"><span class="sk">${j+1}</span>${esc(it.q[1][k])}</button>`).join('')}</div><div class="sacts" id="cqact"></div>`;
   $('#cquiz').classList.add('on');document.querySelectorAll('[data-ck]').forEach(b=>b.onclick=()=>cqAnswer(+b.dataset.ck));cqTick()}
 function cqTick(){if(!CQ||CQ.done)return;const now=performance.now();if(PANIC){CQ.end+=50;setTimeout(cqTick,50);return}
-  const left=Math.max(0,CQ.end-now),bar=$('#cqbar');if(bar){bar.style.width=(left/150)+'%';bar.style.background=left<5000?'#ef4444':'#ffcb3d'}const tt=$('#cqtime');if(tt)tt.textContent=Math.ceil(left/1000)+' s';
+  const left=Math.max(0,CQ.end-now),bar=$('#cqbar');if(bar){bar.style.width=(left/((CQ.T||15000)/100))+'%';bar.style.background=left<(CQ.T||15000)/3?'#ef4444':'#ffcb3d'}const tt=$('#cqtime');if(tt)tt.textContent=Math.ceil(left/1000)+' s';
   if(left<=0){cqAnswer(-1);return}setTimeout(cqTick,50)}
 function cqAnswer(k){if(!CQ||CQ.done)return;CQ.done=true;const ok=k===0,it=CQ.it;
   document.querySelectorAll('[data-ck]').forEach(b=>{const kk=+b.dataset.ck;b.disabled=true;b.classList.add(kk===0?'ok':kk===k?'bad':'dim')});
   $('#cqexp').innerHTML=`<div class="sexp ${ok?'ok':'bad'}">${ok?'✓ Richtig — Festnahme!':k<0?'⏱ Zeit abgelaufen!':'✗ Falsch.'} ${esc(it.q[2])}</div>`;
-  const cb=CQ.cb;setTimeout(()=>{$('#cquiz').classList.remove('on');CQ=null;cb(ok)},ok?1400:2600)}
+  const cb=CQ.cb,fast=!!CQ.T;setTimeout(()=>{$('#cquiz').classList.remove('on');CQ=null;cb(ok)},ok?(fast?900:1400):(fast?1800:2600))}
 function endWild(msg){if(!B)return;syncBack();if(msg)toast(msg);closeBattle();save();pushMt()}
 
 /* --- duels (AI + PvP) --- */
