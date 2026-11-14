@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<title>Knastémon</title>
+<title>Pocket Peasants</title>
 <style>
 /*@inc css/fonts.css*/
 </style>
@@ -14,7 +14,7 @@
 <body>
 <div id="app">
 <div id="mainc">
-  <div id="topbar"><span class="tbrand">KNASTÉMON</span><span class="chip timer" id="htimer">LOBBY</span><button id="tupd" style="display:none;background:#ef4444;color:#fff">⬆ NEUE VERSION — NEU LADEN</button><span class="tsp"></span><button data-t="lobby" title="Lobby">🏟<span class="tl"> LOBBY</span></button><button data-t="team" title="Team">🎒<span class="tl"> TEAM</span></button><button data-t="players" title="Spieler">👥<span class="tl"> SPIELER</span><span id="pcount"></span></button><button data-t="chat" title="Chat">💬<span class="tl"> CHAT</span><span id="cbadge"></span></button><button id="hshop" title="Copshop (in der Stadt)">🛒<span class="tl"> LADEN</span></button><button id="hdex" title="Monster-Dex">📖<span class="tl"> DEX</span></button><button id="hmap" title="Karte">🗺<span class="tl"> KARTE</span></button><button id="hfs" title="Vollbild" style="display:none">⛶</button><button id="hsave" title="Spielstand jetzt speichern">💾</button><button id="hbug" title="Bug melden (GitHub)">🐞</button><button id="hset">⚙</button><span id="tver"></span></div>
+  <div id="topbar"><span class="tbrand">POCKET PEASANTS</span><span class="chip timer" id="htimer">LOBBY</span><button id="tupd" style="display:none;background:#ef4444;color:#fff">⬆ NEUE VERSION — NEU LADEN</button><span class="tsp"></span><button data-t="lobby" title="Lobby">🏟<span class="tl"> LOBBY</span></button><button data-t="team" title="Team">🎒<span class="tl"> TEAM</span></button><button data-t="players" title="Spieler">👥<span class="tl"> SPIELER</span><span id="pcount"></span></button><button data-t="chat" title="Chat">💬<span class="tl"> CHAT</span><span id="cbadge"></span></button><button id="hshop" title="Copshop (in der Stadt)">🛒<span class="tl"> LADEN</span></button><button id="hdex" title="Monster-Dex">📖<span class="tl"> DEX</span></button><button id="hmap" title="Karte">🗺<span class="tl"> KARTE</span></button><button id="hfs" title="Vollbild" style="display:none">⛶</button><button id="hsave" title="Spielstand jetzt speichern">💾</button><button id="hbug" title="Bug melden (GitHub)">🐞</button><button id="hset">⚙</button><span id="tver"></span></div>
   <div id="stage">
     <canvas id="world"></canvas>
     <div class="hud"><span class="chip" id="hzone">Stadt</span><span class="chip" id="hkap">Handschellen -</span><span class="chip" id="hon"><span class="dot"></span>Solo</span></div>
@@ -35,7 +35,7 @@
   </div>
 </div>
   <aside id="side">
-    <div class="brand"><h1 style="white-space:nowrap">KNASTÉMON<br><span style="font-size:7px;color:#9aa1bd">§ POLIZEI-EDITION</span></h1><div class="sub"><span id="sdex">Dex 0/14</span><span id="stro">Trophäen 0</span></div></div>
+    <div class="brand"><h1 style="white-space:nowrap">POCKET PEASANTS<br><span style="font-size:7px;color:#9aa1bd">§ POLIZEI-EDITION</span></h1><div class="sub"><span id="sdex">Dex 0/14</span><span id="stro">Trophäen 0</span></div></div>
     <div class="tabs"><button data-t="team" class="act">TEAM</button><button data-t="players">SPIELER</button><button data-t="lobby">LOBBY</button><button data-t="chat">CHAT</button></div>
     <div class="pane act" id="pane-team"></div>
     <div class="pane" id="pane-players"></div>
@@ -44,10 +44,10 @@
   </aside>
 </div>
 
-<div id="rotate"><div class="px" style="font-size:10px;color:var(--accent);margin-bottom:8px">↻ HANDY DREHEN</div><div class="small">Knastémon spielt sich am besten im Querformat.</div><button class="btn ghost" id="rotok" style="margin-top:10px">TROTZDEM SPIELEN</button></div><div id="errbox"></div>
+<div id="rotate"><div class="px" style="font-size:10px;color:var(--accent);margin-bottom:8px">↻ HANDY DREHEN</div><div class="small">Pocket Peasants spielt sich am besten im Querformat.</div><button class="btn ghost" id="rotok" style="margin-top:10px">TROTZDEM SPIELEN</button></div><div id="errbox"></div>
 <div id="start">
   <div class="sbox">
-    <h1 style="white-space:nowrap">KNASTÉMON</h1>
+    <h1 style="white-space:nowrap">POCKET PEASANTS</h1>
     <div id="sver2" style="font-family:'Press Start 2P',monospace;font-size:9px;color:#9aa1bd;margin:-2px 0 8px"></div>
     <div class="tag2" style="font-family:'Press Start 2P',monospace;font-size:9px;color:#ef4444;margin:-4px 0 14px">§ POLIZEI-EDITION · JETZT MIT NOCH MEHR PARAGRAPHEN!</div>
     <div class="tag2">Schnapp sie dir alle — und ab vors Gericht! Geh 10 Minuten auf Streife, nimm Monster fest und stell dich dann im Gericht allen anderen — in Echtzeit.</div>

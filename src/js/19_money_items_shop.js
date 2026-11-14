@@ -109,18 +109,40 @@ function openBag(){if(!B||B.state==='over')return;if(B.tb&&B.mode==='duel'){say(
   if(!opts.length){say('Im Beutel ist gerade nichts Nutzbares.');return}
   openModal(`<h3>🎒 BEUTEL</h3><div style="display:flex;flex-direction:column;gap:6px">${opts.map(([k,t])=>`<button class="btn ghost" data-bag="${k}" style="font-family:VT323,monospace;font-size:19px">${ITEMS[k.split(':')[0]].i} ${esc(t)} (×${inv(k.split(':')[0])})</button>`).join('')}</div><div class="acts" style="margin-top:8px"><button class="btn" id="mok">SCHLIESSEN</button></div>`);
   document.querySelectorAll('[data-bag]').forEach(b=>b.onclick=()=>{closeModal();bagUse(b.dataset.bag)});$('#mok').onclick=closeModal}
+// the bag in battle works like the monster reel: swipe (or mouse wheel) cycles the items, a double tap/click uses the shown one
+function bagOpts(){if(!B||!B.me)return[];const F=B.me,a=act(F),opts=[];
+  for(const k of['potion','superp'])if(inv(k)&&a.hp>0&&a.hp<a.mhp)opts.push([k,`${ITEMS[k].n} → ${SPECIES[a.s].n}`]);
+  if(inv('revive'))F.team.forEach((m,i)=>{if(i!==F.a&&m.hp<=0)opts.push(['revive:'+i,`Beleber → ${SPECIES[m.s].n}`])});
+  if(inv('ether')&&!B.tb&&(F.ap??AP_MAX)<AP_MAX)opts.push(['ether','AP-Drink → volle AP']);
+  if(inv('great')&&B.mode==='wild'&&!B.capGreat)opts.push(['great','Super-Handschellen → nächster Wurf']);
+  return opts}
+function bagCur(){const o=bagOpts();if(!o.length)return null;B.bagI=(((B.bagI||0)%o.length)+o.length)%o.length;return o[B.bagI]}
+function bagCycle(d){const o=bagOpts();if(!o.length){say('Im Beutel ist gerade nichts Nutzbares.');return}B.bagI=((B.bagI||0)+d+o.length*4)%o.length;B.bagFlash=performance.now();bagLabel(true)}
+function bagTry(){if(!B||B.state==='over')return;if(B.tb&&B.mode==='duel'){say('Keine Items in rundenbasierten Duellen.');return}if(B.tb&&B.state!=='tbChoose')return;if(!B.tb&&(B.itemCd||0)>performance.now()){say('Warte kurz vor dem nächsten Item.');return}
+  const c=bagCur();if(!c){say('Im Beutel ist gerade nichts Nutzbares.');return}bagUse(c[0])}
+function bagLabel(force){if(!B)return;const c=bagCur(),k=c?c[0].split(':')[0]:'';const key=c?c[0]+inv(k)+c[1]:'none';if(!force&&B.bagK===key)return;B.bagK=key;
+  const t=c?`${ITEMS[k].i} ${c[1].split(' → ')[0]} ×${inv(k)}`:'leer';
+  const b=$('#bbag');if(b)b.innerHTML=`🎒 ${esc(t)} <span class="small">◀▶</span>`;
+  const tb=$('#tbag span');if(tb)tb.innerHTML=c?`${ITEMS[k].i}<br>×${inv(k)}`:'🎒<br>leer'}
+function bindBag(el){let x0=null,last=0;
+  el.addEventListener('pointerdown',e=>{x0=e.clientX;try{el.setPointerCapture(e.pointerId)}catch(_){}},true);
+  el.addEventListener('pointerup',e=>{if(x0==null)return;const dx=e.clientX-x0;x0=null;if(Math.abs(dx)>24){last=0;bagCycle(dx<0?1:-1);return}
+    const now=performance.now();if(now-last<400){last=0;bagTry();return}last=now;
+    const c=bagCur();say(c?`🎒 ${c[1]} — doppelt tippen zum Benutzen, wischen zum Wechseln`:'Im Beutel ist gerade nichts Nutzbares.')});
+  el.addEventListener('wheel',e=>{e.preventDefault();bagCycle(e.deltaY>0?1:-1)},{passive:false});
+  el.onclick=null}
 function bagUse(key){if(!B)return;const[k,ix]=key.split(':'),F=B.me,a=act(F);if(!inv(k))return;
   if(ITEMS[k].heal){const h=Math.min(ITEMS[k].heal,a.mhp-a.hp);a.hp+=h;B.nums.push({x:F.x,y:F.y-34,t:'+'+h,c:'#3ddc6b',at:performance.now()});burst(F.x,F.y-14,'#3ddc6b',12)}
   else if(k==='revive'){const m=F.team[+ix];if(!m||m.hp>0)return;m.hp=Math.ceil(m.mhp/2);F.out=false}
   else if(k==='ether'){F.ap=AP_MAX;burst(F.x,F.y-14,'#4aa3ff',12)}
   else if(k==='great'){B.capGreat=1;say('Super-Handschellen bereit — halte den Handschellen-Knopf zum Werfen!');RUN.items.great--;save();return}
-  RUN.items[k]--;save();say(`Used ${ITEMS[k].n}!`);B.itemCd=performance.now()+2500;
+  RUN.items[k]--;save();say(`${ITEMS[k].n} eingesetzt!`);B.itemCd=performance.now()+2500;
   if(B.mode==='duel')publishDuel(true);
   if(B.tb){B.state='tbPlay';setTimeout(()=>{if(B&&B.state==='tbPlay')tbRun(null)},500)}}
 function cfgOf(){return(RUN&&RUN.cfg)||DEF_CFG}
 function sanitizeCfg(c){c=c&&typeof c==='object'?c:{};const n=(v,d,a,b)=>Number.isFinite(+v)&&v!==''&&v!=null?clamp(Math.floor(+v),a,b):d;
-  return{name:String(c.name||'').replace(/[\u0000-\u001f<>]/g,'').trim().slice(0,24),dur:n(c.dur,10,1,60),rounds:n(c.rounds,3,1,7),team:n(c.team,3,1,3),kap:n(c.kap,10,0,50),xp:[1,2,3].includes(+c.xp)?+c.xp:1,enc:[0.6,1,1.6].includes(+c.enc)?+c.enc:1,leg:+c.leg===0?0:1,tb:+c.tb===1?1:0,alt:+c.alt===0?0:1,aim:[0,1,2].includes(+c.aim)?+c.aim:0,money:n(c.money,100,0,5000),fol:n(c.fol,3,0,3),host:typeof c.host==='string'?c.host.slice(0,40):''}}
-function cfgSummary(c){return`${c.tb?'rundenbasiert':'Echtzeit'} · ${c.rounds} Runde${c.rounds>1?'n':''} · Team aus ${c.team}${c.xp>1?` · ${c.xp}× EP`:''}${c.enc!==1?(c.enc>1?' · viele Begegnungen':' · wenige Begegnungen'):''}${c.leg?'':' · ohne Legendäre'} · ${c.kap} Handschellen · $${c.money??100} · ${c.aim===1?'Auto-Zielen':c.aim===2?'freies Zielen 360°':'Zielen in 8 Richtungen'}`}
+  return{name:String(c.name||'').replace(/[\u0000-\u001f<>]/g,'').trim().slice(0,24),dur:n(c.dur,10,1,60),rounds:n(c.rounds,3,1,7),team:n(c.team,3,1,4),kap:n(c.kap,10,0,50),xp:[1,2,3].includes(+c.xp)?+c.xp:1,enc:[0.6,1,1.6].includes(+c.enc)?+c.enc:1,leg:+c.leg===0?0:1,tb:+c.tb===1?1:0,alt:+c.alt===0?0:1,aim:[0,1,2].includes(+c.aim)?+c.aim:0,money:n(c.money,100,0,5000),fol:n(c.fol,3,0,4),kader:n(c.kader,4,1,4),host:typeof c.host==='string'?c.host.slice(0,40):''}}
+function cfgSummary(c){return`${c.tb?'rundenbasiert':'Echtzeit'} · ${c.rounds} Runde${c.rounds>1?'n':''} · Kader ${c.kader??4} · Team aus ${c.team}${c.xp>1?` · ${c.xp}× EP`:''}${c.enc!==1?(c.enc>1?' · viele Begegnungen':' · wenige Begegnungen'):''}${c.leg?'':' · ohne Legendäre'} · ${c.kap} Handschellen · $${c.money??100} · ${c.aim===1?'Auto-Zielen':c.aim===2?'freies Zielen 360°':'Zielen in 8 Richtungen'}`}
 function runningMatches(){const seen=new Map();for(const p of others()){const mt=p.presence.mt;if(!mt||typeof mt.id!=='string'||mt.id.length>=40||(RUN&&RUN.id===mt.id))continue;
   const open=mt.st==='lobby'||(mt.st==='train'&&+mt.end>Date.now()+10000);if(!open)continue;
   const e=seen.get(mt.id)||{id:mt.id,end:+mt.end||0,names:[],cfg:sanitizeCfg(mt.cfg),waiting:true,v:String(p.presence.v||'old').slice(0,12)};e.names.push(cleanName(p.presence.n));if(mt.st==='train'){e.waiting=false;e.end=Math.max(e.end,+mt.end)}seen.set(mt.id,e)}return[...seen.values()]}
@@ -166,8 +188,9 @@ function openCreate(){
    ${row('Zielen',sel('caim',[[0,'🎯 Manuell (8 Richtungen)'],[2,'🎯 Frei (360°)'],[1,'Auto-Zielen']],c.aim||0))}
    ${row('Trainingszeit (Min.)',num('cdur',c.dur,1,60))}
    ${row('Verhandlungsrunden (Schweizer System)',sel('crounds',[1,2,3,4,5,6,7].map(v=>[v,v+(v===3?' (Standard)':'')]),c.rounds))}
-   ${row('Monster pro Gerichtskampf',sel('cteam',[1,2,3].map(v=>[v,v]),Math.min(3,c.team)))}
-   ${row('Begleiter in der Welt',sel('cfol',[[0,'keine'],[1,'1'],[2,'2'],[3,'3']],c.fol??3))}
+   ${row('Kader (aktive Monster, Rest in der Box)',sel('ckader',[1,2,3,4].map(v=>[v,v+(v===4?' (Standard)':'')]),c.kader??4))}
+   ${row('Monster pro Gerichtskampf',sel('cteam',[1,2,3,4].map(v=>[v,v]),Math.min(4,c.team)))}
+   ${row('Begleiter in der Welt',sel('cfol',[[0,'keine'],[1,'1'],[2,'2'],[3,'3'],[4,'4']],c.fol??3))}
    ${row('Start-Handschellen',num('ckap',c.kap,0,50))}
    ${row('Startgeld ($)',num('cmoney',c.money??100,0,5000))}
    ${row('EP-Gewinn',sel('cxp',[[1,'normal'],[2,'2×'],[3,'3×']],c.xp))}
@@ -176,7 +199,7 @@ function openCreate(){
    <div class="small" style="text-align:left;margin:6px 0 12px;line-height:1.1">Zuerst treten die Spieler deiner Lobby bei; du startest das Spiel, wenn alle da sind. Alle beginnen mit Lv ${START_LV}. Das Gericht tagt, wenn der Timer abläuft — oder früher, sobald alle Spieler (2+) drin sind und ✔ BEREIT gesetzt haben.</div>
    <div class="acts"><button class="btn ghost" id="mno">ABBRECHEN</button><button class="btn green" id="myes">ERSTELLEN</button></div>`);
   $('#mno').onclick=closeModal;
-  $('#myes').onclick=()=>{const cfg=sanitizeCfg({name:$('#cname').value,dur:$('#cdur').value,rounds:$('#crounds').value,team:$('#cteam').value,kap:$('#ckap').value,xp:$('#cxp').value,enc:$('#cenc').value,leg:$('#cleg').value,tb:$('#ctb').value,money:$('#cmoney').value,aim:$('#caim').value,fol:$('#cfol').value});G.lastCfg=cfg;save();closeModal();
+  $('#myes').onclick=()=>{const cfg=sanitizeCfg({name:$('#cname').value,dur:$('#cdur').value,rounds:$('#crounds').value,team:$('#cteam').value,kap:$('#ckap').value,xp:$('#cxp').value,enc:$('#cenc').value,leg:$('#cleg').value,tb:$('#ctb').value,money:$('#cmoney').value,aim:$('#caim').value,fol:$('#cfol').value,kader:$('#ckader').value});G.lastCfg=cfg;save();closeModal();
     pickStarter(sid=>startRun('m'+Math.random().toString(36).slice(2,10),0,sid,null,Object.assign({},cfg,{host:MYPEER||'me'}),'lobby'),cfg)};
 }
 function pickStarter(cb,cfg){const alt=altOn(cfg||{alt:SET.alt==='0'?0:1});

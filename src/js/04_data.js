@@ -19,7 +19,7 @@ const MOVES={
  gust:{n:'Breeze Blast',t:'flying',p:40,k:'shot'},featherdarts:{n:'Feather Darts',t:'flying',p:45,k:'multi'},galecutter:{n:'Gale Cutter',t:'flying',p:60,k:'shot',fx:'knock'},
  updraft:{n:'Updraft',t:'flying',p:0,k:'self',fx:'haste'},divebomb:{n:'Dive Bomb',t:'flying',p:70,k:'melee'},skyslam:{n:'Sky Slam',t:'flying',p:90,k:'melee',fx:'knock'}
 };
-const FX_TXT={sleep:'schläfert ein',conf:'verwirrt',burn:'verbrennt',slow:'verlangsamt',stun:'betäubt',drain:'heilt dich',heal:'heilt 30%',shield:'halbiert Schaden',haste:'beschleunigt',knock:'Rückstoß'};
+const FX_TXT={buff:'stärkt dich',debuff:'schwächt das Ziel',selfbuff:'kann dich stärken',sleep:'schläfert ein',conf:'verwirrt',burn:'verbrennt',slow:'verlangsamt',stun:'betäubt',drain:'heilt dich',heal:'heilt 30%',shield:'halbiert Schaden',haste:'beschleunigt',knock:'Rückstoß'};
 // learnsets (shared by every stage of a line). Everyone starts with 2 moves, more come with levels (max 4 known).
 const LS={
  fireSt:[[1,'scratch'],[1,'sparkshot'],[3,'emberrain'],[6,'cinderbite'],[8,'cindershell'],[11,'scorchline'],[14,'headrush'],[17,'firestorm'],[21,'kilnburst']],
@@ -74,6 +74,28 @@ altMon('taser',{n:'Taser',t:'electric',c:['#f2c21a','#3cb4ff','#14141a'],b:[88,1
 altMon('pfefferspray',{n:'Pfefferspray',t:'fire',c:['#22232a','#d8262a','#f2b21a'],b:[92,114,90,98],xp:220,sc:1.15,ls:[[1,'sparkshot'],[1,'emberrain'],[1,'scorchline'],[1,'firestorm']],an:'flex'},'legendary');
 altMon('kelle',{n:'Kelle',t:'normal',c:['#d8262a','#f4f0e8','#14141a'],b:[100,100,104,96],xp:220,sc:1.15,ls:[[1,'quickjab'],[1,'staticnet'],[1,'whirl'],[1,'headrush']],an:'wobble'},'legendary');
 altMon('boorberg',{n:'Boorberg',t:'electric',c:['#6a2a5a','#f6e2b4','#1a0812'],b:[92,116,86,96],xp:220,sc:1.2,ls:[[1,'zap'],[1,'paragraph'],[1,'staticnet'],[1,'stormcrack']],an:'float'},'legendary');
+// ===== classic moves (Gold/Silber) incl. buffs & debuffs. bs = stat stages {a:atk,d:def,s:spd}; stc = chance
+Object.assign(MOVES,{
+ tackle:{n:'Tackle',t:'normal',p:40,k:'melee'},bodyslam:{n:'Bodyslam',t:'normal',p:85,k:'melee',fx:'stun'},hyperbeam:{n:'Hyperstrahl',t:'normal',p:150,k:'beam',cd:6},
+ swordsdance:{n:'Schwerttanz',t:'normal',p:0,k:'self',fx:'buff',bs:{a:2}},harden:{n:'Härtner',t:'normal',p:0,k:'self',fx:'buff',bs:{d:1}},
+ growl:{n:'Heuler',t:'normal',p:10,k:'spread',fx:'debuff',bs:{a:-1}},leer:{n:'Silberblick',t:'normal',p:10,k:'shot',fx:'debuff',bs:{d:-1}},
+ screech:{n:'Kreideschrei',t:'normal',p:10,k:'spread',fx:'debuff',bs:{d:-2}},scaryface:{n:'Grimasse',t:'normal',p:10,k:'shot',fx:'debuff',bs:{s:-2}},
+ recover:{n:'Genesung',t:'normal',p:0,k:'self',fx:'heal'},confuseray:{n:'Konfustrahl',t:'electric',p:15,k:'beam',fx:'conf'},
+ flamethrower:{n:'Flammenwurf',t:'fire',p:90,k:'breath',fx:'burn'},fireblast:{n:'Feuersturm',t:'fire',p:110,k:'air',fx:'burn'},sunnyday:{n:'Sonnentag',t:'fire',p:0,k:'self',fx:'buff',bs:{a:1,s:1}},
+ hydropump:{n:'Hydropumpe',t:'water',p:110,k:'beam',fx:'knock'},surf:{n:'Surfer',t:'water',p:90,k:'spread'},bubblebeam:{n:'Blubbstrahl',t:'water',p:65,k:'beam',fx:'debuff',bs:{s:-1},stc:0.4},
+ aurorabeam:{n:'Aurorastrahl',t:'water',p:65,k:'beam',fx:'debuff',bs:{a:-1},stc:0.4},withdraw:{n:'Panzerschutz',t:'water',p:0,k:'self',fx:'buff',bs:{d:1}},
+ razorleaf:{n:'Rasierblatt',t:'grass',p:55,k:'multi'},solarbeam:{n:'Solarstrahl',t:'grass',p:120,k:'beam',cd:5},gigadrain:{n:'Gigasauger',t:'grass',p:60,k:'shot',fx:'drain'},
+ sleeppowder:{n:'Schlafpuder',t:'grass',p:10,k:'spread',fx:'sleep'},growth:{n:'Wachstum',t:'grass',p:0,k:'self',fx:'buff',bs:{a:1}},stringshot:{n:'Fadenschuss',t:'grass',p:10,k:'spread',fx:'debuff',bs:{s:-2}},
+ thunderbolt:{n:'Donnerblitz',t:'electric',p:90,k:'beam',fx:'stun'},thunder:{n:'Donner',t:'electric',p:110,k:'air',fx:'stun'},thunderwave:{n:'Donnerwelle',t:'electric',p:10,k:'shot',fx:'stun'},
+ charge:{n:'Ladevorgang',t:'electric',p:0,k:'self',fx:'buff',bs:{a:1,d:1}},
+ rockslide:{n:'Steinhagel',t:'rock',p:75,k:'air',fx:'stun'},earthquake:{n:'Erdbeben',t:'rock',p:100,k:'big',fx:'knock'},irontail:{n:'Eisenschweif',t:'rock',p:100,k:'melee',fx:'debuff',bs:{d:-1},stc:0.3},
+ metalclaw:{n:'Metallklaue',t:'rock',p:50,k:'melee',fx:'selfbuff',bs:{a:1},stc:0.3},crunch:{n:'Knirscher',t:'rock',p:80,k:'melee',fx:'debuff',bs:{d:-1},stc:0.3},defcurl:{n:'Einigler',t:'rock',p:0,k:'self',fx:'buff',bs:{d:2}},
+ ancientpower:{n:'Antik-Kraft',t:'rock',p:60,k:'lob',fx:'selfbuff',bs:{a:1,d:1,s:1},stc:0.2},
+ wingattack:{n:'Flügelschlag',t:'flying',p:60,k:'melee'},drillpeck:{n:'Bohrschnabel',t:'flying',p:80,k:'melee'},aeroblast:{n:'Luftstoß',t:'flying',p:100,k:'beam'},
+ agility:{n:'Agilität',t:'flying',p:0,k:'self',fx:'buff',bs:{s:2}},steelwing:{n:'Stahlflügel',t:'flying',p:70,k:'melee',fx:'selfbuff',bs:{d:1},stc:0.3},featherdance:{n:'Federtanz',t:'flying',p:10,k:'spread',fx:'debuff',bs:{a:-2}}
+});
+const STAT_DE={a:'Angriff',d:'Verteidigung',s:'Initiative'};
+function bsText(mv){return Object.entries(mv.bs||{}).map(([k,v])=>`${STAT_DE[k]} ${v>0?'+':''}${v}`).join(', ')}
 // German move names (ids stay the same)
 {const DE={bump:'Rempler',scratch:'Kratzer',quickjab:'Schnellhieb',whirl:'Wirbelschlag',headrush:'Kopfnuss',powernap:'Nickerchen',sparkshot:'Funkenschuss',emberrain:'Glutregen',cinderbite:'Glutbiss',scorchline:'Sengstrahl',cindershell:'Glutpanzer',firestorm:'Feuersturm',kilnburst:'Ofenexplosion',splash:'Spritzschuss',foamvolley:'Schaumsalve',waveslam:'Wellenschlag',undertow:'Sog',mistveil:'Nebelschleier',torrent:'Strudelrausch',geyser:'Geysirsäule',leaftoss:'Blattwurf',sapdrain:'Saftsauger',vinelash:'Rankenhieb',drowsyspores:'Schlafsporen',bloomheal:'Blütenheilung',thornrain:'Dornenregen',brambleburst:'Dornenexplosion',zap:'Statikschlag',sparkchain:'Funkenkette',jolt:'Stromstoß',staticnet:'Stromnetz',boltstrike:'Voltlanze',stormcrack:'Sturmknall',rocktoss:'Steinwurf',gravel:'Kieselhagel',stoneskin:'Steinhaut',quakestomp:'Bebenstampfer',boulder:'Felswurf',meteor:'Meteorsturz',gust:'Windstoß',featherdarts:'Federpfeile',galecutter:'Sturmschnitt',updraft:'Aufwind',divebomb:'Sturzflug',skyslam:'Himmelsschlag',bottletoss:'Flaschenwurf',canewhack:'Stockhieb',flexpunch:'Muskelfaust',painkiller:'Schmerzmittel',dawncrow:'Morgenkrähen',goldrush:'Goldrausch',heartspore:'Herzsporen',noodlelash:'Nudelpeitsche',watercannon:'Wasserwerfer',paragraph:'Paragraphenhieb'};
  for(const k in DE)if(MOVES[k])MOVES[k].n=DE[k]}
@@ -149,6 +171,13 @@ altMon("identiluchs",Object.assign({"n": "Identiluchs", "law": "§ 163b StPO · 
 altMon("gewahrsamhirsch",Object.assign({"n": "Gewahrsamhirsch", "law": "§ 163c StPO · Freiheitsentziehung zur Identitätsfeststellung", "t": "rock", "img": "p163c", "c": ["#fbbe6c", "#f7dea6", "#141414"], "b": [80, 88, 84, 66], "xp": 130, "an": "tank", "sc": 1, "faceR": 1},{ls:LS.L_ident}),'common');
 // paragraph as name suffix: "Owigon §26", "Würdeadler Art.1", "Langfinger §242"
 for(const k in SPECIES){const sp=SPECIES[k];if(!sp.law)continue;const m=sp.law.match(/^(§|Art\.)\s*(\d+[a-z]?)(?:\s+([A-Za-zÄÖÜäöü]+))?/);if(m){sp.sfx=(m[1]==='§'?'§':'Art.')+m[2]+(m[3]?' '+m[3]:'');sp.base=sp.n;sp.n+=' '+sp.sfx}}
+// every learnset gets classics of its type (plus a buff/debuff), so wild monsters and trainers use them too
+{const ADD={normal:[[5,'growl'],[9,'leer'],[19,'bodyslam'],[24,'swordsdance'],[30,'hyperbeam']],fire:[[5,'growl'],[12,'scaryface'],[19,'flamethrower'],[23,'sunnyday'],[28,'fireblast']],
+  water:[[5,'withdraw'],[12,'bubblebeam'],[18,'aurorabeam'],[22,'surf'],[28,'hydropump']],grass:[[5,'growth'],[9,'stringshot'],[13,'razorleaf'],[18,'sleeppowder'],[22,'gigadrain'],[28,'solarbeam']],
+  electric:[[5,'thunderwave'],[9,'charge'],[13,'confuseray'],[20,'thunderbolt'],[28,'thunder']],rock:[[5,'defcurl'],[9,'metalclaw'],[14,'rockslide'],[19,'crunch'],[23,'irontail'],[28,'earthquake']],
+  flying:[[5,'featherdance'],[9,'wingattack'],[14,'agility'],[18,'steelwing'],[22,'drillpeck'],[28,'aeroblast']]};
+ const done=new Set();for(const sid in SPECIES){const sp=SPECIES[sid],ls=sp.ls;if(!Array.isArray(ls)||done.has(ls))continue;done.add(ls);
+  for(const e of ADD[sp.t]||[])if(!ls.some(x=>x[1]===e[1]))ls.push(e);ls.sort((a,b)=>a[0]-b[0])}}
 // name as HTML with the paragraph in bold
 function nameHtml(sid){const sp=SPECIES[sid];if(!sp)return'';return sp.sfx?esc(sp.base)+' <b class="psfx">'+esc(sp.sfx)+'</b>':esc(sp.n)}
 const ALT_IDS=new Set(['schlagstock','taser','pfefferspray','kelle','harrymon','harrymonx','goeggeli','goeggelix','pfisterio','pfisteriox','zenerentner','steini','aaronia','gianlueckmon','ibumon','owigon','ausweisadler','platzfuchs','sperrschild','drohnix','zellbaer','filzhund','kistenwasch','wohnkroete','sichereule','beschlagigel','erkennungsleon','fragfuchs','einwilligfee','bodycamar','wuerdeadler','freiheitsmarder','gleichlinge','glaubine','meinungseule','demofuchs','posttaube','heimkroete','rechtsritter','bundesadler','langfinger','schwindelfuchs','pruegelklops','schlaegerkopf','promillo','bleifuss','poebelblase','geruechtling','faelschling','sprayzi','probenwolf','fotodachs','asservadler','richtereule','ermittlerhund','spuerhund','handschuhwasch','lupenkauz','stoerkeiler','fesselstachler','protokollfuchs','vernehmpapagei','verbotsnatter','identiluchs','gewahrsamhirsch','arenamon','zhang','boorberg']);

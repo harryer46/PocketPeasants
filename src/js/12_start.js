@@ -21,7 +21,7 @@ function begin(){
   // saves from before Knastémon may still hold the removed classic monsters → swap them for a base of the same level
   for(const R of[G.run,G.freeRun])if(R&&Array.isArray(R.team)){const fix=m=>{if(m&&SPECIES[m.s])return m;if(!m)return null;const pool=ALT_BASES;const n=newMon(pool[Math.floor(Math.random()*pool.length)],clamp(+m.l||START_LV,1,60));n.hp=stats(n).mhp;return n};
     R.team=R.team.map(fix).filter(Boolean);R.box=(R.box||[]).map(fix).filter(Boolean);if(!R.team.length)R.team=[newMon(ALT_STARTERS[0],START_LV)]}
-  if(RUN){RUN.beat=RUN.beat||{};RUN.leg=RUN.leg||{};if(RUN.money==null)RUN.money=100;RUN.items=RUN.items||{};RUN.box=RUN.box||[];if(RUN.team.length>TEAM_MAX)RUN.box.push(...RUN.team.splice(TEAM_MAX))}
+  if(RUN){RUN.beat=RUN.beat||{};RUN.leg=RUN.leg||{};if(RUN.money==null)RUN.money=100;RUN.items=RUN.items||{};RUN.box=RUN.box||[];if(RUN.team.length>teamMax())RUN.box.push(...RUN.team.splice(teamMax()))}
   // a running lobby survives a reload (e.g. after an update): an interrupted duel or pick goes back to waiting
   if(RUN&&!RUN.free){if(RUN.st==='duel'||RUN.st==='pick')RUN.st=RUN.phase==='arena'?'wait':RUN.st;RUN.rdy=0;plog('[lobby] nach Neuladen fortgesetzt',RUN.id,RUN.phase);setTimeout(()=>sysChat('Dein Lobby-Spiel geht weiter — Team und Fortschritt sind erhalten.'),600)}
   if(G.freeRun&&G.freeRun!==RUN){if(G.freeRun.money==null)G.freeRun.money=100;G.freeRun.items=G.freeRun.items||{}}
@@ -31,7 +31,7 @@ function begin(){
   if(RUN&&!RUN.free&&RUN.phase==='arena'){RUN.res=RUN.res||[];if(RUN.st==='duel'){RUN.res.push([RUN.r,RUN.dopp||'?',0]);RUN.r++;RUN.st=RUN.r>cfgOf().rounds?'done':'wait'}if(RUN.st==='pick')RUN.st='wait'}
   P.x=P.fx=G.x;P.y=P.fy=G.y;P.d=G.d||'down';if(!walkable(P.x,P.y)){P.x=P.fx=30;P.y=P.fy=24}
   P.fol={x:P.x,y:P.y,tx:P.x,ty:P.y};
-  renderTeam();updateHud();pushFull();sysChat(`Willkommen bei Knastémon, ${G.name}! Dienstbeginn — schnapp sie dir alle!`);
+  renderTeam();updateHud();pushFull();sysChat(`Willkommen bei Pocket Peasants, ${G.name}! Dienstbeginn — schnapp sie dir alle!`);
   if(RUN&&RUN.phase==='arena_pending'){RUN.phase='train';enterArena()}else if(RUN&&RUN.phase==='arena')showArena();
 }
 

@@ -4,11 +4,11 @@ const OTH=new Map();let myBubble=null,chatN=0;
 function pres(p){if(!ROOM)return;try{ROOM.presence(p).catch(()=>{})}catch(e){}}
 function leadInfo(){return RUN&&RUN.team[0]?[RUN.team[0].s,RUN.team[0].l]:null}
 // followers: up to 3 team monsters walk behind the player along the last tiles they stepped on (only the species list is shared, positions are derived locally)
-function folCount(){const f=RUN&&RUN.cfg&&RUN.cfg.fol!=null?+RUN.cfg.fol:3;return clamp(isNaN(f)?3:f,0,3)}
+function folCount(){const f=RUN&&RUN.cfg&&RUN.cfg.fol!=null?+RUN.cfg.fol:3;return clamp(isNaN(f)?3:f,0,4)}
 function folInfo(){if(!RUN)return null;const n=Math.min(folCount(),RUN.team.length);return n?RUN.team.slice(0,n).map(m=>m.s):[]}
-function trailPush(o,x,y){o.trail=o.trail||[];o.trail.unshift({x,y});if(o.trail.length>4)o.trail.length=4;o.fols=o.fols||[];for(let k=0;k<3;k++){const t=o.trail[k];if(!t)break;const f=o.fols[k]||(o.fols[k]={x:t.x,y:t.y,fx:t.x,fy:t.y,tx:t.x,ty:t.y});f.tx=t.x;f.ty=t.y}}
-function trailReset(o,x,y){o.trail=[];o.fols=[];for(let k=0;k<3;k++)o.fols[k]={x,y,fx:x,fy:y,tx:x,ty:y}}
-function folEnts(o,list,ents,px,py){if(!list||!list.length||!o.fols)return;for(let k=0;k<list.length&&k<3;k++){const f=o.fols[k];if(!f||f.fx==null||!SPECIES[list[k]])continue;
+function trailPush(o,x,y){o.trail=o.trail||[];o.trail.unshift({x,y});if(o.trail.length>5)o.trail.length=5;o.fols=o.fols||[];for(let k=0;k<4;k++){const t=o.trail[k];if(!t)break;const f=o.fols[k]||(o.fols[k]={x:t.x,y:t.y,fx:t.x,fy:t.y,tx:t.x,ty:t.y});f.tx=t.x;f.ty=t.y}}
+function trailReset(o,x,y){o.trail=[];o.fols=[];for(let k=0;k<4;k++)o.fols[k]={x,y,fx:x,fy:y,tx:x,ty:y}}
+function folEnts(o,list,ents,px,py){if(!list||!list.length||!o.fols)return;for(let k=0;k<list.length&&k<4;k++){const f=o.fols[k];if(!f||f.fx==null||!SPECIES[list[k]])continue;
   const prev=k===0?{fx:px,fy:py}:o.fols[k-1];if(Math.abs(f.fx-prev.fx)+Math.abs(f.fy-prev.fy)<0.3)continue;if(tget(Math.round(f.fx),Math.round(f.fy))===3)continue;ents.push({fx:f.fx,fy:f.fy,mon:list[k]})}}
 function mtInfo(){if(RUN&&RUN.free)return{id:RUN.id,end:0,r:0,st:'free',prev:null};return RUN?{id:RUN.id,end:RUN.end,r:RUN.phase==='arena'?RUN.r:0,st:RUN.phase==='arena'?RUN.st:RUN.phase==='lobby'?'lobby':'train',prev:RUN.prev||null,res:RUN.res||[],cfg:RUN.cfg,rs:RUN.rs||0,rd:RUN.rdy?1:0,jt:RUN.jt||0}:null}
 function pushFull(){if(!G)return;pres({v:VERSION,lf:folInfo(),n:G.name,c:G.color,sx:G.sex==='f'?'f':'m',x:P.moving?P.tx:P.x,y:P.moving?P.ty:P.y,d:P.d,tr:G.tro,ld:leadInfo(),bt:B?(B.mode==='wild'?'wild':'duel'):null,mt:mtInfo()})}
@@ -36,7 +36,7 @@ function syncOther(p){
   let o=OTH.get(p.peer);const tx=clamp(Math.round(pr.x),0,MW-1),ty=clamp(Math.round(pr.y),0,MH-1);const name=cleanName(pr.n);
   if(!o){o={fx:tx,fy:ty,tx,ty,ph:0,moving:false,chatI:pr.chat&&pr.chat.i,n:name,fol:{x:tx,y:ty,tx,ty},seenMt:null};OTH.set(p.peer,o);const g=GONE.get(p.peer);if(g){clearTimeout(g.tm);GONE.delete(p.peer);plog('[peer] kurz getrennt, wieder da',p.peer,name,Math.round((Date.now()-g.t)/1000)+'s')}else{plog('[peer] neu',p.peer,name,'v'+(pr.v||'?'));sysChat(`${name} ist der Welt beigetreten.`)}}
   if(tx!==o.tx||ty!==o.ty){o.fol.tx=o.tx;o.fol.ty=o.ty;if(Math.abs(tx-o.tx)+Math.abs(ty-o.ty)>3)trailReset(o,tx,ty);else trailPush(o,o.tx,o.ty)}
-  o.lf=Array.isArray(pr.lf)?pr.lf.filter(x=>typeof x==='string'&&SPECIES[x]).slice(0,3):null;
+  o.lf=Array.isArray(pr.lf)?pr.lf.filter(x=>typeof x==='string'&&SPECIES[x]).slice(0,4):null;
   o.tx=tx;o.ty=ty;o.d=DIRS[pr.d]?pr.d:'down';o.n=name;o.c=validColor(pr.c);o.sx=pr.sx==='f'?'f':'m';o.bt=pr.bt==='duel'||pr.bt==='wild'?pr.bt:null;
   o.ld=Array.isArray(pr.ld)&&SPECIES[pr.ld[0]]?pr.ld[0]:null;
   if(pr.chat&&typeof pr.chat.t==='string'&&pr.chat.i!==o.chatI){o.chatI=pr.chat.i;const t=pr.chat.t.slice(0,120);o.bub={t,until:performance.now()+6000};addChat(o.n,o.c,t,true)}

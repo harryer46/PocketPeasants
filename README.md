@@ -1,4 +1,4 @@
-# Knastémon
+# Pocket Peasants
 
 Multiplayer-Monster-Browserspiel im Polizei-Look (Pixelart, Echtzeitkämpfe, Match-Modus mit Gerichtsturnier).
 Die Monster sind Paragraphen aus PolG, Grundgesetz und StGB.
