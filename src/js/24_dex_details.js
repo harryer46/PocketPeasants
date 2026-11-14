@@ -9,9 +9,13 @@ function habitatOf(sid){const out=[];if(RAR[sid]==='unique')out.push('Starter (e
   for(const z in ZONES)if(poolOf(z).includes(sid))out.push(ZONES[z].n);for(const L of LEGENDS)if(legSid(L)===sid)out.push('Legendärer Schrein ('+ZONES[L.zone].n+')');
   const pf=prevForm(sid);if(pf)out.push('Entwickelt sich aus '+SPECIES[pf].n+' ab Lv '+SPECIES[pf].evo[0]);return out.length?out.join(' · '):'—'}
 // m = an own monster (shows its current values), otherwise the dex entry
+// dex entry: a fixed legal fact for § monsters, else a short note from type and rarity
+function dexText(sid){const sp=SPECIES[sid];if(!sp)return'';if(typeof DEX_TXT!=='undefined'&&DEX_TXT[sid])return DEX_TXT[sid];return`${rarOf(sid).n}es ${TYPES[sp.t].n}-Monster${sp.evo?`, das sich ab Lv ${sp.evo[0]} weiterentwickelt`:''}.`}
+// shown when a new monster joins (catch, new start): the dex card with a banner
+function dexReveal(sid,m,title){if(!SPECIES[sid])return;openMonInfo(sid,m);const b=document.createElement('div');b.style.cssText="font-family:'Press Start 2P',monospace;font-size:9px;color:#14141f;background:#ffcb3d;border:2px solid #000;padding:5px;margin:-4px 0 8px";b.textContent=title||'★ NEUER DEX-EINTRAG ★';$('#mbox').prepend(b)}
 function openMonInfo(sid,m,back){const sp=SPECIES[sid];if(!sp)return;const caught=!!(G.dex&&G.dex[sid])||!!m;
   let h=`<h3>${nameHtml(sid)}${m?` · Lv ${m.l}`:''}</h3><canvas id="minfocv" width="52" height="52" style="width:96px;height:96px;image-rendering:pixelated;display:block;margin:0 auto 4px"></canvas><div><span class="tb" style="background:${TYPES[sp.t].c}">${TYPES[sp.t].n.toUpperCase()}</span> <span class="tb" style="background:${rarOf(sid).c};color:#14141f">${rarOf(sid).n.toUpperCase()}</span></div>
-    ${sp.law?`<p style="margin:6px 0 0;color:var(--accent);font-size:17px">${esc(sp.law)}</p>`:''}<p class="small" style="margin:6px 0 8px">Fundort: ${esc(habitatOf(sid))}${sp.evo?` · entwickelt sich ab Lv ${sp.evo[0]} zu ${caught?esc(SPECIES[sp.evo[1]].n):'???'}`:''}</p>`;
+    ${sp.law?`<p style="margin:6px 0 0;color:var(--accent);font-size:17px">${esc(sp.law)}</p>`:''}${caught&&dexText(sid)?`<p style="margin:6px 0 0;text-align:left;font-size:17px;line-height:1.1;background:#0b0d16;border:2px solid #000;padding:4px 6px">📖 ${esc(dexText(sid))}</p>`:''}<p class="small" style="margin:6px 0 8px">Fundort: ${esc(habitatOf(sid))}${sp.evo?` · entwickelt sich ab Lv ${sp.evo[0]} zu ${caught?esc(SPECIES[sp.evo[1]].n):'???'}`:''}</p>`;
   if(!caught){h+=`<p>Nimm eins fest, um Werte und Attacken zu sehen.</p>`}
   else{const st=m?stats(m):null,b=sp.b,names=['KP','Angriff','Verteidigung','Initiative'],vals=m?[st.mhp,st.atk,st.def,st.spd]:b,mx=m?Math.max(...vals,1):130;
     h+=`<div style="margin:4px 0 10px">${names.map((n,i)=>`<div class="statrow"><span>${n}</span><span style="background:#0b0d16;border:1px solid #000"><i style="width:${Math.min(100,vals[i]/mx*100)}%"></i></span><span>${vals[i]}</span></div>`).join('')}</div>`;

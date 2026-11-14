@@ -38,11 +38,30 @@ function onArrive(){
   const t=tget(P.x,P.y);
   if(t===22){if(RUN)openShop();else toast('Copshop — tritt einer Lobby bei oder starte das freie Spiel.')}
   if(t===23){if(RUN)openHfPol();else toast('HfPol — tritt einer Lobby bei oder starte das freie Spiel, um zu lernen.')}
-  if(t===7){if(RUN){healAll();toast('Dienststelle: Dein Team ist voll geheilt! Handschellen aufgefüllt.')}else toast('Dienststelle — tritt einer Lobby bei oder starte das freie Spiel, um ein Team zu bekommen.')}
+  if(t===7){if(RUN)healQuiz();else toast('PÄD — tritt einer Lobby bei oder starte das freie Spiel, um ein Team zu bekommen.')}
   if(t===12){if(RUN&&RUN.phase==='lobby')toast('Das Spiel hat noch nicht begonnen — warte auf den Host.');else if(RUN&&RUN.phase==='train'&&!RUN.free)confirmEarlyArena();else if(RUN&&RUN.free)toast('Im Gericht finden Lobby-Turniere statt — erstelle oder betritt eine Lobby!');else toast('Das Gericht — tritt zuerst einer Lobby bei oder erstelle eine!')}
   if(checkSight())return;
   if((ENC.has(t)||t===20)&&RUN&&RUN.phase==='train'){const z=zoneAt(P.x,P.y);if(z&&Math.random()<(t===20?0.16:0.13)*cfgOf().enc)startWild(z)}
 }
+// PÄD (Polizeiärztlicher Dienst): every correct answer heals each monster by 25 % — a wrong answer ends the visit
+function healQuiz(){RUN.kap=Math.max(RUN.kap,10);updateHud();const all=()=>RUN.team.concat(RUN.box),full=()=>all().every(m=>m.hp>=stats(m).mhp);
+  if(full()){toast('PÄD: Dein Team ist gesund. Handschellen aufgefüllt.');save();return}
+  const keys=Object.keys(QZ).filter(k=>SPECIES[k]&&QZ[k].length);let n=0;const seen=new Set();
+  const pickQ=()=>{for(let t=0;t<40;t++){const k=keys[Math.floor(Math.random()*keys.length)],q=QZ[k][Math.floor(Math.random()*QZ[k].length)];if(!seen.has(q[0])){seen.add(q[0]);return{src:k,q}}}return{src:keys[0],q:QZ[keys[0]][0]}};
+  const hpLine=()=>RUN.team.map(m=>`${esc(SPECIES[m.s].n)} ${Math.round(100*m.hp/stats(m).mhp)}%`).join(' · ');
+  const ask=()=>{const it=pickQ(),order=shuffleArr([0,1,2,3]);n++;CQ={it,order,end:Infinity,done:false,cb:null};
+    $('#cqbox').innerHTML=`<div class="sdlg"><span class="slaw">⚕ PÄD · Polizeiärztlicher Dienst · Frage ${n} · ${esc(SPECIES[it.src].law||'')}</span><br><span class="small">Jede richtige Antwort heilt jedes Monster um 25 %.<br>${hpLine()}</span><br>${esc(it.q[0])}<div id="cqexp"></div></div>
+      <div class="sans">${order.map((k,j)=>`<button class="sa" data-ck="${k}"><span class="sk">${j+1}</span>${esc(it.q[1][k])}</button>`).join('')}</div><div class="sacts" id="cqact"><button class="btn ghost" id="cqstop">GEHEN</button></div>`;
+    $('#cquiz').classList.add('on');document.querySelectorAll('[data-ck]').forEach(bt=>bt.onclick=()=>pick(+bt.dataset.ck));$('#cqstop').onclick=stop};
+  const stop=()=>{$('#cquiz').classList.remove('on');CQ=null;CQ_PICK=null;save();renderTeam();updateHud()};
+  const pick=k=>{if(!CQ||CQ.done)return;CQ.done=true;const ok=k===0,it=CQ.it;
+    document.querySelectorAll('[data-ck]').forEach(bt=>{const kk=+bt.dataset.ck;bt.disabled=true;bt.classList.add(kk===0?'ok':kk===k?'bad':'dim')});
+    if(ok)for(const m of all()){const mx=stats(m).mhp;m.hp=Math.min(mx,m.hp+Math.ceil(mx*0.25))}
+    const done=ok&&full();renderTeam();
+    $('#cqexp').innerHTML=`<div class="sexp ${ok?'ok':'bad'}">${ok?(done?'✓ Richtig — dein Team ist wieder fit!':'✓ Richtig — +25 % KP für jedes Monster.'):'✗ Falsch — der PÄD schickt dich weg.'} ${esc(it.q[2])}</div>`;
+    $('#cqact').innerHTML=ok&&!done?`<button class="btn" id="cqnext">NÄCHSTE FRAGE</button><button class="btn ghost" id="cqstop">GEHEN</button>`:`<button class="btn" id="cqstop">WEITER</button>`;
+    const nx=$('#cqnext');if(nx)nx.onclick=ask;$('#cqstop').onclick=stop};
+  CQ_PICK=pick;ask()}
 function healAll(){if(!RUN)return;for(const m of RUN.team.concat(RUN.box))m.hp=stats(m).mhp;RUN.kap=Math.max(RUN.kap,10);save();renderTeam();updateHud()}
 function updateHud(){
   const z=zoneAt(P.x,P.y);$('#hzone').textContent=z?ZONES[z].n:'Stadt';
@@ -89,7 +108,7 @@ function drawWorld(){
     c.fillStyle='#00000040';c.fillRect(X+3,Y+13,10,2);c.fillStyle='#2a1a0c';c.fillRect(X+6,Y+6,4,9);c.fillStyle='#7a4a22';c.fillRect(X+7,Y+6,2,8);
     c.fillStyle='#2a1a0c';c.fillRect(X+1,Y+1,14,8);c.fillStyle='#b07a3e';c.fillRect(X+2,Y+2,12,6);c.fillStyle='#d9a466';c.fillRect(X+2,Y+2,12,1);c.fillStyle='#6b4220';c.fillRect(X+4,Y+4,8,1);c.fillRect(X+4,Y+6,6,1)}
   // signs on roofs
-  c.font='7px "Press Start 2P",monospace';c.textBaseline='alphabetic';{c.save();c.font='8px VT323,monospace';c.textAlign='center';c.fillStyle='#ffffff';c.fillText('DIENSTSTELLE',22*16-camX+56,17*16-camY+36.5);c.restore();c.font='7px "Press Start 2P",monospace'}c.fillStyle='#14141f';c.fillText('GERICHT',33*16-camX+24,17*16-camY+13);c.fillStyle='#ffcb3d';c.fillText('GERICHT',33*16-camX+23,17*16-camY+12);
+  c.font='7px "Press Start 2P",monospace';c.textBaseline='alphabetic';{c.save();c.font='8px VT323,monospace';c.textAlign='center';c.fillStyle='#ffffff';c.fillText('PÄD',22*16-camX+56,17*16-camY+36.5);c.restore();c.font='7px "Press Start 2P",monospace'}c.fillStyle='#14141f';c.fillText('GERICHT',33*16-camX+24,17*16-camY+13);c.fillStyle='#ffcb3d';c.fillText('GERICHT',33*16-camX+23,17*16-camY+12);
   c.font='10px VT323,monospace';c.textAlign='center';c.fillStyle='#ffffff';c.fillText('COPSHOP',23*16-camX+40,24*16-camY+43);c.textAlign='left';
   c.font='10px VT323,monospace';c.textAlign='center';c.fillStyle='#ffffff';c.fillText('HfPol',32*16-camX+56,24*16-camY+45.5);c.textAlign='left';
   // entities

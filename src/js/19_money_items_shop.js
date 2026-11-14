@@ -128,7 +128,7 @@ function lobbyLine(m){return m.waiting?'wartet in der Lobby':`noch ${fmt(m.end-D
 let LOBBY_MIN=true;
 function startFree(){
   if(G.freeRun){RUN=G.freeRun;RUN.beat=RUN.beat||{};RUN.leg=RUN.leg||{};afterRunChange();toast('Willkommen zurück! Das freie Spiel geht weiter.');return}
-  {const sp_=ALT_BASES.filter(x=>RAR[x]!=='rare'),sid=sp_[Math.floor(Math.random()*sp_.length)];RUN={id:'f'+Math.random().toString(36).slice(2,10),free:true,end:0,phase:'train',team:[newMon(sid,START_LV)],box:[],kap:10,money:100,items:{},r:1,st:'free',res:[],beat:{},leg:{},cfg:Object.assign({},DEF_CFG,{alt:SET.alt==='0'?0:1})};G.dex[sid]=1;G.freeRun=RUN;afterRunChange();teleport(30,24);sysChat('Freies Spiel gestartet — dein Team wird gespeichert. Erstelle oder betrete jederzeit eine Lobby.');toast(`Dein zufälliges Start-Monster: ${SPECIES[sid].n}!`)}
+  {const sp_=ALT_BASES.filter(x=>RAR[x]!=='rare'),sid=sp_[Math.floor(Math.random()*sp_.length)];RUN={id:'f'+Math.random().toString(36).slice(2,10),free:true,end:0,phase:'train',team:[newMon(sid,START_LV)],box:[],kap:10,money:100,items:{},r:1,st:'free',res:[],beat:{},leg:{},cfg:Object.assign({},DEF_CFG,{alt:SET.alt==='0'?0:1})};G.dex[sid]=1;G.freeRun=RUN;afterRunChange();teleport(30,24);sysChat('Freies Spiel gestartet — dein Team wird gespeichert. Erstelle oder betrete jederzeit eine Lobby.');toast(`Dein zufälliges Start-Monster: ${SPECIES[sid].n}!`);setTimeout(()=>{if(!B&&!$('#modal').classList.contains('on'))dexReveal(sid,RUN.team[0],'★ DEIN START-MONSTER ★')},700)}
 }
 // free play: throw away the free-play team and start over with a new random monster (dex and trophies stay)
 function restartFree(){if(!RUN||!RUN.free||B)return;
@@ -181,7 +181,7 @@ function openCreate(){
 }
 function pickStarter(cb,cfg){const alt=altOn(cfg||{alt:SET.alt==='0'?0:1});
   openModal(`<h3>WÄHLE DEIN STARTER-MONSTER</h3><p>Alle beginnen mit Lv ${START_LV}. Harrymon, Göggeli und Pfisterio sind einzigartig und werden ab Lv 14 zu ihrer goldenen Mega-Form.</p><div class="starters">${(alt?ALT_STARTERS:STARTERS).map(s=>`<button class="stc" data-s="${s}"><canvas width="56" height="56"></canvas><br>${nameHtml(s)}<br><span class="tb" style="background:${TYPES[SPECIES[s].t].c}">${TYPES[SPECIES[s].t].n.toUpperCase()}</span> <span class="tb" style="background:${rarOf(s).c};color:#14141f">${rarOf(s).n.toUpperCase()}</span></button>`).join('')}</div><div class="acts"><button class="btn ghost" id="mno">ABBRECHEN</button></div>`);
-  document.querySelectorAll('.stc').forEach(b=>{{const cx=b.querySelector('canvas').getContext('2d');cx.imageSmoothingEnabled=false;cx.drawImage(monSprite(b.dataset.s,24),4,4,48,48)}b.onclick=()=>{closeModal();cb(b.dataset.s)}});
+  document.querySelectorAll('.stc').forEach(b=>{{const cx=b.querySelector('canvas').getContext('2d');cx.imageSmoothingEnabled=false;cx.drawImage(monSprite(b.dataset.s,24),4,4,48,48)}b.onclick=()=>{closeModal();const s_=b.dataset.s;cb(s_);setTimeout(()=>{if(!B&&RUN&&RUN.team[0]&&!$('#modal').classList.contains('on'))dexReveal(s_,RUN.team[0],'★ DEIN STARTER ★')},700)}});
   $('#mno').onclick=closeModal;
 }
 function startRun(id,end,sid,prev,cfg,phase){
