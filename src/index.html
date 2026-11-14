@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Knastémon</title>
+<style>
+/*@inc css/fonts.css*/
+</style>
+<style>
+/*@inc css/main.css*/
+</style>
+</head>
+<body>
+<div id="app">
+<div id="mainc">
+  <div id="topbar"><span class="tbrand">KNASTÉMON</span><span class="chip timer" id="htimer">LOBBY</span><button id="tupd" style="display:none;background:#ef4444;color:#fff">⬆ NEUE VERSION — NEU LADEN</button><span class="tsp"></span><button data-t="lobby" title="Lobby">🏟<span class="tl"> LOBBY</span></button><button data-t="team" title="Team">🎒<span class="tl"> TEAM</span></button><button data-t="players" title="Spieler">👥<span class="tl"> SPIELER</span><span id="pcount"></span></button><button data-t="chat" title="Chat">💬<span class="tl"> CHAT</span><span id="cbadge"></span></button><button id="hshop" title="Copshop (in der Stadt)">🛒<span class="tl"> LADEN</span></button><button id="hdex" title="Monster-Dex">📖<span class="tl"> DEX</span></button><button id="hmap" title="Karte">🗺<span class="tl"> KARTE</span></button><button id="hfs" title="Vollbild" style="display:none">⛶</button><button id="hsave" title="Spielstand jetzt speichern">💾</button><button id="hbug" title="Bug melden (GitHub)">🐞</button><button id="hset">⚙</button><span id="tver"></span></div>
+  <div id="stage">
+    <canvas id="world"></canvas>
+    <div class="hud"><span class="chip" id="hzone">Stadt</span><span class="chip" id="hkap">Handschellen -</span><span class="chip" id="hon"><span class="dot"></span>Solo</span></div>
+    <div id="toast"></div>
+    <div id="help">Pfeile/WASD: laufen · M: Karte · Gras/Farne/Schilf/Geröll: wilde Monster · Dienststelle (Blaulicht): heilen · T: Chat</div>
+    <div id="dpad"><span></span><button data-d="up">▲</button><span></span><button data-d="left">◀</button><span></span><button data-d="right">▶</button><span></span><button data-d="down">▼</button><span></span></div>
+    <div id="lobby"></div>
+    <div id="touch"><div id="joyzone"></div><div id="joyhint">laufen</div><div id="joy"><div id="joyk"></div></div><div id="tbtns"></div></div>
+    <div id="arena"><div class="abox" id="abox"></div></div>
+    <div id="mapov"><div class="mapbox"><div class="maphead"><span>WELTKARTE</span><button class="btn ghost" id="mclose">✕ SCHLIESSEN</button></div><canvas id="mapcv"></canvas><div id="mapleg"></div></div></div>
+    <div id="battle"><div id="bwrap"><canvas id="bcv" width="720" height="480"></canvas><div id="bctl"><div id="bpad"></div><div id="bact"></div></div></div></div>
+    <div id="bpick"></div>
+    <div id="signbox"></div>
+    <div id="study"><div id="sbox"></div></div>
+    <div id="cquiz"><div id="cqbox"></div></div>
+    <div id="modal"><div class="box" id="mbox"></div></div>
+    <canvas id="fxcv"></canvas>
+  </div>
+</div>
+  <aside id="side">
+    <div class="brand"><h1 style="white-space:nowrap">KNASTÉMON<br><span style="font-size:7px;color:#9aa1bd">§ POLIZEI-EDITION</span></h1><div class="sub"><span id="sdex">Dex 0/14</span><span id="stro">Trophäen 0</span></div></div>
+    <div class="tabs"><button data-t="team" class="act">TEAM</button><button data-t="players">SPIELER</button><button data-t="lobby">LOBBY</button><button data-t="chat">CHAT</button></div>
+    <div class="pane act" id="pane-team"></div>
+    <div class="pane" id="pane-players"></div>
+    <div class="pane" id="pane-lobby"></div>
+    <div class="pane" id="pane-chat"><div id="chatlog"></div><form id="chatform"><input id="chatin" maxlength="120" placeholder="Nachricht an alle…" autocomplete="off"><button class="btn">SENDEN</button></form></div>
+  </aside>
+</div>
+
+<div id="rotate"><div class="px" style="font-size:10px;color:var(--accent);margin-bottom:8px">↻ HANDY DREHEN</div><div class="small">Knastémon spielt sich am besten im Querformat.</div><button class="btn ghost" id="rotok" style="margin-top:10px">TROTZDEM SPIELEN</button></div><div id="errbox"></div>
+<div id="start">
+  <div class="sbox">
+    <h1 style="white-space:nowrap">KNASTÉMON</h1>
+    <div id="sver2" style="font-family:'Press Start 2P',monospace;font-size:9px;color:#9aa1bd;margin:-2px 0 8px"></div>
+    <div class="tag2" style="font-family:'Press Start 2P',monospace;font-size:9px;color:#ef4444;margin:-4px 0 14px">§ POLIZEI-EDITION · JETZT MIT NOCH MEHR PARAGRAPHEN!</div>
+    <div class="tag2">Schnapp sie dir alle — und ab vors Gericht! Geh 10 Minuten auf Streife, nimm Monster fest und stell dich dann im Gericht allen anderen — in Echtzeit.</div>
+    <canvas id="sprev" width="16" height="19"></canvas>
+    <div class="field"><label>DEIN NAME</label><input id="sname" maxlength="16" placeholder="z. B. Harald"></div>
+    <div class="field"><label>FIGUR</label><div style="display:flex;gap:6px;justify-content:center"><button class="btn ghost" data-sex="m" style="font-size:10px;padding:8px 10px">BEAMTER</button><button class="btn ghost" data-sex="f" style="font-size:10px;padding:8px 10px">BEAMTIN</button></div></div>
+    <div class="field"><label>DEINE FARBE (MÜTZENBAND)</label><div class="colors" id="scolors"></div></div>
+    <div class="field" id="spwf"><label>PASSWORT</label><input id="spw" type="password" maxlength="24" placeholder="Zugangspasswort" autocomplete="off"></div>
+    <div id="loadbar"><i></i></div>
+    <div class="small" id="sver" style="margin:-6px 0 10px"></div>
+    <button class="btn" id="sgo" style="font-size:12px;padding:13px 22px">SPIELEN</button> <button class="btn ghost" id="sfs" style="font-size:10px;padding:13px 14px;display:none">⛶ VOLLBILD</button>
+  </div>
+</div>
+
+<script>
+//@inc js/00_head.js
+//@inc js/01_version.js
+//@inc js/02_protokoll_troubleshooting.js
+//@inc js/03_error_reporting.js
+//@inc js/04_data.js
+//@inc js/05_util.js
+//@inc js/06_monster_logic.js
+//@inc js/07_map.js
+//@inc js/08_signposts.js
+//@inc js/09_field_skills_like_the_hms_of.js
+//@inc js/10_pixel_art.js
+//@inc js/11_state.js
+//@inc js/12_start.js
+//@inc js/13_control_settings.js
+//@inc js/14_input.js
+//@inc js/15_overworld.js
+//@inc js/16_world_map.js
+//@inc js/17_multiplayer.js
+//@inc js/18_matches.js
+//@inc js/19_money_items_shop.js
+//@inc js/20_player_challenges_during_tra.js
+//@inc js/21_transitions_fx.js
+//@inc js/22_real_time_battle_engine.js
+//@inc js/23_side_panels.js
+//@inc js/24_dex_details.js
+//@inc js/25_loop.js
+//@inc js/26_zoll_lehrer_biome_borders.js
+//@inc js/27_notfallmodus_enter.js
+//@inc js/28_boot.js
+</script>
+</body>
+</html>

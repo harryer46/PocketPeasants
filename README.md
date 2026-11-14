@@ -87,3 +87,7 @@ Im Tab *Spieler* steht bei jedem Mitspieler der **Ping** (grün < 80 ms, gelb < 
 
 **Steuerung:** WASD/Pfeile laufen · M Karte · im Kampf 1–4 Attacken, Leertaste Ausweichen,
 Q Wechseln, C Kapsel, R Flucht · am Handy: auf dem Kampffeld gedrückt halten zum Laufen.
+
+## Quellcode
+Der Code liegt modular unter `src/` (HTML-Gerüst, `css/`, `js/NN_*.js` je Abschnitt, große Daten wie Sprites/Fragenbank unter `js/data/`).
+`python3 src/build.py` baut daraus die Einzeldatei, `tools/build_gp.py` fügt Netzwerk (Trystero) hinzu und erzeugt `index.html`.

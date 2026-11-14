@@ -1,0 +1,82 @@
+/* ===================== ZOLL-LEHRER (biome borders) ===================== */
+// one teacher per area guards the way in: 3 questions on their law; on failure pay 300 $ or fight strong paragraphs of that law
+const STVO_QZ=[
+ ["Was verlangt die Grundregel des § 1 StVO?",["Ständige Vorsicht und gegenseitige Rücksicht","Möglichst schnelles Vorankommen","Vorrang für größere Fahrzeuge","Hupen vor jeder Kreuzung"],"§ 1 Abs. 1 StVO."],
+ ["Wie hoch ist die zulässige Höchstgeschwindigkeit innerorts für alle Kfz (ohne Beschilderung)?",["50 km/h","30 km/h","60 km/h","70 km/h"],"§ 3 Abs. 3 Nr. 1 StVO."],
+ ["Was gilt an einer Kreuzung ohne Verkehrszeichen und ohne Ampel?",["Rechts vor links","Links vor rechts","Das größere Fahrzeug hat Vorfahrt","Wer zuerst hupt, fährt zuerst"],"§ 8 Abs. 1 StVO."],
+ ["Wessen Zeichen und Weisungen gehen nach § 36 StVO allen anderen Anordnungen und Regeln vor?",["Die der Polizeibeamten","Die der Fahrlehrer","Die der Bauarbeiter","Die der Busfahrer"],"§ 36 Abs. 1 StVO – aber nicht Verkehrsverboten an sich."],
+ ["Was müssen andere tun, wenn ein Fahrzeug blaues Blinklicht zusammen mit Einsatzhorn verwendet?",["Sofort freie Bahn schaffen","Nur auf Autobahnen ausweichen","Nur stehen bleiben, wenn es von hinten kommt","Nichts, es ist nur ein Hinweis"],"§ 38 Abs. 1 StVO."],
+ ["Wie wird eine Rettungsgasse auf einer Autobahn mit drei Fahrstreifen gebildet?",["Zwischen dem äußerst linken und dem unmittelbar rechts daneben liegenden Fahrstreifen","Zwischen dem mittleren und dem rechten Fahrstreifen","Auf dem Standstreifen","In der Mitte jedes Fahrstreifens"],"§ 11 Abs. 2 StVO."],
+ ["Auf welcher Seite wird grundsätzlich überholt?",["Links","Rechts","Beliebig","Nur auf dem Seitenstreifen"],"§ 5 Abs. 1 StVO."],
+ ["Was regelt § 23 Abs. 1a StVO?",["Die Nutzung elektronischer Geräte wie dem Handy beim Fahren","Die Anschnallpflicht","Das Parken vor Einfahrten","Die Winterreifenpflicht für Fahrräder"],"Handyverbot am Steuer."],
+ ["Was bedeutet Gelb an einer Ampel nach § 37 StVO?",["Vor der Kreuzung auf das nächste Zeichen warten","Schnell noch durchfahren","Die Kreuzung ist freigegeben","Nur Radfahrer dürfen fahren"],"§ 37 Abs. 2 Nr. 1 StVO."],
+ ["Wie weit vor und hinter den Schnittpunkten der Fahrbahnkanten einer Kreuzung ist das Parken unzulässig?",["5 Meter","2 Meter","10 Meter","15 Meter"],"§ 12 Abs. 3 Nr. 1 StVO."],
+ ["Wer muss während der Fahrt vorgeschriebene Sicherheitsgurte anlegen?",["Alle Fahrzeugführer und Mitfahrer auf Sitzen mit Gurt","Nur der Fahrer","Nur Kinder","Niemand innerorts"],"§ 21a Abs. 1 StVO."],
+ ["Welche Pflicht regelt § 4 Abs. 1 StVO?",["Ausreichenden Abstand zum vorausfahrenden Fahrzeug halten","Das Rechtsfahrgebot","Die Beleuchtungspflicht","Das Halten an Bushaltestellen"],"Abstandsgebot."]
+];
+const TOLL_LAW={2:'GG',3:'PolG',4:'StVO',5:'StPO',6:'StGB'};
+const TOLL_NAME={2:'Prof. Dr. Würde',3:'Prof. Gefahr',4:'Prof. Blinker',5:'Prof. Prozess',6:'Prof. Strafe'};
+const TOLL_AREA={2:'den Ostwald',3:'die Südküste',4:'die Westhügel',5:'den Knast',6:'den Zellentrakt'};
+const TOLL_FEE=300;
+function lawOf(sid){const L=(SPECIES[sid]&&SPECIES[sid].law)||'';const m=L.match(/^(?:§|Art\.)\s*\d+[a-z]?\s+([A-Za-zÄÖÜäöü]+)/);return m?m[1]:null}
+function lawSpecies(law){if(law==='StVO')return['promillo','bleifuss','owigon'].filter(s=>SPECIES[s]);return Object.keys(SPECIES).filter(s=>ALT_IDS.has(s)&&RAR[s]!=='legendary'&&lawOf(s)===law)}
+function lawQuestions(law){if(law==='StVO')return STVO_QZ.map(q=>({src:null,q}));const out=[];for(const s of lawSpecies(law))for(const q of QZ[s]||[])out.push({src:s,q});return out}
+let TOLLS=null;
+function tollSpots(){if(TOLLS)return TOLLS;TOLLS=[];
+  // face the side the visitor comes from: the neighbour that is closest to town by walking distance
+  const dist=new Int32Array(MW*MH).fill(-1),q=[24*MW+30];dist[q[0]]=0;for(let h=0;h<q.length;h++){const i=q[h],x=i%MW,y=(i-x)/MW;for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]]){const nx=x+dx,ny=y+dy,j=ny*MW+nx;if(nx<0||ny<0||nx>=MW||ny>=MH||dist[j]>=0||!WALK0.has(MAP[j]))continue;dist[j]=dist[i]+1;q.push(j)}}
+  for(const g of GATES){if(g.i==null)continue;const x=g.i%MW,y=(g.i-x)/MW;let d='down',bd=1e9;for(const[dx,dy,dn]of[[1,0,'right'],[-1,0,'left'],[0,1,'down'],[0,-1,'up']]){const j=(y+dy)*MW+x+dx;if(dist[j]>=0&&dist[j]<bd){bd=dist[j];d=dn}}
+    TOLLS.push({b:g.b,x,y,id:'toll'+g.b,n:TOLL_NAME[g.b]+' ('+TOLL_LAW[g.b]+')',c:'#7a5a3a',d})}
+  return TOLLS}
+function tollPaid(b){return!!(RUN&&RUN.toll&&RUN.toll[b])}
+function tollAt(x,y){return tollSpots().find(t=>t.x===x&&t.y===y)}
+let TOLL_BUSY=0;
+function tollBlock(nx,ny){if(!RUN||RUN.phase==='arena'||RUN.phase==='lobby')return false;
+  const g=tollSpots().find(t=>t.x===nx&&t.y===ny);let b=g?g.b:null;
+  // entering an area by another way (field-skill shortcuts) also needs that area's teacher
+  if(!b){const nb=BIOME[ny*MW+nx];if(nb>=2&&nb<=5&&BIOME[P.y*MW+P.x]!==nb&&TOLL_LAW[nb])b=nb}
+  if(!b||tollPaid(b))return false;
+  if(performance.now()-TOLL_BUSY>800&&!modalOpen()&&!CQ){TOLL_BUSY=performance.now();tollDialog(b)}return true}
+function tollDialog(b){const law=TOLL_LAW[b],nm=TOLL_NAME[b];
+  const money=RUN.money||0;
+  openModal(`<h3>🎓 ${esc(nm)} — ${esc(law)}</h3><p>„Halt! Wer in ${esc(TOLL_AREA[b]||'dieses Gebiet')} will, kommt an mir nicht so einfach vorbei. Wie hätten wir’s denn gern?“</p>
+   <div style="display:flex;flex-direction:column;gap:6px;text-align:left">
+    <button class="btn" id="tex">📝 KLAUSUR <span class="small">— 3 Fragen zum ${esc(law)}, alle richtig = frei</span></button>
+    <button class="btn ${money>=TOLL_FEE?'':'ghost'}" id="tpay" ${money>=TOLL_FEE?'':'disabled'}>💰 BESTECHEN <span class="small">— ${TOLL_FEE} $${money>=TOLL_FEE?'':' (du hast '+money+' $)'}</span></button>
+    <button class="btn red" id="tfight">⚔ KÄMPFEN <span class="small">— gegen starke ${esc(law)}-Paragrafen</span></button></div>
+   <div class="acts"><button class="btn ghost" id="mno">ZURÜCK</button></div>`);
+  $('#mno').onclick=closeModal;$('#tex').onclick=()=>{closeModal();tollQuiz(b)};
+  $('#tpay').onclick=()=>{if((RUN.money||0)<TOLL_FEE)return;RUN.money-=TOLL_FEE;updateHud();closeModal();tollPass(b,`${TOLL_FEE} $ — ich habe nichts gesehen`)};
+  $('#tfight').onclick=()=>{closeModal();tollFight(b)}}
+function tollQuiz(b){const law=TOLL_LAW[b],pool=shuffleArr(lawQuestions(law)).slice(0,3);let i=0;
+  const ask=()=>{const it=pool[i],order=shuffleArr([0,1,2,3]);CQ={it,order,end:Infinity,done:false,cb:null};
+    $('#cqbox').innerHTML=`<div class="sdlg"><span class="slaw">🎓 ${esc(TOLL_NAME[b])} · ${esc(law)} · Frage ${i+1}/3${it.src?' · '+esc(SPECIES[it.src].law||''):''}</span><br>${esc(it.q[0])}<div id="cqexp"></div></div>
+      <div class="sans">${order.map((k,j)=>`<button class="sa" data-ck="${k}"><span class="sk">${j+1}</span>${esc(it.q[1][k])}</button>`).join('')}</div><div class="sacts" id="cqact"></div>`;
+    $('#cquiz').classList.add('on');document.querySelectorAll('[data-ck]').forEach(bt=>bt.onclick=()=>pick(+bt.dataset.ck))};
+  const pick=k=>{if(!CQ||CQ.done)return;CQ.done=true;const ok=k===0,it=CQ.it;
+    document.querySelectorAll('[data-ck]').forEach(bt=>{const kk=+bt.dataset.ck;bt.disabled=true;bt.classList.add(kk===0?'ok':kk===k?'bad':'dim')});
+    $('#cqexp').innerHTML=`<div class="sexp ${ok?'ok':'bad'}">${ok?'✓ Richtig.':'✗ Falsch.'} ${esc(it.q[2])}</div>`;
+    $('#cqact').innerHTML=`<button class="btn" id="cqnext">${ok&&i<2?'NÄCHSTE FRAGE':'WEITER'}</button>`;
+    $('#cqnext').onclick=()=>{if(ok&&i<2){i++;ask();return}$('#cquiz').classList.remove('on');CQ=null;if(ok)tollPass(b,'Prüfung bestanden');else tollFail(b)}};
+  CQ_PICK=pick;ask()}
+let CQ_PICK=null;
+function tollPass(b,why){RUN.toll=RUN.toll||{};RUN.toll[b]=1;save();sysChat(`${TOLL_NAME[b]}: „${why}. Du darfst passieren!“`);toast(`Weg in ${TOLL_AREA[b]||'das Gebiet'} frei!`)}
+function tollFail(b){const money=RUN.money||0;
+  openModal(`<h3>🎓 NICHT BESTANDEN</h3><p>${esc(TOLL_NAME[b])}: „Das reicht noch nicht. Entweder ein kleines ‚Geschenk‘ über ${TOLL_FEE} $ — oder du stellst dich meinen Paragrafen aus dem <b>${esc(TOLL_LAW[b])}</b>.“</p>
+   <div class="acts"><button class="btn ${money>=TOLL_FEE?'':'ghost'}" id="tpay" ${money>=TOLL_FEE?'':'disabled'}>💰 ${TOLL_FEE} $ BESTECHEN${money>=TOLL_FEE?'':' (du hast '+money+' $)'}</button><button class="btn red" id="tfight">KÄMPFEN</button></div><div class="acts"><button class="btn ghost" id="mno">ZURÜCK</button></div>`);
+  $('#mno').onclick=closeModal;$('#tpay').onclick=()=>{if((RUN.money||0)<TOLL_FEE)return;RUN.money-=TOLL_FEE;updateHud();closeModal();tollPass(b,`${TOLL_FEE} $ — ich habe nichts gesehen`)};
+  $('#tfight').onclick=()=>{closeModal();tollFight(b)}}
+function tollFight(b){const t=tollSpots().find(x=>x.b===b);const pool=lawSpecies(TOLL_LAW[b]);if(!t||!pool.length){tollPass(b,'Na gut');return}
+  const alive=RUN.team.filter(m=>m.hp>0),n=clamp(alive.length||1,1,3),top=Math.max(...RUN.team.map(m=>m.l));
+  const team=[];for(let i=0;i<n;i++)team.push([pool[Math.floor(Math.random()*pool.length)],clamp(top+1+(i===n-1?1:0),2,60)]);
+  const tr={id:'toll'+b,toll:b,fixed:true,x:t.x,y:t.y,n:TOLL_NAME[b],c:t.c,d:t.d,team,reward:1,line:`Dann zeige ich dir, was im ${TOLL_LAW[b]} steht!`,after:'Du darfst passieren.'};
+  startTrainer(tr)}
+
+// manual save + backup file (export/import)
+function manualSave(){if(!G){toast('Noch kein Spielstand.');return}NO_SAVE=false;try{save();const raw=localStorage.getItem(SAVE_KEY);if(!raw)throw new Error('leer');toast('💾 Spielstand gespeichert ('+new Date().toTimeString().slice(0,5)+')')}catch(e){toast('Speichern fehlgeschlagen: '+e.message)}}
+function exportSave(){if(!G){toast('Noch kein Spielstand.');return}save();try{const raw=localStorage.getItem(SAVE_KEY);const data=JSON.stringify({app:'knastemon',v:VERSION,at:new Date().toISOString(),save:JSON.parse(raw)});
+  const b=new Blob([data],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='knastemon-spielstand-'+(G.name||'spieler').replace(/[^a-z0-9]+/gi,'_')+'-'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},2000);toast('Sicherungsdatei heruntergeladen.')}catch(e){toast('Export fehlgeschlagen: '+e.message)}}
+function importSave(){const inp=document.createElement('input');inp.type='file';inp.accept='.json,application/json';inp.onchange=()=>{const f=inp.files&&inp.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);const sv=d&&d.app==='knastemon'?d.save:d;if(!sv||typeof sv!=='object'||!sv.name)throw new Error('keine Knastémon-Sicherung');
+    openModal(`<h3>⬆ SPIELSTAND IMPORTIEREN</h3><p>Sicherung von <b>${esc(sv.name)}</b>${d.at?' vom '+esc(new Date(d.at).toLocaleString('de-DE')):''}${d.v?' (v'+esc(d.v)+')':''} laden? Dein aktueller Spielstand wird ersetzt.</p><div class="acts"><button class="btn ghost" id="mno">ABBRECHEN</button><button class="btn" id="myes">LADEN</button></div>`);
+    $('#mno').onclick=closeModal;$('#myes').onclick=()=>{NO_SAVE=true;try{localStorage.setItem(SAVE_KEY,JSON.stringify(sv))}catch(e){toast('Import fehlgeschlagen: '+e.message);NO_SAVE=false;return}location.reload()}}catch(e){toast('Import fehlgeschlagen: '+e.message)}};r.readAsText(f)};inp.click()}
+
