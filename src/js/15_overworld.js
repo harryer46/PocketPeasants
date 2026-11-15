@@ -76,8 +76,8 @@ function healQuiz(){RUN.kap=Math.max(RUN.kap,10);updateHud();const all=()=>RUN.t
   if(full()){toast('PÄD: Dein Team ist gesund. Handschellen aufgefüllt.');save();return}
   const keys=Object.keys(QZ).filter(k=>SPECIES[k]&&QZ[k].length);let n=0,cur=null;const seen=new Set();
   // questions are about the monster being healed (its own paragraph); monsters without one get random ones
-  const pickQ=()=>{const own=cur&&QZ[cur.s]&&QZ[cur.s].length?cur.s:null;if(own){let fresh=QZ[own].filter(q=>!seen.has(q[0]));if(!fresh.length){for(const q of QZ[own])seen.delete(q[0]);fresh=QZ[own]}const q=fresh[Math.floor(Math.random()*fresh.length)];seen.add(q[0]);return{src:own,q}}
-    for(let t=0;t<40;t++){const k=keys[Math.floor(Math.random()*keys.length)],q=QZ[k][Math.floor(Math.random()*QZ[k].length)];if(!seen.has(q[0])){seen.add(q[0]);return{src:k,q}}}return{src:keys[0],q:QZ[keys[0]][0]}};
+  const pickQ=()=>{const own=cur&&QZ[cur.s]&&QZ[cur.s].length?cur.s:null;if(own){let fresh=QZ[own].filter(q=>!seen.has(q[0]));if(!fresh.length){for(const q of QZ[own])seen.delete(q[0]);fresh=QZ[own]}const q=fresh[Math.floor(Math.random()*fresh.length)];seen.add(q[0]);return{src:own,q:qReal(q)}}
+    for(let t=0;t<40;t++){const k=keys[Math.floor(Math.random()*keys.length)],q=QZ[k][Math.floor(Math.random()*QZ[k].length)];if(!seen.has(q[0])){seen.add(q[0]);return{src:k,q:qReal(q)}}}return{src:keys[0],q:qReal(QZ[keys[0]][0])}};
   const img={};const pic=m=>img[m.s]||(img[m.s]=(()=>{const c=mk(48,48),x=c.getContext('2d');x.imageSmoothingEnabled=false;x.drawImage(monSprite(m.s,24),0,0,48,48);return c.toDataURL()})());
   const card=(m,i,big)=>{const mx=stats(m).mhp,r=m.hp/mx,col=r>0.5?'#3ddc6b':r>0.2?'#ffcb3d':'#ef4444',hurt=m.hp<mx,inT=i<RUN.team.length;
     return`<button class="pcard${hurt?'':' fit'}" ${big?'':`data-pm="${i}"`} ${hurt||big?'':'disabled'} style="display:flex;gap:8px;align-items:center;text-align:left;background:#f6f1e1;color:#14141f;border:3px solid #14141f;box-shadow:3px 3px 0 #000;padding:6px 8px;cursor:${hurt&&!big?'pointer':'default'};opacity:${hurt||big?1:0.6};font-family:VT323,monospace;font-size:18px;width:100%">

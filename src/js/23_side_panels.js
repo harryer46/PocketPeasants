@@ -37,10 +37,10 @@ let ST=null;
 function lawShort(sid){const l=SPECIES[sid]&&SPECIES[sid].law;return l?l.split(' · ')[0]:''}
 function shuffleArr(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
 function studyQuestions(sid){
-  if(QZ[sid])return shuffleArr(QZ[sid]).slice(0,STUDY_N).map(q=>({src:sid,q}));
+  if(QZ[sid])return shuffleArr(QZ[sid].slice()).slice(0,STUDY_N).map(q=>({src:sid,q:qReal(q)}));
   // hero monsters (no paragraph): random questions from random paragraph monsters
   const keys=Object.keys(QZ).filter(k=>SPECIES[k]);const out=[];const used=new Set();
-  while(out.length<STUDY_N){const k=keys[Math.floor(Math.random()*keys.length)];const q=QZ[k][Math.floor(Math.random()*QZ[k].length)];if(used.has(q[0]))continue;used.add(q[0]);out.push({src:k,q})}
+  while(out.length<STUDY_N){const k=keys[Math.floor(Math.random()*keys.length)];const q=QZ[k][Math.floor(Math.random()*QZ[k].length)];if(used.has(q[0]))continue;used.add(q[0]);out.push({src:k,q:qReal(q)})}
   return out}
 function atHfPol(){return tget(P.x,P.y)===23}
 function openHfPol(){if(!RUN||B)return;if(RUN.phase==='arena'){toast('Während des Gerichtsturniers ist die HfPol geschlossen.');return}

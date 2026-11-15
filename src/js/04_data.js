@@ -260,3 +260,13 @@ const MOVE_VIS={growl:'wave',screech:'wave',surf:'wave',thunderwave:'wave',torre
   paragraph:'para',leer:'glare',scaryface:'glare',staticnet:'net',gravel:'rock',rocktoss:'rock',galecutter:'blade',razorleaf:'leaf'};
 const TYPE_VIS={fire:'flame',water:'bubble',grass:'leaf',electric:'bolt',rock:'rock',flying:'blade',normal:'ball'};
 function visOf(mid){const mv=MOVES[mid];if(!mv)return'ball';return MOVE_VIS[mid]||TYPE_VIS[mv.t]||'ball'}
+
+// quiz items come in two shapes: old [question,[correct,w1,w2,w3],explanation] and new
+// [question,[correct phrasings…],[wrong answers…],explanation]. qReal() turns one into a playable 4-answer item:
+// one random phrasing of the right answer + three random wrong ones (index 0 = correct, shuffled at display time).
+// the length of an answer must not give it away: at least one (usually more) of the three wrong answers is about as long or longer
+function qReal(q){if(!q||q.length<4)return q;const mx=Math.max(...q[2].map(w=>w.length)),okC=q[1].filter(c=>c.length*0.9<=mx),cs=okC.length?okC:[q[1].slice().sort((a,b)=>a.length-b.length)[0]];
+  const c=cs[Math.floor(Math.random()*cs.length)],L=c.length,ws=shuffleArr(q[2].slice());
+  const th=ws.some(w=>w.length>L)?L+1:L*0.9,lng=ws.filter(w=>w.length>=th),sh=ws.filter(w=>w.length<th).sort((a,b)=>Math.abs(a.length-L)-Math.abs(b.length-L));
+  const nL=Math.min(lng.length,1+Math.floor(Math.random()*3)),pick=lng.slice(0,nL);for(const w of sh.slice(0,6).sort(()=>Math.random()-0.5)){if(pick.length>=3)break;pick.push(w)}
+  for(const w of lng.slice(nL)){if(pick.length>=3)break;pick.push(w)}return[q[0],[c,...pick.slice(0,3)],q[3]]}

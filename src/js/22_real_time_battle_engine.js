@@ -456,7 +456,7 @@ function throwCap(){capPress()}
 function throwCapOld(){if(!B||B.mode!=='wild'||B.state!=='fight'||B.capCd>0)return;if(RUN.kap<=0){say('Keine Handschellen mehr!');return}
   RUN.kap--;B.capCd=1.2;updateHud();const F=B.me,T=B.foe;let dx=T.x-F.x,dy=(T.y-12)-(F.y-12);const L=Math.hypot(dx,dy)||1;
   B.shots.push({cap:1,side:F.side,x:F.x,y:F.y-14,vx:dx/L*190,vy:dy/L*190,age:0,life:1.6,r:6,mid:'bump',flight:L/190});say('Handschellen geworfen!')}
-function fleeItem(sid){if(!QZ[sid]){const it=secondChanceItem(sid);if(it){it.q[0]=it.q[0].replace('Zweite Chance! ','');return it}}const pool=QZ[sid]||Object.values(QZ).flat().map(q=>q);const q=QZ[sid]?QZ[sid][Math.floor(Math.random()*QZ[sid].length)]:pool[Math.floor(Math.random()*pool.length)];return{src:sid,q}}
+function fleeItem(sid){if(!QZ[sid]){const it=secondChanceItem(sid);if(it){it.q[0]=it.q[0].replace('Zweite Chance! ','');return it}}const pool=QZ[sid]||Object.values(QZ).flat().map(q=>q);const q=QZ[sid]?QZ[sid][Math.floor(Math.random()*QZ[sid].length)]:pool[Math.floor(Math.random()*pool.length)];return{src:sid,q:qReal(q)}}
 // fleeing always needs a correct answer (3 s): real-time only at the arena edge, turn-based as the turn's action
 function tryRun(){if(!B||B.mode!=='wild'||CQ)return;
   if(B.tb){if(B.state!=='tbChoose')return;const myB=B;fleeQuiz(ok=>{if(B!==myB||B.state!=='tbChoose')return;B.runQ=ok?1:0;tbChoose({k:'run'})});return}
@@ -559,7 +559,7 @@ function catchUpdate(now){const c=B.catch;const el=(now-c.t0)/1000;if(el<0.95+c.
 let CQ=null;
 function catchQuiz(sid,cb){
   let pool=QZ[sid]?QZ[sid].map(q=>({src:sid,q})):null;if(!pool){const keys=Object.keys(QZ).filter(k=>SPECIES[k]);const k=keys[Math.floor(Math.random()*keys.length)];pool=QZ[k].map(q=>({src:k,q}))}
-  const it=pool[Math.floor(Math.random()*pool.length)],order=shuffleArr([0,1,2,3]);const T=15000;
+  const it0=pool[Math.floor(Math.random()*pool.length)],it={src:it0.src,q:qReal(it0.q)},order=shuffleArr([0,1,2,3]);const T=15000;
   CQ={it,order,end:performance.now()+T,cb,done:false};held.length=0;aimHeld.length=0;
   const law=SPECIES[it.src].law||'';
   $('#cqbox').innerHTML=`<div class="sdlg"><span class="slaw">⛓ FESTNAHME — ${esc(law||nameHtml(it.src))}</span><br>${esc(it.q[0])}<div class="cqt"><i id="cqbar"></i></div><div class="small" id="cqtime" style="text-align:right">15 s</div><div id="cqexp"></div></div>
