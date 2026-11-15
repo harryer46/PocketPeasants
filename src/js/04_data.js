@@ -224,9 +224,9 @@ const ZONES={
 const CX=149,CY=92;
 function distC(x,y){return Math.hypot(x-CX,y-CY)}
 // level range per area; inside an area the level rises with the distance from Villingen (d0/d1 are measured when the map is built)
-const ZLV={north:{lo:2,hi:8},east:{lo:6,hi:12},south:{lo:8,hi:14},west:{lo:10,hi:16},snow:{lo:13,hi:19},jungle:{lo:16,hi:22},desert:{lo:19,hi:25},knast:{lo:26,hi:34}};
+const ZLV={north:{lo:1,hi:7},east:{lo:6,hi:12},south:{lo:8,hi:14},west:{lo:10,hi:16},snow:{lo:13,hi:19},jungle:{lo:16,hi:22},desert:{lo:19,hi:25},knast:{lo:26,hi:34}};
 const BIO_MIN={};for(const k in ZLV)BIO_MIN[k]=ZLV[k].lo;
-function baseLvAt(x,y){const z=zoneAt(x,y),L=ZLV[z];if(!L)return 1;const t=L.d1>L.d0?clamp((distC(x,y)-L.d0)/(L.d1-L.d0),0,1):0.5;return L.lo+t*(L.hi-L.lo)}
+function baseLvAt(x,y){const z=zoneAt(x,y),L=ZLV[z];if(!L)return 1;const t=L.d1>L.d0?clamp((distC(x,y)-L.d0)/(L.d1-L.d0),0,1):0.5;return L.lo+(z==='north'?Math.pow(t,1.5):t)*(L.hi-L.lo)}
 const KNAST_LV=[26,34];
 function lvAt(x,y){if(zoneAt(x,y)==='knast')return KNAST_LV[0]+Math.floor(Math.random()*(KNAST_LV[1]-KNAST_LV[0]+1));return clamp(Math.max(BIO_MIN[zoneAt(x,y)]||1,Math.round(baseLvAt(x,y)+Math.random()*1.4-0.7)),1,40)}
 // trainers are always 3–6 levels above the wild monsters around them

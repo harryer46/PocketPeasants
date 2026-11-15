@@ -32,7 +32,7 @@ const QZ={};
 
 
 // ===== STUDY: quiz duel in the look of a turn-based battle. Correct answers give EP.
-const STUDY_N=5,STUDY_CD=60000;
+const STUDY_N=5,STUDY_CD=300000;  // 5 min study break after every session (for you, not per monster)
 let ST=null;
 function lawShort(sid){const l=SPECIES[sid]&&SPECIES[sid].law;return l?l.split(' · ')[0]:''}
 function shuffleArr(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
@@ -46,13 +46,13 @@ function atHfPol(){return tget(P.x,P.y)===23}
 function openHfPol(){if(!RUN||B)return;if(RUN.phase==='arena'){toast('Während des Gerichtsturniers ist die HfPol geschlossen.');return}
   const now=Date.now();
   openModal(`<h3>🎓 HfPol — Hochschule für Polizei</h3><p>Villingen-Knastningen · Hörsaal. Wähle ein Monster für die Prüfung (5 Fragen, Multiple Choice). Richtige Antworten geben EP.</p>
-   <div style="display:flex;flex-direction:column;gap:6px;max-height:50vh;overflow:auto">${RUN.team.map((m,i)=>{const left=(m.stT||0)+STUDY_CD-now;return`<button class="btn ${left>0?'ghost':''}" data-hs="${i}" style="text-align:left;font-family:VT323,monospace;font-size:19px">📚 ${nameHtml(m.s)} · Lv ${m.l}${left>0?` · Pause ${Math.ceil(left/1000)} s`:''}</button>`}).join('')}</div>
+   <div style="display:flex;flex-direction:column;gap:6px;max-height:50vh;overflow:auto">${RUN.team.map((m,i)=>{const left=(RUN.stT||0)+STUDY_CD-now;return`<button class="btn ${left>0?'ghost':''}" data-hs="${i}" style="text-align:left;font-family:VT323,monospace;font-size:19px">📚 ${nameHtml(m.s)} · Lv ${m.l}${left>0?` · Lernpause ${Math.floor(Math.ceil(left/1000)/60)}:${String(Math.ceil(left/1000)%60).padStart(2,"0")}`:''}</button>`}).join('')}</div>
    <div class="acts" style="margin-top:10px"><button class="btn ghost" id="mno">HÖRSAAL VERLASSEN</button></div>`);
   document.querySelectorAll('[data-hs]').forEach(b=>b.onclick=()=>openStudy(RUN.team[+b.dataset.hs]));$('#mno').onclick=closeModal}
 function openStudy(m){
   if(!RUN||B||RUN.phase==='arena'){toast('Lernen geht nur außerhalb von Kämpfen und Gericht.');return}
   if(!atHfPol()){toast('Lernen geht nur in der HfPol (Hochschule für Polizei) — in der Stadt südlich der Hauptstraße, rechts (🎓 auf der Karte).');return}
-  const left=(m.stT||0)+STUDY_CD-Date.now();if(left>0){toast(`${SPECIES[m.s].n} braucht eine Lernpause — noch ${Math.ceil(left/1000)} s.`);return}
+  const left=(RUN.stT||0)+STUDY_CD-Date.now();if(left>0){const sec=Math.ceil(left/1000);toast(`☕ Lernpause — noch ${Math.floor(sec/60)}:${String(sec%60).padStart(2,'0')} min.`);return}
   closeModal();
   ST={m,qs:studyQuestions(m.s),i:0,ok:0,xp:0,state:'ask',fx:null,t0:performance.now()};
   ST.ex=QZ[m.s]?(m.s==='richtereule'?'wuerdeadler':'richtereule'):null;
@@ -82,7 +82,7 @@ function studyAnswer(k){if(!ST||ST.state!=='ask')return;const cur=ST.qs[ST.i];cu
   if(cur.right){ST.ok++;const amt=Math.max(4,Math.round(xpNeed(ST.m.l)*0.12/((RUN.cfg&&RUN.cfg.xp)||1)));ST.pend=(ST.pend||0)+amt;ST.fx={k:'hit',t:performance.now()}}
   else ST.fx={k:'miss',t:performance.now()};
   ST.state='shown';renderStudy()}
-function studyFinish(){const m=ST.m;m.stT=Date.now();if(ST.pend){const before=m.xp+xpNeed(m.l)*0;ST.msgs=gainXp(m,ST.pend);ST.xp=Math.round(ST.pend*((RUN.cfg&&RUN.cfg.xp)||1));for(const t of ST.msgs)sysChat(t);save();renderTeam();pushMt()}}
+function studyFinish(){const m=ST.m;m.stT=Date.now();RUN.stT=Date.now();if(ST.pend){const before=m.xp+xpNeed(m.l)*0;ST.msgs=gainXp(m,ST.pend);ST.xp=Math.round(ST.pend*((RUN.cfg&&RUN.cfg.xp)||1));for(const t of ST.msgs)sysChat(t);save();renderTeam();pushMt()}}
 function closeStudy(){$('#study').classList.remove('on');ST=null;if(atHfPol())openHfPol()}
 function studyLoop(){if(!ST)return;const cv=$('#stcv');if(cv){const c=cv.getContext('2d');c.imageSmoothingEnabled=false;const W=360,H=150,now=performance.now(),t=now/1000;
     c.fillStyle='#3d7a34';c.fillRect(0,0,W,H);c.fillStyle='#4f9441';c.beginPath();c.ellipse(90,120,80,20,0,0,7);c.fill();c.beginPath();c.ellipse(270,62,70,16,0,0,7);c.fill();
