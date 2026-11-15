@@ -117,6 +117,8 @@ function newBattle(o){try{if(typing())document.activeElement.blur()}catch(e){}
     let vx=vsStart(now);B.enterT=now+vx;
     for(const F of[B.me,B.foe])if(F)F.spawnT=now+vx+(F===B.foe?150:450);
     if(B.mode==='wild'){const W=WI_MS;B.wi={t0:now,dur:W};vx=W+ENC_MS;B.enc={t0:now+W,dur:ENC_MS};B.enterT=now+W-600;B.foe.spawnT=0;B.me.spawnT=now+W+ENC_ME;B.losAt=now+W+ENC_ME-400;B.losTO=setTimeout(()=>{if(B===myB)say(`Los, ${SPECIES[act(B.me).s].n}!`)},W+ENC_ME-400)}
+    // own monster is only sent out once the player has picked it (when there is a choice)
+    const pickLead=!B.tb&&B.mode!=='duel'&&(realState==='fight'||realState==='count')&&B.me.team.filter(m=>m.hp>0).length>1;if(pickLead){B.me.spawnT=Infinity;if(B.losTO){clearTimeout(B.losTO);B.losTO=null}}
     const introMs=(B.mode==='wild'?0:1000)+vx;
     // every real-time battle starts with a 3-2-1 countdown (the lead can be changed meanwhile)
     B.introAt=performance.now()+introMs;const go=()=>{if(B===myB&&B.state==='intro'){if(!B.tb&&(realState==='fight'||realState==='count')){B.state='count';B.cntEnd=performance.now()+3000;if(B.mode!=='duel'&&B.me.team.filter(m=>m.hp>0).length>1)B.leadWait=true}else B.state=realState}};B.introGo=go;B.introTO=setTimeout(go,introMs)},undefined,350);
@@ -657,7 +659,7 @@ function reelInit(mode){const L=reelList();let cur=mode==='next'?L.find(i=>i!==B
 function reelSpin(d){const mode=pickMode();if(!mode)return;if(!B.reel||B.reel.mode!==mode)reelInit(mode);const L=reelList();B.reel.pos=(B.reel.pos+d+L.length)%L.length;B.reel.dir=d;$('#bpick').dataset.k=''}
 function reelConfirm(){const mode=pickMode();if(!mode)return;if(!B.reel||B.reel.mode!==mode)reelInit(mode);const i=reelList()[B.reel.pos];if(i==null)return;B.reel=null;
   if(mode==='quick'){quickPick(i);return}
-  if(mode==='lead'){if(i!==B.me.a){B.me.a=i;B.me.spawnT=performance.now()+480;say(`Los, ${SPECIES[act(B.me).s].n}!`);if(B.mode==='duel')publishDuel(true)}if(B.leadWait){B.leadWait=false;B.leadDone=1;B.cntEnd=performance.now()+3000}else B.leadPicked=1}
+  if(mode==='lead'){if(i!==B.me.a||B.me.spawnT===Infinity){B.me.a=i;B.me.spawnT=performance.now()+480;say(`Los, ${SPECIES[act(B.me).s].n}!`);if(B.mode==='duel')publishDuel(true)}if(B.leadWait){B.leadWait=false;B.leadDone=1;B.cntEnd=performance.now()+3000}else B.leadPicked=1}
   else if(mode==='swap'){B.brk.mine=i;if(B.mode!=='duel')B.brk.end=Math.min(B.brk.end,performance.now()+300)}
   else if(mode==='next'){B.brk.choice=i;B.brk.end=Math.min(B.brk.end,performance.now()+500)}
   $('#bpick').dataset.k=''}
@@ -795,10 +797,10 @@ function drawCapsule(c,x,y,rot,open){c.save();c.translate(Math.round(x/2)*2,Math
   c.fillStyle='#14141f';c.fillRect(-2-g,-1,4+2*g,3);c.fillStyle='#9aa0ad';c.fillRect(-2-g,0,1+g,1);c.fillRect(1,0,1+g,1);c.fillStyle='#c8ccd6';c.fillRect(-1,0,2,1);
   c.restore()}
 const KSPR={};function darkSprite(sid,N){const k=sid+':'+N;if(KSPR[k])return KSPR[k];const src=monSprite(sid,N);const c=mk(src.width,src.height),x=c.getContext('2d');x.drawImage(src,0,0);x.globalCompositeOperation='source-in';x.fillStyle='#14141f';x.fillRect(0,0,src.width,src.height);KSPR[k]=c;return c}
-const ENC_MS=2600,ENC_ME=2100;
+const ENC_MS=1100,ENC_ME=800;
 // wild encounter like the handhelds: the monster slides in as a dark silhouette, flashes into colour, then a short ID card introduces it
-// wild monsters first appear full-screen with an info card (6 s, tap/click/key skips)
-const WI_MS=6000;
+// wild monsters first appear full-screen with an info card (10 s, tap/click/key skips)
+const WI_MS=10000;
 function wiSkip(){const W=B.wi,now=performance.now(),e=now-W.t0;if(e<350||W.dur-e<350)return false;const cut=W.dur-e-250;W.dur=e+250;
   if(B.enc)B.enc.t0-=cut;B.enterT-=cut;for(const F of[B.me,B.foe])if(F&&F.spawnT)F.spawnT-=cut;
   clearTimeout(B.introTO);B.introTO=setTimeout(B.introGo,Math.max(0,B.introAt-cut-now));B.introAt-=cut;
@@ -806,8 +808,11 @@ function wiSkip(){const W=B.wi,now=performance.now(),e=now-W.t0;if(e<350||W.dur-
 function drawWildIntro(c,now){const V=B.wi,e=now-V.t0;if(e>V.dur){B.wi=null;return}const W=B.wild;if(!W){B.wi=null;return}const sp=SPECIES[W.s],col=TYPES[sp.t].c;
   const fin=clamp(e/250,0,1),fout=e>V.dur-250?clamp((V.dur-e)/250,0,1):1;c.save();c.globalAlpha=Math.min(fin,fout);
   c.fillStyle='#0b0d16';c.fillRect(0,0,UW,UH);
-  const g=c.createRadialGradient(UW/2,72,6,UW/2,72,UW*0.55);g.addColorStop(0,col+'aa');g.addColorStop(1,'#0b0d1600');c.fillStyle=g;c.fillRect(0,0,UW,UH);
-  c.fillStyle='#ffffff10';for(let i=0;i<12;i++){const y=(i*23+Math.floor(e/20)*5)%UH;c.fillRect(((i*47+e*0.4)%(UW+60))-60,y,30+i%3*16,1)}
+  // classic encounter look: a broad diagonal band in the monster's type colour slides in, with speed streaks running along it
+  {const sl=1-Math.pow(1-clamp(e/380,0,1),3),off=Math.round((1-sl)*UW*1.2),yA=36,yB=126,dy=34,band=(c0,a,b)=>{c.fillStyle=c0;c.beginPath();c.moveTo(-off,a+dy);c.lineTo(UW-off+UW*0.2,a-dy);c.lineTo(UW-off+UW*0.2,b-dy);c.lineTo(-off,b+dy);c.closePath();c.fill()};
+   band('#14141f',yA-6,yB+6);band(col,yA,yB);band('#ffffff30',yA,yA+10);band('#00000030',yB-12,yB);
+   c.save();c.beginPath();c.moveTo(-off,yA+dy);c.lineTo(UW-off+UW*0.2,yA-dy);c.lineTo(UW-off+UW*0.2,yB-dy);c.lineTo(-off,yB+dy);c.closePath();c.clip();
+   c.fillStyle='#ffffff40';for(let i=0;i<14;i++){const t=((i*61+e*0.35)%(UW+80))-40,y=yA+8+(i*29)%(yB-yA-16),x=UW-t;c.save();c.translate(x,y+(UW/2-x)*(2*dy/UW)*-1);c.rotate(-Math.atan2(2*dy,UW*1.2));c.fillRect(0,0,24+i%3*14,2);c.restore()}c.restore()}
   const pop=1-Math.pow(1-clamp(e/420,0,1),3),bob=Math.round(Math.sin(e/260)*2),img=monSprite(W.s,24),S=Math.round(118*pop);
   c.imageSmoothingEnabled=false;c.fillStyle='#00000055';c.beginPath();c.ellipse(UW/2,130,46*pop,7*pop,0,0,7);c.fill();
   if(S>0)c.drawImage(e<420?whiteSprite(W.s,24):img,Math.round(UW/2-S/2),Math.round(136-S)+bob,S,S);
@@ -824,13 +829,7 @@ function drawWildIntro(c,now){const V=B.wi,e=now-V.t0;if(e>V.dur){B.wi=null;retu
   c.restore()}
 function drawEncounter(c,now){const E=B.enc,e=now-E.t0;if(e>E.dur+200){B.enc=null;return}const W=B.wild;if(!W)return;const sp=SPECIES[W.s];
   if(e>520&&e<640){c.fillStyle='#ffffff';c.globalAlpha=1-(e-520)/120;c.fillRect(0,0,UW,UH);c.globalAlpha=1}
-  if(e>650){const k=Math.min(1,(e-650)/260),out=e>E.dur-250?(e-(E.dur-250))/250:0,x=Math.round(UW-(UW*0.62)*k+out*UW*0.7),y=UH-74,w=Math.round(UW*0.58),h=46;
-    c.fillStyle='#14141f';c.fillRect(x-2,y-2,w+4,h+4);c.fillStyle='#f6f1e1';c.fillRect(x,y,w,h);c.fillStyle=TYPES[sp.t].c;c.fillRect(x,y,4,h);
-    const nm=sp.base||sp.n;vtText(c,nm,x+9,y+11,'#14141f',11);if(sp.sfx){c.font='11px VT323,monospace';const ox=c.measureText(nm+' ').width;vtText(c,sp.sfx,x+9+ox,y+11,'#14141f',11);vtText(c,sp.sfx,x+9.6+ox,y+11,'#14141f',11)}
-    vtText(c,'Lv '+W.l,x+w-5,y+11,'#14141f',10,'right');
-    const law=(sp.law||'').split(' · ')[1]||'';vtText(c,law.length>34?law.slice(0,33)+'…':law,x+9,y+23,'#4b4f63',9);
-    c.fillStyle=TYPES[sp.t].c;c.fillRect(x+9,y+29,38,10);vtText(c,TYPES[sp.t].n.toUpperCase(),x+28,y+37,'#ffffff',8,'center');
-    const rr=rarOf(W.s);c.fillStyle='#14141f';c.fillRect(x+51,y+29,54,10);vtText(c,rr.n.toUpperCase(),x+78,y+37,rr.c,8,'center')}}
+}
 const WSPR={};function whiteSprite(sid,N){const k=sid+':'+N;if(WSPR[k])return WSPR[k];const src=monSprite(sid,N);const c=mk(src.width,src.height),x=c.getContext('2d');x.drawImage(src,0,0);x.globalCompositeOperation='source-in';x.fillStyle='#ffffff';x.fillRect(0,0,src.width,src.height);WSPR[k]=c;return c}
 function finale(win){if(!B||B.fin)return;const now=performance.now();B.fin={t0:now,win};B.shakeUntil=now+400;
   if(win===true){const W=B.me;for(let i=0;i<70;i++)B.parts.push({x:Math.random()*AW,y:-10-Math.random()*60,vx:(Math.random()-.5)*30,vy:40+Math.random()*60,life:3,age:0,c:['#ffcb3d','#3ddc6b','#4aa3ff','#ef4444','#c27bff','#ffffff'][i%6],conf:1})}}
@@ -946,7 +945,7 @@ function drawBattle(){
   for(const n of B.nums){const k=(now-n.at)/(n.life||900),[sx,sy]=w2s(n.x,n.y);vtText(c,n.t,Math.round(sx/UI),Math.round(sy/UI-k*14),n.c,n.sz||12,'center')}
   if(B.tb&&B.state==='tbChoose'){const t=B.mode==='duel'?`ZUG ${B.turn} · wähle eine Aktion`:'Wähle eine Aktion';c.fillStyle='#0b0d16c8';c.font='10px VT323,monospace';const w=c.measureText(t).width+10;c.fillRect(UW/2-w/2,46,w,11);vtText(c,t,UW/2,55,'#ffcb3d',10,'center')}
   if(B.tb&&B.state==='tbWait'){c.fillStyle='#0b0d16c8';c.fillRect(UW/2-55,46,110,11);vtText(c,'warte auf den Gegner…',UW/2,55,'#ffffff',10,'center')}
-  hudPanel(c,4,4,B.me,false,'');
+  if(B.me.spawnT!==Infinity)hudPanel(c,4,4,B.me,false,'');
   const stTag={sleep:['SLF','#c4b5fd'],conf:['VRW','#f472b6'],burn:['BRN','#ff8a3d'],slow:['SLW','#6db6f0'],stun:['STN','#ffe14d'],shield:['SHD','#9fd2ff'],haste:['HST','#3ddc6b']};
   const tags=(F,x,right)=>{const g=stgOf(F);const ks=(F.ctrl==='remote'?(F.stShow||[]):Object.keys(F.st).filter(k=>F.st[k]>0)).filter(k=>stTag[k]);for(const q of['a','d','s'])if(g[q]){const t=q.toUpperCase().replace('S','I')+(g[q]>0?'+':'')+g[q];stTag[t]=[t,g[q]>0?'#3ddc6b':'#ef6f6f'];ks.push(t)}ks.forEach((k,i)=>{const[t,col]=stTag[k];const X=right?x-24-i*24:x+i*24;c.fillStyle='#14141f';c.fillRect(X,40,22,9);vtText(c,t,X+11,47,col,9,'center')})};
   tags(B.me,4,false);if(B.foe)tags(B.foe,UW-4-62,true);

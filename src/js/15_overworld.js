@@ -35,7 +35,7 @@ function bump(nx,ny){
   if(L&&!cfgOf().leg){toast('Der Schrein bleibt in diesem Spiel still.');return}
   if(L){if(!RUN||RUN.phase!=='train')toast('Ein geheimnisvoller Schrein. Hier schläft etwas…');else if(RUN.leg&&RUN.leg[L.id])toast('Der Schrein ist jetzt leer.');else startLegend(L)}
 }
-function spotted(t){if(P.lock||B)return;P.lock=true;held.length=0;t.alert=performance.now();toast(`${t.n}: "${t.line}"`);setTimeout(()=>{P.lock=false;if(!B&&RUN&&RUN.phase==='train')startTrainer(t)},900)}
+function spotted(t){if(P.lock||B)return;P.lock=true;held.length=0;t.alert=performance.now();setTimeout(()=>{P.lock=false;if(!B&&RUN&&RUN.phase==='train')startTrainer(t)},900)}
 function checkSight(){
   if(!RUN||RUN.phase!=='train')return false;
   for(const t of TRAINERS){if(RUN.beat&&RUN.beat[t.id])continue;const[dx,dy]=DIRS[t.d];
