@@ -117,6 +117,8 @@ function newBattle(o){try{if(typing())document.activeElement.blur()}catch(e){}
     let vx=vsStart(now);B.enterT=now+vx;
     for(const F of[B.me,B.foe])if(F)F.spawnT=now+vx+(F===B.foe?150:450);
     if(B.mode==='wild'){const W=WI_MS;B.wi={t0:now,dur:W};vx=W+ENC_MS;B.enc={t0:now+W,dur:ENC_MS};B.enterT=now+W-600;B.foe.spawnT=0;B.me.spawnT=now+W+ENC_ME;B.losAt=now+W+ENC_ME-400;B.losTO=setTimeout(()=>{if(B===myB)say(`Los, ${SPECIES[act(B.me).s].n}!`)},W+ENC_ME-400)}
+    // trainer battles: after the VS screen the trainer's monster is introduced full-screen, just like a wild one (10 s or tap)
+    if(B.mode==='trainer'&&B.trainer){const W=WI_MS,st=vx;B.wi={t0:now+st,dur:W,mon:act(B.foe),title:`${B.trainer.n.toUpperCase()} SCHICKT …`};vx=st+W;B.enterT=now+vx;for(const F of[B.me,B.foe])if(F)F.spawnT=now+vx+(F===B.foe?150:450)}
     // own monster is only sent out once the player has picked it (when there is a choice)
     const pickLead=!B.tb&&B.mode!=='duel'&&(realState==='fight'||realState==='count')&&B.me.team.filter(m=>m.hp>0).length>1;if(pickLead){B.me.spawnT=Infinity;if(B.losTO){clearTimeout(B.losTO);B.losTO=null}}
     const introMs=(B.mode==='wild'?0:1000)+vx;
@@ -808,7 +810,7 @@ function wiSkip(){const W=B.wi,now=performance.now(),e=now-W.t0;if(e<350||W.dur-
   if(B.enc)B.enc.t0-=cut;B.enterT-=cut;for(const F of[B.me,B.foe])if(F&&F.spawnT)F.spawnT-=cut;
   clearTimeout(B.introTO);B.introTO=setTimeout(B.introGo,Math.max(0,B.introAt-cut-now));B.introAt-=cut;
   if(B.losTO){clearTimeout(B.losTO);const myB=B;B.losTO=setTimeout(()=>{if(B===myB)say(`Los, ${SPECIES[act(B.me).s].n}!`)},Math.max(0,B.losAt-cut-now))}return true}
-function drawWildIntro(c,now){const V=B.wi,e=now-V.t0;if(e>V.dur){B.wi=null;return}const W=B.wild;if(!W){B.wi=null;return}const sp=SPECIES[W.s],col=TYPES[sp.t].c;
+function drawWildIntro(c,now){const V=B.wi,e=now-V.t0;if(e<0)return;if(e>V.dur){B.wi=null;return}const W=V.mon||B.wild;if(!W){B.wi=null;return}const sp=SPECIES[W.s],col=TYPES[sp.t].c;
   const fin=clamp(e/250,0,1),fout=e>V.dur-250?clamp((V.dur-e)/250,0,1):1;c.save();c.globalAlpha=Math.min(fin,fout);
   c.fillStyle='#0b0d16';c.fillRect(0,0,UW,UH);
   // classic encounter look: a broad diagonal band in the monster's type colour slides in, with speed streaks running along it
@@ -819,7 +821,7 @@ function drawWildIntro(c,now){const V=B.wi,e=now-V.t0;if(e>V.dur){B.wi=null;retu
   const pop=1-Math.pow(1-clamp(e/420,0,1),3),bob=Math.round(Math.sin(e/260)*2),img=monSprite(W.s,24),S=Math.round(118*pop);
   c.imageSmoothingEnabled=false;c.fillStyle='#00000055';c.beginPath();c.ellipse(UW/2,130,46*pop,7*pop,0,0,7);c.fill();
   if(S>0)c.drawImage(e<420?whiteSprite(W.s,24):img,Math.round(UW/2-S/2),Math.round(136-S)+bob,S,S);
-  vtText(c,B.legend?'★ EIN LEGENDÄRES MONSTER! ★':'EIN WILDES MONSTER!',UW/2,12,B.legend?'#ffcb3d':'#ffffff',10,'center');
+  vtText(c,V.title||(B.legend?'★ EIN LEGENDÄRES MONSTER! ★':'EIN WILDES MONSTER!'),UW/2,12,B.legend?'#ffcb3d':'#ffffff',10,'center');
   // info card
   const x=8,w=UW-16,y=142,h=UH-y-14,slide=1-Math.pow(1-clamp((e-200)/350,0,1),3),yy=Math.round(y+(1-slide)*80);
   c.fillStyle='#14141f';c.fillRect(x-2,yy-2,w+4,h+4);c.fillStyle='#f6f1e1';c.fillRect(x,yy,w,h);c.fillStyle=col;c.fillRect(x,yy,4,h);
@@ -977,8 +979,8 @@ function vsStart(now){if(!B||B.vs||!(B.mode==='trainer'||B.mode==='ai'||B.mode==
   else if(B.mode==='duel'){const op=findPeer(B.opp);if(op){rc=validColor(op.presence.c);rs=op.presence.sx==='f'?'f':'m'}line=VS_LINES[Math.abs(hashStr(String(B.id)+String(B.opp)))%VS_LINES.length]}
   const dur=B.mode==='trainer'?3600:VS_MS;B.vs={t0:now,dur,ln:G.name||'Du',lc:G.color||'#2f5fb3',ls:G.sex,rn,rc,rs,tr,line};return dur}
 // tap / click / any key during the trainer intro skips the rest of it
-function vsSkip(){if(B&&B.wi)return wiSkip();if(!B||!B.vs||B.mode==='duel'||B.state!=='intro')return false;const now=performance.now(),V=B.vs,e=now-V.t0;if(e<500||V.dur-e<400)return false;
-  const cut=V.dur-e-300;V.dur=e+300;for(const F of[B.me,B.foe])if(F&&F.spawnT)F.spawnT-=cut;B.enterT-=cut;clearTimeout(B.introTO);B.introTO=setTimeout(B.introGo,Math.max(0,B.introAt-cut-now));return true}
+function vsSkip(){if(B&&B.wi&&performance.now()>=B.wi.t0)return wiSkip();if(!B||!B.vs||B.mode==='duel'||B.state!=='intro')return false;const now=performance.now(),V=B.vs,e=now-V.t0;if(e<500||V.dur-e<400)return false;
+  const cut=V.dur-e-300;V.dur=e+300;if(B.wi)B.wi.t0-=cut;for(const F of[B.me,B.foe])if(F&&F.spawnT)F.spawnT-=cut;B.enterT-=cut;clearTimeout(B.introTO);B.introTO=setTimeout(B.introGo,Math.max(0,B.introAt-cut-now));return true}
 function vsWrap(c,t,max){c.font='10px VT323,monospace';const w=t.split(' '),out=[];let l='';for(const x of w){const tt=l?l+' '+x:x;if(c.measureText(tt).width>max&&l){out.push(l);l=x}else l=tt}if(l)out.push(l);return out}
 function drawVS(c,now){const V=B.vs,e=now-V.t0;if(e>V.dur){B.vs=null;return}
   const k=e/V.dur,fade=e>V.dur-300?(V.dur-e)/300:1;c.save();c.globalAlpha=clamp(fade,0,1);
