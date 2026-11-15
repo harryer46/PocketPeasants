@@ -5,10 +5,10 @@ function modalOpen(){return $('#modal').classList.contains('on')||$('#study').cl
 //   no encounters; areas whose teacher you have not passed stay closed in the air too; land only on walkable ground
 function flyable(x,y){if(x<2||y<2||x>=MW-2||y>=MH-2)return false;const b=BIOME[y*MW+x];return!(TOLL_LAW[b]&&!tollPaid(b)&&RUN&&RUN.phase==='train')}
 function canFly(){return hasHM('fly')&&!B&&RUN&&RUN.phase!=='arena'}
-function toggleFly(){if(!P.fly){if(!canFly())return;if(P.moving)return;P.fly=true;P.flyT=performance.now();held.length=0;pres({fl:1});toast('🕊 Abgehoben! Nochmal tippen (F) zum Landen.');flyBtn();return}
+function toggleFly(){if(!P.fly){if(!canFly())return;if(P.moving)return;P.fly=true;P.flyT=performance.now();held.length=0;pres({fl:1});toast('🕊 Abgehoben! Landen über Team → Feldfähigkeiten oder Taste F.');flyBtn();return}
   if(P.moving)return;const x=P.x,y=P.y;if(!walkable(x,y)||trainerAt(x,y)||LEGENDS.some(L=>L.x===x&&L.y===y)||tollAt(x,y)){toast('Hier kannst du nicht landen – such dir freien Boden.');return}
   P.fly=false;P.flyT=performance.now();P.fol={x,y,tx:x,ty:y,fx:x,fy:y};trailReset(P,x,y);if(P.fols)for(const f of P.fols){f.fx=f.tx=x;f.fy=f.ty=y}pres({fl:0});save();flyBtn();onArrive()}
-function flyBtn(){const b=$('#flybtn');if(!b)return;const show=canFly()||P.fly;b.style.display=show?'':'none';b.classList.toggle('on',!!P.fly);b.textContent=P.fly?'🛬 LANDEN':'🕊 FLIEGEN'}
+function flyBtn(){const b=document.querySelector('[data-hmuse="fly"]');if(b)b.textContent=P.fly?'🛬 LANDEN':HM.fly.i+' '+HM.fly.n}
 function flyAlt(){const t=(performance.now()-(P.flyT||0))/350;return P.fly?Math.min(1,t):Math.max(0,1-t)}
 function updatePlayer(dt){
   if(P.moving){P.mt+=dt/(P.fly?STEP*0.5:STEP);P.ph+=dt;

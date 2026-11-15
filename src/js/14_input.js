@@ -90,4 +90,3 @@ $('#rotok').onclick=()=>{checkOrient.dismissed=true;checkOrient()};
 
 
 
-$('#flybtn').addEventListener('click',e=>{e.preventDefault();e.currentTarget.blur();toggleFly()});

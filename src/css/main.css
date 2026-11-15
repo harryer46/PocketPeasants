@@ -285,4 +285,4 @@ body.mob.portrait #rotate.show{display:block}
 #updban.on{display:flex}#updban .ui{font-family:'Press Start 2P',monospace;font-size:22px;color:#fff;background:#ef4444;border:2px solid #000;width:34px;height:34px;display:flex;align-items:center;justify-content:center;flex-shrink:0;animation:updp 1s infinite}
 @keyframes updp{50%{transform:scale(1.15)}}
 
-#flybtn{position:absolute;left:12px;bottom:52px;z-index:4;font-size:12px;padding:6px 10px}#flybtn.on{background:#3d8bf2;color:#fff}body.mob #flybtn{bottom:auto;left:auto;right:12px;top:96px}
+

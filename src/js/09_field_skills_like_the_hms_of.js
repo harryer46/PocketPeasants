@@ -1,7 +1,7 @@
 /* ===================== FIELD SKILLS (like the HMs of the originals) ===================== */
 // taught only by the harder trainers: CUT (Rita), SWIM (Sue), STRENGTH (Hank), FLY (Axel)
 const HM={cut:{n:'ZERSCHNEIDER',i:'✂',from:'rita',d:'Fällt kleine Bäume auf Nebenwegen (z. B. zu Schreinen).'},swim:{n:'SURFER',i:'🌊',from:'sue',d:'Schwimm über Seen und Flüsse.'},
-  str:{n:'STÄRKE',i:'💪',from:'hank',d:'Schiebt Felsbrocken auf Nebenwegen weg.'},fly:{n:'FLIEGEN',i:'🕊',from:'axel',d:'Abheben und frei über die Karte fliegen – über Bäume, Wasser und Felsen (Taste F / Knopf).'}};
+  str:{n:'STÄRKE',i:'💪',from:'hank',d:'Schiebt Felsbrocken auf Nebenwegen weg.'},fly:{n:'FLIEGEN',i:'🕊',from:'axel',d:'Abheben und frei über die Karte fliegen – über Bäume, Wasser und Felsen (im Team-Menü einsetzen oder Taste F).'}};
 const HM_FROM={rita:'cut',sue:'swim',hank:'str',axel:'fly'};
 function hasHM(k){try{return!!(RUN&&RUN.hm&&RUN.hm[k])}catch(e){return false}}  // also called while the map is built, before the save is loaded
 const FIELD=[],FIELDGONE=new Set();
