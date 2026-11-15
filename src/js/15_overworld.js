@@ -79,7 +79,7 @@ function healQuiz(){RUN.kap=Math.max(RUN.kap,10);updateHud();const all=()=>RUN.t
       <span style="flex:1;min-width:0"><b>${esc(SPECIES[m.s].n)}</b> <span style="color:#4b4f63">Lv ${m.l}${inT?'':' · Box'}</span><br>
       <span style="display:block;height:8px;background:#2b2f40;border:2px solid #14141f;margin:3px 0"><i style="display:block;height:100%;width:${Math.round(r*100)}%;background:${col}"></i></span>
       <span style="color:#4b4f63">KP ${m.hp}/${mx}${hurt?(m.hp<=0?' · besiegt':''):' · fit ✓'}</span></span></button>${!big&&hurt?`<button class="btn ghost" data-ph="${i}" title="Ohne Frage: +5 % KP, danach 5 s warten" style="margin-top:4px;width:100%;font-size:12px;padding:4px">➕ 5 % heilen</button>`:''}`};
-  const healCd=()=>{const l=(healQuiz.cd||0)-Date.now();document.querySelectorAll('[data-ph],#cqheal').forEach(b=>{b.disabled=l>0;b.textContent=l>0?`➕ ${Math.ceil(l/1000)} s`:'➕ 5 % heilen'});if(l>0&&($('[data-ph]')||$('#cqheal')))setTimeout(healCd,250)};
+  const healCd=()=>{const l=Math.max(0,(healQuiz.cd||0)-Date.now());document.querySelectorAll('[data-ph]').forEach(b=>{b.disabled=l>0;b.textContent=l>0?`➕ ${Math.ceil(l/1000)} s`:'➕ 5 % heilen'});const hb=$('#cqheal');if(hb)rbtnSet(hb,l,5000,'➕','5 %');if(l>0&&($('[data-ph]')||hb))setTimeout(healCd,100)};
   const heal5=m=>{if((healQuiz.cd||0)>Date.now()||!m)return false;const mx=stats(m).mhp;if(m.hp>=mx)return false;m.hp=Math.min(mx,m.hp+Math.max(1,Math.round(mx*0.05)));healQuiz.cd=Date.now()+5000;renderTeam();return true};
   const bindHeal=()=>{const b=$('#cqheal');if(!b)return;b.onclick=()=>{if(!heal5(cur))return;if(full()){stop();toast('PÄD: Dein Team ist wieder fit!');return}const c0=document.querySelector('#cqbox .pcard');if(c0)c0.outerHTML=card(cur,all().indexOf(cur),true);if(cur.hp>=stats(cur).mhp)toast(`${SPECIES[cur.s].n} ist wieder fit!`);healCd()};healCd()};
   const overview=()=>{CQ=null;CQ_PICK=null;cur=null;
@@ -88,11 +88,11 @@ function healQuiz(){RUN.kap=Math.max(RUN.kap,10);updateHud();const all=()=>RUN.t
       <div class="sacts" style="margin-top:8px"><button class="btn ghost" id="cqstop">GEHEN</button></div>`;
     $('#cquiz').classList.add('on');document.querySelectorAll('[data-pm]').forEach(b=>b.onclick=()=>{cur=all()[+b.dataset.pm];ask()});
     // manual heal: +5 % without a question, then 5 s cooldown
-    const hcd=()=>{const l=(healQuiz.cd||0)-Date.now();document.querySelectorAll('[data-ph],#cqheal').forEach(b=>{b.disabled=l>0;b.textContent=l>0?`➕ ${Math.ceil(l/1000)} s`:'➕ 5 % heilen'});if(l>0&&($('[data-ph]')||$('#cqheal')))setTimeout(hcd,250)};
+    const hcd=healCd;
     document.querySelectorAll('[data-ph]').forEach(b=>b.onclick=()=>{if((healQuiz.cd||0)>Date.now())return;const m=all()[+b.dataset.ph],mx=stats(m).mhp;m.hp=Math.min(mx,m.hp+Math.max(1,Math.round(mx*0.05)));healQuiz.cd=Date.now()+5000;renderTeam();if(full()){stop();toast('PÄD: Dein Team ist wieder fit!');return}overview()});hcd();$('#cqstop').onclick=stop};
   const ask=()=>{const it=pickQ(),order=shuffleArr([0,1,2,3]);n++;CQ={it,order,end:Infinity,done:false,cb:null};CQ_PICK=pick;
     $('#cqbox').innerHTML=`<div style="margin-bottom:8px">${card(cur,all().indexOf(cur),true)}</div><div class="sdlg"><span class="slaw">⚕ PÄD · Frage ${n} · ${esc(SPECIES[it.src].law||'')}</span><br>${esc(it.q[0])}<div id="cqexp"></div></div>
-      <div class="sans">${order.map((k,j)=>`<button class="sa" data-ck="${k}"><span class="sk">${j+1}</span>${esc(it.q[1][k])}</button>`).join('')}</div><div class="sacts" id="cqact"><button class="btn ghost" id="cqback">ÜBERSICHT</button><button class="btn ghost" id="cqstop">GEHEN</button><button class="btn ghost" id="cqheal">➕ 5 % heilen</button></div>`;
+      <div class="qrow"><div class="sans">${order.map((k,j)=>`<button class="sa" data-ck="${k}"><span class="sk">${j+1}</span>${esc(it.q[1][k])}</button>`).join('')}</div><button class="rbtn heal" id="cqheal" title="Ohne Frage: +5 % KP, danach 5 s warten"><div class="cdr"></div><span><b>➕</b>5 %</span></button></div><div class="sacts" id="cqact"><button class="btn ghost" id="cqback">ÜBERSICHT</button><button class="btn ghost" id="cqstop">GEHEN</button></div>`;
     $('#cquiz').classList.add('on');document.querySelectorAll('[data-ck]').forEach(bt=>bt.onclick=()=>pick(+bt.dataset.ck));$('#cqstop').onclick=stop;$('#cqback').onclick=overview;bindHeal()};
   const stop=()=>{$('#cquiz').classList.remove('on');CQ=null;CQ_PICK=null;save();renderTeam();updateHud()};
   const pick=k=>{if(!CQ||CQ.done)return;CQ.done=true;const ok=k===0,it=CQ.it,tm=cur;
@@ -101,7 +101,7 @@ function healQuiz(){RUN.kap=Math.max(RUN.kap,10);updateHud();const all=()=>RUN.t
     const tmFull=tm.hp>=stats(tm).mhp,done=full();renderTeam();
     $('#cqexp').innerHTML=`<div class="sexp ${ok?'ok':'bad'}">${ok?(done?'✓ Richtig — dein Team ist wieder fit!':tmFull?`✓ Richtig — ${esc(SPECIES[tm.s].n)} ist wieder fit!`:`✓ Richtig — +25 % KP für ${esc(SPECIES[tm.s].n)}.`):'✗ Falsch — keine Heilung.'} ${esc(it.q[2])}</div>`;
     $('#cqact').innerHTML=done?`<button class="btn" id="cqstop">WEITER</button>`:tmFull?`<button class="btn" id="cqback">ÜBERSICHT</button><button class="btn ghost" id="cqstop">GEHEN</button>`:`<button class="btn" id="cqnext">NÄCHSTE FRAGE</button><button class="btn ghost" id="cqback">ÜBERSICHT</button><button class="btn ghost" id="cqstop">GEHEN</button>`;
-    if(!done)$('#cqact').insertAdjacentHTML('beforeend','<button class="btn ghost" id="cqheal">➕ 5 % heilen</button>');bindHeal();
+    if(done){const hb=$('#cqheal');if(hb)hb.remove()}
     const nx=$('#cqnext');if(nx)nx.onclick=ask;const bk=$('#cqback');if(bk)bk.onclick=overview;$('#cqstop').onclick=stop};
   overview()}
 // respawn after a defeat: in front of the last PÄD you entered (else Villingen)
