@@ -27,7 +27,8 @@ addEventListener('keydown',e=>{if(B&&(B.vs||B.wi)&&!e.repeat&&vsSkip()){e.preven
 });
 addEventListener('keyup',e=>{const d=KEYMAP[e.key];if(d){const i=held.indexOf(d);if(i>=0)held.splice(i,1);const j=aimHeld.indexOf(d);if(j>=0)aimHeld.splice(j,1)}if(B&&B.aim&&normKey(e.key)===SET.keys.cap)capRelease()});
 addEventListener('blur',()=>{held.length=0;aimHeld.length=0});
-$('#battle').addEventListener('pointerdown',e=>{if(B&&(B.vs||B.wi)&&vsSkip())e.preventDefault()},true);
+// intro screens: a tap anywhere on the screen skips (not only on the battle picture)
+addEventListener('pointerdown',e=>{if(B&&(B.vs||B.wi)&&vsSkip()){e.preventDefault();e.stopPropagation()}},true);
 ['#stage','#battle'].forEach(sel=>{const el=$(sel);if(el)el.addEventListener('pointerdown',e=>{if(typing()&&!e.target.closest('input,select,textarea'))document.activeElement.blur()})});
 document.querySelectorAll('#dpad button').forEach(b=>{const d=b.dataset.d;
   b.addEventListener('pointerdown',e=>{e.preventDefault();if(!held.includes(d))held.push(d)});

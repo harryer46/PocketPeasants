@@ -38,7 +38,7 @@ function syncOther(p){
   if(tx!==o.tx||ty!==o.ty){o.fol.tx=o.tx;o.fol.ty=o.ty;if(Math.abs(tx-o.tx)+Math.abs(ty-o.ty)>3)trailReset(o,tx,ty);else trailPush(o,o.tx,o.ty)}
   o.lf=Array.isArray(pr.lf)?pr.lf.filter(x=>typeof x==='string'&&SPECIES[x]).slice(0,4):null;
   o.tx=tx;o.ty=ty;o.d=DIRS[pr.d]?pr.d:'down';o.n=name;o.c=validColor(pr.c);o.sx=pr.sx==='f'?'f':'m';o.bt=pr.bt==='duel'||pr.bt==='wild'?pr.bt:null;
-  o.fl=pr.fl===1;o.ld=Array.isArray(pr.ld)&&SPECIES[pr.ld[0]]?pr.ld[0]:null;
+  o.fl=pr.fl===1;o.rd=typeof pr.rd==='string'&&SPECIES[pr.rd]?pr.rd:null;o.ld=Array.isArray(pr.ld)&&SPECIES[pr.ld[0]]?pr.ld[0]:null;
   if(pr.chat&&typeof pr.chat.t==='string'&&pr.chat.i!==o.chatI){o.chatI=pr.chat.i;const t=pr.chat.t.slice(0,120);o.bub={t,until:performance.now()+6000};addChat(o.n,o.c,t,true)}
   const mt=pr.mt;if(mt&&typeof mt.id==='string'&&mt.id!==o.seenMt){o.seenMt=mt.id;if(mt.st==='train'&&+mt.end>Date.now()&&(!RUN||RUN.id!==mt.id)){sysChat(`${name} ist in einer Lobby. Tritt ihr über den Reiter LOBBY bei!`);renderLobby()}}
 }

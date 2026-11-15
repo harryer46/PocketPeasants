@@ -5,10 +5,12 @@ function modalOpen(){return !!TALK||$('#modal').classList.contains('on')||$('#st
 //   no encounters; areas whose teacher you have not passed stay closed in the air too; land only on walkable ground
 function flyable(x,y){if(x<2||y<2||x>=MW-2||y>=MH-2)return false;const b=BIOME[y*MW+x];return!(TOLL_LAW[b]&&!tollPaid(b)&&RUN&&RUN.phase==='train')}
 function canFly(){return canHM('fly')&&!B&&RUN&&RUN.phase!=='arena'}
-function toggleFly(){if(!P.fly){if(hasHM('fly')&&!hmUser('fly')){toast(`Zum FLIEGEN brauchst du ein ${hmNeed('fly')} im Kader.`);return}if(!canFly())return;if(P.moving)return;P.fly=true;P.flyT=performance.now();held.length=0;pres({fl:1});toast(`🕊 ${SPECIES[hmUser('fly').s].n} trägt dich in die Luft! Landen über Team → Feldfähigkeiten oder Taste F.`);flyBtn();return}
+function toggleFly(){if(!P.fly){if(hasHM('fly')&&!hmUser('fly')){toast(`Zum FLIEGEN brauchst du ein ${hmNeed('fly')} im Kader.`);return}if(!canFly())return;if(P.moving)return;P.fly=true;P.flyT=performance.now();held.length=0;pres({fl:1});rideSync();toast(`🕊 ${SPECIES[hmUser('fly').s].n} trägt dich in die Luft! Landen über Team → Feldfähigkeiten oder Taste F.`);flyBtn();return}
   if(P.moving)return;const x=P.x,y=P.y;if(!walkable(x,y)||trainerAt(x,y)||LEGENDS.some(L=>L.x===x&&L.y===y)||tollAt(x,y)){toast('Hier kannst du nicht landen – such dir freien Boden.');return}
-  P.fly=false;P.flyT=performance.now();P.fol={x,y,tx:x,ty:y,fx:x,fy:y};trailReset(P,x,y);if(P.fols)for(const f of P.fols){f.fx=f.tx=x;f.fy=f.ty=y}pres({fl:0});save();flyBtn();onArrive()}
+  P.fly=false;P.flyT=performance.now();rideSync();P.fol={x,y,tx:x,ty:y,fx:x,fy:y};trailReset(P,x,y);if(P.fols)for(const f of P.fols){f.fx=f.tx=x;f.fy=f.ty=y}pres({fl:0});save();flyBtn();onArrive()}
 function flyBtn(){const b=document.querySelector('[data-hmuse="fly"]');if(b)b.textContent=P.fly?'🛬 LANDEN':HM.fly.i+' '+HM.fly.n}
+function rideSid(){try{if(P.fly){const u=hmUser('fly');return u?u.s:null}if(tget(P.x,P.y)===3){const u=hmUser('swim');return u?u.s:null}}catch(e){}return null}
+function rideSync(){const r=rideSid();if(r!==P.rdS){P.rdS=r;pres({rd:r})}}
 function flyAlt(){const t=(performance.now()-(P.flyT||0))/350;return P.fly?Math.min(1,t):Math.max(0,1-t)}
 function updatePlayer(dt){
   if(P.moving){P.mt+=dt/(P.fly?STEP*0.5:P.jump?STEP*2.2:STEP);P.ph+=dt;
@@ -55,6 +57,7 @@ function checkSight(){
 }
 function teleport(x,y){if(P.fly){P.fly=false;P.flyT=0;pres({fl:0});flyBtn()}P.x=P.fx=x;P.y=P.fy=y;try{bakeNow()}catch(e){}P.moving=false;P.fol={x,y,tx:x,ty:y};trailReset(P,x,y);G.x=x;G.y=y;pres({x,y,d:P.d})}
 function onArrive(){
+  rideSync();
   if(!P.fly){G.x=P.x;G.y=P.y}G.d=P.d;P.steps++;if(P.steps%8===0)save();updateHud();
   if(P.fly){if(BIOME[P.y*MW+P.x]===0&&RUN){const Tn=TOWNS.find(T=>Math.abs(T.x-P.x)<18&&Math.abs(T.y-P.y)<14);if(Tn&&Tn.id!=='vil'&&!(RUN.towns&&RUN.towns[Tn.id])){RUN.towns=RUN.towns||{};RUN.towns[Tn.id]=1;save();toast(`📍 ${Tn.n} entdeckt!`)}}return}
   const t=tget(P.x,P.y);
@@ -85,27 +88,29 @@ function healQuiz(){RUN.kap=Math.max(RUN.kap,10);updateHud();const all=()=>RUN.t
   const healCd=()=>{const l=Math.max(0,(healQuiz.cd||0)-Date.now());document.querySelectorAll('[data-ph]').forEach(b=>{b.disabled=l>0;b.textContent=l>0?`➕ ${Math.ceil(l/1000)} s`:'➕ 5 % heilen'});const hb=$('#cqheal');if(hb)rbtnSet(hb,l,10000,'➕','5 %');if(l>0&&($('[data-ph]')||hb))setTimeout(healCd,100)};
   const heal5=m=>{if((healQuiz.cd||0)>Date.now()||!m)return false;const mx=stats(m).mhp;if(m.hp>=mx)return false;m.hp=Math.min(mx,m.hp+Math.max(1,Math.round(mx*0.05)));healQuiz.cd=Date.now()+10000;renderTeam();return true};
   const bindHeal=()=>{const b=$('#cqheal');if(!b)return;b.onclick=()=>{if(!heal5(cur))return;if(full()){stop();toast('PÄD: Dein Team ist wieder fit!');return}const c0=document.querySelector('#cqbox .pcard');if(c0)c0.outerHTML=card(cur,all().indexOf(cur),true);if(cur.hp>=stats(cur).mhp)toast(`${SPECIES[cur.s].n} ist wieder fit!`);healCd()};healCd()};
+  // penalty after a wrong answer: the next question only comes after 5 s
+  const penBtns=()=>{const l=Math.max(0,(healQuiz.pen||0)-Date.now());const b=$('#cqnext');if(b){b.disabled=l>0;b.textContent=l>0?`⏳ ${Math.ceil(l/1000)} s`:'NÄCHSTE FRAGE'}document.querySelectorAll('[data-pm]').forEach(c=>{c.style.filter=l>0?'grayscale(1)':''});const t=$('#cqpen');if(t)t.textContent=l>0?`⏳ Strafzeit: noch ${Math.ceil(l/1000)} s`:'';if(l>0)setTimeout(penBtns,200)};
   const overview=()=>{clearInterval(healQuiz.tm);CQ=null;CQ_PICK=null;cur=null;
-    $('#cqbox').innerHTML=`<div class="sdlg" style="margin-bottom:8px"><span class="slaw">⚕ PÄD · Polizeiärztlicher Dienst</span><br><span class="small">Wähle ein Monster: Fragen zu seinem Paragraphen, jede richtige Antwort heilt es um 25 %.</span></div>
+    $('#cqbox').innerHTML=`<div class="sdlg" style="margin-bottom:8px"><span class="slaw">⚕ PÄD · Polizeiärztlicher Dienst</span><br><span class="small">Wähle ein Monster: Fragen zu seinem Paragraphen. Richtig = +25 % KP, falsch = +5 % KP und 5 Strafsekunden.</span></div>
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px">${all().map((m,i)=>`<div>${card(m,i)}</div>`).join('')}</div>
-      <div class="sacts" style="margin-top:8px"><button class="btn ghost" id="cqstop">GEHEN</button></div>`;
-    $('#cquiz').classList.add('on');document.querySelectorAll('[data-pm]').forEach(b=>b.onclick=()=>{cur=all()[+b.dataset.pm];ask()});
+      <div class="small" id="cqpen" style="text-align:center;color:#ffcb3d;min-height:14px"></div><div class="sacts" style="margin-top:8px"><button class="btn ghost" id="cqstop">GEHEN</button></div>`;
+    $('#cquiz').classList.add('on');document.querySelectorAll('[data-pm]').forEach(b=>b.onclick=()=>{if((healQuiz.pen||0)>Date.now())return;cur=all()[+b.dataset.pm];ask()});penBtns();
     // manual heal: +5 % without a question, then 5 s cooldown
     const hcd=healCd;
     document.querySelectorAll('[data-ph]').forEach(b=>b.onclick=()=>{if((healQuiz.cd||0)>Date.now())return;const m=all()[+b.dataset.ph],mx=stats(m).mhp;m.hp=Math.min(mx,m.hp+Math.max(1,Math.round(mx*0.05)));healQuiz.cd=Date.now()+10000;renderTeam();if(full()){stop();toast('PÄD: Dein Team ist wieder fit!');return}overview()});hcd();$('#cqstop').onclick=stop};
   const ask=()=>{const it=pickQ(),order=shuffleArr([0,1,2,3]);n++;CQ={it,order,end:Infinity,done:false,cb:null};CQ_PICK=pick;const qEnd=Date.now()+PAD_QT,myQ=CQ;clearInterval(healQuiz.tm);healQuiz.tm=setInterval(()=>{if(CQ!==myQ||myQ.done){clearInterval(healQuiz.tm);return}const l=Math.max(0,qEnd-Date.now()),b=$('#cqbar'),t=$('#cqtime');if(b)b.style.width=(l/PAD_QT*100)+'%';if(t)t.textContent=Math.ceil(l/1000)+' s';if(l<=0){clearInterval(healQuiz.tm);pick(-1)}},100);
     $('#cqbox').innerHTML=`<div style="margin-bottom:8px">${card(cur,all().indexOf(cur),true)}</div><div class="sdlg"><span class="slaw">⚕ PÄD · Frage ${n} · ${esc(SPECIES[it.src].law||'')}</span><br>${esc(it.q[0])}<div class="cqt"><i id="cqbar"></i></div><div class="small" id="cqtime" style="text-align:right"></div><div id="cqexp"></div></div>
-      <div class="qrow"><div class="sans">${order.map((k,j)=>`<button class="sa" data-ck="${k}"><span class="sk">${j+1}</span>${esc(it.q[1][k])}</button>`).join('')}</div><button class="rbtn heal" id="cqheal" title="Ohne Frage: +5 % KP, danach 10 s warten"><div class="cdr"></div><span><b>➕</b>5 %</span></button></div><div class="sacts" id="cqact"><button class="btn ghost" id="cqback">ÜBERSICHT</button><button class="btn ghost" id="cqstop">GEHEN</button></div>`;
+      <div class="qrow"><div class="sans">${order.map((k,j)=>`<button class="sa" data-ck="${k}"><span class="sk">${j+1}</span>${esc(it.q[1][k])}</button>`).join('')}</div></div><div class="sacts" id="cqact"><button class="btn ghost" id="cqback">ÜBERSICHT</button><button class="btn ghost" id="cqstop">GEHEN</button></div>`;
     $('#cquiz').classList.add('on');document.querySelectorAll('[data-ck]').forEach(bt=>bt.onclick=()=>pick(+bt.dataset.ck));$('#cqstop').onclick=stop;$('#cqback').onclick=overview;bindHeal()};
   const stop=()=>{clearInterval(healQuiz.tm);$('#cquiz').classList.remove('on');CQ=null;CQ_PICK=null;save();renderTeam();updateHud()};
   const pick=k=>{if(!CQ||CQ.done)return;CQ.done=true;clearInterval(healQuiz.tm);const ok=k===0,it=CQ.it,tm=cur;
     document.querySelectorAll('[data-ck]').forEach(bt=>{const kk=+bt.dataset.ck;bt.disabled=true;bt.classList.add(kk===0?'ok':kk===k?'bad':'dim')});
-    if(ok&&tm){const mx=stats(tm).mhp;tm.hp=Math.min(mx,tm.hp+Math.ceil(mx*0.25))}
+    {const mx=stats(tm).mhp;tm.hp=Math.min(mx,tm.hp+(ok?Math.ceil(mx*0.25):Math.max(1,Math.round(mx*0.05))))}if(!ok)healQuiz.pen=Date.now()+5000;
     const tmFull=tm.hp>=stats(tm).mhp,done=full();renderTeam();
-    $('#cqexp').innerHTML=`<div class="sexp ${ok?'ok':'bad'}">${ok?(done?'✓ Richtig — dein Team ist wieder fit!':tmFull?`✓ Richtig — ${esc(SPECIES[tm.s].n)} ist wieder fit!`:`✓ Richtig — +25 % KP für ${esc(SPECIES[tm.s].n)}.`):k<0?'⏱ Zeit abgelaufen — keine Heilung.':'✗ Falsch — keine Heilung.'} ${esc(it.q[2])}</div>`;
+    $('#cqexp').innerHTML=`<div class="sexp ${ok?'ok':'bad'}">${ok?(done?'✓ Richtig — dein Team ist wieder fit!':tmFull?`✓ Richtig — ${esc(SPECIES[tm.s].n)} ist wieder fit!`:`✓ Richtig — +25 % KP für ${esc(SPECIES[tm.s].n)}.`):(k<0?'⏱ Zeit abgelaufen':'✗ Falsch')+` — nur +5 % KP, 5 Strafsekunden.`} ${esc(it.q[2])}</div>`;
     $('#cqact').innerHTML=done?`<button class="btn" id="cqstop">WEITER</button>`:tmFull?`<button class="btn" id="cqback">ÜBERSICHT</button><button class="btn ghost" id="cqstop">GEHEN</button>`:`<button class="btn" id="cqnext">NÄCHSTE FRAGE</button><button class="btn ghost" id="cqback">ÜBERSICHT</button><button class="btn ghost" id="cqstop">GEHEN</button>`;
     if(done){const hb=$('#cqheal');if(hb)hb.remove()}
-    const nx=$('#cqnext');if(nx)nx.onclick=ask;const bk=$('#cqback');if(bk)bk.onclick=overview;$('#cqstop').onclick=stop};
+    const nx=$('#cqnext');if(nx)nx.onclick=ask;penBtns();const bk=$('#cqback');if(bk)bk.onclick=overview;$('#cqstop').onclick=stop};
   overview()}
 // respawn after a defeat: in front of the last PÄD you entered (else Villingen)
 function padSpawn(){const l=RUN&&RUN.lastPad;if(l&&walkable(l.x,l.y))return l;const p=PADS[0];return p?{x:p.x,y:p.y+1}:VSPAWN}
@@ -131,6 +136,8 @@ function bubble(c,x,y,txt){
 }
 // a flying player: drop shadow on the ground, the officer up in the air on a flapping pair of wings (drawn above trees)
 function drawFlyer(c,e,X,Y){const a=e.alt,h=Math.round(a*16),bob=Math.round(Math.sin(T*5)*1.5*a),flap=Math.floor(T*8)%2;
+  if(e.ride&&SPECIES[e.ride]){const sw=Math.round(16-a*5);c.fillStyle='rgba(0,0,0,'+(0.38-a*0.12).toFixed(2)+')';c.fillRect(X+8-sw/2,Y+13,sw,2);c.fillRect(X+8-sw/2+1,Y+12,sw-2,1);c.fillRect(X+8-sw/2+1,Y+15,sw-2,1);
+    const y0=Y-h+bob,ms=monSprite(e.ride,24),fl=flap?1:0;c.drawImage(ms,X-6,y0-2+fl,28,28);c.drawImage(charSprite(e.col,e.d,0,e.sx),0,0,16,12,X,y0+4+fl,16,12);return}
   const sw=Math.round(12-a*4);c.fillStyle='rgba(0,0,0,'+(0.38-a*0.12).toFixed(2)+')';c.fillRect(X+8-sw/2,Y+13,sw,2);c.fillRect(X+8-sw/2+1,Y+12,sw-2,1);c.fillRect(X+8-sw/2+1,Y+15,sw-2,1);
   const y0=Y-h+bob;c.fillStyle='#14141f';const wy=y0+(flap?5:3),wh=flap?3:5;c.fillRect(X-5,wy,7,wh);c.fillRect(X+14,wy,7,wh);c.fillStyle='#f4f4f8';c.fillRect(X-4,wy+1,5,wh-2);c.fillRect(X+15,wy+1,5,wh-2);c.fillStyle='#c8d0e0';c.fillRect(X-4,wy+wh-2,5,1);c.fillRect(X+15,wy+wh-2,5,1);
   c.drawImage(charSprite(e.col,e.d,0,e.sx),X,y0)}
@@ -167,8 +174,8 @@ function drawWorld(){
   c.textAlign='left';
   // entities
   const ents=[];
-  for(const o of OTH.values()){if(o.fx==null)continue;ents.push({fx:o.fx,fy:o.fy,col:o.c,sx:o.sx,d:o.d,ph:o.ph,mv:o.moving,name:o.n,bt:o.bt,bub:o.bub,alt:o.fl?1:0});if(o.fl){}else if(o.lf)folEnts(o,o.lf,ents,o.fx,o.fy);else if(o.ld&&o.fol.fx!=null)ents.push({fx:o.fol.fx,fy:o.fol.fy,mon:o.ld})}
-  if(G){ents.push({fx:P.fx,fy:P.fy,col:G.color,sx:G.sex,d:P.d,ph:P.ph,mv:P.moving,name:G.name+' (du)',bt:B?(B.mode==='wild'?'wild':'duel'):null,bub:myBubble,me:1,alt:flyAlt(),hop:P.jump?Math.round(Math.sin(P.mt*Math.PI)*9):0});if(RUN&&!P.fly&&flyAlt()===0)folEnts(P,folInfo(),ents,P.fx,P.fy)}
+  for(const o of OTH.values()){if(o.fx==null)continue;ents.push({fx:o.fx,fy:o.fy,col:o.c,sx:o.sx,d:o.d,ph:o.ph,mv:o.moving,name:o.n,bt:o.bt,bub:o.bub,alt:o.fl?1:0,ride:o.rd||null});if(o.fl){}else if(o.lf)folEnts(o,o.lf,ents,o.fx,o.fy);else if(o.ld&&o.fol.fx!=null)ents.push({fx:o.fol.fx,fy:o.fol.fy,mon:o.ld})}
+  if(G){ents.push({fx:P.fx,fy:P.fy,col:G.color,sx:G.sex,d:P.d,ph:P.ph,mv:P.moving,name:G.name+' (du)',bt:B?(B.mode==='wild'?'wild':'duel'):null,bub:myBubble,me:1,ride:rideSid(),alt:flyAlt(),hop:P.jump?Math.round(Math.sin(P.mt*Math.PI)*9):0});if(RUN&&!P.fly&&flyAlt()===0)folEnts(P,folInfo(),ents,P.fx,P.fy)}
   for(const t of tollSpots()){const paid=tollPaid(t.b);let fx=t.x,fy=t.y;if(paid){for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]])if(walkable(t.x+dx,t.y+dy)&&BIOME[(t.y+dy)*MW+t.x+dx]===t.b&&!(dx===0&&dy===0)){const side=DIRS[t.d];if(side&&dx===side[0]&&dy===side[1])continue;fx=t.x+dx;fy=t.y+dy;break}}ents.push({fx,fy,col:t.c,sx:/Würde|Strafe/.test(t.n)?'f':'m',d:t.d,npc:t,name:t.n})}
   for(const t of TRAINERS)ents.push({fx:t.x,fy:t.y,col:t.c,sx:/^\S+in\s/.test(t.n)?'f':'m',d:t.d,ph:0,mv:false,name:t.n,npc:t,bt:null});
   for(const L of LEGENDS){const gone=(RUN&&RUN.leg&&RUN.leg[L.id])||!cfgOf().leg;if(!gone)ents.push({fx:L.x,fy:L.y,legend:L})}
@@ -179,7 +186,7 @@ function drawWorld(){
     if(e.legend){if(X<-40||X>LW+40||Y<-40||Y>LH+40)continue;const s=monSprite(legSid(e.legend),32);const bob=Math.round(Math.sin(T*2)*1.5);c.globalAlpha=RUN&&RUN.phase==='train'?1:0.45;c.drawImage(s,X-8,Y+15-27+bob,32,32);c.globalAlpha=1;
       c.fillStyle='#ffcb3d';for(let i=0;i<3;i++){const a=T*1.5+i*2.1;c.fillRect(Math.round(X+8+Math.cos(a)*12),Math.round(Y+4+Math.sin(a)*7),1,1)}continue}
     if(e.mon){const s=monSprite(e.mon,24);c.drawImage(s,X-4,Y+15-21,24,24)}
-    else{const fr=e.mv?(Math.floor(e.ph/STEP*2)%2?1:2):0;if(tget(Math.round(e.fx),Math.round(e.fy))===3){const wb=Math.round(Math.sin(T*4)*1);c.drawImage(charSprite(e.col,e.d,fr,e.sx),0,0,16,13,X,Y+1+wb,16,13);c.fillStyle='#ffffffb0';c.fillRect(X+1,Y+13+wb,4,1);c.fillRect(X+11,Y+13+wb,4,1);c.fillStyle='#ffffff60';c.fillRect(X-1,Y+14,18,1)}else{const ti=e.npc&&trainerImg(e.npc,e.d);if(ti)c.drawImage(ti,Math.round(X+8-ti.naturalWidth/2),Y+15-ti.naturalHeight);else c.drawImage(charSprite(e.col,e.d,fr,e.sx),X,Y-4)}}
+    else{const fr=e.mv?(Math.floor(e.ph/STEP*2)%2?1:2):0;if(tget(Math.round(e.fx),Math.round(e.fy))===3&&e.ride&&SPECIES[e.ride]){const wb=Math.round(Math.sin(T*4)*1),ms=monSprite(e.ride,24);c.drawImage(ms,X-4,Y-1+wb,24,24);c.fillStyle='#ffffff90';c.fillRect(X-4,Y+19+wb,6,1);c.fillRect(X+14,Y+19+wb,6,1);c.drawImage(charSprite(e.col,e.d,0,e.sx),0,0,16,12,X,Y+3+wb,16,12)}else if(tget(Math.round(e.fx),Math.round(e.fy))===3){const wb=Math.round(Math.sin(T*4)*1);c.drawImage(charSprite(e.col,e.d,fr,e.sx),0,0,16,13,X,Y+1+wb,16,13);c.fillStyle='#ffffffb0';c.fillRect(X+1,Y+13+wb,4,1);c.fillRect(X+11,Y+13+wb,4,1);c.fillStyle='#ffffff60';c.fillRect(X-1,Y+14,18,1)}else{const ti=e.npc&&trainerImg(e.npc,e.d);if(ti)c.drawImage(ti,Math.round(X+8-ti.naturalWidth/2),Y+15-ti.naturalHeight);else c.drawImage(charSprite(e.col,e.d,fr,e.sx),X,Y-4)}}
     {const tx=Math.round(e.fx),ty=Math.round(e.fy),tt=tget(tx,ty);if(ENC.has(tt))c.drawImage(TILE[tt][(tx*7+ty*3)%TILE[tt].length],0,8,16,8,X,Y+8,16,8)}}
   if(WORLD)drawWorldLayer(c,camX,camY,LW,LH,'c');
   for(const e of ents)if(e.alt>0)drawFlyer(c,e,Math.round(e.fx*16-camX),Math.round(e.fy*16-camY));

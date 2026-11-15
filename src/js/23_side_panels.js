@@ -69,17 +69,18 @@ function renderStudy(){if(!ST)return;const m=ST.m,sp=SPECIES[m.s],st=stats(m);co
       <div class="sacts"><button class="btn" id="sclose">SCHLIESSEN</button></div>`;
   }else{
     const q=cur.q;if(!cur.order)cur.order=shuffleArr([0,1,2,3]);const LB=`<button class="rbtn" id="slearn" title="Ohne Frage: +5 % EP-Fortschritt, danach 10 s warten"><div class="cdr"></div><span><b>📖</b>+5 %</span></button>`;
-    h+=`<div class="sdlg"><span class="slaw">${esc(SPECIES[cur.src].law||'')}</span><br>${esc(q[0])}${ST.state==='ask'?`<div class="cqt"><i id="sqbar"></i></div>`:''}${ST.state==='shown'?`<div class="sexp ${cur.right?'ok':'bad'}">${cur.right?'✓ Richtig!':cur.pick<0?'⏱ Zeit abgelaufen.':'✗ Falsch.'} ${esc(q[2])}</div>`:''}</div>
-      <div class="qrow"><div class="sans">${cur.order.map((k,j)=>`<button class="sa ${ST.state==='shown'?(k===0?'ok':(cur.pick===k?'bad':'dim')):''}" data-k="${k}" ${ST.state==='shown'?'disabled':''}><span class="sk">${'ABCD'[j]}</span>${esc(q[1][k])}</button>`).join('')}</div>${LB}</div>
+    h+=`<div class="sdlg"><span class="slaw">${esc(SPECIES[cur.src].law||'')}</span><br>${esc(q[0])}${ST.state==='ask'?`<div class="cqt"><i id="sqbar"></i></div>`:''}${ST.state==='shown'?`<div class="sexp ${cur.right?'ok':'bad'}">${cur.right?'✓ Richtig!':(cur.pick<0?'⏱ Zeit abgelaufen':'✗ Falsch')+' — nur +5 % EP, 5 Strafsekunden.'} ${esc(q[2])}</div>`:''}</div>
+      <div class="qrow"><div class="sans">${cur.order.map((k,j)=>`<button class="sa ${ST.state==='shown'?(k===0?'ok':(cur.pick===k?'bad':'dim')):''}" data-k="${k}" ${ST.state==='shown'?'disabled':''}><span class="sk">${'ABCD'[j]}</span>${esc(q[1][k])}</button>`).join('')}</div></div>
       ${ST.state==='shown'?`<div class="sacts"><button class="btn" id="snext">${ST.i+1<ST.qs.length?'WEITER ▶':'ERGEBNIS ▶'}</button></div>`:`<div class="sacts"><button class="btn ghost" id="squit">AUFGEBEN</button></div>`}`}
   const el=$('#sbox');el.innerHTML=h;
   el.querySelectorAll('.sa').forEach(b=>b.onclick=()=>studyAnswer(+b.dataset.k));
-  const n=$('#snext');if(n)n.onclick=()=>{ST.i++;ST.state=ST.i>=ST.qs.length?'done':'ask';if(ST.state==='done')studyFinish();renderStudy()};
+  const n=$('#snext');if(n)n.onclick=()=>{if((ST.pen||0)>Date.now())return;ST.i++;ST.state=ST.i>=ST.qs.length?'done':'ask';if(ST.state==='done')studyFinish();renderStudy()};
   const qq=$('#squit');if(qq)qq.onclick=()=>{ST.state='done';ST.qs=ST.qs.slice(0,ST.i);studyFinish();renderStudy()};
   const c=$('#sclose');if(c)c.onclick=closeStudy;
-  const lb=$('#slearn');if(lb){lb.onclick=studyLearn;studyLearnBtn()}
+  if(n)studyPen()
 }
 // LERNEN: +5 % of the way to the next level without a question, then 5 s cooldown
+function studyPen(){const n=$('#snext');if(!n||!ST)return;const l=Math.max(0,(ST.pen||0)-Date.now());n.disabled=l>0;n.textContent=l>0?`⏳ ${Math.ceil(l/1000)} s`:(ST.i+1<ST.qs.length?'WEITER ▶':'ERGEBNIS ▶');if(l>0)setTimeout(studyPen,200)}
 function studyLearn(){if(!ST||ST.state==='done'||(ST.lcd||0)>Date.now())return;const m=ST.m;const amt=Math.max(1,Math.round(xpNeed(m.l)*0.05/((RUN.cfg&&RUN.cfg.xp)||1)));
   const msgs=gainXp(m,amt);for(const t of msgs)sysChat(t);ST.lcd=Date.now()+10000;save();renderTeam();pushMt();renderStudy()}
 function studyLearnBtn(){const lb=$('#slearn');if(!lb||!ST)return;const l=Math.max(0,(ST.lcd||0)-Date.now());rbtnSet(lb,l,10000,'📖','+5 %');if(l>0)setTimeout(studyLearnBtn,100)}
@@ -87,7 +88,7 @@ function studyLearnBtn(){const lb=$('#slearn');if(!lb||!ST)return;const l=Math.m
 function rbtnSet(b,left,total,icon,lbl){b.disabled=left>0;b.querySelector('.cdr').style.setProperty('--cd',(left/total)+'turn');b.querySelector('span').innerHTML=`<b>${icon}</b>${left>0?Math.ceil(left/1000)+' s':lbl}`}
 function studyAnswer(k){if(!ST||ST.state!=='ask')return;const cur=ST.qs[ST.i];cur.pick=k;cur.right=k===0;ST.res=ST.res||[];ST.res[ST.i]=cur.right;
   if(cur.right){ST.ok++;const amt=Math.max(8,Math.round(xpNeed(ST.m.l)*0.25/((RUN.cfg&&RUN.cfg.xp)||1)));ST.pend=(ST.pend||0)+amt;ST.fx={k:'hit',t:performance.now()}}
-  else ST.fx={k:'miss',t:performance.now()};
+  else{ST.fx={k:'miss',t:performance.now()};ST.pend=(ST.pend||0)+Math.max(1,Math.round(xpNeed(ST.m.l)*0.05/((RUN.cfg&&RUN.cfg.xp)||1)));ST.pen=Date.now()+5000}
   ST.state='shown';renderStudy()}
 function studyFinish(){const m=ST.m;m.stT=Date.now();if(ST.pend){const before=m.xp+xpNeed(m.l)*0;ST.msgs=gainXp(m,ST.pend);ST.xp=Math.round(ST.pend*((RUN.cfg&&RUN.cfg.xp)||1));for(const t of ST.msgs)sysChat(t);save();renderTeam();pushMt()}}
 function closeStudy(){$('#study').classList.remove('on');ST=null;if(atHfPol())openHfPol()}
