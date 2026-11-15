@@ -116,6 +116,8 @@ function bagOpts(){if(!B||!B.me)return[];const F=B.me,a=act(F),opts=[];
   if(inv('revive'))F.team.forEach((m,i)=>{if(i!==F.a&&m.hp<=0)opts.push(['revive:'+i,`Beleber → ${SPECIES[m.s].n}`])});
   if(inv('ether')&&!B.tb&&(F.ap??AP_MAX)<AP_MAX)opts.push(['ether','AP-Drink → volle AP']);
   if(inv('great')&&B.mode==='wild'&&!B.capGreat)opts.push(['great','Super-Handschellen → nächster Wurf']);
+  // the favourite item comes first, so it is pre-selected
+  const fav=RUN&&RUN.favItem;if(fav)opts.sort((a,b)=>(b[0].split(':')[0]===fav)-(a[0].split(':')[0]===fav));
   return opts}
 function bagCur(){const o=bagOpts();if(!o.length)return null;B.bagI=(((B.bagI||0)%o.length)+o.length)%o.length;return o[B.bagI]}
 function bagCycle(d){const o=bagOpts();if(!o.length){say('Im Beutel ist gerade nichts Nutzbares.');return}B.bagI=((B.bagI||0)+d+o.length*4)%o.length;B.bagFlash=performance.now();bagLabel(true)}
@@ -439,3 +441,18 @@ function tmTeach(m,k){const fin=()=>{RUN.tm[k]--;closeModal();toast(`${SPECIES[m
   if(m.m.length<4){m.m.push(k);fin();return}
   openModal(`<h3>WELCHE ATTACKE VERGESSEN?</h3><p class="small">${esc(SPECIES[m.s].n)} lernt ${esc(MOVES[k].n)}.</p><div style="display:flex;flex-direction:column;gap:6px">${m.m.map((mv,i)=>`<button class="btn ghost" data-fg="${i}" style="font-family:VT323,monospace;font-size:19px">${esc(MOVES[mv].n)} · ${esc(TYPES[MOVES[mv].t].n)} · Stärke ${MOVES[mv].p||0}</button>`).join('')}</div><div class="acts" style="margin-top:8px"><button class="btn ghost" id="mno">ABBRECHEN</button></div>`);
   document.querySelectorAll('[data-fg]').forEach(b=>b.onclick=()=>{m.m[+b.dataset.fg]=k;fin()});$('#mno').onclick=closeModal}
+
+// ===== Beutel (top bar): all items; give one to a monster, or mark it as favourite (pre-selected in battle)
+const BAG_GIVE=['potion','superp','revive','candy'],BAG_FAV=['potion','superp','revive','ether','great'];
+function openBagMenu(){if(!RUN){toast('Erst ein Spiel starten.');return}if(B){toast('Im Kampf: Beutel-Knopf unten nutzen.');return}
+  const ks=Object.keys(ITEMS).filter(k=>inv(k)>0),tms=tmOwned();
+  openModal(`<h3>🎒 BEUTEL</h3>${ks.length?`<div style="display:flex;flex-direction:column;gap:6px">${ks.map(k=>`<div class="mvrow" style="display:flex;align-items:center;gap:8px"><span style="font-size:22px;width:28px;text-align:center">${ITEMS[k].i}</span><span style="flex:1"><b>${esc(ITEMS[k].n)}</b> ×${inv(k)}${RUN.favItem===k?' <span style="color:#ffcb3d">★ Favorit</span>':''}<br><span class="small">${esc(ITEMS[k].d)}</span></span>
+      ${BAG_GIVE.includes(k)?`<button class="btn" data-give="${k}">GEBEN</button>`:''}${BAG_FAV.includes(k)?`<button class="btn ghost" data-fav="${k}" title="Favorit: im Kampf zuerst ausgewählt" style="font-family:sans-serif;font-size:18px;padding:2px 8px;color:#ffcb3d">${RUN.favItem===k?'★':'☆'}</button>`:''}</div>`).join('')}</div>`:'<p class="small">Der Beutel ist leer — Items gibt es im Copshop.</p>'}
+    ${tms.length?`<div class="lbl2" style="margin:10px 0 4px">💿 TMs</div><div class="small">${tms.map(k=>`${esc(MOVES[k].n)} (${esc(TYPES[MOVES[k].t].n)}) ×${RUN.tm[k]}`).join(' · ')}<br>Einsetzen über 💿 TM am Monster im Team.</div>`:''}
+    <div class="acts" style="margin-top:10px"><button class="btn" id="mok">SCHLIESSEN</button></div>`);
+  document.querySelectorAll('[data-fav]').forEach(b=>b.onclick=()=>{const k=b.dataset.fav;RUN.favItem=RUN.favItem===k?null:k;save();openBagMenu()});
+  document.querySelectorAll('[data-give]').forEach(b=>b.onclick=()=>bagGivePick(b.dataset.give));$('#mok').onclick=closeModal}
+function bagGivePick(k){const all=RUN.team.concat(RUN.box);const ok=m=>{const st=stats(m);return k==='revive'?m.hp<=0:k==='candy'?true:m.hp>0&&m.hp<st.mhp};
+  const list=all.filter(ok);if(!list.length){toast(k==='revive'?'Kein besiegtes Monster.':k==='candy'?'Keine Monster.':'Kein Monster braucht das gerade.');return}
+  openModal(`<h3>${ITEMS[k].i} ${esc(ITEMS[k].n.toUpperCase())} GEBEN</h3><div style="display:flex;flex-direction:column;gap:6px">${list.map((m,i)=>`<button class="btn ghost" data-gm="${i}" style="font-family:VT323,monospace;font-size:19px;text-align:left">${esc(SPECIES[m.s].n)} · Lv ${m.l} · KP ${m.hp}/${stats(m).mhp}</button>`).join('')}</div><div class="acts" style="margin-top:8px"><button class="btn ghost" id="mno">ZURÜCK</button></div>`);
+  document.querySelectorAll('[data-gm]').forEach(b=>b.onclick=()=>{useItemOn(k,list[+b.dataset.gm]);renderTeam();openBagMenu()});$('#mno').onclick=openBagMenu}

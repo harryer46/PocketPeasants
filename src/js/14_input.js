@@ -92,3 +92,5 @@ $('#rotok').onclick=()=>{checkOrient.dismissed=true;checkOrient()};
 
 
 
+
+$('#hbag').addEventListener('click',e=>{e.currentTarget.blur();openBagMenu()});

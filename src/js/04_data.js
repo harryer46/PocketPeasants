@@ -246,3 +246,9 @@ const TRAINERS=[
  {id:'axel',n:'Hubschrauberpilot Axel',x:5,y:31,d:'right',c:'#244a9a',team:[['ausweisadler',13],['sichereule',13],['bodycamar',14]],reward:5,line:'Polizeihubschrauber Christoph 1 — Sie sind umstellt!',after:'Geh weiter. Das Gericht wartet.'}
 ];
 
+
+// Zielsicher (real-time aiming skill, 1–10): replaces accuracy. High = the aim sits on the target with a slight lead,
+// low = the monster's aim drags sluggishly behind. Set by type, a fixed per-species offset and a little by level.
+const ZIEL_T={electric:7.5,flying:7,water:6,fire:5.5,normal:5,grass:4.5,rock:3.5};
+function zielOf(m){if(!m||!SPECIES[m.s])return 5;let h=0;for(const ch of m.s)h=(h*31+ch.charCodeAt(0))>>>0;const base=(ZIEL_T[SPECIES[m.s].t]||5)+((h%5)-2)*0.6;return clamp(Math.round((base+(m.l||1)*0.04)*10)/10,1,10)}
+function zielStars(v){const n=Math.round(v/2);return'●'.repeat(n)+'○'.repeat(5-n)}

@@ -26,7 +26,6 @@ function openSettings(){
   else{h+=`<div class="lbl2">TASTENBELEGUNG</div><div class="krow"><span>Laufen</span><span class="small">WASD (Welt: auch Pfeiltasten)</span></div><div class="krow"><span>Zielen (Kampf)</span><span class="small">Pfeiltasten</span></div>`;
     for(const k of Object.keys(DEF_KEYS))h+=`<div class="krow"><span>${KEY_NAMES[k]}</span><button class="btn ghost" data-key="${k}">${capturing===k?'TASTE DRÜCKEN…':keyLabel(SET.keys[k])}</button></div>`;}
   h+=`<div class="lbl2">ZIELEN (FREIES SPIEL)</div><div class="seg">${segBtn('aim','0','8 RICHTUNGEN',SET.aim||'0')}${segBtn('aim','2','FREI 360°',SET.aim||'0')}${segBtn('aim','1','AUTO-ZIELEN',SET.aim||'0')}</div>`;
-  h+=`<div class="lbl2">AUTO-ZIELEN: VORHALTEN <span id="leadv" style="color:var(--accent)">${aimLead()}</span>/10</div><input type="range" id="slead" min="0" max="10" step="1" value="${aimLead()}" style="width:100%;accent-color:#ffcb3d;margin:2px 0 4px"><div class="small" style="text-align:left;margin-bottom:10px">0 = direkt aufs Ziel · 10 = volles Vorhalten (sagt die Laufbahn voraus)</div>`;
   
   if(typeof netSettingsHtml==='function')h+=netSettingsHtml();
   h+=`<div class="lbl2">SPIELSTAND</div><div class="seg"><button class="btn" id="ssave">💾 JETZT SPEICHERN</button><button class="btn ghost" id="sexp">⬇ EXPORTIEREN</button><button class="btn ghost" id="simp">⬆ IMPORTIEREN</button></div><div class="small" style="margin:2px 0 6px">Export = Sicherungsdatei zum Aufheben oder für ein anderes Gerät.</div>`;
@@ -36,7 +35,7 @@ function openSettings(){
   openModal(h);if(typeof bindNetSettings==='function')bindNetSettings();
   document.querySelectorAll('#mbox [data-g]').forEach(b=>b.onclick=()=>{SET[b.dataset.g]=b.dataset.v;saveSet();if(b.dataset.g==='alt'&&RUN&&RUN.free){RUN.cfg=Object.assign({},RUN.cfg,{alt:+b.dataset.v});save();renderTeam();toast(+b.dataset.v?'Alternative Monster im freien Spiel!':'Klassische Monster im freien Spiel.')}applyControls();openSettings()});
   document.querySelectorAll('#mbox [data-key]').forEach(b=>b.onclick=()=>{capturing=b.dataset.key;openSettings()});
-  {const sl=$('#slead');if(sl)sl.oninput=()=>{SET.lead=+sl.value;$('#leadv').textContent=sl.value;saveSet()}}{const lb=$('#slog');if(lb)lb.onclick=downloadLog;$('#ssave').onclick=manualSave;$('#sexp').onclick=exportSave;$('#simp').onclick=importSave}
+  {const lb=$('#slog');if(lb)lb.onclick=downloadLog;$('#ssave').onclick=manualSave;$('#sexp').onclick=exportSave;$('#simp').onclick=importSave}
   $('#sreset').onclick=()=>{SET={ctrl:'auto',dp:'m',side:'right',keys:{...DEF_KEYS}};capturing=null;saveSet();applyControls();openSettings()};
   $('#sdone').onclick=()=>{capturing=null;closeModal()};
 }

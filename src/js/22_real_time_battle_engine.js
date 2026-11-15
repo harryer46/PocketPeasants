@@ -133,6 +133,7 @@ function fire(F,i,remote){
   const mvv=MOVES[mid];if(mvv.k==='self'){selfMove(F,mvv);return}F.atkT=performance.now();
   if(mvv.fx==='selfbuff'&&F.ctrl!=='remote'&&Math.random()<(mvv.stc??1))applyStages(F,mvv.bs);const am=stageMul(stgOf(F).a);
   let dx=T.x-F.x,dy=T.y-F.y;const L=Math.hypot(dx,dy)||1;dx/=L;dy/=L;
+  if(F.ctrl==='ai'&&!B.tb&&F.aimAng!=null&&isFinite(F.aimAng)){dx=Math.cos(F.aimAng);dy=Math.sin(F.aimAng)}
   if(F===B.me&&!B.tb){const a=myAim();dx=a.x;dy=a.y;try{navigator.vibrate&&navigator.vibrate(8)}catch(e){}}
   if(F.st.conf>0&&!B.tb){const w=(Math.random()-0.5)*1.4,c=Math.cos(w),sn=Math.sin(w);[dx,dy]=[dx*c-dy*sn,dx*sn+dy*c]}F.face=dx<0?-1:1;
   const sp=shotParams(mid);
@@ -222,7 +223,8 @@ function autoAimTarget(){const T=B.foe,M=B.me;const dx0=T.x-M.x,dy0=(T.y-12)-(M.
   const ms=act(M)?act(M).m.map(m=>shotParams(m)).filter(p=>p&&!p.mel&&!p.self&&!p.nm&&p.sp):[];const v=ms.length?ms.reduce((a,p)=>a+p.sp,0)/ms.length:260;
   const a=tv.x*tv.x+tv.y*tv.y-v*v,b=2*(dx0*tv.x+dy0*tv.y),c=dx0*dx0+dy0*dy0;let t=0;
   if(Math.abs(a)<1e-6)t=b?-c/b:0;else{const D=b*b-4*a*c;if(D>=0){const r1=(-b-Math.sqrt(D))/(2*a),r2=(-b+Math.sqrt(D))/(2*a);t=Math.min(...[r1,r2].filter(x=>x>0),9)}}
-  t=clamp(isFinite(t)?t:0,0,0.8)*aimLead()/10;return Math.atan2(dy0+tv.y*t,dx0+tv.x*t)}
+  // lead grows with Zielsicher: low = no lead at all, high = a slight lead (minimal, not the full intercept)
+  const z=zielOf(act(M))/10;t=clamp(isFinite(t)?t:0,0,0.8)*(z*z*0.45);return Math.atan2(dy0+tv.y*t,dx0+tv.x*t)}
 function myAim(){if(autoAimOn()&&B.foe){if(B.autoAng==null||!isFinite(B.autoAng)){B.autoAng=autoAimTarget();B.autoW=0}return{x:Math.cos(B.autoAng),y:Math.sin(B.autoAng)}}if(!B.aimV){const T=B.foe;setAim(T?T.x-B.me.x:0,T?T.y-B.me.y:-1)}return B.aimV}
 // aiming mode (lobby option / setting for free play): 0 = manual in 8 directions, 2 = free 360°, 1 = auto-aim
 function aimMode(){const c=RUN&&RUN.cfg;if(RUN&&!RUN.free&&c)return[0,1,2].includes(c.aim)?c.aim:0;return SET.aim==='1'?1:SET.aim==='2'?2:0}
@@ -232,7 +234,8 @@ function controlMe(dt){
   if(autoAimOn()&&B.foe&&!B.tb){const T=B.foe,k=1-Math.exp(-dt*6);B.tv=B.tv||{x:0,y:0};B.tv.x+=((T.vx||0)-B.tv.x)*k;B.tv.y+=((T.vy||0)-B.tv.y)*k;
     // aim inertia: the crosshair follows like a damped spring (lags behind quick direction changes)
     const want=autoAimTarget();if(B.autoAng==null){B.autoAng=want;B.autoW=0}let d=want-B.autoAng;d=Math.atan2(Math.sin(d),Math.cos(d));
-    const w0=isFinite(B.autoW)?B.autoW:0;B.autoW=clamp(w0+(d*38-w0*11)*dt,-5,5);if(!isFinite(B.autoAng))B.autoAng=want;B.autoAng+=B.autoW*dt;if(!isFinite(B.autoAng))B.autoAng=want}
+    // spring stiffness from Zielsicher: high = locked on almost instantly, low = trails behind
+    const z=zielOf(act(B.me))/10,K=6+150*z*z,Dm=2*Math.sqrt(K)*0.9,wm=1.5+9*z;const w0=isFinite(B.autoW)?B.autoW:0;B.autoW=clamp(w0+(d*K-w0*Dm)*dt,-wm,wm);if(!isFinite(B.autoAng))B.autoAng=want;B.autoAng+=B.autoW*dt;if(!isFinite(B.autoAng))B.autoAng=want}
   if(aimHeld.length&&!B.tb){let ax=0,ay=0;for(const d of aimHeld){ax+=DIRS[d][0];ay+=DIRS[d][1]}if(ax||ay)setAim(ax,ay)}
   const F=B.me;if(F.out||F.faint>0||F.st.stun>0||F.st.sleep>0||F.hitstun>0||B.aim||B.qsel){F.vx=F.vy=0;return}
   let dx=0,dy=0,sc=1;for(const d of held){dx+=DIRS[d][0];dy+=DIRS[d][1]}
@@ -1017,7 +1020,10 @@ function leaveHazard(s,x,y){if(!B||B.tb||B.state!=='fight')return;const mv=MOVES
   if(mv.t==='rock'){if([B.me,B.foe].some(F=>F&&Math.hypot(F.x-x,(F.y-y)*1.3)<26))return;B.obs=B.obs||[];if(B.obs.filter(o=>o.tmp&&!o.dead).length>=4)return;
     B.obs.push({id:'h'+now,kind:'rock',mat:'rock',ind:0,x:Math.round(x),y:Math.round(y),r:8,hp:18,max:18,v:Math.floor(Math.random()*3),tmp:now+12000});burst(x,y-6,'#a07848',10);return}
   const H=HAZ_KIND[mv.t];if(!H)return;B.haz=(B.haz||[]).filter(h=>h.until>now);if(B.haz.length>=8)B.haz.shift();B.haz.push({k:H.k,x,y,r:H.r,t0:now,until:now+H.ms,seed:Math.floor(Math.random()*1e6)})}
-function hazardTick(dt){if(!B)return;const now=performance.now();if(B.haz)B.haz=B.haz.filter(h=>h.until>now);
+// opponents (AI) aim with the same Zielsicher spring as your auto-aim
+function aiAimTick(dt){if(!B||B.tb)return;for(const F of[B.me,B.foe]){if(!F||F.ctrl!=='ai')continue;const T=F===B.me?B.foe:B.me;if(!T)continue;const want=Math.atan2((T.y-12)-(F.y-14),T.x-F.x);if(F.aimAng==null||!isFinite(F.aimAng)){F.aimAng=want;F.aimW=0;continue}
+  let d=want-F.aimAng;d=Math.atan2(Math.sin(d),Math.cos(d));const z=zielOf(act(F))/10,K=6+150*z*z,Dm=2*Math.sqrt(K)*0.9,wm=1.5+9*z;F.aimW=clamp((F.aimW||0)+(d*K-(F.aimW||0)*Dm)*dt,-wm,wm);F.aimAng+=F.aimW*dt}}
+function hazardTick(dt){if(!B)return;aiAimTick(dt);const now=performance.now();if(B.haz)B.haz=B.haz.filter(h=>h.until>now);
   if(B.obs)for(const o of B.obs)if(o.tmp&&!o.dead&&o.tmp<now){o.dead=1;burst(o.x,o.y-6,'#a07848',8)}
   if(B.state!=='fight'||!B.haz)return;
   for(const F of[B.me,B.foe]){if(!F||F.ctrl==='remote'||F.out||F.faint>0)continue;F.slip=Math.max(0,(F.slip||0)-dt);
