@@ -46,7 +46,7 @@ const OBK={rock:{mat:'rock',hp:70,r:12},boulder:{mat:'rock',hp:110,r:14},crystal
   bush:{mat:'plant',hp:14,r:9},flower:{mat:'plant',hp:8,r:8},fern:{mat:'plant',hp:12,r:9},reeds:{mat:'plant',hp:10,r:8},shrub:{mat:'plant',hp:10,r:8},
   stump:{mat:'wood',hp:45,r:11},log:{mat:'wood',hp:55,r:13},drift:{mat:'wood',hp:30,r:12},crate:{mat:'wood',hp:35,r:10},poller:{mat:'steel',hp:1,r:8,ind:1},menhir:{mat:'steel',hp:1,r:12,ind:1}};
 const ZONE_OBS={north:[['bush',3,4],['flower',1,2],['rock',1,2],['menhir',1,1]],east:[['stump',2,3],['fern',2,3],['log',1,2],['menhir',1,1]],south:[['reeds',2,3],['drift',2,2],['coral',1,2],['menhir',1,1]],
-  west:[['boulder',2,3],['rock',1,2],['crystal',1,1],['shrub',1,2],['menhir',1,2]],arena:[['pillar',2,3],['crate',2,3],['poller',2,2]],knast:[['pillar',3,3],['crate',2,2],['poller',2,3]]};
+  west:[['boulder',2,3],['rock',1,2],['crystal',1,1],['shrub',1,2],['menhir',1,2]],snow:[['crystal',2,3],['rock',1,2],['stump',1,1],['menhir',1,1]],desert:[['boulder',2,3],['rock',1,2],['shrub',1,2],['menhir',1,2]],jungle:[['fern',2,3],['bush',2,2],['log',1,2],['menhir',1,1]],arena:[['pillar',2,3],['crate',2,3],['poller',2,2]],knast:[['pillar',3,3],['crate',2,2],['poller',2,3]]};
 function genObs(seed,zone){const r=mulberry32(seed>>>0),out=[];const kinds=[];for(const[k,a,b]of(ZONE_OBS[zone]||ZONE_OBS.north)){const n=a+Math.floor(r()*(b-a+1));for(let i=0;i<n;i++)kinds.push(k)}
   let id=0;for(const kind of kinds){const K=OBK[kind],rad=K.r;for(let t=0;t<140;t++){const a=r()*6.283,q=0.2+r()*0.68,x=ACX+Math.cos(a)*ARX*q,y=ACY+Math.sin(a)*ARY*q;
       if(Math.hypot(x-ACX,(y-YT)*1.3)<48||Math.hypot(x-ACX,(y-YB)*1.3)<48)continue;if(K.ind&&Math.abs(x-ACX)<28)continue;if(out.some(o=>Math.hypot(o.x-x,(o.y-y)*1.3)<o.r+rad+24))continue;
@@ -466,7 +466,7 @@ function forfeit(){if(B&&B.tb&&B.state!=='over'&&B.mode!=='wild'&&B.mode!=='trai
 
 /* --- wild --- */
 function startWild(zk){
-  const z=ZONES[zk];const sid=pickWild(poolOf(zk),1+distC(P.x,P.y)/25);const l=lvAt(P.x,P.y);
+  const z=ZONES[zk];const sid=pickWild(poolOf(zk),1+distC(P.x,P.y)/80);const l=lvAt(P.x,P.y);
   const wild=newMon(sid,l);G.dex[sid]=G.dex[sid]||0;
   if(!RUN.team.some(m=>m.hp>0))healAll();
   newBattle({mode:'wild',zone:zk,wild,me:mkFighter('L',RUN.team.map(battler),XL,'local'),foe:mkFighter('R',[battler(wild)],XR,'ai')});
@@ -528,7 +528,7 @@ async function wildLose(){
       if(B.mode==='wild'||B.mode==='trainer'){const rm=RUN.team[i];if(rm)rm.hp=m.hp}
       say(`${SPECIES[m.s].n} rappelt sich mit 25 % KP wieder auf!`);if(B.tb){B.state='tbChoose'}else{B.state='count';B.leadDone=1;B.leadWait=false;B.cntEnd=performance.now()+3000}return}
     B.state='fight'}
-  B.state='over';finale(false);say('Alle deine Monster sind besiegt…');const myB=B;await sleep(2400);if(B!==myB)return;endWild();healAll();teleport(25,21);toast('Du bist zurück zum PÄD geeilt.')}
+  B.state='over';finale(false);say('Alle deine Monster sind besiegt…');const myB=B;await sleep(2400);if(B!==myB)return;endWild();healAll();{const sp=padSpawn();teleport(sp.x,sp.y)}toast('Du bist zurück zum PÄD geeilt.')}
 function throwBonus(){const r=ringR(performance.now());if(r<8){say('Hervorragender Wurf!');return 1.6}if(r<11.5){say('Toller Wurf!');return 1.3}return 1}
 // catch chance: low HP + weak (low level / common) -> high; full HP / strong / rare -> low. Three shake checks decide.
 function catchChance(w,bonus){const hpF=1-(w.hp/w.mhp)*0.85,lvF=clamp(1.15-w.l*0.03,0.35,1.1);return clamp(hpF*lvF*rarOf(w.s).cm*(bonus||1)+0.04,0.02,0.97)}
@@ -737,7 +737,10 @@ function courtBG(){const W=AW/2,H=AH/2,cv=mk(W,H),c=cv.getContext('2d'),r=mulber
   P(6,8,24,12,'#1c0f07');P(7,9,22,4,'#8a5530');P(7,13,22,6,'#6b3f1f');P(W-30,8,24,12,'#1c0f07');P(W-29,9,22,4,'#8a5530');P(W-29,13,22,6,'#6b3f1f');
   P(12,10,6,1,'#f2f2f2');P(W-22,10,5,1,'#f2f2f2');P(W-22,11,4,1,'#d9d9d9');
   return cv}
-function battleBG(z){if(BBG[z])return BBG[z];if(z==='arena')return BBG[z]=courtBG();const W=AW/2,H=AH/2,cv=mk(W,H),c=cv.getContext('2d'),id=c.createImageData(W,H),d=id.data;
+function battleBG(z){if(BBG[z])return BBG[z];if(z==='arena')return BBG[z]=courtBG();
+  // new areas reuse a base layout with their own palettes
+  if(z==='snow'||z==='desert'||z==='jungle'){const sw={snow:{meadow:RGB.snow,leaf:RGB.pine,dirt:RGB.stone},desert:{hills:RGB.desert,dirt:RGB.sand},jungle:{forest:RGB.jungle,dirt:RGB.dirt}}[z],base={snow:'north',desert:'west',jungle:'east'}[z],keep={};
+    for(const k in sw){keep[k]=RGB[k];RGB[k]=sw[k]}let out;try{const saved=BBG[base];delete BBG[base];out=battleBG(base);if(saved)BBG[base]=saved;else delete BBG[base]}finally{for(const k in keep)RGB[k]=keep[k]}return BBG[z]=out}const W=AW/2,H=AH/2,cv=mk(W,H),c=cv.getContext('2d'),id=c.createImageData(W,H),d=id.data;
   const seed=hashStr(z),nL=noise2(seed,22,W,H),nS=noise2(seed+1,6,W,H),nD=noise2(seed+2,10,W,H);
   const gp=z==='east'?RGB.forest:z==='south'?RGB.shore:z==='west'?RGB.hills:RGB.meadow;
   // round arena seen from above: floor oval (a bit larger than where the feet may go), a rim, scenery outside

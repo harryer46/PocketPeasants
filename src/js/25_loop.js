@@ -1,6 +1,6 @@
 /* ===================== LOOP ===================== */
 let last=performance.now(),slow=0;
-function frame(now){if(!WORLD&&!BAKE_FAIL)bakeTick();const dt=Math.max(0,Math.min(0.05,(now-last)/1000));last=now;T+=dt;
+function frame(now){bakeTick();const dt=Math.max(0,Math.min(0.05,(now-last)/1000));last=now;T+=dt;
   try{if(G){if(!B)updatePlayer(dt);updateOthers(dt);if(B&&!panicPaused())bUpdate(dt);if(B&&$('#battle').classList.contains('on')){drawBattle();updateBattleUI()}else drawWorld();if(mapOpen())drawMap();
 }}catch(e){console.error(e);if(!frame.errShown){frame.errShown=1;showErr(e.message+' (frame)')}}
   try{drawFX()}catch(e){console.error(e)}

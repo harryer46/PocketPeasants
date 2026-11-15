@@ -1,98 +1,162 @@
 /* ===================== MAP ===================== */
-// 0 grass,1 tall,2 tree,3 water,4 path,5 sand,6 wall,7 heal door,8 roof,9 flowers,10 arena roof,11 arena wall,12 arena door
-const MW=60,MH=44,MAP=new Uint8Array(MW*MH);const GATES=[];const BIOME=new Uint8Array(MW*MH);const BKEYS=[null,'north','east','south','west','knast'];
-const WALK0=new Set([0,1,4,5,7,9,12,13,14,15,17,18,19,20,22,23]);
-// extra town buildings (drawn as whole sprites; tile 21 = solid, 22/23 = doors)
-const BLDG=[{id:'shop',x:23,y:24,w:5,h:4,dx:25,door:22,n:'COPSHOP'},{id:'hfpol',x:32,y:24,w:7,h:4,dx:35,door:23,n:'HfPol'}];const ENC=new Set([1,17,18,19]);const BASE_T=[0,0,14,0,15],ENC_T=[0,1,17,18,19];
-function tget(x,y){return(x<0||y<0||x>=MW||y>=MH)?2:MAP[y*MW+x]}
+// Large hand-planned world (≈300×200 tiles) after the player's concept art:
+// Villingen-Knastingen (police academy + court) in the centre on a plateau, five training towns around it
+// (Lahribar/snow NW, Unterwertheim/desert NE, Damental/forest W, Mostbach/jungle E, Marderach/harbour S),
+// rivers from the northern lake, the sea with islands in the south, the prison (Knast) in the desert crater.
+// tiles: 0 grass,1 tall grass,2 tree,3 water,4 path,5 sand,6 wall,7 PÄD door,8 roof,9 flowers,10 court roof,11 court wall/prison wall,12 court door,
+// 13 shrine,14 forest floor,15 hill ground,16 rock/cliff,17 ferns,18 reeds,19 rubble,20 cell floor,21 building,22 shop door,23 HfPol door,
+// 24 snow grass,25 desert scrub,26 jungle grass,27 bridge/pier,28 snow,29 desert sand,30 jungle floor,31 mountain peak
+const MW=300,MH=200,MAP=new Uint8Array(MW*MH);const GATES=[];const BIOME=new Uint8Array(MW*MH);
+const BKEYS=[null,'north','east','south','west','knast','snow','desert','jungle'];
+const WALK0=new Set([0,1,4,5,7,9,12,13,14,15,17,18,19,20,22,23,24,25,26,27,28,29,30]);
+const ENC=new Set([1,17,18,19,24,25,26]);const BASE_T=[0,0,14,0,15,20,28,29,30],ENC_T=[0,1,17,18,19,20,24,25,26];
+const BLDG=[],PADS=[],LABELS=[],TOWNS=[];let VSPAWN={x:150,y:91},COURT={x:149,y:85};
+function tget(x,y){return(x<0||y<0||x>=MW||y>=MH)?31:MAP[y*MW+x]}
 function tset(x,y,v){if(x>=0&&y>=0&&x<MW&&y<MH)MAP[y*MW+x]=v}
 function vnoise(seed,cell){
   const r=mulberry32(seed),gw=Math.ceil(MW/cell)+2,gh=Math.ceil(MH/cell)+2,G=[];for(let i=0;i<gw*gh;i++)G.push(r());
   return(x,y)=>{const fx=x/cell,fy=y/cell,ix=Math.floor(fx),iy=Math.floor(fy),tx=fx-ix,ty=fy-iy,sx=tx*tx*(3-2*tx),sy=ty*ty*(3-2*ty),g=(a,b)=>G[b*gw+a];
     return(g(ix,iy)*(1-sx)+g(ix+1,iy)*sx)*(1-sy)+(g(ix,iy+1)*(1-sx)+g(ix+1,iy+1)*sx)*sy};
 }
+// town plans (centre tile); biome = the area around it
+const TOWN_DEF=[{id:'vil',n:'Villingen-Knastingen',x:150,y:88,b:1,center:1},{id:'lah',n:'Lahribar',x:57,y:27,b:6},{id:'unt',n:'Unterwertheim',x:244,y:33,b:7},
+  {id:'dam',n:'Damental',x:46,y:104,b:2},{id:'mos',n:'Mostbach',x:247,y:110,b:8},{id:'mar',n:'Marderach',x:141,y:155,b:3}];
+const KNAST_C={x:262,y:13};
 (function gen(){
-  const r=mulberry32(4242),n1=vnoise(11,7),n2=vnoise(22,9),n3=vnoise(33,5);
-  for(let y=0;y<MH;y++)for(let x=0;x<MW;x++){
-    const d=distC(x,y);let b;
-    if(d<8.5+n1(x,y)*2.5)b=0;else{const a=Math.atan2((y-CY)*1.3,x-CX)+(n2(x,y)-0.5)*1.1,q=Math.PI/4;b=a>=-3*q&&a<-q?1:a>=-q&&a<q?2:a>=q&&a<3*q?3:4}
-    BIOME[y*MW+x]=b;let t=BASE_T[b];
-    if(b>0&&n3(x,y)+r()*0.18>0.6)t=ENC_T[b];
-    else if(b===2&&r()<0.22)t=2;else if(b===4&&r()<0.08)t=16;else if(b===1&&r()<0.03)t=2;else if((b===1||b===0)&&r()<0.05)t=9;else if(b===3&&r()<0.02)t=2;
-    tset(x,y,t);
+  const r=mulberry32(4242),n1=vnoise(11,18),n2=vnoise(22,9),n3=vnoise(33,5),wx=vnoise(44,26),wy=vnoise(55,26),n4=vnoise(66,13);
+  const B=(x,y)=>BIOME[y*MW+x];
+  // ---- biomes: warped Voronoi over hand-placed seeds (layout of the concept map)
+  const SEEDS={1:[[150,70],[150,116],[118,98],[182,98],[132,50],[168,50],[150,135]],4:[[150,18],[115,22],[185,22],[98,38],[202,38]],6:[[45,22],[18,45],[74,44],[28,12],[60,8]],
+    2:[[28,95],[70,84],[42,124],[80,112],[15,120]],3:[[100,168],[150,172],[205,166],[30,160],[64,150],[250,172],[120,150],[175,150]],8:[[255,100],[287,130],[232,134],[287,88],[265,150]],7:[[250,25],[287,50],[226,56],[283,12],[218,12]]};
+  const SL=[];for(const b in SEEDS)for(const[x,y]of SEEDS[b])SL.push([x,y,+b]);
+  for(let y=0;y<MH;y++)for(let x=0;x<MW;x++){const X=x+(wx(x,y)-0.5)*30,Y=y+(wy(x,y)-0.5)*30;let bd=1e9,bb=1;for(const[sx,sy,b]of SL){const d=(X-sx)**2+(Y-sy)**2;if(d<bd){bd=d;bb=b}}BIOME[y*MW+x]=bb}
+  // every training town sits well inside its own area
+  for(const T of TOWN_DEF){if(T.center)continue;for(let y=T.y-20;y<=T.y+20;y++)for(let x=T.x-30;x<=T.x+30;x++){if(x<0||y<0||x>=MW||y>=MH)continue;if(((x-T.x)/30)**2+((y-T.y)/20)**2<1)BIOME[y*MW+x]=T.b}}
+  // ---- base terrain + vegetation per biome
+  for(let y=0;y<MH;y++)for(let x=0;x<MW;x++){const b=B(x,y),i=y*MW+x;let t=BASE_T[b];const p=n3(x,y)+r()*0.16,q=n2(x,y),z=n4(x,y);
+    if(b===1){if(p>0.62)t=1;else if(q>0.72&&r()<0.75)t=2;else if(r()<0.05)t=9}
+    else if(b===2){if(q>0.5&&r()<0.82)t=2;else if(p>0.58)t=17;else if(r()<0.02)t=9}
+    else if(b===3){if(p>0.64)t=18;else if(q>0.8&&r()<0.4)t=2}
+    else if(b===4){if(Math.abs(z-0.5)<0.028)t=16;else if(q>0.58&&r()<0.8)t=2;else if(p>0.62)t=19;else if(r()<0.04)t=16}
+    else if(b===6){if(q>0.6&&r()<0.75)t=2;else if(p>0.6)t=24;else if(n1(x,y)>0.7)t=31}
+    else if(b===7){if(Math.abs(z-0.5)<0.032||Math.abs(n1(x,y)-0.45)<0.02)t=16;else if(p>0.63)t=25;else if(r()<0.025)t=2;else if(r()<0.02)t=16}
+    else if(b===8){if(q>0.5&&r()<0.78)t=2;else if(p>0.56)t=26;else if(r()<0.01)t=16}
+    MAP[i]=t}
+  // mountains in the far north-west (snow) and canyon rims in the north-east
+  for(let y=0;y<MH;y++)for(let x=0;x<MW;x++){const b=B(x,y);const m=(x<14+n1(x,y)*10)||(y<7+n2(x,y)*7&&x<120)||(x+y*1.4<44);if(b===6&&m)tset(x,y,31);if(b===7&&(y<5+n2(x,y)*5||x>MW-6-n1(x,y)*5))tset(x,y,16);if(b===4&&y<5+n2(x,y)*4)tset(x,y,31)}
+  // ---- sea, beach, islands
+  const coast=x=>167+Math.sin(x/23)*6+Math.sin(x/9)*2+(n1(x,170)-0.5)*8;
+  for(let x=0;x<MW;x++){const cy=coast(x);for(let y=0;y<MH;y++){if(y>cy){tset(x,y,3);BIOME[y*MW+x]=3}else if(y>cy-3&&B(x,y)===3&&x>150){tset(x,y,5)}}}
+  // swamp in the south-west
+  for(let y=126;y<170;y++)for(let x=8;x<80;x++){if(B(x,y)!==3||tget(x,y)===3)continue;const v=n4(x,y);if(v>0.62)tset(x,y,3);else if(v>0.54)tset(x,y,18)}
+  const island=(cx,cy,rx,ry,kind)=>{for(let y=cy-ry-1;y<=cy+ry+1;y++)for(let x=cx-rx-1;x<=cx+rx+1;x++){const d=((x-cx)/rx)**2+((y-cy)/ry)**2;if(d>1)continue;BIOME[y*MW+x]=3;tset(x,y,d>0.65?5:kind==='rock'&&r()<0.25?16:r()<0.2?2:r()<0.3?18:0)}};
+  island(20,181,8,5,'ruin');island(64,186,6,4);island(98,179,5,4);island(133,188,5,3,'rock');island(183,184,6,4);island(224,181,7,5);island(272,183,9,5);island(292,170,5,4,'rock');
+  // ---- lakes and rivers (rivers stop at the coast; bridges are added where roads cross)
+  const ell=(cx,cy,rx,ry)=>{for(let y=cy-ry-1;y<=cy+ry+1;y++)for(let x=cx-rx-1;x<=cx+rx+1;x++){const d=((x-cx)/rx)**2+((y-cy)/ry)**2;if(d<1)tset(x,y,3);else if(d<1.35&&r()<0.6&&tget(x,y)!==31)tset(x,y,B(x,y)===6?28:5)}};
+  ell(148,57,11,5);ell(52,80,9,6);ell(208,74,5,3);ell(286,104,4,3);
+  const RIVERS=[[[139,59],[125,64],[113,76],[105,92],[101,108],[98,124],[96,140],[98,158],[98,175]],[[158,59],[176,66],[189,80],[195,98],[194,116],[198,134],[200,152],[204,175]],
+    [[36,6],[34,30],[28,50],[20,70],[15,90],[12,110],[13,130],[16,150],[19,172]],[[44,74],[30,64],[28,56]],[[294,62],[280,74],[270,86],[262,96]]];
+  const RIVER_TILES=new Set();
+  for(const R of RIVERS)for(let k=0;k+1<R.length;k++){const[a,b2]=[R[k],R[k+1]],L=Math.hypot(b2[0]-a[0],b2[1]-a[1]);for(let s=0;s<=L*3;s++){const f=s/(L*3),x=a[0]+(b2[0]-a[0])*f+(n2(a[0]+s,a[1])-0.5)*3,y=a[1]+(b2[1]-a[1])*f;
+    for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const X=Math.round(x+dx),Y=Math.round(y+dy);if(X<1||Y<1||X>=MW-1||Y>=MH-1)continue;if(Math.abs(dx)+Math.abs(dy)>1&&r()<0.6)continue;tset(X,Y,3);RIVER_TILES.add(Y*MW+X)}}}
+  // ---- the prison in the desert crater
+  {const{x:cx,y:cy}=KNAST_C;for(let y=cy-13;y<=cy+13;y++)for(let x=cx-15;x<=cx+15;x++){const d=Math.hypot((x-cx)/15,(y-cy)/12);if(d<1.12&&d>0.9)tset(x,y,16);if(d<=0.9){tset(x,y,29);BIOME[y*MW+x]=7}}
+   for(let y=cy-7;y<=cy+7;y++)for(let x=cx-9;x<=cx+9;x++){const wall=y===cy-7||y===cy+7||x===cx-9||x===cx+9;tset(x,y,wall?11:20);BIOME[y*MW+x]=5}
+   for(let x=cx-8;x<=cx+8;x++)tset(x,cy-1,x===cx?20:11);for(let y=cy-6;y<cy-1;y++)tset(cx,y,11);tset(cx,cy-3,20)
+   for(let y=cy+8;y<=cy+16;y++){tset(cx,y,4);if(tget(cx-1,y)===16)tset(cx-1,y,29);if(tget(cx+1,y)===16)tset(cx+1,y,29)}tset(cx,cy+7,20)}
+  // ---- towns
+  const fillRect=(x0,y0,x1,y1,t,b)=>{for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){tset(x,y,t);if(b!=null)BIOME[y*MW+x]=b}};
+  const pad=(x,y)=>{for(let X=x;X<x+6;X++){tset(X,y,8);tset(X,y+1,8);tset(X,y+2,6);tset(X,y+3,6)}tset(x+3,y+3,7);PADS.push({x:x+3,y:y+3,bx:x,by:y})};
+  const bld=(id,x,y,w,dxo,door)=>{for(let Y=y;Y<y+4;Y++)for(let X=x;X<x+w;X++)tset(X,Y,21);tset(x+dxo,y+3,door);BLDG.push({id,x,y,w,h:4,dx:x+dxo,door,n:id==='shop'?'COPSHOP':'HfPol'})};
+  for(const T of TOWN_DEF){
+    if(T.center){const{x:cx,y:cy}=T;
+      for(let y=cy-24;y<=cy+24;y++)for(let x=cx-26;x<=cx+26;x++){const d=Math.hypot((x-cx)/22,(y-cy)/19);if(d<1){BIOME[y*MW+x]=0;tset(x,y,0);if(d>0.9&&!(Math.abs(x-cx)<=2||Math.abs(y-cy)<=1))tset(x,y,2);else if(r()<0.04)tset(x,y,9)}}
+      for(let a=0;a<6.3;a+=0.01){const x=Math.round(cx+Math.cos(a)*13),y=Math.round(cy+Math.sin(a)*11);tset(x,y,4)}
+      for(let x=cx-21;x<=cx+21;x++){tset(x,cy,4);tset(x,cy+1,4)}for(let y=cy-19;y<=cy+20;y++){tset(cx,y,4);tset(cx-1,y,4)}
+      // court (dome) in the middle, PÄD left, shop + HfPol below, sports field on the right
+      for(let x=cx-3;x<=cx+2;x++){for(let y=cy-9;y<=cy-7;y++)tset(x,y,10);tset(x,cy-6,11);tset(x,cy-5,11)}tset(cx-1,cy-5,12);tset(cx,cy-5,12);tset(cx-1,cy-4,4);tset(cx,cy-4,4);
+      COURT={x:cx-1,y:cy-4};VSPAWN={x:cx,y:cy+3};
+      pad(cx-17,cy-5);for(let y=cy-1;y<=cy;y++)tset(cx-14,y,4);
+      bld('shop',cx-10,cy+4,5,2,22);tset(cx-8,cy+8,4);bld('hfpol',cx+4,cy+4,7,3,23);tset(cx+7,cy+8,4);
+      for(let y=cy-7;y<=cy-3;y++)for(let x=cx+8;x<=cx+15;x++)tset(x,y,(y===cy-7||y===cy-3||x===cx+8||x===cx+15)?5:0);
+      LABELS.push({x:cx-17,y:cy-5,w:6,t:'PÄD',kind:'pad'},{x:cx-3,y:cy-9,w:6,t:'GERICHT',kind:'court'});
+      TOWNS.push({id:T.id,n:T.n,x:cx,y:cy+3,pad:PADS[PADS.length-1]});continue}
+    const{x:cx,y:cy}=T;fillRect(cx-15,cy-7,cx+14,cy+6,0,0);
+    for(let x=cx-15;x<=cx+14;x++){tset(x,cy-7,2);tset(x,cy+6,2)}for(let y=cy-7;y<=cy+6;y++){tset(cx-15,y,2);tset(cx+14,y,2)}
+    for(let x=cx-15;x<=cx+14;x++){tset(x,cy+2,4)}for(let y=cy-7;y<=cy+6;y++){tset(cx,y,4)}
+    if(T.b===6)for(let y=cy-6;y<=cy+5;y++)for(let x=cx-14;x<=cx+13;x++)if(MAP[y*MW+x]===0)MAP[y*MW+x]=28;
+    if(T.b===7)for(let y=cy-6;y<=cy+5;y++)for(let x=cx-14;x<=cx+13;x++)if(MAP[y*MW+x]===0)MAP[y*MW+x]=29;
+    pad(cx-13,cy-5);tset(cx-10,cy-1,4);tset(cx-10,cy,4);tset(cx-10,cy+1,4);
+    bld('shop',cx-5,cy-5,5,2,22);tset(cx-3,cy-1,4);tset(cx-3,cy,4);tset(cx-3,cy+1,4);
+    bld('hfpol',cx+3,cy-5,7,3,23);tset(cx+6,cy-1,4);tset(cx+6,cy,4);tset(cx+6,cy+1,4);
+    LABELS.push({x:cx-13,y:cy-5,w:6,t:'PÄD',kind:'pad'});
+    TOWNS.push({id:T.id,n:T.n,x:cx,y:cy+3,pad:PADS[PADS.length-1]});
+    if(T.id==='mar'){for(const px of[cx-8,cx-1,cx+7])for(let y=cy+6;y<=cy+18;y++){if(tget(px,y)===3||y>cy+6)tset(px,y,27);else tset(px,y,4)}}
   }
-  // south: lake with sand shore, reeds near the water
-  for(let y=0;y<MH;y++)for(let x=0;x<MW;x++){const d=((x-30)/10)**2+((y-36)/4.5)**2;if(d<1)tset(x,y,3);else if(d<1.55)tset(x,y,5);else if(d<2.3&&BIOME[y*MW+x]===3&&r()<0.5)tset(x,y,18)}
-  for(let y=0;y<MH;y++)for(let x=0;x<MW;x++)if(BIOME[y*MW+x]===3&&(y>=MH-5)&&tget(x,y)!==3&&r()<0.55)tset(x,y,5);
-  // roads
-  for(let x=2;x<MW-2;x++)tset(x,23,4);
-  for(let y=2;y<=30;y++)tset(30,y,4);
-  for(let y=11;y<=22;y++)tset(54,y,4);
-  for(let y=24;y<=34;y++)tset(9,y,4);
-  // buildings
-  for(let x=22;x<=27;x++){tset(x,17,8);tset(x,18,8);tset(x,19,6);tset(x,20,6)}
-  tset(25,20,7);tset(25,21,4);tset(25,22,4);
-  for(let x=33;x<=38;x++){tset(x,16,10);tset(x,17,10);tset(x,18,10);tset(x,19,11);tset(x,20,11)}
-  tset(35,20,12);tset(36,20,12);tset(35,21,4);tset(35,22,4);tset(36,21,4);tset(36,22,4);
-  for(const Bd of BLDG){for(let y=Bd.y;y<Bd.y+Bd.h;y++)for(let x=Bd.x;x<Bd.x+Bd.w;x++)tset(x,y,21);tset(Bd.dx,Bd.y+Bd.h-1,Bd.door)}
-  for(let x=23;x<=38;x++)tset(x,28,4);
-  const blocked=t=>t===2||t===16;
-  for(const L of LEGENDS){for(let dy=-2;dy<=2;dy++)for(let dx=-2;dx<=2;dx++)if(blocked(tget(L.x+dx,L.y+dy)))tset(L.x+dx,L.y+dy,BASE_T[BIOME[(L.y+dy)*MW+L.x+dx]]||0);for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++)tset(L.x+dx,L.y+dy,13)}
-  for(const t of TRAINERS){if(!WALK0.has(tget(t.x,t.y))||ENC.has(tget(t.x,t.y)))tset(t.x,t.y,BASE_T[BIOME[t.y*MW+t.x]]||0);const[dx,dy]={up:[0,-1],down:[0,1],left:[-1,0],right:[1,0]}[t.d];for(let k=1;k<=4;k++){const x=t.x+dx*k,y=t.y+dy*k;if(blocked(tget(x,y))||tget(x,y)===3)tset(x,y,BASE_T[BIOME[y*MW+x]]||0)}}
-  // biome borders: progression Town → Meadow → Woods and Town → Shore → Hills.
-  // Woods and Hills are walled off from town (tree line / cliffs); Meadow|Woods and Shore|Hills each have one pass; Woods|Shore (river) and Meadow|Hills (cliffs) are closed.
-  {const BAR={'0-2':2,'0-4':16,'1-2':2,'2-3':3,'3-4':16,'1-4':16},PASS={'1-2':1,'3-4':1},D=[[1,0],[-1,0],[0,1],[0,-1]],bar=[],keep=new Set();
-   for(const L of LEGENDS)for(let dy=-2;dy<=2;dy++)for(let dx=-2;dx<=2;dx++)keep.add((L.y+dy)*MW+L.x+dx);for(const t of TRAINERS)keep.add(t.y*MW+t.x);
-   for(let y=2;y<MH-2;y++)for(let x=2;x<MW-2;x++){const i=y*MW+x,b=BIOME[i];if(keep.has(i))continue;
-     for(const[dx,dy]of D){const nb=BIOME[(y+dy)*MW+x+dx];if(nb===b)continue;const k=b<nb?b+'-'+nb:nb+'-'+b;if(BAR[k]!==undefined){bar.push([x,y,k]);break}}}
-   for(const[x,y,k]of bar){const d=distC(x,y);tset(x,y,PASS[k]&&d>16.5&&d<19.5?4:BAR[k])}}
-  for(let y=0;y<MH;y++)for(let x=0;x<MW;x++)if(x<2||y<2||x>=MW-2||y>=MH-2)tset(x,y,BIOME[y*MW+x]===4?16:2);
-  // KNAST: walled prison yard in the far north-west of the hills; cell-block floor (tile 20) = encounters with StGB offenders only
-  for(let y=3;y<=11;y++)for(let x=4;x<=14;x++){const wall=y===3||y===11||x===4||x===14;tset(x,y,wall?11:20);BIOME[y*MW+x]=5}
-  for(const[x,y]of[[9,6],[9,7],[9,8]])tset(x,y,11);   // a cell block in the middle
-  tset(9,11,4);for(let y=12;y<=22;y++){tset(9,y,4);if(tget(8,y)===16||tget(8,y)===2)tset(8,y,15);if(tget(10,y)===16||tget(10,y)===2)tset(10,y,15)}
-  tset(10,12,15);
-  // GATES: town → Nordwiese is free; everything further is reached through single choke points guarded by teachers
-  {const W0=i=>WALK0.has(MAP[i]),D2=[[1,0],[0,1]];
-   const cross=(a,b)=>{const out=[];for(let y=2;y<MH-2;y++)for(let x=2;x<MW-2;x++){const i=y*MW+x;if(!W0(i))continue;for(const[dx,dy]of D2){const j=(y+dy)*MW+x+dx;if(!W0(j))continue;const bi=BIOME[i],bj=BIOME[j];if(bi===a&&bj===b)out.push([i,j]);else if(bi===b&&bj===a)out.push([j,i])}}return out};
-   const block=i=>{MAP[i]=2};
-   // town → Südküste closed
-   for(const[,j]of cross(0,3))block(j);
-   // keep one crossing per pair (prefer a path tile), close the others on the far side
-   const keep=(a,b)=>{const cs=cross(a,b);if(!cs.length)return null;cs.sort((p,q)=>(MAP[q[1]]===4)-(MAP[p[1]]===4)||Math.abs(cs.length/2-cs.indexOf(p))-Math.abs(cs.length/2-cs.indexOf(q)));const g=cs[0];
-     for(let it=0;it<6;it++){const left=cross(a,b).filter(([i,j])=>!(i===g[0]&&j===g[1]));if(!left.length)break;for(const[i,j]of left){if(j!==g[1])block(j);else if(i!==g[0])block(i)}}
-     // also make sure the gate is a true choke point: close far-side neighbours of the gate that touch side a
-     return g[1]};
-   const gE=keep(1,2),gW=keep(3,4);
-   // corridor Ostwald → Südküste (new): shortest straight-ish carve between the two areas, owned by the woods
-   let best=null;for(let i=0;i<MW*MH;i++){if(BIOME[i]!==2||!W0(i))continue;const x=i%MW,y=(i-x)/MW;if(y<30)continue;for(let j=0;j<MW*MH;j++){if(BIOME[j]!==3||!W0(j))continue;const u=j%MW,v=(j-u)/MW;const d=Math.abs(u-x)+Math.abs(v-y);if(!best||d<best.d)best={d,x,y,u,v}}}
-   let gS=null;if(best){let x=best.x,y=best.y;while(x!==best.u||y!==best.v){if(x!==best.u)x+=Math.sign(best.u-x);else y+=Math.sign(best.v-y);const k=y*MW+x;if(x===best.u&&y===best.v){gS=k;break}if(!W0(k)||BIOME[k]!==2){MAP[k]=4;BIOME[k]=2}}}
-   // Knast: inner cell block reachable only through one door
-   for(let x=5;x<=13;x++)tset(x,9,x===9?20:11);for(const[x,y]of[[9,6],[9,7],[9,8]])tset(x,y,20);
-   GATES.push({b:2,i:gE},{b:3,i:gS},{b:4,i:gW},{b:5,i:11*MW+9},{b:6,i:9*MW+9});
-  }
-  // make sure every walkable spot can be reached from town: carve the shortest way through obstacles into any cut-off pocket
-  const D4=[[1,0],[-1,0],[0,1],[0,-1]];
-  for(let it=0;it<60;it++){const seen=new Uint8Array(MW*MH),q=[24*MW+30];seen[q[0]]=1;
-    while(q.length){const i=q.pop(),x=i%MW,y=(i-x)/MW;for(const[dx,dy]of D4){const nx=x+dx,ny=y+dy;if(nx<1||ny<1||nx>=MW-1||ny>=MH-1)continue;const j=ny*MW+nx;if(seen[j]||!WALK0.has(MAP[j]))continue;seen[j]=1;q.push(j)}}
-    let c=-1;for(let i=0;i<MW*MH;i++){const x=i%MW,y=(i-x)/MW;if(x>=2&&y>=2&&x<MW-2&&y<MH-2&&!seen[i]&&WALK0.has(MAP[i])){c=i;break}}if(c<0)break;
-    const par=new Int32Array(MW*MH).fill(-1),bq=[c];par[c]=c;let hit=-1;
-    for(let h=0;h<bq.length&&hit<0;h++){const i=bq[h],x=i%MW,y=(i-x)/MW;for(const[dx,dy]of D4){const nx=x+dx,ny=y+dy;if(nx<2||ny<2||nx>=MW-2||ny>=MH-2)continue;const j=ny*MW+nx;if(par[j]>=0)continue;par[j]=i;if(seen[j]){hit=j;break}bq.push(j)}}
-    if(hit<0)break;for(let i=par[hit];i!==c;i=par[i])if(!WALK0.has(MAP[i]))MAP[i]=BASE_T[BIOME[i]]||0}
-  // the carving above may have opened extra biome crossings next to the gates → close them again; pockets that become
-  // unreachable are connected through their own biome only (or filled with trees)
-  {const W0=i=>WALK0.has(MAP[i]),gateSet=new Set(GATES.map(g=>g.i));
-   const reach=()=>{const seen=new Uint8Array(MW*MH),q=[24*MW+30];seen[q[0]]=1;while(q.length){const i=q.pop(),x=i%MW,y=(i-x)/MW;for(const[dx,dy]of D4){const j=(y+dy)*MW+x+dx;if(seen[j]||!W0(j))continue;seen[j]=1;q.push(j)}}return seen};
-   const allowed=(a,b)=>a===b||(Math.min(a,b)===0&&Math.max(a,b)===1);
-   for(let it=0;it<8;it++){let changed=false;
-     for(let y=2;y<MH-2;y++)for(let x=2;x<MW-2;x++){const i=y*MW+x;if(!W0(i))continue;for(const[dx,dy]of D4){const j=(y+dy)*MW+x+dx;if(!W0(j))continue;const a=BIOME[i],b=BIOME[j];if(allowed(a,b)||gateSet.has(i)||gateSet.has(j))continue;
-       // close the tile on the "later" side (higher biome index, but never town/north)
-       const k=(b>a?j:i);if(BIOME[k]<=1)continue;MAP[k]=2;changed=true}}
-     const seen=reach();
-     for(let i=0;i<MW*MH;i++){if(!W0(i)||seen[i])continue;const x0=i%MW,y0=(i-x0)/MW;if(x0<2||y0<2||x0>=MW-2||y0>=MH-2)continue;const bb=BIOME[i];
-       const par=new Int32Array(MW*MH).fill(-1),bq=[i];par[i]=i;let hit=-1;
-       for(let h=0;h<bq.length&&hit<0;h++){const c=bq[h],x=c%MW,y=(c-x)/MW;for(const[dx,dy]of D4){const nx=x+dx,ny=y+dy;if(nx<2||ny<2||nx>=MW-2||ny>=MH-2)continue;const j=ny*MW+nx;if(par[j]>=0||BIOME[j]!==bb)continue;par[j]=c;if(seen[j]){hit=j;break}bq.push(j)}}
-       if(hit>=0){for(let c=par[hit];c!==i;c=par[c])if(!W0(c))MAP[c]=BASE_T[bb]||0}else MAP[i]=2;changed=true;break}
-     if(!changed)break}}
+  // ---- roads (4-connected, organic wiggle); water → bridge
+  const ROAD=new Set();
+  const rset=(x,y)=>{if(x<2||y<2||x>=MW-2||y>=MH-2)return;const i=y*MW+x,t=MAP[i];if(t===11||t===20||t===10||t===12||t===6||t===8||t===21||t===7||t===22||t===23)return;MAP[i]=(t===3||t===27)?27:4;ROAD.add(i)};
+  const road=(pts,w)=>{for(let k=0;k+1<pts.length;k++){let[x,y]=pts[k];const[tx,ty]=pts[k+1];rset(x,y);let guard=0;
+    while((x!==tx||y!==ty)&&guard++<2000){const dx=tx-x,dy=ty-y;const wob=n2(x*1.7,y*1.7)-0.5;if(Math.abs(dx)>Math.abs(dy)+wob*6||dy===0)x+=Math.sign(dx);else y+=Math.sign(dy);rset(x,y);if(w>1){rset(x+1,y);rset(x,y+1)}}}};
+  const RD=[
+    // Villingen exits
+    [[150,108],[150,122],[146,134],[141,146]],[[129,88],[116,90],[104,94],[92,98],[76,101],[62,104]],[[171,88],[184,92],[196,96],[210,102],[226,108],[233,110]],
+    [[150,67],[150,62],[160,54],[163,46],[156,36],[140,32],[120,30],[100,30],[84,28],[72,27]],[[163,46],[176,40],[196,38],[214,36],[230,34]],
+    // ring between the training towns
+    [[46,96],[44,84],[38,68],[44,52],[52,40],[57,34]],[[247,101],[250,86],[252,70],[248,54],[244,40]],
+    [[50,112],[56,126],[66,138],[82,146],[100,150],[118,154],[126,155]],[[240,118],[230,128],[216,138],[200,146],[184,152],[166,155],[156,155]],
+    [[244,26],[252,22],[262,24],[262,29]],
+    // side paths to shrines, beach, lighthouse view, swamp
+    [[150,32],[150,20],[150,16]],[[258,33],[272,36],[281,36]],[[257,112],[270,124],[282,138]],[[62,104],[70,116],[70,130]],[[24,92],[24,60],[22,40],[22,25]],
+    [[156,158],[176,160],[196,160],[216,158],[232,154]],[[126,155],[110,160],[100,164]],[[56,130],[40,140],[30,150]],[[176,40],[190,24],[200,14]]
+  ];
+  for(const p of RD)road(p,p===RD[0]||p===RD[1]||p===RD[2]?2:1);
+  // ---- legendary shrines (+ clear around them)
+  for(const L of LEGENDS){for(let dy=-2;dy<=2;dy++)for(let dx=-2;dx<=2;dx++){const t=tget(L.x+dx,L.y+dy);if(!WALK0.has(t)||t===27)tset(L.x+dx,L.y+dy,BASE_T[B(L.x+dx,L.y+dy)]||0)}for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++)tset(L.x+dx,L.y+dy,13)}
+  // ---- borders between areas: a closed line (trees, cliffs, peaks, water); only roads cross → each road crossing gets a teacher (Prof.)
+  const BAR={1:2,2:2,3:3,4:16,5:11,6:31,7:16,8:2};const D4=[[1,0],[-1,0],[0,1],[0,-1]];
+  {const set=[];for(let y=2;y<MH-2;y++)for(let x=2;x<MW-2;x++){const i=y*MW+x,b=BIOME[i];if(!b||ROAD.has(i)||!WALK0.has(MAP[i])||MAP[i]===13)continue;
+     for(const[dx,dy]of D4){const j=(y+dy)*MW+x+dx,nb=BIOME[j];if(!nb||nb===b)continue;set.push([i,b]);break}}
+   for(const[i,b]of set)MAP[i]=BAR[b]}
+  for(let y=0;y<MH;y++)for(let x=0;x<MW;x++)if(x<2||y<2||x>=MW-2||y>=MH-2){const b=B(x,y);tset(x,y,b===3?3:b===6||b===4?31:b===7?16:2)}
+  // ---- gates: first road tile inside an area that is entered from another area
+  {const seen=new Set();for(const i of ROAD){const x=i%MW,y=(i-x)/MW,b=BIOME[i];if(b<=1)continue;
+     for(const[dx,dy]of D4){const j=(y+dy)*MW+x+dx;if(!ROAD.has(j))continue;const nb=BIOME[j];if(nb===b||nb===0)continue;
+       if([...seen].some(k=>{const kx=k%MW,ky=(k-kx)/MW;return BIOME[k]===b&&Math.abs(kx-x)+Math.abs(ky-y)<16}))continue;seen.add(i);GATES.push({b,i});break}}
+   GATES.push({b:5,i:(KNAST_C.y+7)*MW+KNAST_C.x},{b:9,i:(KNAST_C.y-1)*MW+KNAST_C.x})}
+  // ---- reachability: carve pockets back to the network inside their own area (never across a border), else fill them
+  const W0=i=>WALK0.has(MAP[i]);
+  const reach=()=>{const seen=new Uint8Array(MW*MH),q=[VSPAWN.y*MW+VSPAWN.x];seen[q[0]]=1;while(q.length){const i=q.pop(),x=i%MW,y=(i-x)/MW;for(const[dx,dy]of D4){const nx=x+dx,ny=y+dy;if(nx<1||ny<1||nx>=MW-1||ny>=MH-1)continue;const j=ny*MW+nx;if(seen[j]||!W0(j))continue;seen[j]=1;q.push(j)}}return seen};
+  for(let it=0;it<400;it++){const seen=reach();let c=-1;for(let i=0;i<MW*MH;i++){const x=i%MW,y=(i-x)/MW;if(x>=2&&y>=2&&x<MW-2&&y<MH-2&&!seen[i]&&W0(i)&&MAP[i]!==3){c=i;break}}if(c<0)break;
+    // component size
+    const comp=[c],cs=new Set([c]);for(let h=0;h<comp.length&&comp.length<400;h++){const i=comp[h],x=i%MW,y=(i-x)/MW;for(const[dx,dy]of D4){const j=(y+dy)*MW+x+dx;if(cs.has(j)||!W0(j))continue;cs.add(j);comp.push(j)}}
+    const bb=BIOME[c],isl=comp.some(i=>{const x=i%MW,y=(i-x)/MW;return D4.some(([dx,dy])=>MAP[(y+dy)*MW+x+dx]===3)})&&bb===3;
+    if(comp.length<10&&!isl){for(const i of comp)MAP[i]=BAR[bb]||2;continue}
+    const par=new Int32Array(MW*MH).fill(-1),bq=[];for(const i of comp){par[i]=i;bq.push(i)}let hit=-1;
+    for(let h=0;h<bq.length&&hit<0;h++){const i=bq[h],x=i%MW,y=(i-x)/MW;for(const[dx,dy]of D4){const nx=x+dx,ny=y+dy;if(nx<2||ny<2||nx>=MW-2||ny>=MH-2)continue;const j=ny*MW+nx;if(par[j]>=0)continue;if(BIOME[j]!==bb&&!(isl&&MAP[j]===3))continue;if(MAP[j]===11||MAP[j]===20)continue;par[j]=i;if(seen[j]){hit=j;break}bq.push(j)}}
+    if(hit<0){if(isl)continue;for(const i of comp)MAP[i]=BAR[bb]||2;continue}
+    for(let i=par[hit];par[i]!==i;i=par[i])if(!W0(i)&&MAP[i]!==3)MAP[i]=BASE_T[BIOME[i]]||0}
+  // ---- trainers: originals at fixed story spots, many more along the roads of every area
+  const near=(x,y,b)=>{for(let rr=1;rr<5;rr++)for(let dy=-rr;dy<=rr;dy++)for(let dx=-rr;dx<=rr;dx++){const X=x+dx,Y=y+dy,i=Y*MW+X;if(X<3||Y<3||X>=MW-3||Y>=MH-3)continue;if(BIOME[i]!==b||ROAD.has(i))continue;
+      // standing beside a road, looking at it
+      for(const[ddx,ddy,d]of[[1,0,'right'],[-1,0,'left'],[0,1,'down'],[0,-1,'up']]){const j=(Y+ddy)*MW+X+ddx;if(ROAD.has(j)&&BIOME[j]===b)return{x:X,y:Y,d}}}return null};
+  const roadsIn=b=>[...ROAD].filter(i=>BIOME[i]===b);
+  const FIX={ben:[150,124,1],lina:[160,52,1],gwen:[118,90,1],rita:[78,101,2],hank:[120,30,4],sue:[176,159,3],axel:[262,124,8]};
+  const used=[];const okSpot=(x,y)=>!used.some(([a,b])=>Math.abs(a-x)+Math.abs(b-y)<9)&&!GATES.some(g=>{const gx=g.i%MW,gy=(g.i-gx)/MW;return Math.abs(gx-x)+Math.abs(gy-y)<6})&&!TOWNS.some(t=>Math.abs(t.x-x)<18&&Math.abs(t.y-y)<12);
+  for(const t of TRAINERS){const f=FIX[t.id];if(!f)continue;const s=near(f[0],f[1],f[2])||{x:f[0],y:f[1],d:t.d};Object.assign(t,s);used.push([s.x,s.y])}
+  const RANKS=['Polizeimeisterin','Polizeimeister','Kommissar','Kommissarin','Polizeiobermeister','Oberkommissarin','Hauptkommissar','Anwärterin','Anwärter','Polizeihauptmeister','Kriminalkommissarin','Diensthundeführer','Verkehrspolizist','Bereitschaftspolizistin'];
+  const NAMES=['Jonas','Lea','Finn','Mila','Paul','Emma','Luis','Hanna','Ben','Sofia','Noah','Lina','Elias','Clara','Felix','Ida','Max','Nele','Tim','Greta','Moritz','Pia','Jan','Zoe','Karl','Frieda','Emil','Lotta','Oskar','Ella','Theo','Maja','Anton','Leni','Jakob','Marie','David','Ronja','Leon','Amelie'];
+  const LINES=['Halt, Personenkontrolle!','Ich hab da ein paar Paragrafen für dich.','Hier kommt keiner ungeprüft vorbei!','Zeig mal, was dein Team drauf hat!','Dienstsport! Los geht’s!','Sie wurden geblitzt — von meinem Monster!','Routinekontrolle. Ganz entspannt…','Meine Monster haben die Prüfung mit Auszeichnung bestanden!'];
+  const AFTER=['Weitermachen.','Gute Streife!','Respekt, Kollege.','Das gibt eine Belobigung.','Na gut, du darfst weiter.'];
+  const COL=['#2f5fb3','#3b4a8c','#2a6f4f','#7a3a3a','#5b4bc4','#1f7fa8','#8c5a2a','#2b2f3a','#a83a6a','#3a7a3a'];
+  const rt=mulberry32(909);let k=0;
+  for(const b of[1,2,3,4,6,8,7]){const R=roadsIn(b);for(let n=0;n<R.length;n+=4){const i=R[(n*37)%R.length],x=i%MW,y=(i-x)/MW;if(!okSpot(x,y))continue;const s=near(x,y,b);if(!s||!okSpot(s.x,s.y))continue;
+    const cnt=(b===1?Math.min(3,1+(k%3)):b>=6?3+(k%2):2+(k%2)),nm=RANKS[k%RANKS.length]+' '+NAMES[(k*7)%NAMES.length];
+    TRAINERS.push({id:'tr'+b+'_'+k,n:nm,x:s.x,y:s.y,d:s.d,c:COL[k%COL.length],team:Array.from({length:cnt},(_,j)=>['owigon',5+j]),reward:2+(b>=6?2:b>=3?1:0),line:LINES[Math.floor(rt()*LINES.length)],after:AFTER[Math.floor(rt()*AFTER.length)]});used.push([s.x,s.y]);k++;
+    if(R.length/4<k)break}}
+  for(const t of TRAINERS){if(!WALK0.has(tget(t.x,t.y))||ENC.has(tget(t.x,t.y)))tset(t.x,t.y,BASE_T[B(t.x,t.y)]||0);const[dx,dy]={up:[0,-1],down:[0,1],left:[-1,0],right:[1,0]}[t.d];for(let s=1;s<=4;s++){const x=t.x+dx*s,y=t.y+dy*s;const tt=tget(x,y);if(tt===2||tt===16||tt===31||tt===3)tset(x,y,ROAD.has(y*MW+x)?4:BASE_T[B(x,y)]||0)}}
+  // level range per area: grows with the distance from Villingen inside the area
+  for(const z in ZLV){ZLV[z].d0=1e9;ZLV[z].d1=0}
+  for(let i=0;i<MW*MH;i++){if(!ENC.has(MAP[i])&&MAP[i]!==20)continue;const z=BKEYS[BIOME[i]];if(!z||!ZLV[z])continue;const x=i%MW,y=(i-x)/MW,d=distC(x,y);ZLV[z].d0=Math.min(ZLV[z].d0,d);ZLV[z].d1=Math.max(ZLV[z].d1,d)}
 })();
 const WALK=WALK0;

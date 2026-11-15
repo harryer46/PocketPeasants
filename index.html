@@ -308,7 +308,7 @@ body.mob.portrait #rotate.show{display:block}
     <canvas id="world"></canvas>
     <div class="hud"><span class="chip" id="hzone">Stadt</span><span class="chip" id="hkap">Handschellen -</span><span class="chip" id="hon"><span class="dot"></span>Solo</span></div>
     <div id="toast"></div>
-    <div id="help">Pfeile/WASD: laufen · M: Karte · Gras/Farne/Schilf/Geröll: wilde Monster · PÄD (Blaulicht): heilen per Quiz · T: Chat</div>
+    <div id="help">Pfeile/WASD: laufen · M: Karte · Gras/Farne/Schilf/Geröll/Schnee/Dornbusch: wilde Monster · PÄD (Blaulicht): heilen per Quiz · T: Chat</div>
     <div id="dpad"><span></span><button data-d="up">▲</button><span></span><button data-d="left">◀</button><span></span><button data-d="right">▶</button><span></span><button data-d="down">▼</button><span></span></div>
     <div id="lobby"></div>
     <div id="touch"><div id="joyzone"></div><div id="joyhint">laufen</div><div id="joy"><div id="joyk"></div></div><div id="tbtns"></div></div>
@@ -393,7 +393,7 @@ const TURN_CONFIG = {
 
 /* ===================== VERSION ===================== */
 // bump with every release (MAJOR.MINOR.PATCH). Players can only share lobbies/duels with the same version.
-const VERSION='0.64.0';
+const VERSION='0.65.0';
 // access password: only its hash is stored here; the password itself also keys the P2P room, so clients without it cannot connect
 const PW_KEY='knast_pw',PW_H=2361915375,MAX_ROOM=10,MAX_LOBBY=5;
 function pwHash(s){let h=2166136261;s='knast:'+s;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
@@ -612,11 +612,16 @@ for(const k in SPECIES){const sp=SPECIES[k];if(!sp.law)continue;const m=sp.law.m
 function nameHtml(sid){const sp=SPECIES[sid];if(!sp)return'';return sp.sfx?esc(sp.base)+' <b class="psfx">'+esc(sp.sfx)+'</b>':esc(sp.n)}
 const ALT_IDS=new Set(['schlagstock','taser','pfefferspray','kelle','harrymon','harrymonx','goeggeli','goeggelix','pfisterio','pfisteriox','zenerentner','steini','aaronia','gianlueckmon','ibumon','owigon','ausweisadler','platzfuchs','sperrschild','drohnix','zellbaer','filzhund','kistenwasch','wohnkroete','sichereule','beschlagigel','erkennungsleon','fragfuchs','einwilligfee','bodycamar','wuerdeadler','freiheitsmarder','gleichlinge','glaubine','meinungseule','demofuchs','posttaube','heimkroete','rechtsritter','bundesadler','langfinger','schwindelfuchs','pruegelklops','schlaegerkopf','promillo','bleifuss','poebelblase','geruechtling','faelschling','sprayzi','probenwolf','fotodachs','asservadler','richtereule','ermittlerhund','spuerhund','handschuhwasch','lupenkauz','stoerkeiler','fesselstachler','protokollfuchs','vernehmpapagei','verbotsnatter','identiluchs','gewahrsamhirsch','arenamon','zhang','boorberg']);
 const ALT_STARTERS=['harrymon','goeggeli','pfisterio','zenerentner','aaronia','ibumon'];
-const ALT_POOLS={north:['zenerentner','aaronia','owigon','filzhund','gleichlinge','posttaube','meinungseule','langfinger','poebelblase','fragfuchs','fotodachs','lupenkauz','ermittlerhund','handschuhwasch'],
- east:['aaronia','ibumon','platzfuchs','kistenwasch','sichereule','freiheitsmarder','fragfuchs','sprayzi','pruegelklops','heimkroete','bodycamar','identiluchs','protokollfuchs','stoerkeiler','asservadler','verbotsnatter'],
- south:['zenerentner','promillo','ausweisadler','erkennungsleon','glaubine','posttaube','faelschling','sprayzi','owigon','zellbaer','wuerdeadler','probenwolf','handschuhwasch','asservadler','protokollfuchs'],
- west:['ibumon','pruegelklops','platzfuchs','kistenwasch','langfinger','faelschling','ausweisadler','heimkroete','rechtsritter','bundesadler','stoerkeiler','identiluchs','probenwolf','ermittlerhund','verbotsnatter'],
+// monsters per area (new world): law areas — PolG in the forest and at the coast, traffic & petty crime in the highlands, GG in the snow, StPO in the jungle, StGB in the desert & prison
+const ALT_POOLS={north:['zenerentner','aaronia','ibumon','owigon','filzhund','langfinger','poebelblase','fragfuchs','gleichlinge','meinungseule','posttaube'],
+ east:['aaronia','ibumon','platzfuchs','kistenwasch','sichereule','wohnkroete','filzhund','fragfuchs','ausweisadler','beschlagigel','freiheitsmarder'],
+ south:['zenerentner','promillo','zellbaer','sperrschild','drohnix','erkennungsleon','einwilligfee','bodycamar','posttaube','ausweisadler','beschlagigel'],
+ west:['ibumon','bleifuss','promillo','owigon','sprayzi','faelschling','langfinger','pruegelklops','poebelblase','geruechtling','steini'],
+ snow:['wuerdeadler','freiheitsmarder','gleichlinge','glaubine','meinungseule','demofuchs','posttaube','heimkroete','rechtsritter','bundesadler'],
+ jungle:['probenwolf','fotodachs','asservadler','richtereule','ermittlerhund','spuerhund','handschuhwasch','lupenkauz','stoerkeiler','fesselstachler','protokollfuchs','vernehmpapagei','verbotsnatter','identiluchs','gewahrsamhirsch'],
+ desert:['schwindelfuchs','schlaegerkopf','pruegelklops','faelschling','geruechtling','bleifuss','sprayzi','steini','gianlueckmon','gewahrsamhirsch'],
  knast:['langfinger','schwindelfuchs','pruegelklops','schlaegerkopf','promillo','bleifuss','poebelblase','geruechtling','faelschling','sprayzi']};
+for(const k in ALT_POOLS)ALT_POOLS[k]=ALT_POOLS[k].filter(s=>SPECIES[s]);
 const ALT_LEG={thunderroc:'boorberg',solarion:'arenamon',abyssfin:'zhang',schlagstock:'schlagstock',taser:'taser',pfefferspray:'pfefferspray',kelle:'kelle'};
 const ALT_IM={};function imgKey(sid){const v=SPECIES[sid].img;return v===1?sid:v}
 for(const k in ALT_IMG){const im=new Image();im.onload=()=>{const drop=o=>{for(const key in o){const sid=key.split(':')[0];if(SPECIES[sid]&&SPECIES[sid].img&&imgKey(sid)===k)delete o[key]}};drop(SPR);if(typeof WSPR!=='undefined')drop(WSPR)};im.src=ALT_IMG[k];ALT_IM[k]=im}
@@ -637,27 +642,29 @@ function legSid(L){return altOn()?ALT_LEG[L.id]:L.id}
 function rosterIds(){return Object.keys(SPECIES).filter(s=>altOn()===ALT_IDS.has(s))}
 // biomes: local monster pools (frequency is bound to the biome)
 const ZONES={
- north:{n:'Nordwiese',col:'#7fd060',enc:'hohes Gras',pool:[]},
- east:{n:'Ostwald',col:'#2f7a2c',enc:'Farne',pool:[]},
- south:{n:'Südküste',col:'#3b8fd9',enc:'Schilf',pool:[]},
- west:{n:'Westhügel',col:'#b89a6a',enc:'Geröll',pool:[]},
+ north:{n:'Villinger Land',col:'#7fd060',enc:'hohes Gras',pool:[]},
+ east:{n:'Damentaler Wald',col:'#2f7a2c',enc:'Farne',pool:[]},
+ south:{n:'Marderacher Küste',col:'#3b8fd9',enc:'Schilf',pool:[]},
+ west:{n:'Felsenhöhen',col:'#b89a6a',enc:'Geröll',pool:[]},
+ snow:{n:'Lahribarer Gebirge',col:'#dfe8f2',enc:'Schneegras',pool:[]},
+ desert:{n:'Unterwertheimer Canyon',col:'#e2b766',enc:'Dornbusch',pool:[]},
+ jungle:{n:'Mostbacher Dschungel',col:'#2fa36a',enc:'Dschungelgras',pool:[]},
  knast:{n:'Knast',col:'#8e929c',enc:'Zellentrakt',pool:[]}
 };
-const CX=30,CY=23;
+const CX=150,CY=88;
 function distC(x,y){return Math.hypot(x-CX,y-CY)}
-// difficulty: Lv 1–2 right outside town, rising with distance; harder biomes add a bonus that grows with distance
-const BIO_LV={north:0,south:1,east:2,west:4};
-// minimum wild level per area (also near the town edge)
-const BIO_MIN={north:3,south:7,east:6,west:8,knast:26};
-function baseLvAt(x,y){const d=distC(x,y),ramp=clamp((d-9)/10,0,1);return 1+Math.max(0,d-9)*0.47+(BIO_LV[zoneAt(x,y)]||0)*ramp}
+// level range per area; inside an area the level rises with the distance from Villingen (d0/d1 are measured when the map is built)
+const ZLV={north:{lo:2,hi:8},east:{lo:6,hi:12},south:{lo:8,hi:14},west:{lo:10,hi:16},snow:{lo:13,hi:19},jungle:{lo:16,hi:22},desert:{lo:19,hi:25},knast:{lo:26,hi:34}};
+const BIO_MIN={};for(const k in ZLV)BIO_MIN[k]=ZLV[k].lo;
+function baseLvAt(x,y){const z=zoneAt(x,y),L=ZLV[z];if(!L)return 1;const t=L.d1>L.d0?clamp((distC(x,y)-L.d0)/(L.d1-L.d0),0,1):0.5;return L.lo+t*(L.hi-L.lo)}
 const KNAST_LV=[26,34];
-function lvAt(x,y){if(zoneAt(x,y)==='knast')return KNAST_LV[0]+Math.floor(Math.random()*(KNAST_LV[1]-KNAST_LV[0]+1));return clamp(Math.max(BIO_MIN[zoneAt(x,y)]||1,Math.round(baseLvAt(x,y)+Math.random()*1.4-0.7)),1,30)}
+function lvAt(x,y){if(zoneAt(x,y)==='knast')return KNAST_LV[0]+Math.floor(Math.random()*(KNAST_LV[1]-KNAST_LV[0]+1));return clamp(Math.max(BIO_MIN[zoneAt(x,y)]||1,Math.round(baseLvAt(x,y)+Math.random()*1.4-0.7)),1,40)}
 // trainers are always 3–6 levels above the wild monsters around them
 function trainerTeam(t){if(t.fixed)return t.team;const z=zoneAt(t.x,t.y),w=z==='knast'?Math.round((KNAST_LV[0]+KNAST_LV[1])/2):Math.max(BIO_MIN[z]||1,Math.round(baseLvAt(t.x,t.y))),h=hashStr(String(t.id||t.n||''));const pool=altOn()?poolOf(zoneAt(t.x,t.y)||'north'):null;
   return t.team.map(([s,l],i)=>[pool?pool[(i+t.id.length)%pool.length]:s,clamp(w+3+((h>>>(i*3))%4),1,40)])}
 function pickWild(pool,boost){boost=boost||1;const w=s=>rarOf(s).w*(RAR[s]==='rare'?boost:1);const tot=pool.reduce((a,s)=>a+w(s),0);let r=Math.random()*tot;for(const s of pool){r-=w(s);if(r<=0)return s}return pool[0]}
 // legendary shrines (one encounter per player per match)
-const LEGENDS=[{id:'thunderroc',x:30,y:4,l:18,zone:'north'},{id:'solarion',x:54,y:9,l:19,zone:'east'},{id:'abyssfin',x:39,y:40,l:20,zone:'south'},{id:'schlagstock',x:45,y:5,l:22,zone:'north'},{id:'taser',x:56,y:40,l:23,zone:'east'},{id:'pfefferspray',x:3,y:40,l:23,zone:'south'},{id:'kelle',x:3,y:13,l:22,zone:'west'}];
+const LEGENDS=[{id:'thunderroc',x:150,y:14,l:20,zone:'west'},{id:'solarion',x:283,y:36,l:24,zone:'desert'},{id:'abyssfin',x:98,y:179,l:18,zone:'south'},{id:'schlagstock',x:22,y:24,l:22,zone:'snow'},{id:'taser',x:283,y:140,l:23,zone:'jungle'},{id:'pfefferspray',x:20,y:181,l:20,zone:'south'},{id:'kelle',x:70,y:131,l:16,zone:'east'}];
 // static AI trainers: spot you in their line of sight (4 tiles)
 const TRAINERS=[
  {id:'ben',n:'Polizeimeister Ben',x:24,y:10,d:'down',c:'#2f5fb3',team:[['owigon',5],['filzhund',5]],reward:2,line:'Allgemeine Verkehrskontrolle! Führerschein und Monster, bitte!',after:'Gute Fahrt. Und schnallen Sie Ihre Monster an.'},
@@ -718,162 +725,201 @@ function gainXp(m,amt){
 }
 
 /* ===================== MAP ===================== */
-// 0 grass,1 tall,2 tree,3 water,4 path,5 sand,6 wall,7 heal door,8 roof,9 flowers,10 arena roof,11 arena wall,12 arena door
-const MW=60,MH=44,MAP=new Uint8Array(MW*MH);const GATES=[];const BIOME=new Uint8Array(MW*MH);const BKEYS=[null,'north','east','south','west','knast'];
-const WALK0=new Set([0,1,4,5,7,9,12,13,14,15,17,18,19,20,22,23]);
-// extra town buildings (drawn as whole sprites; tile 21 = solid, 22/23 = doors)
-const BLDG=[{id:'shop',x:23,y:24,w:5,h:4,dx:25,door:22,n:'COPSHOP'},{id:'hfpol',x:32,y:24,w:7,h:4,dx:35,door:23,n:'HfPol'}];const ENC=new Set([1,17,18,19]);const BASE_T=[0,0,14,0,15],ENC_T=[0,1,17,18,19];
-function tget(x,y){return(x<0||y<0||x>=MW||y>=MH)?2:MAP[y*MW+x]}
+// Large hand-planned world (≈300×200 tiles) after the player's concept art:
+// Villingen-Knastingen (police academy + court) in the centre on a plateau, five training towns around it
+// (Lahribar/snow NW, Unterwertheim/desert NE, Damental/forest W, Mostbach/jungle E, Marderach/harbour S),
+// rivers from the northern lake, the sea with islands in the south, the prison (Knast) in the desert crater.
+// tiles: 0 grass,1 tall grass,2 tree,3 water,4 path,5 sand,6 wall,7 PÄD door,8 roof,9 flowers,10 court roof,11 court wall/prison wall,12 court door,
+// 13 shrine,14 forest floor,15 hill ground,16 rock/cliff,17 ferns,18 reeds,19 rubble,20 cell floor,21 building,22 shop door,23 HfPol door,
+// 24 snow grass,25 desert scrub,26 jungle grass,27 bridge/pier,28 snow,29 desert sand,30 jungle floor,31 mountain peak
+const MW=300,MH=200,MAP=new Uint8Array(MW*MH);const GATES=[];const BIOME=new Uint8Array(MW*MH);
+const BKEYS=[null,'north','east','south','west','knast','snow','desert','jungle'];
+const WALK0=new Set([0,1,4,5,7,9,12,13,14,15,17,18,19,20,22,23,24,25,26,27,28,29,30]);
+const ENC=new Set([1,17,18,19,24,25,26]);const BASE_T=[0,0,14,0,15,20,28,29,30],ENC_T=[0,1,17,18,19,20,24,25,26];
+const BLDG=[],PADS=[],LABELS=[],TOWNS=[];let VSPAWN={x:150,y:91},COURT={x:149,y:85};
+function tget(x,y){return(x<0||y<0||x>=MW||y>=MH)?31:MAP[y*MW+x]}
 function tset(x,y,v){if(x>=0&&y>=0&&x<MW&&y<MH)MAP[y*MW+x]=v}
 function vnoise(seed,cell){
   const r=mulberry32(seed),gw=Math.ceil(MW/cell)+2,gh=Math.ceil(MH/cell)+2,G=[];for(let i=0;i<gw*gh;i++)G.push(r());
   return(x,y)=>{const fx=x/cell,fy=y/cell,ix=Math.floor(fx),iy=Math.floor(fy),tx=fx-ix,ty=fy-iy,sx=tx*tx*(3-2*tx),sy=ty*ty*(3-2*ty),g=(a,b)=>G[b*gw+a];
     return(g(ix,iy)*(1-sx)+g(ix+1,iy)*sx)*(1-sy)+(g(ix,iy+1)*(1-sx)+g(ix+1,iy+1)*sx)*sy};
 }
+// town plans (centre tile); biome = the area around it
+const TOWN_DEF=[{id:'vil',n:'Villingen-Knastingen',x:150,y:88,b:1,center:1},{id:'lah',n:'Lahribar',x:57,y:27,b:6},{id:'unt',n:'Unterwertheim',x:244,y:33,b:7},
+  {id:'dam',n:'Damental',x:46,y:104,b:2},{id:'mos',n:'Mostbach',x:247,y:110,b:8},{id:'mar',n:'Marderach',x:141,y:155,b:3}];
+const KNAST_C={x:262,y:13};
 (function gen(){
-  const r=mulberry32(4242),n1=vnoise(11,7),n2=vnoise(22,9),n3=vnoise(33,5);
-  for(let y=0;y<MH;y++)for(let x=0;x<MW;x++){
-    const d=distC(x,y);let b;
-    if(d<8.5+n1(x,y)*2.5)b=0;else{const a=Math.atan2((y-CY)*1.3,x-CX)+(n2(x,y)-0.5)*1.1,q=Math.PI/4;b=a>=-3*q&&a<-q?1:a>=-q&&a<q?2:a>=q&&a<3*q?3:4}
-    BIOME[y*MW+x]=b;let t=BASE_T[b];
-    if(b>0&&n3(x,y)+r()*0.18>0.6)t=ENC_T[b];
-    else if(b===2&&r()<0.22)t=2;else if(b===4&&r()<0.08)t=16;else if(b===1&&r()<0.03)t=2;else if((b===1||b===0)&&r()<0.05)t=9;else if(b===3&&r()<0.02)t=2;
-    tset(x,y,t);
+  const r=mulberry32(4242),n1=vnoise(11,18),n2=vnoise(22,9),n3=vnoise(33,5),wx=vnoise(44,26),wy=vnoise(55,26),n4=vnoise(66,13);
+  const B=(x,y)=>BIOME[y*MW+x];
+  // ---- biomes: warped Voronoi over hand-placed seeds (layout of the concept map)
+  const SEEDS={1:[[150,70],[150,116],[118,98],[182,98],[132,50],[168,50],[150,135]],4:[[150,18],[115,22],[185,22],[98,38],[202,38]],6:[[45,22],[18,45],[74,44],[28,12],[60,8]],
+    2:[[28,95],[70,84],[42,124],[80,112],[15,120]],3:[[100,168],[150,172],[205,166],[30,160],[64,150],[250,172],[120,150],[175,150]],8:[[255,100],[287,130],[232,134],[287,88],[265,150]],7:[[250,25],[287,50],[226,56],[283,12],[218,12]]};
+  const SL=[];for(const b in SEEDS)for(const[x,y]of SEEDS[b])SL.push([x,y,+b]);
+  for(let y=0;y<MH;y++)for(let x=0;x<MW;x++){const X=x+(wx(x,y)-0.5)*30,Y=y+(wy(x,y)-0.5)*30;let bd=1e9,bb=1;for(const[sx,sy,b]of SL){const d=(X-sx)**2+(Y-sy)**2;if(d<bd){bd=d;bb=b}}BIOME[y*MW+x]=bb}
+  // every training town sits well inside its own area
+  for(const T of TOWN_DEF){if(T.center)continue;for(let y=T.y-20;y<=T.y+20;y++)for(let x=T.x-30;x<=T.x+30;x++){if(x<0||y<0||x>=MW||y>=MH)continue;if(((x-T.x)/30)**2+((y-T.y)/20)**2<1)BIOME[y*MW+x]=T.b}}
+  // ---- base terrain + vegetation per biome
+  for(let y=0;y<MH;y++)for(let x=0;x<MW;x++){const b=B(x,y),i=y*MW+x;let t=BASE_T[b];const p=n3(x,y)+r()*0.16,q=n2(x,y),z=n4(x,y);
+    if(b===1){if(p>0.62)t=1;else if(q>0.72&&r()<0.75)t=2;else if(r()<0.05)t=9}
+    else if(b===2){if(q>0.5&&r()<0.82)t=2;else if(p>0.58)t=17;else if(r()<0.02)t=9}
+    else if(b===3){if(p>0.64)t=18;else if(q>0.8&&r()<0.4)t=2}
+    else if(b===4){if(Math.abs(z-0.5)<0.028)t=16;else if(q>0.58&&r()<0.8)t=2;else if(p>0.62)t=19;else if(r()<0.04)t=16}
+    else if(b===6){if(q>0.6&&r()<0.75)t=2;else if(p>0.6)t=24;else if(n1(x,y)>0.7)t=31}
+    else if(b===7){if(Math.abs(z-0.5)<0.032||Math.abs(n1(x,y)-0.45)<0.02)t=16;else if(p>0.63)t=25;else if(r()<0.025)t=2;else if(r()<0.02)t=16}
+    else if(b===8){if(q>0.5&&r()<0.78)t=2;else if(p>0.56)t=26;else if(r()<0.01)t=16}
+    MAP[i]=t}
+  // mountains in the far north-west (snow) and canyon rims in the north-east
+  for(let y=0;y<MH;y++)for(let x=0;x<MW;x++){const b=B(x,y);const m=(x<14+n1(x,y)*10)||(y<7+n2(x,y)*7&&x<120)||(x+y*1.4<44);if(b===6&&m)tset(x,y,31);if(b===7&&(y<5+n2(x,y)*5||x>MW-6-n1(x,y)*5))tset(x,y,16);if(b===4&&y<5+n2(x,y)*4)tset(x,y,31)}
+  // ---- sea, beach, islands
+  const coast=x=>167+Math.sin(x/23)*6+Math.sin(x/9)*2+(n1(x,170)-0.5)*8;
+  for(let x=0;x<MW;x++){const cy=coast(x);for(let y=0;y<MH;y++){if(y>cy){tset(x,y,3);BIOME[y*MW+x]=3}else if(y>cy-3&&B(x,y)===3&&x>150){tset(x,y,5)}}}
+  // swamp in the south-west
+  for(let y=126;y<170;y++)for(let x=8;x<80;x++){if(B(x,y)!==3||tget(x,y)===3)continue;const v=n4(x,y);if(v>0.62)tset(x,y,3);else if(v>0.54)tset(x,y,18)}
+  const island=(cx,cy,rx,ry,kind)=>{for(let y=cy-ry-1;y<=cy+ry+1;y++)for(let x=cx-rx-1;x<=cx+rx+1;x++){const d=((x-cx)/rx)**2+((y-cy)/ry)**2;if(d>1)continue;BIOME[y*MW+x]=3;tset(x,y,d>0.65?5:kind==='rock'&&r()<0.25?16:r()<0.2?2:r()<0.3?18:0)}};
+  island(20,181,8,5,'ruin');island(64,186,6,4);island(98,179,5,4);island(133,188,5,3,'rock');island(183,184,6,4);island(224,181,7,5);island(272,183,9,5);island(292,170,5,4,'rock');
+  // ---- lakes and rivers (rivers stop at the coast; bridges are added where roads cross)
+  const ell=(cx,cy,rx,ry)=>{for(let y=cy-ry-1;y<=cy+ry+1;y++)for(let x=cx-rx-1;x<=cx+rx+1;x++){const d=((x-cx)/rx)**2+((y-cy)/ry)**2;if(d<1)tset(x,y,3);else if(d<1.35&&r()<0.6&&tget(x,y)!==31)tset(x,y,B(x,y)===6?28:5)}};
+  ell(148,57,11,5);ell(52,80,9,6);ell(208,74,5,3);ell(286,104,4,3);
+  const RIVERS=[[[139,59],[125,64],[113,76],[105,92],[101,108],[98,124],[96,140],[98,158],[98,175]],[[158,59],[176,66],[189,80],[195,98],[194,116],[198,134],[200,152],[204,175]],
+    [[36,6],[34,30],[28,50],[20,70],[15,90],[12,110],[13,130],[16,150],[19,172]],[[44,74],[30,64],[28,56]],[[294,62],[280,74],[270,86],[262,96]]];
+  const RIVER_TILES=new Set();
+  for(const R of RIVERS)for(let k=0;k+1<R.length;k++){const[a,b2]=[R[k],R[k+1]],L=Math.hypot(b2[0]-a[0],b2[1]-a[1]);for(let s=0;s<=L*3;s++){const f=s/(L*3),x=a[0]+(b2[0]-a[0])*f+(n2(a[0]+s,a[1])-0.5)*3,y=a[1]+(b2[1]-a[1])*f;
+    for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const X=Math.round(x+dx),Y=Math.round(y+dy);if(X<1||Y<1||X>=MW-1||Y>=MH-1)continue;if(Math.abs(dx)+Math.abs(dy)>1&&r()<0.6)continue;tset(X,Y,3);RIVER_TILES.add(Y*MW+X)}}}
+  // ---- the prison in the desert crater
+  {const{x:cx,y:cy}=KNAST_C;for(let y=cy-13;y<=cy+13;y++)for(let x=cx-15;x<=cx+15;x++){const d=Math.hypot((x-cx)/15,(y-cy)/12);if(d<1.12&&d>0.9)tset(x,y,16);if(d<=0.9){tset(x,y,29);BIOME[y*MW+x]=7}}
+   for(let y=cy-7;y<=cy+7;y++)for(let x=cx-9;x<=cx+9;x++){const wall=y===cy-7||y===cy+7||x===cx-9||x===cx+9;tset(x,y,wall?11:20);BIOME[y*MW+x]=5}
+   for(let x=cx-8;x<=cx+8;x++)tset(x,cy-1,x===cx?20:11);for(let y=cy-6;y<cy-1;y++)tset(cx,y,11);tset(cx,cy-3,20)
+   for(let y=cy+8;y<=cy+16;y++){tset(cx,y,4);if(tget(cx-1,y)===16)tset(cx-1,y,29);if(tget(cx+1,y)===16)tset(cx+1,y,29)}tset(cx,cy+7,20)}
+  // ---- towns
+  const fillRect=(x0,y0,x1,y1,t,b)=>{for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){tset(x,y,t);if(b!=null)BIOME[y*MW+x]=b}};
+  const pad=(x,y)=>{for(let X=x;X<x+6;X++){tset(X,y,8);tset(X,y+1,8);tset(X,y+2,6);tset(X,y+3,6)}tset(x+3,y+3,7);PADS.push({x:x+3,y:y+3,bx:x,by:y})};
+  const bld=(id,x,y,w,dxo,door)=>{for(let Y=y;Y<y+4;Y++)for(let X=x;X<x+w;X++)tset(X,Y,21);tset(x+dxo,y+3,door);BLDG.push({id,x,y,w,h:4,dx:x+dxo,door,n:id==='shop'?'COPSHOP':'HfPol'})};
+  for(const T of TOWN_DEF){
+    if(T.center){const{x:cx,y:cy}=T;
+      for(let y=cy-24;y<=cy+24;y++)for(let x=cx-26;x<=cx+26;x++){const d=Math.hypot((x-cx)/22,(y-cy)/19);if(d<1){BIOME[y*MW+x]=0;tset(x,y,0);if(d>0.9&&!(Math.abs(x-cx)<=2||Math.abs(y-cy)<=1))tset(x,y,2);else if(r()<0.04)tset(x,y,9)}}
+      for(let a=0;a<6.3;a+=0.01){const x=Math.round(cx+Math.cos(a)*13),y=Math.round(cy+Math.sin(a)*11);tset(x,y,4)}
+      for(let x=cx-21;x<=cx+21;x++){tset(x,cy,4);tset(x,cy+1,4)}for(let y=cy-19;y<=cy+20;y++){tset(cx,y,4);tset(cx-1,y,4)}
+      // court (dome) in the middle, PÄD left, shop + HfPol below, sports field on the right
+      for(let x=cx-3;x<=cx+2;x++){for(let y=cy-9;y<=cy-7;y++)tset(x,y,10);tset(x,cy-6,11);tset(x,cy-5,11)}tset(cx-1,cy-5,12);tset(cx,cy-5,12);tset(cx-1,cy-4,4);tset(cx,cy-4,4);
+      COURT={x:cx-1,y:cy-4};VSPAWN={x:cx,y:cy+3};
+      pad(cx-17,cy-5);for(let y=cy-1;y<=cy;y++)tset(cx-14,y,4);
+      bld('shop',cx-10,cy+4,5,2,22);tset(cx-8,cy+8,4);bld('hfpol',cx+4,cy+4,7,3,23);tset(cx+7,cy+8,4);
+      for(let y=cy-7;y<=cy-3;y++)for(let x=cx+8;x<=cx+15;x++)tset(x,y,(y===cy-7||y===cy-3||x===cx+8||x===cx+15)?5:0);
+      LABELS.push({x:cx-17,y:cy-5,w:6,t:'PÄD',kind:'pad'},{x:cx-3,y:cy-9,w:6,t:'GERICHT',kind:'court'});
+      TOWNS.push({id:T.id,n:T.n,x:cx,y:cy+3,pad:PADS[PADS.length-1]});continue}
+    const{x:cx,y:cy}=T;fillRect(cx-15,cy-7,cx+14,cy+6,0,0);
+    for(let x=cx-15;x<=cx+14;x++){tset(x,cy-7,2);tset(x,cy+6,2)}for(let y=cy-7;y<=cy+6;y++){tset(cx-15,y,2);tset(cx+14,y,2)}
+    for(let x=cx-15;x<=cx+14;x++){tset(x,cy+2,4)}for(let y=cy-7;y<=cy+6;y++){tset(cx,y,4)}
+    if(T.b===6)for(let y=cy-6;y<=cy+5;y++)for(let x=cx-14;x<=cx+13;x++)if(MAP[y*MW+x]===0)MAP[y*MW+x]=28;
+    if(T.b===7)for(let y=cy-6;y<=cy+5;y++)for(let x=cx-14;x<=cx+13;x++)if(MAP[y*MW+x]===0)MAP[y*MW+x]=29;
+    pad(cx-13,cy-5);tset(cx-10,cy-1,4);tset(cx-10,cy,4);tset(cx-10,cy+1,4);
+    bld('shop',cx-5,cy-5,5,2,22);tset(cx-3,cy-1,4);tset(cx-3,cy,4);tset(cx-3,cy+1,4);
+    bld('hfpol',cx+3,cy-5,7,3,23);tset(cx+6,cy-1,4);tset(cx+6,cy,4);tset(cx+6,cy+1,4);
+    LABELS.push({x:cx-13,y:cy-5,w:6,t:'PÄD',kind:'pad'});
+    TOWNS.push({id:T.id,n:T.n,x:cx,y:cy+3,pad:PADS[PADS.length-1]});
+    if(T.id==='mar'){for(const px of[cx-8,cx-1,cx+7])for(let y=cy+6;y<=cy+18;y++){if(tget(px,y)===3||y>cy+6)tset(px,y,27);else tset(px,y,4)}}
   }
-  // south: lake with sand shore, reeds near the water
-  for(let y=0;y<MH;y++)for(let x=0;x<MW;x++){const d=((x-30)/10)**2+((y-36)/4.5)**2;if(d<1)tset(x,y,3);else if(d<1.55)tset(x,y,5);else if(d<2.3&&BIOME[y*MW+x]===3&&r()<0.5)tset(x,y,18)}
-  for(let y=0;y<MH;y++)for(let x=0;x<MW;x++)if(BIOME[y*MW+x]===3&&(y>=MH-5)&&tget(x,y)!==3&&r()<0.55)tset(x,y,5);
-  // roads
-  for(let x=2;x<MW-2;x++)tset(x,23,4);
-  for(let y=2;y<=30;y++)tset(30,y,4);
-  for(let y=11;y<=22;y++)tset(54,y,4);
-  for(let y=24;y<=34;y++)tset(9,y,4);
-  // buildings
-  for(let x=22;x<=27;x++){tset(x,17,8);tset(x,18,8);tset(x,19,6);tset(x,20,6)}
-  tset(25,20,7);tset(25,21,4);tset(25,22,4);
-  for(let x=33;x<=38;x++){tset(x,16,10);tset(x,17,10);tset(x,18,10);tset(x,19,11);tset(x,20,11)}
-  tset(35,20,12);tset(36,20,12);tset(35,21,4);tset(35,22,4);tset(36,21,4);tset(36,22,4);
-  for(const Bd of BLDG){for(let y=Bd.y;y<Bd.y+Bd.h;y++)for(let x=Bd.x;x<Bd.x+Bd.w;x++)tset(x,y,21);tset(Bd.dx,Bd.y+Bd.h-1,Bd.door)}
-  for(let x=23;x<=38;x++)tset(x,28,4);
-  const blocked=t=>t===2||t===16;
-  for(const L of LEGENDS){for(let dy=-2;dy<=2;dy++)for(let dx=-2;dx<=2;dx++)if(blocked(tget(L.x+dx,L.y+dy)))tset(L.x+dx,L.y+dy,BASE_T[BIOME[(L.y+dy)*MW+L.x+dx]]||0);for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++)tset(L.x+dx,L.y+dy,13)}
-  for(const t of TRAINERS){if(!WALK0.has(tget(t.x,t.y))||ENC.has(tget(t.x,t.y)))tset(t.x,t.y,BASE_T[BIOME[t.y*MW+t.x]]||0);const[dx,dy]={up:[0,-1],down:[0,1],left:[-1,0],right:[1,0]}[t.d];for(let k=1;k<=4;k++){const x=t.x+dx*k,y=t.y+dy*k;if(blocked(tget(x,y))||tget(x,y)===3)tset(x,y,BASE_T[BIOME[y*MW+x]]||0)}}
-  // biome borders: progression Town → Meadow → Woods and Town → Shore → Hills.
-  // Woods and Hills are walled off from town (tree line / cliffs); Meadow|Woods and Shore|Hills each have one pass; Woods|Shore (river) and Meadow|Hills (cliffs) are closed.
-  {const BAR={'0-2':2,'0-4':16,'1-2':2,'2-3':3,'3-4':16,'1-4':16},PASS={'1-2':1,'3-4':1},D=[[1,0],[-1,0],[0,1],[0,-1]],bar=[],keep=new Set();
-   for(const L of LEGENDS)for(let dy=-2;dy<=2;dy++)for(let dx=-2;dx<=2;dx++)keep.add((L.y+dy)*MW+L.x+dx);for(const t of TRAINERS)keep.add(t.y*MW+t.x);
-   for(let y=2;y<MH-2;y++)for(let x=2;x<MW-2;x++){const i=y*MW+x,b=BIOME[i];if(keep.has(i))continue;
-     for(const[dx,dy]of D){const nb=BIOME[(y+dy)*MW+x+dx];if(nb===b)continue;const k=b<nb?b+'-'+nb:nb+'-'+b;if(BAR[k]!==undefined){bar.push([x,y,k]);break}}}
-   for(const[x,y,k]of bar){const d=distC(x,y);tset(x,y,PASS[k]&&d>16.5&&d<19.5?4:BAR[k])}}
-  for(let y=0;y<MH;y++)for(let x=0;x<MW;x++)if(x<2||y<2||x>=MW-2||y>=MH-2)tset(x,y,BIOME[y*MW+x]===4?16:2);
-  // KNAST: walled prison yard in the far north-west of the hills; cell-block floor (tile 20) = encounters with StGB offenders only
-  for(let y=3;y<=11;y++)for(let x=4;x<=14;x++){const wall=y===3||y===11||x===4||x===14;tset(x,y,wall?11:20);BIOME[y*MW+x]=5}
-  for(const[x,y]of[[9,6],[9,7],[9,8]])tset(x,y,11);   // a cell block in the middle
-  tset(9,11,4);for(let y=12;y<=22;y++){tset(9,y,4);if(tget(8,y)===16||tget(8,y)===2)tset(8,y,15);if(tget(10,y)===16||tget(10,y)===2)tset(10,y,15)}
-  tset(10,12,15);
-  // GATES: town → Nordwiese is free; everything further is reached through single choke points guarded by teachers
-  {const W0=i=>WALK0.has(MAP[i]),D2=[[1,0],[0,1]];
-   const cross=(a,b)=>{const out=[];for(let y=2;y<MH-2;y++)for(let x=2;x<MW-2;x++){const i=y*MW+x;if(!W0(i))continue;for(const[dx,dy]of D2){const j=(y+dy)*MW+x+dx;if(!W0(j))continue;const bi=BIOME[i],bj=BIOME[j];if(bi===a&&bj===b)out.push([i,j]);else if(bi===b&&bj===a)out.push([j,i])}}return out};
-   const block=i=>{MAP[i]=2};
-   // town → Südküste closed
-   for(const[,j]of cross(0,3))block(j);
-   // keep one crossing per pair (prefer a path tile), close the others on the far side
-   const keep=(a,b)=>{const cs=cross(a,b);if(!cs.length)return null;cs.sort((p,q)=>(MAP[q[1]]===4)-(MAP[p[1]]===4)||Math.abs(cs.length/2-cs.indexOf(p))-Math.abs(cs.length/2-cs.indexOf(q)));const g=cs[0];
-     for(let it=0;it<6;it++){const left=cross(a,b).filter(([i,j])=>!(i===g[0]&&j===g[1]));if(!left.length)break;for(const[i,j]of left){if(j!==g[1])block(j);else if(i!==g[0])block(i)}}
-     // also make sure the gate is a true choke point: close far-side neighbours of the gate that touch side a
-     return g[1]};
-   const gE=keep(1,2),gW=keep(3,4);
-   // corridor Ostwald → Südküste (new): shortest straight-ish carve between the two areas, owned by the woods
-   let best=null;for(let i=0;i<MW*MH;i++){if(BIOME[i]!==2||!W0(i))continue;const x=i%MW,y=(i-x)/MW;if(y<30)continue;for(let j=0;j<MW*MH;j++){if(BIOME[j]!==3||!W0(j))continue;const u=j%MW,v=(j-u)/MW;const d=Math.abs(u-x)+Math.abs(v-y);if(!best||d<best.d)best={d,x,y,u,v}}}
-   let gS=null;if(best){let x=best.x,y=best.y;while(x!==best.u||y!==best.v){if(x!==best.u)x+=Math.sign(best.u-x);else y+=Math.sign(best.v-y);const k=y*MW+x;if(x===best.u&&y===best.v){gS=k;break}if(!W0(k)||BIOME[k]!==2){MAP[k]=4;BIOME[k]=2}}}
-   // Knast: inner cell block reachable only through one door
-   for(let x=5;x<=13;x++)tset(x,9,x===9?20:11);for(const[x,y]of[[9,6],[9,7],[9,8]])tset(x,y,20);
-   GATES.push({b:2,i:gE},{b:3,i:gS},{b:4,i:gW},{b:5,i:11*MW+9},{b:6,i:9*MW+9});
-  }
-  // make sure every walkable spot can be reached from town: carve the shortest way through obstacles into any cut-off pocket
-  const D4=[[1,0],[-1,0],[0,1],[0,-1]];
-  for(let it=0;it<60;it++){const seen=new Uint8Array(MW*MH),q=[24*MW+30];seen[q[0]]=1;
-    while(q.length){const i=q.pop(),x=i%MW,y=(i-x)/MW;for(const[dx,dy]of D4){const nx=x+dx,ny=y+dy;if(nx<1||ny<1||nx>=MW-1||ny>=MH-1)continue;const j=ny*MW+nx;if(seen[j]||!WALK0.has(MAP[j]))continue;seen[j]=1;q.push(j)}}
-    let c=-1;for(let i=0;i<MW*MH;i++){const x=i%MW,y=(i-x)/MW;if(x>=2&&y>=2&&x<MW-2&&y<MH-2&&!seen[i]&&WALK0.has(MAP[i])){c=i;break}}if(c<0)break;
-    const par=new Int32Array(MW*MH).fill(-1),bq=[c];par[c]=c;let hit=-1;
-    for(let h=0;h<bq.length&&hit<0;h++){const i=bq[h],x=i%MW,y=(i-x)/MW;for(const[dx,dy]of D4){const nx=x+dx,ny=y+dy;if(nx<2||ny<2||nx>=MW-2||ny>=MH-2)continue;const j=ny*MW+nx;if(par[j]>=0)continue;par[j]=i;if(seen[j]){hit=j;break}bq.push(j)}}
-    if(hit<0)break;for(let i=par[hit];i!==c;i=par[i])if(!WALK0.has(MAP[i]))MAP[i]=BASE_T[BIOME[i]]||0}
-  // the carving above may have opened extra biome crossings next to the gates → close them again; pockets that become
-  // unreachable are connected through their own biome only (or filled with trees)
-  {const W0=i=>WALK0.has(MAP[i]),gateSet=new Set(GATES.map(g=>g.i));
-   const reach=()=>{const seen=new Uint8Array(MW*MH),q=[24*MW+30];seen[q[0]]=1;while(q.length){const i=q.pop(),x=i%MW,y=(i-x)/MW;for(const[dx,dy]of D4){const j=(y+dy)*MW+x+dx;if(seen[j]||!W0(j))continue;seen[j]=1;q.push(j)}}return seen};
-   const allowed=(a,b)=>a===b||(Math.min(a,b)===0&&Math.max(a,b)===1);
-   for(let it=0;it<8;it++){let changed=false;
-     for(let y=2;y<MH-2;y++)for(let x=2;x<MW-2;x++){const i=y*MW+x;if(!W0(i))continue;for(const[dx,dy]of D4){const j=(y+dy)*MW+x+dx;if(!W0(j))continue;const a=BIOME[i],b=BIOME[j];if(allowed(a,b)||gateSet.has(i)||gateSet.has(j))continue;
-       // close the tile on the "later" side (higher biome index, but never town/north)
-       const k=(b>a?j:i);if(BIOME[k]<=1)continue;MAP[k]=2;changed=true}}
-     const seen=reach();
-     for(let i=0;i<MW*MH;i++){if(!W0(i)||seen[i])continue;const x0=i%MW,y0=(i-x0)/MW;if(x0<2||y0<2||x0>=MW-2||y0>=MH-2)continue;const bb=BIOME[i];
-       const par=new Int32Array(MW*MH).fill(-1),bq=[i];par[i]=i;let hit=-1;
-       for(let h=0;h<bq.length&&hit<0;h++){const c=bq[h],x=c%MW,y=(c-x)/MW;for(const[dx,dy]of D4){const nx=x+dx,ny=y+dy;if(nx<2||ny<2||nx>=MW-2||ny>=MH-2)continue;const j=ny*MW+nx;if(par[j]>=0||BIOME[j]!==bb)continue;par[j]=c;if(seen[j]){hit=j;break}bq.push(j)}}
-       if(hit>=0){for(let c=par[hit];c!==i;c=par[c])if(!W0(c))MAP[c]=BASE_T[bb]||0}else MAP[i]=2;changed=true;break}
-     if(!changed)break}}
+  // ---- roads (4-connected, organic wiggle); water → bridge
+  const ROAD=new Set();
+  const rset=(x,y)=>{if(x<2||y<2||x>=MW-2||y>=MH-2)return;const i=y*MW+x,t=MAP[i];if(t===11||t===20||t===10||t===12||t===6||t===8||t===21||t===7||t===22||t===23)return;MAP[i]=(t===3||t===27)?27:4;ROAD.add(i)};
+  const road=(pts,w)=>{for(let k=0;k+1<pts.length;k++){let[x,y]=pts[k];const[tx,ty]=pts[k+1];rset(x,y);let guard=0;
+    while((x!==tx||y!==ty)&&guard++<2000){const dx=tx-x,dy=ty-y;const wob=n2(x*1.7,y*1.7)-0.5;if(Math.abs(dx)>Math.abs(dy)+wob*6||dy===0)x+=Math.sign(dx);else y+=Math.sign(dy);rset(x,y);if(w>1){rset(x+1,y);rset(x,y+1)}}}};
+  const RD=[
+    // Villingen exits
+    [[150,108],[150,122],[146,134],[141,146]],[[129,88],[116,90],[104,94],[92,98],[76,101],[62,104]],[[171,88],[184,92],[196,96],[210,102],[226,108],[233,110]],
+    [[150,67],[150,62],[160,54],[163,46],[156,36],[140,32],[120,30],[100,30],[84,28],[72,27]],[[163,46],[176,40],[196,38],[214,36],[230,34]],
+    // ring between the training towns
+    [[46,96],[44,84],[38,68],[44,52],[52,40],[57,34]],[[247,101],[250,86],[252,70],[248,54],[244,40]],
+    [[50,112],[56,126],[66,138],[82,146],[100,150],[118,154],[126,155]],[[240,118],[230,128],[216,138],[200,146],[184,152],[166,155],[156,155]],
+    [[244,26],[252,22],[262,24],[262,29]],
+    // side paths to shrines, beach, lighthouse view, swamp
+    [[150,32],[150,20],[150,16]],[[258,33],[272,36],[281,36]],[[257,112],[270,124],[282,138]],[[62,104],[70,116],[70,130]],[[24,92],[24,60],[22,40],[22,25]],
+    [[156,158],[176,160],[196,160],[216,158],[232,154]],[[126,155],[110,160],[100,164]],[[56,130],[40,140],[30,150]],[[176,40],[190,24],[200,14]]
+  ];
+  for(const p of RD)road(p,p===RD[0]||p===RD[1]||p===RD[2]?2:1);
+  // ---- legendary shrines (+ clear around them)
+  for(const L of LEGENDS){for(let dy=-2;dy<=2;dy++)for(let dx=-2;dx<=2;dx++){const t=tget(L.x+dx,L.y+dy);if(!WALK0.has(t)||t===27)tset(L.x+dx,L.y+dy,BASE_T[B(L.x+dx,L.y+dy)]||0)}for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++)tset(L.x+dx,L.y+dy,13)}
+  // ---- borders between areas: a closed line (trees, cliffs, peaks, water); only roads cross → each road crossing gets a teacher (Prof.)
+  const BAR={1:2,2:2,3:3,4:16,5:11,6:31,7:16,8:2};const D4=[[1,0],[-1,0],[0,1],[0,-1]];
+  {const set=[];for(let y=2;y<MH-2;y++)for(let x=2;x<MW-2;x++){const i=y*MW+x,b=BIOME[i];if(!b||ROAD.has(i)||!WALK0.has(MAP[i])||MAP[i]===13)continue;
+     for(const[dx,dy]of D4){const j=(y+dy)*MW+x+dx,nb=BIOME[j];if(!nb||nb===b)continue;set.push([i,b]);break}}
+   for(const[i,b]of set)MAP[i]=BAR[b]}
+  for(let y=0;y<MH;y++)for(let x=0;x<MW;x++)if(x<2||y<2||x>=MW-2||y>=MH-2){const b=B(x,y);tset(x,y,b===3?3:b===6||b===4?31:b===7?16:2)}
+  // ---- gates: first road tile inside an area that is entered from another area
+  {const seen=new Set();for(const i of ROAD){const x=i%MW,y=(i-x)/MW,b=BIOME[i];if(b<=1)continue;
+     for(const[dx,dy]of D4){const j=(y+dy)*MW+x+dx;if(!ROAD.has(j))continue;const nb=BIOME[j];if(nb===b||nb===0)continue;
+       if([...seen].some(k=>{const kx=k%MW,ky=(k-kx)/MW;return BIOME[k]===b&&Math.abs(kx-x)+Math.abs(ky-y)<16}))continue;seen.add(i);GATES.push({b,i});break}}
+   GATES.push({b:5,i:(KNAST_C.y+7)*MW+KNAST_C.x},{b:9,i:(KNAST_C.y-1)*MW+KNAST_C.x})}
+  // ---- reachability: carve pockets back to the network inside their own area (never across a border), else fill them
+  const W0=i=>WALK0.has(MAP[i]);
+  const reach=()=>{const seen=new Uint8Array(MW*MH),q=[VSPAWN.y*MW+VSPAWN.x];seen[q[0]]=1;while(q.length){const i=q.pop(),x=i%MW,y=(i-x)/MW;for(const[dx,dy]of D4){const nx=x+dx,ny=y+dy;if(nx<1||ny<1||nx>=MW-1||ny>=MH-1)continue;const j=ny*MW+nx;if(seen[j]||!W0(j))continue;seen[j]=1;q.push(j)}}return seen};
+  for(let it=0;it<400;it++){const seen=reach();let c=-1;for(let i=0;i<MW*MH;i++){const x=i%MW,y=(i-x)/MW;if(x>=2&&y>=2&&x<MW-2&&y<MH-2&&!seen[i]&&W0(i)&&MAP[i]!==3){c=i;break}}if(c<0)break;
+    // component size
+    const comp=[c],cs=new Set([c]);for(let h=0;h<comp.length&&comp.length<400;h++){const i=comp[h],x=i%MW,y=(i-x)/MW;for(const[dx,dy]of D4){const j=(y+dy)*MW+x+dx;if(cs.has(j)||!W0(j))continue;cs.add(j);comp.push(j)}}
+    const bb=BIOME[c],isl=comp.some(i=>{const x=i%MW,y=(i-x)/MW;return D4.some(([dx,dy])=>MAP[(y+dy)*MW+x+dx]===3)})&&bb===3;
+    if(comp.length<10&&!isl){for(const i of comp)MAP[i]=BAR[bb]||2;continue}
+    const par=new Int32Array(MW*MH).fill(-1),bq=[];for(const i of comp){par[i]=i;bq.push(i)}let hit=-1;
+    for(let h=0;h<bq.length&&hit<0;h++){const i=bq[h],x=i%MW,y=(i-x)/MW;for(const[dx,dy]of D4){const nx=x+dx,ny=y+dy;if(nx<2||ny<2||nx>=MW-2||ny>=MH-2)continue;const j=ny*MW+nx;if(par[j]>=0)continue;if(BIOME[j]!==bb&&!(isl&&MAP[j]===3))continue;if(MAP[j]===11||MAP[j]===20)continue;par[j]=i;if(seen[j]){hit=j;break}bq.push(j)}}
+    if(hit<0){if(isl)continue;for(const i of comp)MAP[i]=BAR[bb]||2;continue}
+    for(let i=par[hit];par[i]!==i;i=par[i])if(!W0(i)&&MAP[i]!==3)MAP[i]=BASE_T[BIOME[i]]||0}
+  // ---- trainers: originals at fixed story spots, many more along the roads of every area
+  const near=(x,y,b)=>{for(let rr=1;rr<5;rr++)for(let dy=-rr;dy<=rr;dy++)for(let dx=-rr;dx<=rr;dx++){const X=x+dx,Y=y+dy,i=Y*MW+X;if(X<3||Y<3||X>=MW-3||Y>=MH-3)continue;if(BIOME[i]!==b||ROAD.has(i))continue;
+      // standing beside a road, looking at it
+      for(const[ddx,ddy,d]of[[1,0,'right'],[-1,0,'left'],[0,1,'down'],[0,-1,'up']]){const j=(Y+ddy)*MW+X+ddx;if(ROAD.has(j)&&BIOME[j]===b)return{x:X,y:Y,d}}}return null};
+  const roadsIn=b=>[...ROAD].filter(i=>BIOME[i]===b);
+  const FIX={ben:[150,124,1],lina:[160,52,1],gwen:[118,90,1],rita:[78,101,2],hank:[120,30,4],sue:[176,159,3],axel:[262,124,8]};
+  const used=[];const okSpot=(x,y)=>!used.some(([a,b])=>Math.abs(a-x)+Math.abs(b-y)<9)&&!GATES.some(g=>{const gx=g.i%MW,gy=(g.i-gx)/MW;return Math.abs(gx-x)+Math.abs(gy-y)<6})&&!TOWNS.some(t=>Math.abs(t.x-x)<18&&Math.abs(t.y-y)<12);
+  for(const t of TRAINERS){const f=FIX[t.id];if(!f)continue;const s=near(f[0],f[1],f[2])||{x:f[0],y:f[1],d:t.d};Object.assign(t,s);used.push([s.x,s.y])}
+  const RANKS=['Polizeimeisterin','Polizeimeister','Kommissar','Kommissarin','Polizeiobermeister','Oberkommissarin','Hauptkommissar','Anwärterin','Anwärter','Polizeihauptmeister','Kriminalkommissarin','Diensthundeführer','Verkehrspolizist','Bereitschaftspolizistin'];
+  const NAMES=['Jonas','Lea','Finn','Mila','Paul','Emma','Luis','Hanna','Ben','Sofia','Noah','Lina','Elias','Clara','Felix','Ida','Max','Nele','Tim','Greta','Moritz','Pia','Jan','Zoe','Karl','Frieda','Emil','Lotta','Oskar','Ella','Theo','Maja','Anton','Leni','Jakob','Marie','David','Ronja','Leon','Amelie'];
+  const LINES=['Halt, Personenkontrolle!','Ich hab da ein paar Paragrafen für dich.','Hier kommt keiner ungeprüft vorbei!','Zeig mal, was dein Team drauf hat!','Dienstsport! Los geht’s!','Sie wurden geblitzt — von meinem Monster!','Routinekontrolle. Ganz entspannt…','Meine Monster haben die Prüfung mit Auszeichnung bestanden!'];
+  const AFTER=['Weitermachen.','Gute Streife!','Respekt, Kollege.','Das gibt eine Belobigung.','Na gut, du darfst weiter.'];
+  const COL=['#2f5fb3','#3b4a8c','#2a6f4f','#7a3a3a','#5b4bc4','#1f7fa8','#8c5a2a','#2b2f3a','#a83a6a','#3a7a3a'];
+  const rt=mulberry32(909);let k=0;
+  for(const b of[1,2,3,4,6,8,7]){const R=roadsIn(b);for(let n=0;n<R.length;n+=4){const i=R[(n*37)%R.length],x=i%MW,y=(i-x)/MW;if(!okSpot(x,y))continue;const s=near(x,y,b);if(!s||!okSpot(s.x,s.y))continue;
+    const cnt=(b===1?Math.min(3,1+(k%3)):b>=6?3+(k%2):2+(k%2)),nm=RANKS[k%RANKS.length]+' '+NAMES[(k*7)%NAMES.length];
+    TRAINERS.push({id:'tr'+b+'_'+k,n:nm,x:s.x,y:s.y,d:s.d,c:COL[k%COL.length],team:Array.from({length:cnt},(_,j)=>['owigon',5+j]),reward:2+(b>=6?2:b>=3?1:0),line:LINES[Math.floor(rt()*LINES.length)],after:AFTER[Math.floor(rt()*AFTER.length)]});used.push([s.x,s.y]);k++;
+    if(R.length/4<k)break}}
+  for(const t of TRAINERS){if(!WALK0.has(tget(t.x,t.y))||ENC.has(tget(t.x,t.y)))tset(t.x,t.y,BASE_T[B(t.x,t.y)]||0);const[dx,dy]={up:[0,-1],down:[0,1],left:[-1,0],right:[1,0]}[t.d];for(let s=1;s<=4;s++){const x=t.x+dx*s,y=t.y+dy*s;const tt=tget(x,y);if(tt===2||tt===16||tt===31||tt===3)tset(x,y,ROAD.has(y*MW+x)?4:BASE_T[B(x,y)]||0)}}
+  // level range per area: grows with the distance from Villingen inside the area
+  for(const z in ZLV){ZLV[z].d0=1e9;ZLV[z].d1=0}
+  for(let i=0;i<MW*MH;i++){if(!ENC.has(MAP[i])&&MAP[i]!==20)continue;const z=BKEYS[BIOME[i]];if(!z||!ZLV[z])continue;const x=i%MW,y=(i-x)/MW,d=distC(x,y);ZLV[z].d0=Math.min(ZLV[z].d0,d);ZLV[z].d1=Math.max(ZLV[z].d1,d)}
 })();
 const WALK=WALK0;
 /* ===================== SIGNPOSTS ===================== */
 // wooden signs like in the originals: at the town exits, on both sides of every pass and in the town centre; biome name, direction, recommended level
-const SIGNS=[],SIGNSET=new Set(),BNAME=['Villingen-Knastningen','Nordwiese','Ostwald','Südküste','Westhügel','Knast'];
+const SIGNS=[],SIGNSET=new Set(),BNAME=['Stadt','Villinger Land','Damentaler Wald','Marderacher Küste','Felsenhöhen','Knast','Lahribarer Gebirge','Unterwertheimer Canyon','Mostbacher Dschungel','Zellentrakt'];
 /* ===================== FIELD SKILLS (like the HMs of the originals) ===================== */
 // taught only by the harder trainers: CUT (Rita), SWIM (Sue), STRENGTH (Hank), FLY (Axel)
-const HM={cut:{n:'ZERSCHNEIDER',i:'✂',from:'rita',d:'Fällt die Bäumchen, die eine Abkürzung von der Stadt in den Ostwald verstecken.'},swim:{n:'SURFER',i:'🌊',from:'sue',d:'Schwimm über Seen und Flüsse.'},
-  str:{n:'STÄRKE',i:'💪',from:'hank',d:'Schiebt die Felsen weg, die eine Abkürzung von der Stadt in die Westhügel versperren.'},fly:{n:'FLIEGEN',i:'🕊',from:'axel',d:'Flieg von der Weltkarte aus in die Stadt oder zu jedem Schild.'}};
+const HM={cut:{n:'ZERSCHNEIDER',i:'✂',from:'rita',d:'Fällt kleine Bäume auf Nebenwegen (z. B. zu Schreinen).'},swim:{n:'SURFER',i:'🌊',from:'sue',d:'Schwimm über Seen und Flüsse.'},
+  str:{n:'STÄRKE',i:'💪',from:'hank',d:'Schiebt Felsbrocken auf Nebenwegen weg.'},fly:{n:'FLIEGEN',i:'🕊',from:'axel',d:'Schnellreise auch zu jedem Schild (Städte gehen immer).'}};
 const HM_FROM={rita:'cut',sue:'swim',hank:'str',axel:'fly'};
 function hasHM(k){try{return!!(RUN&&RUN.hm&&RUN.hm[k])}catch(e){return false}}  // also called while the map is built, before the save is loaded
 const FIELD=[],FIELDGONE=new Set();
 function fieldAt(x,y){return FIELD.find(f=>f.x===x&&f.y===y&&!FIELDGONE.has(f.id))||null}
 function walkable(x,y){const t=tget(x,y);return(WALK.has(t)||(t===3&&hasHM('swim')))&&!SIGNSET.has(y*MW+x)&&!fieldAt(x,y)}
-// shortcuts through the tree line (town→Woods) and the cliffs (town→Hills), blocked by cuttable trees / boulders
-(function placeField(){const D4=[[1,0],[-1,0],[0,1],[0,-1]];let id=0;
-  for(const[b,kind]of[[2,'cut'],[4,'str']]){let best=null,bd=1e9;
-    for(let y=3;y<MH-3;y++)for(let x=3;x<MW-3;x++){if(BIOME[y*MW+x]!==0||!WALK0.has(MAP[y*MW+x]))continue;let near=false;for(let dy=-3;dy<=3&&!near;dy++)for(let dx=-3;dx<=3;dx++)if(BIOME[(y+dy)*MW+x+dx]===b){near=true;break}if(!near)continue;
-      const d=Math.hypot(x-30,y-24);if(d<bd){bd=d;best={x,y}}}
-    if(!best)continue;const par=new Int32Array(MW*MH).fill(-1),q=[best.y*MW+best.x];par[q[0]]=q[0];let hit=-1;
-    for(let h=0;h<q.length&&hit<0;h++){const i=q[h],x=i%MW,y=(i-x)/MW;for(const[dx,dy]of D4){const nx=x+dx,ny=y+dy;if(nx<3||ny<3||nx>=MW-3||ny>=MH-3)continue;const j=ny*MW+nx;if(par[j]>=0)continue;
-      if(WALK0.has(MAP[j])&&BIOME[j]===0){par[j]=i;q.push(j);continue}par[j]=i;if(BIOME[j]===b&&WALK0.has(MAP[j])&&MAP[j]!==3){hit=j;break}q.push(j)}}
-    if(hit<0)continue;const path=[];for(let i=par[hit];i!==par[i];i=par[i])path.push(i);
-    for(const i of path)if(!WALK0.has(MAP[i])||MAP[i]===3){MAP[i]=BASE_T[BIOME[i]]||0;FIELD.push({id:id++,x:i%MW,y:(i-i%MW)/MW,kind})}}
-})();
-(function placeSigns(){
-  const D4=[[1,0],[-1,0],[0,1],[0,-1]],cen={},lv={};setTimeout(()=>{const sb=$('#signbox');if(sb)sb.onclick=()=>sb.classList.remove('on')},0);
-  for(let i=0;i<MW*MH;i++){if(!ENC.has(MAP[i]))continue;const b=BIOME[i],x=i%MW,y=(i-x)/MW,l=Math.max(BIO_MIN[BKEYS[b]]||1,Math.round(baseLvAt(x,y)));const c=cen[b]||(cen[b]={x:0,y:0,n:0});c.x+=x;c.y+=y;c.n++;const r=lv[b]||(lv[b]=[99,0]);r[0]=Math.min(r[0],l);r[1]=Math.max(r[1],l)}
-  for(const b in cen){cen[b].x/=cen[b].n;cen[b].y/=cen[b].n}
-  const reach=()=>{const seen=new Uint8Array(MW*MH),q=[24*MW+30];seen[q[0]]=1;let n=1;while(q.length){const i=q.pop(),x=i%MW,y=(i-x)/MW;for(const[dx,dy]of D4){const j=(y+dy)*MW+x+dx;if(seen[j]||!walkable(x+dx,y+dy))continue;seen[j]=1;n++;q.push(j)}}return n};
-  let base=reach();
-  const free=(x,y)=>x>2&&y>2&&x<MW-3&&y<MH-3&&WALK0.has(MAP[y*MW+x])&&MAP[y*MW+x]!==4&&!ENC.has(MAP[y*MW+x])&&!SIGNSET.has(y*MW+x)&&!SIGNSET.has(y*MW+x+1)&&!SIGNSET.has(y*MW+x-1)&&!TRAINERS.some(t=>Math.abs(t.x-x)+Math.abs(t.y-y)<2)&&!LEGENDS.some(L=>Math.abs(L.x-x)<3&&Math.abs(L.y-y)<3)&&!(Math.abs(x-30)<2&&Math.abs(y-24)<2)&&!FIELD.some(f=>Math.abs(f.x-x)<=2&&Math.abs(f.y-y)<=2);
-  const add=(x,y,o)=>{const i=y*MW+x;SIGNSET.add(i);if(reach()!==base-1){SIGNSET.delete(i);return false}base--;SIGNS.push(Object.assign({x,y},o));return true};
-  const near=(tx,ty,side,o)=>{for(let r=1;r<7;r++)for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++){if(Math.max(Math.abs(dx),Math.abs(dy))!==r)continue;const x=Math.round(tx)+dx,y=Math.round(ty)+dy;if(!free(x,y)||BIOME[y*MW+x]!==side)continue;if(add(x,y,o))return true}return false};
-  // town exit nearest to the centre toward biome b (walkable for Meadow/Shore, a wall for Woods/Hills)
-  const exitTo=(b,open)=>{let best=null,bd=1e9;for(let y=3;y<MH-3;y++)for(let x=3;x<MW-3;x++){if(BIOME[y*MW+x]!==0||!WALK0.has(MAP[y*MW+x]))continue;
-      const R=open?1:3;let hit=false;for(let dy=-R;dy<=R&&!hit;dy++)for(let dx=-R;dx<=R;dx++){if(Math.abs(dx)+Math.abs(dy)>R)continue;if(BIOME[(y+dy)*MW+x+dx]===b&&(!open||WALK0.has(MAP[(y+dy)*MW+x+dx]))){hit=true;break}}if(!hit)continue;const d=Math.hypot(x-30,y-24)+(MAP[y*MW+x]===4?-3:0);if(d<bd){bd=d;best={x,y}}}return best};
-  for(const b of[1,3]){const g=exitTo(b,true);if(g)near(g.x,g.y,0,{to:b,kind:'gate'})}
-  for(const[b,via]of[[2,1],[4,3]]){const g=exitTo(b,false);if(g)near(g.x,g.y,0,{to:b,kind:'wall',via})}
-  // passes: path tiles on the Meadow|Woods and Shore|Hills borders
-  for(const[a,b]of[[1,2],[3,4]]){let sx=0,sy=0,n=0;for(let y=2;y<MH-2;y++)for(let x=2;x<MW-2;x++){const i=y*MW+x;if(MAP[i]!==4||(BIOME[i]!==a&&BIOME[i]!==b))continue;if(D4.some(([dx,dy])=>{const nb=BIOME[(y+dy)*MW+x+dx];return(nb===a||nb===b)&&nb!==BIOME[i]})){sx+=x;sy+=y;n++}}
-    if(!n)continue;const px=sx/n,py=sy/n;near(px,py,a,{to:b,kind:'pass'});near(px,py,b,{to:a,kind:'back'})}
-  near(30,26,0,{kind:'town'});
-  SIGNS.push({x:10,y:12,kind:'knast',to:5,arrow:'↑',lv:KNAST_LV.slice()});SIGNSET.add(12*MW+10);
-  // arrows follow the real walking route (obstacles, cliffs, tree lines, CUT trees and boulders included), not the straight line to the area centre
+// optional side paths to some shrines are blocked by small trees (CUT) or boulders (STRENGTH); islands need SURFER
+(function placeField(){let id=0;const spots=[[70,122,'cut'],[71,123,'cut'],[150,22,'str'],[275,36,'str'],[276,124,'cut']];
+  for(const[x,y,kind]of spots){let best=null,bd=9;for(let dy=-3;dy<=3;dy++)for(let dx=-3;dx<=3;dx++){const X=x+dx,Y=y+dy;if(tget(X,Y)!==4)continue;const d=Math.abs(dx)+Math.abs(dy);if(d<bd){bd=d;best={x:X,y:Y}}}
+    if(best&&!FIELD.some(f=>f.x===best.x&&f.y===best.y))FIELD.push({id:id++,x:best.x,y:best.y,kind})}})();
+(function placeSigns(){const D4=[[1,0],[-1,0],[0,1],[0,-1]];setTimeout(()=>{const sb=$('#signbox');if(sb)sb.onclick=()=>sb.classList.remove('on')},0);
   const ARW=['→','↘','↓','↙','←','↖','↑','↗'],dirTo=(fx,fy,tx,ty)=>ARW[(Math.round(Math.atan2(ty-fy,tx-fx)/(Math.PI/4))+8)%8];
-  const route=(sx,sy,goal)=>{const par=new Int32Array(MW*MH).fill(-1),q=[];for(const[dx,dy]of D4){const x=sx+dx,y=sy+dy;if(walkable(x,y)){const j=y*MW+x;par[j]=j;q.push(j)}}
-    for(let h=0;h<q.length;h++){const i=q[h],x=i%MW,y=(i-x)/MW;if(goal(i))return{i,par};for(const[dx,dy]of D4){const nx=x+dx,ny=y+dy,j=ny*MW+nx;if(nx<1||ny<1||nx>=MW-1||ny>=MH-1||par[j]>=0||!walkable(nx,ny))continue;par[j]=i;q.push(j)}}return null};
-  for(const sg of SIGNS){if(sg.to==null||sg.kind==='knast')continue;sg.lv=lv[sg.to]?[Math.max(BIO_MIN[BKEYS[sg.to]]||1,lv[sg.to][0]-1),lv[sg.to][1]]:[1,1];
-    const target=sg.kind==='back'?0:sg.to;const r=route(sg.x,sg.y,i=>BIOME[i]===target&&(target!==sg.to||ENC.has(MAP[i])||BIOME[i]!==BIOME[sg.y*MW+sg.x]));
-    if(r){const path=[];for(let i=r.i;;i=r.par[i]){path.unshift(i);if(r.par[i]===i)break}const p=path[Math.min(path.length-1,10)],px=p%MW,py=(p-px)/MW;sg.arrow=dirTo(sg.x,sg.y,px,py);sg.steps=path.length}
-    else{const c=cen[sg.to];if(c)sg.arrow=dirTo(sg.x,sg.y,c.x,c.y)}
-    if(sg.kind==='wall')sg.field=FIELD.some(f=>f.kind===(sg.to===2?'cut':'str'))?(sg.to===2?'cut':'str'):null}
+  const free=(x,y)=>{const i=y*MW+x,t=MAP[i];return x>2&&y>2&&x<MW-3&&y<MH-3&&WALK0.has(t)&&t!==4&&t!==27&&!ENC.has(t)&&t!==13&&!SIGNSET.has(i)&&!TRAINERS.some(q=>Math.abs(q.x-x)+Math.abs(q.y-y)<2)&&!GATES.some(g=>g.i===i)};
+  const put=(cx,cy,o,side)=>{for(let rr=1;rr<5;rr++)for(let dy=-rr;dy<=rr;dy++)for(let dx=-rr;dx<=rr;dx++){if(Math.max(Math.abs(dx),Math.abs(dy))!==rr)continue;const x=cx+dx,y=cy+dy;if(!free(x,y))continue;if(side!=null&&BIOME[y*MW+x]!==side)continue;
+      // only beside a road, never inside a 1-wide corridor
+      if(!D4.some(([a,b])=>tget(x+a,y+b)===4||tget(x+a,y+b)===27))continue;const open=D4.filter(([a,b])=>WALK0.has(tget(x+a,y+b))).length;if(open<3)continue;
+      SIGNSET.add(y*MW+x);SIGNS.push(Object.assign({x,y},o));return true}return false};
+  for(const T of TOWNS)put(T.x+2,T.y+1,{kind:'town',town:T.id,n:T.n});
+  for(const g of GATES){if(g.b>8)continue;const gx=g.i%MW,gy=(g.i-gx)/MW;if(g.b===5){put(gx,gy+3,{kind:'knast',to:5,lv:[ZLV.knast.lo,ZLV.knast.hi],arrow:'↑'});continue}
+    // the side the visitor comes from
+    let side=null,sx=gx,sy=gy;for(const[dx,dy]of D4){const j=(gy+dy)*MW+gx+dx;if((MAP[j]===4||MAP[j]===27)&&BIOME[j]!==g.b){side=BIOME[j];sx=gx+dx*3;sy=gy+dy*3;break}}
+    const z=BKEYS[g.b],L=ZLV[z]||{lo:1,hi:1};put(sx,sy,{kind:'pass',to:g.b,lv:[L.lo,L.hi],arrow:dirTo(sx,sy,gx,gy)},side)}
 })();
-function signShort(sg){return sg.kind==='town'?'Villingen-Knastningen':`${sg.arrow||''} ${BNAME[sg.to]} · Lv ${sg.lv[0]}–${sg.lv[1]}`}
-function signText(sg){if(sg.kind==='knast')return`<b>⛓ KNAST ⛓</b> · Lv ${sg.lv[0]}–${sg.lv[1]}<br>Justizvollzugsanstalt Villingen-Knastningen.<br>Hier sitzen nur StGB-Täter — und sie wollen raus! Nur für erfahrene Beamte.`;if(sg.kind==='town')return`<b>VILLINGEN-KNASTNINGEN</b><br>„Schnapp sie dir alle — und ab vors Gericht!“<br>⚕ PÄD (Blaulicht) · ⚖ Gericht (lila Dach) · 🛒 Copshop (Turm links) · 🎓 HfPol (rechts): Study<br>Wiese ↑ und Küste ↓ sind offen. Wald und Hügel liegen dahinter.`;
+function signShort(sg){return sg.kind==='town'?sg.n:`${sg.arrow||''} ${BNAME[sg.to]} · Lv ${sg.lv[0]}–${sg.lv[1]}`}
+function signText(sg){if(sg.kind==='knast')return`<b>⛓ KNAST ⛓</b> · Lv ${sg.lv[0]}–${sg.lv[1]}<br>Justizvollzugsanstalt im Unterwertheimer Krater.<br>Hier sitzen nur StGB-Täter — und sie wollen raus! Nur für erfahrene Beamte.`;
+  if(sg.kind==='town'){const T=TOWNS.find(t=>t.id===sg.town);return`<b>${esc((sg.n||'').toUpperCase())}</b><br>${sg.town==='vil'?'Polizeischule — ⚖ Gericht (Lobby-Turnier) · ':'Ausbildungsstätte — '}⚕ PÄD (heilen, Wiedereinstieg nach Niederlage) · 🛒 Copshop · 🎓 HfPol (Study)<br>🕊 Besuchte Städte erreichst du jederzeit per Schnellreise über die Weltkarte (M).`}
   const z=BKEYS[sg.to],pool=z?poolOf(z):[],mons=pool.map(s=>G&&G.dex&&G.dex[s]!==undefined?SPECIES[s].n:'???').join(', ');
-  const head=`<b>${sg.arrow||''} ${BNAME[sg.to].toUpperCase()}</b> · empfohlen Lv${sg.lv[0]}–${sg.lv[1]}`;
-  if(sg.kind==='wall')return`${head}<br>${sg.to===2?'Die Baumreihe versperrt':'Die Klippen versperren'} hier den direkten Weg.<br>Der Pfeil zeigt den Weg durch ${BNAME[sg.via]} — dort gibt es einen Durchgang.${sg.field?`<br>Abkürzung: ${sg.field==='cut'?'Bäumchen mit ✂ ZERSCHNEIDER fällen':'Felsen mit 💪 STÄRKE wegschieben'} (${esc(TRAINERS.find(t=>t.id===HM[sg.field].from).n)}).`:''}`;
-  if(sg.kind==='back')return`<b>${sg.arrow||''} ${BNAME[sg.to].toUpperCase()}</b> · Lv ${sg.lv[0]}–${sg.lv[1]}<br>Der Pfeil zeigt den Weg zurück nach ${BNAME[sg.to]} und weiter in die Stadt.`;
-  return`${head}<br>${sg.kind==='pass'?'Bergpass — dahinter warten stärkere Monster!':'Wilde Monster werden stärker, je weiter du gehst.'}<br>Hier gesichtet:${esc(mons)}`}
+  return`<b>${sg.arrow||''} ${BNAME[sg.to].toUpperCase()}</b> · empfohlen Lv ${sg.lv[0]}–${sg.lv[1]}<br>${TOLL_LAW&&TOLL_LAW[sg.to]?`Der Weg wird von einem Prof. bewacht (${TOLL_LAW[sg.to]}): Klausur, Bestechung oder Kampf.<br>`:''}Hier gesichtet: ${esc(mons)}`}
 function showSign(sg){const el=$('#signbox');el.innerHTML=signText(sg);el.classList.add('on');clearTimeout(showSign.t);showSign.t=setTimeout(()=>el.classList.remove('on'),6000)}
 function zoneAt(x,y){if(x<0||y<0||x>=MW||y>=MH)return null;return BKEYS[BIOME[y*MW+x]]}
 
@@ -1053,6 +1099,11 @@ function buildTiles(){
   TILE[17]=[0,1,2].map(v=>tileCanvas(x=>{const r=mulberry32(v+320);for(let i=0;i<4;i++){const a=1+i*4,h=7+Math.floor(r()*5);x.fillStyle='#123a12';x.fillRect(a,16-h,1,h);for(let k=0;k<h-1;k+=2){x.fillStyle=k%4?'#2e6a24':'#4a8c34';x.fillRect(a-1-(k%4?1:0),16-h+k+1,1+(k%4?1:0),1);x.fillRect(a+1,16-h+k+1,1+(k%4?0:1),1)}x.fillStyle='#6fb04a';x.fillRect(a,16-h,1,1)}}));
   TILE[18]=[0,1,2].map(v=>tileCanvas(x=>{const r=mulberry32(v+330);for(let i=0;i<6;i++){const a=1+i*2.5+Math.floor(r()*2),h=8+Math.floor(r()*6);x.fillStyle='#4f7a28';x.fillRect(a,16-h,1,h);x.fillStyle='#7fa83f';x.fillRect(a,16-h+2,1,h-3);if(i%2){x.fillStyle='#6a4420';x.fillRect(a,16-h-1,1,3);x.fillStyle='#8a5a2a';x.fillRect(a,16-h-1,1,1)}}}));
   TILE[19]=[0,1,2].map(v=>tileCanvas(x=>{const r=mulberry32(v+340);for(let i=0;i<6;i++){const a=Math.floor(r()*13),b=6+Math.floor(r()*8);x.fillStyle='#4f4a42';x.fillRect(a,b,3,2);x.fillStyle='#8a8478';x.fillRect(a,b,2,1);x.fillStyle='#a7a196';x.fillRect(a,b,1,1)}for(let i=0;i<4;i++){const a=1+i*4,h=5+Math.floor(r()*4);x.fillStyle='#8a7a3a';x.fillRect(a,16-h,1,h);x.fillStyle='#b8a456';x.fillRect(a+1,16-h+2,1,h-2)}}));
+  // new areas: snow grass, desert scrub, jungle grass, bridge planks
+  TILE[24]=[0,1,2].map(v=>tileCanvas(x=>{const r=mulberry32(v+410);for(let i=0;i<6;i++){const a=1+i*2.6+Math.floor(r()*2),h=5+Math.floor(r()*6);x.fillStyle='#2f5a4a';x.fillRect(a,16-h,2,h);x.fillStyle='#5f8f7a';x.fillRect(a,16-h+1,1,h-1);x.fillStyle='#f4f8fc';x.fillRect(a,16-h,2,1);x.fillStyle='#cfe0ea';x.fillRect(a+1,16-h+2,1,1)}}));
+  TILE[25]=[0,1,2].map(v=>tileCanvas(x=>{const r=mulberry32(v+420);for(let i=0;i<3;i++){const cx=2+i*5+Math.floor(r()*2),cy=10+Math.floor(r()*3);for(let k=0;k<6;k++){const a=-Math.PI/2+(k-2.5)*0.45,L=3+Math.floor(r()*3);for(let t=0;t<L;t++)P1(x,Math.round(cx+Math.cos(a)*t),Math.round(cy+Math.sin(a)*t),t===L-1?'#c9a25a':k%2?'#8a6a2a':'#6f5420')}}}));
+  TILE[26]=[0,1,2].map(v=>tileCanvas(x=>{const r=mulberry32(v+430);for(let i=0;i<4;i++){const a=1+i*4,h=8+Math.floor(r()*6);x.fillStyle='#0c3a1c';x.fillRect(a,16-h,1,h);for(let k=0;k<h-1;k+=2){x.fillStyle=k%4?'#1f7a3a':'#2fa050';x.fillRect(a-2,16-h+k+1,2,1);x.fillRect(a+1,16-h+k+1,2,1)}x.fillStyle='#7ad06a';x.fillRect(a,16-h,1,1)}}));
+  TILE[27]=[tileCanvas(x=>{x.fillStyle='#5a3a1c';x.fillRect(0,0,16,16);for(let y=0;y<16;y+=4){x.fillStyle='#a8743c';x.fillRect(0,y,16,3);x.fillStyle='#c48c4c';x.fillRect(0,y,16,1);x.fillStyle='#6b4420';x.fillRect(5+(y%8),y+1,1,1)}x.fillStyle='#3a2410';x.fillRect(0,0,1,16);x.fillRect(15,0,1,16)})];
   TILE[9]=[0,1,2].map(v=>tileCanvas(x=>{grassBase(x,v+12);const r=mulberry32(v+77);const cols=['#ffffff','#ffd84a','#ff7aa8'];for(let i=0;i<3;i++){const a=2+Math.floor(r()*11),b=2+Math.floor(r()*11),col=cols[i%3];P1(x,a,b-1,col);P1(x,a-1,b,col);P1(x,a+1,b,col);P1(x,a,b+1,col);P1(x,a,b,'#ffb02e')}}));
 }
 buildTiles();
@@ -1066,57 +1117,104 @@ const PAL={
  dirt:['#8e6338','#a5784a','#b98c57','#cca067','#dcb57a'],sand:['#cdb27a','#d9c08a','#e4cd98','#eedaa6','#f6e6b8'],
  water:['#255da6','#2f6fb8','#3b82c8','#4a95d6','#5fa8e0'],stone:['#8f8872','#a69f88','#bdb59c','#d2cab0','#e6dfc6'],
  leaf:['#173d16','#21521d','#2c6826','#3b8030','#56993c','#76b24c'],leafF:['#10300f','#183f15','#22521d','#2e6626','#3e7c30','#549439'],
- rock:['#4f4a42','#6a645a','#857e72','#a19a8c','#bdb6a6'],moss:['#3f7a26','#5c9a38','#7fbf4c']};
+ rock:['#4f4a42','#6a645a','#857e72','#a19a8c','#bdb6a6'],moss:['#3f7a26','#5c9a38','#7fbf4c'],
+ snow:['#a9b8c9','#bfccd9','#d3dde8','#e5ecf3','#f6f9fc'],desert:['#c08a4a','#cf9b58','#dcae6a','#e7c07e','#f0d294'],jungle:['#1f5a2a','#277034','#2f833c','#3a9646','#4aaa52'],
+ pine:['#0f2a1c','#163a26','#1e4a30','#2a5c3c','#3a704a','#4a8458'],palm:['#1a4a14','#22611a','#2d7a22','#3c9230','#55aa3e','#79c254'],cactus:['#1f4a22','#2a6a2e','#3a8a3c','#56a84e','#7cc46a'],peak:['#3a3e48','#545a66','#717885','#9aa2ae','#e8eef4','#ffffff']};
 const RGB={};for(const k in PAL)RGB[k]=PAL[k].map(hex2rgb);
-let WORLD=null,CANOPY=null;
-let BAKE=null,BAKE_FAIL=false;
-function bakeWorld(){try{const it=bakeWorldGen();let r;do{r=it.next()}while(!r.done)}catch(e){BAKE_FAIL=true;showErr('Karte: '+e.message)}}
-// baked in slices so phones never freeze; progress shown on the start screen
-function bakeTick(){if(WORLD||BAKE_FAIL)return;try{if(!BAKE)BAKE=bakeWorldGen();const t0=performance.now();let r;do{r=BAKE.next()}while(!r.done&&performance.now()-t0<12);
-  const lb=document.querySelector('#loadbar i');if(lb)lb.style.width=Math.round((r.done?1:r.value||0)*100)+'%';if(r.done){BAKE=null;const L=$('#loadbar');if(L)L.style.display='none'}}
-  catch(e){BAKE_FAIL=true;BAKE=null;showErr('Karte: '+e.message);const L=$('#loadbar');if(L)L.style.display='none'}}
-function* bakeWorldGen(){
-  const W=MW*16,H=MH*16;const g=mk(W,H),gc=g.getContext('2d'),id=gc.createImageData(W,H),d=id.data;
-  const nL=noise2(101,46,W,H),nS=noise2(202,13,W,H),nD=noise2(303,22,W,H),jx=noise2(404,9,W,H),jy=noise2(505,9,W,H),nW=noise2(606,30,W,H);
+// the world is baked lazily in chunks of 32×32 tiles (ground + tree-canopy layer) around the player, kept in a small LRU cache
+let WORLD=null,CANOPY=null,BAKE=null,BAKE_FAIL=false;const CS=32,CHUNKS=new Map(),CH_MAX=18;let BN=null;
+function bakeNoise(){if(BN)return BN;const W=MW*16,H=MH*16;BN={nL:noise2(101,46,W,H),nS:noise2(202,13,W,H),nD:noise2(303,22,W,H),jx:noise2(404,9,W,H),jy:noise2(505,9,W,H),nW:noise2(606,30,W,H)};return BN}
+function chunkKey(cx,cy){return cx+','+cy}
+function neededChunks(){const px=Math.floor((P.fx||VSPAWN.x)/CS),py=Math.floor((P.fy||VSPAWN.y)/CS),out=[];for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const cx=px+dx,cy=py+dy;if(cx<0||cy<0||cx*CS>=MW||cy*CS>=MH)continue;out.push([cx,cy,Math.abs(dx)+Math.abs(dy)])}return out.sort((a,b)=>a[2]-b[2])}
+function bakeTick(budget){if(BAKE_FAIL)return;try{const t0=performance.now();const urgent=neededChunks().some(c=>c[2]<=1&&!CHUNKS.has(chunkKey(c[0],c[1])));budget=budget||(urgent?28:8);
+  while(performance.now()-t0<budget){if(!BAKE){const nx=neededChunks().find(([cx,cy])=>!CHUNKS.has(chunkKey(cx,cy)));if(!nx)break;BAKE={k:chunkKey(nx[0],nx[1]),it:bakeChunkGen(nx[0],nx[1])}}
+    const r=BAKE.it.next();if(r.done){CHUNKS.set(BAKE.k,Object.assign(r.value,{t:performance.now()}));BAKE=null;
+      if(CHUNKS.size>CH_MAX){const keep=new Set(neededChunks().map(([a,b])=>chunkKey(a,b)));let old=null;for(const[k,v]of CHUNKS)if(!keep.has(k)&&(!old||v.t<old[1].t))old=[k,v];if(old)CHUNKS.delete(old[0])}}}
+  const need=neededChunks().filter(c=>c[2]<=1),done=need.filter(([a,b])=>CHUNKS.has(chunkKey(a,b))).length;
+  const lb=document.querySelector('#loadbar i');if(lb&&!WORLD)lb.style.width=Math.round(done/need.length*100)+'%';
+  if(!WORLD&&done===need.length){WORLD=true;CANOPY=true;const L=$('#loadbar');if(L)L.style.display='none'}}
+  catch(e){if(BAKE){CHUNKS.set(BAKE.k,{g:null,c:null,t:performance.now()});plog('[karte] chunk '+BAKE.k+': '+e.message)}BAKE=null}}
+function bakeWorld(){WORLD=true}
+// after a teleport: bake the chunks around the player right away (hidden behind the fade)
+function bakeNow(){const t0=performance.now();while(performance.now()-t0<1600&&neededChunks().some(c=>c[2]<=1&&!CHUNKS.has(chunkKey(c[0],c[1]))))bakeTick(60)}
+// draw the visible part of the baked world (layer 'g' = ground, 'c' = canopy); unbaked chunks fall back to flat colours
+function drawWorldLayer(c,camX,camY,LW,LH,layer){const x0=Math.floor(Math.max(0,camX)/(CS*16)),y0=Math.floor(Math.max(0,camY)/(CS*16)),x1=Math.floor((camX+LW)/(CS*16)),y1=Math.floor((camY+LH)/(CS*16));
+  for(let cy=y0;cy<=y1;cy++)for(let cx=x0;cx<=x1;cx++){if(cx*CS>=MW||cy*CS>=MH)continue;const ch=CHUNKS.get(chunkKey(cx,cy));const X=cx*CS*16-camX,Y=cy*CS*16-camY;
+    if(ch&&ch.g){ch.t=performance.now();c.drawImage(layer==='g'?ch.g:ch.c,X,Y);continue}
+    if(layer!=='g')continue;const tx0=Math.max(cx*CS,Math.floor(camX/16)),ty0=Math.max(cy*CS,Math.floor(camY/16)),tx1=Math.min(cx*CS+CS-1,Math.floor((camX+LW)/16),MW-1),ty1=Math.min(cy*CS+CS-1,Math.floor((camY+LH)/16),MH-1);
+    for(let y=ty0;y<=ty1;y++)for(let x=tx0;x<=tx1;x++){c.fillStyle=MCOL[tget(x,y)]||'#000';c.fillRect(x*16-camX,y*16-camY,16,16)}}}
+function townArea(x,y){let best=1,bd=1e9;for(const T of TOWN_DEF){const d=Math.abs(T.x-x)+Math.abs(T.y-y);if(d<bd){bd=d;best=T.b}}return best}
+const GROUND_PAL=b=>b===2?RGB.forest:b===3?RGB.shore:b===4?RGB.hills:b===6?RGB.snow:b===7?RGB.desert:b===8?RGB.jungle:RGB.meadow;
+function* bakeChunkGen(cx,cy){
+  const X0=cx*CS,Y0=cy*CS,S=CS*16,PX0=X0*16,PY0=Y0*16,g=mk(S,S),gc=g.getContext('2d'),id=gc.createImageData(S,S),d=id.data,{nL,nS,nD,jx,jy,nW}=bakeNoise();
   const T=(x,y)=>tget(Math.floor(x/16),Math.floor(y/16));
-  for(let py=0;py<H;py++){if((py&7)===0)yield py/H*0.9;for(let px=0;px<W;px++){
-    const ox=(jx(px,py)-0.5)*7,oy=(jy(px,py)-0.5)*7;let t=T(px+ox,py+oy);const t0=T(px,py);
-    if(t0===6||t0===7||t0===8||t0===10||t0===11||t0===12||t0===20||t0>=21&&t0<=23)t=t0;
+  const JX=new Float32Array((S>>1)+1),JY=new Float32Array((S>>1)+1);
+  const SW=Math.min(S,MW*16-PX0),SH=Math.min(S,MH*16-PY0);
+  for(let ly=0;ly<SH;ly++){if((ly&7)===0)yield;const py=PY0+ly;if(!(ly&1))for(let k=0;k<=S>>1;k++){JX[k]=(jx(PX0+k*2,py)-0.5)*7;JY[k]=(jy(PX0+k*2,py)-0.5)*7}
+    for(let lx=0;lx<SW;lx++){const px=PX0+lx;
+    const ox=JX[lx>>1],oy=JY[lx>>1];let t=T(px+ox,py+oy);const t0=T(px,py);
+    if(t0===6||t0===7||t0===8||t0===10||t0===11||t0===12||t0===20||t0>=21&&t0<=23||t0===27||t0===13)t=t0;
     const tx=clamp(Math.floor((px+ox)/16),0,MW-1),ty=clamp(Math.floor((py+oy)/16),0,MH-1),b=BIOME[ty*MW+tx];
-    const dth=BAYER[(py&3)*4+(px&3)]*0.22;let v=nL(px,py)*0.62+nS(px,py)*0.38+dth;let pal;
-    if(t===3){pal=RGB.water;v=nW(px,py+((px*7)%3))*0.7+0.15+dth;
-      const nearLand=[[-2,0],[2,0],[0,-2],[0,2]].some(([a,c])=>T(px+a+ox*0.3,py+c+oy*0.3)!==3);if(nearLand){const o=(py*W+px)*4;d[o]=200;d[o+1]=232;d[o+2]=245;d[o+3]=255;continue}}
+    const dth=BAYER[(py&3)*4+(px&3)]*0.22;let v=nL(px,py)*0.62+nS(px,py)*0.38+dth;let pal;const o=(ly*S+lx)*4;
+    if(t===3||t===27){pal=RGB.water;v=nW(px,py+((px*7)%3))*0.7+0.15+dth;
+      const nearLand=[[-2,0],[2,0],[0,-2],[0,2]].some(([a,c2])=>{const q=T(px+a+ox*0.3,py+c2+oy*0.3);return q!==3&&q!==27});if(nearLand){d[o]=200;d[o+1]=232;d[o+2]=245;d[o+3]=255;continue}}
     else if(t===5)pal=RGB.sand;else if(t===18)pal=nD(px,py)>0.5?RGB.sand:RGB.shore;
-    else if(t===4||t===7||t===12)pal=RGB.dirt;else if(t===13||t===20)pal=RGB.stone;
-    else{pal=b===2?RGB.forest:b===3?RGB.shore:b===4?RGB.hills:RGB.meadow;
+    else if(t===4||t===7||t===12)pal=b===6?RGB.stone:b===7?RGB.desert:RGB.dirt;else if(t===13||t===20)pal=RGB.stone;
+    else if(t===28||t===24)pal=RGB.snow;else if(t===29||t===25)pal=RGB.desert;else if(t===30||t===26)pal=RGB.jungle;
+    else{pal=GROUND_PAL(b);
       if(t===1||t===17)v-=0.18;
-      if((b===4&&nD(px,py)>0.52)||((b<=1||b===3)&&nD(px,py)>0.74&&t!==1&&t!==17)||(t===19&&nD(px,py)>0.4))pal=RGB.dirt;}
-    const k=clamp(Math.floor(v*pal.length),0,pal.length-1),c=pal[k],o=(py*W+px)*4;d[o]=c[0];d[o+1]=c[1];d[o+2]=c[2];d[o+3]=255}}
-  gc.putImageData(id,0,0);yield 0.92;
-  const r=mulberry32(777);
-  // buildings / doors keep their tiles; soft shadow under buildings
-  for(let y=0;y<MH;y++)for(let x=0;x<MW;x++){const t=tget(x,y);if([6,7,8,10,11,12,20].includes(t)){const arr=TILE[t];let v=t===6?((y===19&&x!==25)?1:0):t===11?((x===34||x===37)&&y===19?1:0):0;gc.drawImage(arr[Math.min(v,arr.length-1)],x*16,y*16)}}
-  gc.fillStyle='rgba(20,30,10,0.28)';gc.fillRect(22*16,21*16,6*16,4);gc.fillRect(33*16,21*16,6*16,4);
-  gc.drawImage(g,22*16,13*16,96,64,22*16,17*16,96,64);gc.drawImage(dienstSprite(),22*16,17*16);
-  for(const Bd of BLDG){gc.fillStyle='rgba(20,30,10,0.28)';gc.fillRect(Bd.x*16,(Bd.y+Bd.h)*16,Bd.w*16,4);gc.drawImage(Bd.id==='shop'?shopSprite():hfpolSprite(),Bd.x*16,Bd.y*16)}
+      if((b===4&&nD(px,py)>0.52)||((b<=1||b===3)&&nD(px,py)>0.74&&t!==1&&t!==17)||(t===19&&nD(px,py)>0.4))pal=RGB.dirt}
+    if(pal===RGB.desert&&nD(px,py)>0.7)v-=0.15;
+    const k=clamp(Math.floor(v*pal.length),0,pal.length-1),c=pal[k];d[o]=c[0];d[o+1]=c[1];d[o+2]=c[2];d[o+3]=255}}
+  gc.putImageData(id,0,0);yield;
+  gc.save();gc.translate(-PX0,-PY0);
+  const inC=(x,y)=>x>=X0&&y>=Y0&&x<X0+CS&&y<Y0+CS;
+  // building tiles (PÄD walls/roof are covered by its sprite)
+  for(let y=Y0;y<Y0+CS;y++)for(let x=X0;x<X0+CS;x++){const t=tget(x,y);if([10,11,12,20,27].includes(t)){const arr=TILE[t];gc.drawImage(arr[(t===20?(x+y)%arr.length:0)],x*16,y*16)}}
+  for(const p of PADS){if(p.bx+6<X0||p.bx>X0+CS||p.by+4<Y0||p.by>Y0+CS)continue;gc.fillStyle='rgba(20,30,10,0.28)';gc.fillRect(p.bx*16,(p.by+4)*16,96,4);gc.drawImage(dienstSprite(),p.bx*16,p.by*16)}
+  for(const Bd of BLDG){if(Bd.x+Bd.w<X0||Bd.x>X0+CS||Bd.y+Bd.h<Y0||Bd.y>Y0+CS)continue;gc.fillStyle='rgba(20,30,10,0.28)';gc.fillRect(Bd.x*16,(Bd.y+Bd.h)*16,Bd.w*16,4);gc.drawImage(Bd.id==='shop'?shopSprite():hfpolSprite(),Bd.x*16,Bd.y*16)}
+  for(let y=Y0;y<Y0+CS;y++)for(let x=X0;x<X0+CS;x++){const t=tget(x,y);if(t===13)gc.drawImage(TILE[13][0],x*16,y*16)}
   // ground details: tufts, flowers, pebbles
-  for(let y=0;y<MH;y++)for(let x=0;x<MW;x++){const t=tget(x,y),b=BIOME[y*MW+x];
-    if(t===0||t===14||t===15){const n=1+Math.floor(r()*3);for(let i=0;i<n;i++){const X=x*16+Math.floor(r()*14)+1,Y=y*16+Math.floor(r()*13)+2;gc.fillStyle=b===2?'#1d4416':b===4?'#6a6a2a':'#3a7424';gc.fillRect(X,Y,1,2);gc.fillRect(X-1,Y,1,1);gc.fillRect(X+1,Y-1,1,2);if(r()<0.4){gc.fillStyle=b===2?'#5c9a3a':'#9ad25a';gc.fillRect(X+1,Y-1,1,1)}}}
+  for(let y=Y0;y<Y0+CS;y++)for(let x=X0;x<X0+CS;x++){const t=tget(x,y),b=BIOME[y*MW+x],r=mulberry32(th(x,y));
+    if(t===0||t===14||t===15||t===30){const n=1+Math.floor(r()*3);for(let i=0;i<n;i++){const X=x*16+Math.floor(r()*14)+1,Y=y*16+Math.floor(r()*13)+2;gc.fillStyle=b===2?'#1d4416':b===4?'#6a6a2a':b===8?'#123a18':'#3a7424';gc.fillRect(X,Y,1,2);gc.fillRect(X-1,Y,1,1);gc.fillRect(X+1,Y-1,1,2);if(r()<0.4){gc.fillStyle=b===2?'#5c9a3a':'#9ad25a';gc.fillRect(X+1,Y-1,1,1)}}}
+    if(t===28&&r()<0.4){gc.fillStyle='#ffffff';gc.fillRect(x*16+Math.floor(r()*14),y*16+Math.floor(r()*14),2,1)}
+    if(t===29&&r()<0.35){gc.fillStyle='#b07a3e';gc.fillRect(x*16+Math.floor(r()*14),y*16+Math.floor(r()*14),2,1)}
     if(t===9||(t===0&&b<=1&&r()<0.12)){const cols=['#ffffff','#ffe36b','#ff8fb3','#c9b6ff'];for(let i=0;i<(t===9?4:1);i++){const X=x*16+2+Math.floor(r()*12),Y=y*16+2+Math.floor(r()*12),col=cols[Math.floor(r()*cols.length)];gc.fillStyle='#2f6a20';gc.fillRect(X,Y+1,1,2);gc.fillStyle=col;gc.fillRect(X-1,Y,3,1);gc.fillRect(X,Y-1,1,3);gc.fillStyle='#ffcb3d';gc.fillRect(X,Y,1,1)}}
     if((t===4||t===5||t===15)&&r()<0.5){gc.fillStyle=t===5?'#c2a56c':'#8a6a44';gc.fillRect(x*16+Math.floor(r()*14),y*16+Math.floor(r()*14),2,1)}}
-  // encounter vegetation
-  for(let y=0;y<MH;y++)for(let x=0;x<MW;x++){const t=tget(x,y);if(ENC.has(t))gc.drawImage(TILE[t][(x*7+y*3)%TILE[t].length],x*16,y*16)}
-  // rocks
-  for(let y=0;y<MH;y++)for(let x=0;x<MW;x++)if(tget(x,y)===16)paintRock(gc,x*16+8,y*16+10,7+Math.floor(r()*2),r);
-  // trees: shadow + trunk on ground, canopy on its own layer (drawn above players)
-  const cv=mk(W,H),cc=cv.getContext('2d'),cid=cc.createImageData(W,H);
-  const trees=[];for(let y=0;y<MH;y++)for(let x=0;x<MW;x++)if(tget(x,y)===2)trees.push([x,y]);
-  for(const[x,y]of trees){gc.fillStyle='rgba(10,25,8,0.32)';gc.beginPath();gc.ellipse(x*16+10,y*16+14,10,5,0,0,7);gc.fill();
-    gc.fillStyle='#3e2814';gc.fillRect(x*16+6,y*16+8,4,8);gc.fillStyle='#6b4423';gc.fillRect(x*16+7,y*16+8,2,7);gc.fillStyle='#8a5a30';gc.fillRect(x*16+7,y*16+9,1,4)}
-  for(const[x,y]of trees.sort((a,b)=>a[1]-b[1])){const forest=BIOME[y*MW+x]===2;paintCanopy(cid.data,W,H,x*16+8,y*16+3,forest?11:10,forest?RGB.leafF:RGB.leaf,x*31+y*17)}
-  cc.putImageData(cid,0,0);
-  WORLD=g;CANOPY=cv;return 1;
+  for(let y=Y0;y<Y0+CS;y++)for(let x=X0;x<X0+CS;x++){const t=tget(x,y);if(ENC.has(t))gc.drawImage(TILE[t][(x*7+y*3)%TILE[t].length],x*16,y*16)}
+  gc.restore();yield;
+  // rocks / peaks (local coordinates)
+  for(let y=Y0;y<Y0+CS;y++)for(let x=X0;x<X0+CS;x++){const t=tget(x,y);if(t!==16&&t!==31)continue;const v=th(x,y)%4;
+    if(t===16){const sp=propSprite('rock'+(BIOME[y*MW+x]===7?'d':'')+v);gc.drawImage(sp,(x-X0)*16-4,(y-Y0)*16-2)}else{const sp=propSprite('peak'+v);gc.drawImage(sp,(x-X0)*16-4,(y-Y0)*16-4)}}
+  // trees: shadow + trunk on the ground, canopy on its own layer (above the players)
+  const cv=mk(S,S),cc=cv.getContext('2d');
+  for(let y=Y0;y<Y0+CS;y++)for(let x=X0;x<X0+CS;x++){if(tget(x,y)!==2)continue;const b=BIOME[y*MW+x],X=(x-X0)*16,Y=(y-Y0)*16;gc.fillStyle='rgba(10,25,8,0.32)';gc.beginPath();gc.ellipse(X+10,Y+14,10,5,0,0,7);gc.fill();
+    if(b===7)continue;gc.fillStyle='#3e2814';gc.fillRect(X+6,Y+8,4,8);gc.fillStyle=b===8?'#8a6a3a':'#6b4423';gc.fillRect(X+7,Y+8,2,7);gc.fillStyle='#8a5a30';gc.fillRect(X+7,Y+9,1,4)}
+  const trees=[];for(let y=Y0-2;y<Y0+CS+2;y++)for(let x=X0-2;x<X0+CS+2;x++)if(tget(x,y)===2&&x>=0&&y>=0&&x<MW&&y<MH)trees.push([x,y]);
+  for(const[x,y]of trees.sort((a,b)=>a[1]-b[1])){const b=BIOME[y*MW+x]||townArea(x,y),X=(x-X0)*16+8,Y=(y-Y0)*16+3,v=th(x,y)%5;
+    const kind=b===6?'pine':b===7?'cactus':(b===8||(b===3&&tget(x,y+1)!==2))?'palm':b===2?'forest':'leaf';cc.drawImage(propSprite(kind+v),X-24,Y-24)}
+  return{g,c:cv};
 }
+// pre-rendered props (trees, rocks, peaks) – painted once per variant, then just blitted into the chunks
+const PROPS={};
+function propSprite(k){if(PROPS[k])return PROPS[k];const v=+k.slice(-1),kind=k.slice(0,-1),sd=v*977+13;let c;
+  if(kind==='rock'||kind==='rockd'){c=mk(24,24);const x=c.getContext('2d',{willReadFrequently:true});paintRock(x,12,12,7+(v%2),mulberry32(sd),kind==='rockd'?RGB.desert:null)}
+  else if(kind==='peak'){c=mk(24,24);const x=c.getContext('2d');paintPeak(x,4,4,mulberry32(sd))}
+  else{c=mk(48,48);const x=c.getContext('2d'),id=x.createImageData(48,48);
+    if(kind==='pine')paintPine(id.data,48,48,24,24,sd);else if(kind==='cactus')paintCactus(id.data,48,48,24,28,sd);else if(kind==='palm')paintPalm(id.data,48,48,24,24,sd);
+    else paintCanopy(id.data,48,48,24,24,kind==='forest'?11:10,kind==='forest'?RGB.leafF:RGB.leaf,sd);x.putImageData(id,0,0)}
+  PROPS[k]=c;return c}
+function paintPine(d,W,H,cx,cy,seed){const r=mulberry32(seed),pal=RGB.pine;for(let y=-12;y<=10;y++){const w=Math.max(1,Math.round((y+13)*0.42));for(let x=-w;x<=w;x++){const X=cx+x,Y=cy+y;if(X<0||Y<0||X>=W||Y>=H)continue;
+    let v=0.6-(x/w)*0.35+BAYER[((Y&3)*4)+(X&3)]*0.25;if(Math.abs(x)>=w-0.5)v-=0.3;let c=pal[clamp(Math.floor(v*(pal.length-1)),0,pal.length-2)];if((y%5===-1||y%5===4)&&x<w-1&&r()<0.8)c=[240,246,252];const o=(Y*W+X)*4;d[o]=c[0];d[o+1]=c[1];d[o+2]=c[2];d[o+3]=255}}}
+function paintPalm(d,W,H,cx,cy,seed){const r=mulberry32(seed),pal=RGB.palm;const put=(X,Y,c)=>{if(X<0||Y<0||X>=W||Y>=H)return;const o=(Y*W+X)*4;d[o]=c[0];d[o+1]=c[1];d[o+2]=c[2];d[o+3]=255};
+  for(let y=0;y<10;y++){put(cx-1+Math.round(Math.sin(y/4)),cy+y,[90,62,30]);put(cx+Math.round(Math.sin(y/4)),cy+y,[138,100,52])}
+  for(let k=0;k<7;k++){const a=-Math.PI/2+(k-3)*0.62+(r()-0.5)*0.2,L=9+Math.floor(r()*4);for(let t=0;t<L;t++){const X=Math.round(cx+Math.cos(a)*t),Y=Math.round(cy-2+Math.sin(a)*t+t*t*0.045);const c=pal[clamp(Math.floor((0.85-t/L*0.6)*pal.length),0,pal.length-1)];put(X,Y,c);if(t>2&&t<L-1){put(X,Y+1,pal[1])}}}
+  put(cx,cy-2,[200,170,60]);put(cx+1,cy-1,[160,120,40])}
+function paintCactus(d,W,H,cx,cy,seed){const r=mulberry32(seed),pal=RGB.cactus;const put=(X,Y,v)=>{if(X<0||Y<0||X>=W||Y>=H)return;const c=pal[clamp(Math.floor(v*pal.length),0,pal.length-1)],o=(Y*W+X)*4;d[o]=c[0];d[o+1]=c[1];d[o+2]=c[2];d[o+3]=255};
+  for(let y=-8;y<10;y++)for(let x=-2;x<=2;x++)put(cx+x,cy+y,0.7-x*0.15+(y===-8&&Math.abs(x)===2?-1:0));
+  const arm=(s,h)=>{for(let x=1;x<=3;x++)put(cx+s*(2+x),cy+h,0.45);for(let y=h-5;y<=h;y++){put(cx+s*5,cy+y,0.6);put(cx+s*6,cy+y,0.35)}};arm(1,0+Math.floor(r()*3));arm(-1,-3+Math.floor(r()*3))}
+function paintPeak(gc,X,Y,r){const pal=RGB.peak;gc.fillStyle='rgba(10,20,30,0.25)';gc.fillRect(X+1,Y+13,15,3);
+  const h=14+Math.floor(r()*4),top=Y+16-h,cx=X+8+Math.floor(r()*3)-1;for(let y=0;y<h;y++){const w=Math.round(y*0.62)+1;for(let x=-w;x<=w;x++){const xx=cx+x,yy=top+y;let v=0.55-(x/w)*0.3+BAYER[((yy&3)*4)+(xx&3)]*0.2;let c=pal[clamp(Math.floor(v*4),0,3)];if(y<h*0.35-(x>0?1:0))c=x>0?pal[4]:pal[5];gc.fillStyle=`rgb(${c[0]},${c[1]},${c[2]})`;gc.fillRect(xx,yy,1,1)}}}
 function paintCanopy(d,W,H,cx,cy,R,pal,seed){
   const r=mulberry32(seed),blobs=[[0,0,R]];for(let i=0;i<4;i++){const a=r()*6.28;blobs.push([Math.cos(a)*R*0.55,Math.sin(a)*R*0.45,R*(0.5+r()*0.25)])}
   const n=noise2(seed,4,40,40);
@@ -1125,12 +1223,12 @@ function paintCanopy(d,W,H,cx,cy,R,pal,seed){
     let v=0.55-(x+y)/(R*2.4)*0.6+(n(x+R+6,y+R+6)-0.5)*0.55+BAYER[((Y&3)*4)+(X&3)]*0.25;if(best>0.82)v-=0.35;
     const c=pal[clamp(Math.floor(v*pal.length),0,pal.length-1)],o=(Y*W+X)*4;d[o]=c[0];d[o+1]=c[1];d[o+2]=c[2];d[o+3]=255}
 }
-function paintRock(gc,cx,cy,R,r){
+function paintRock(gc,cx,cy,R,r,palOv){
   const id=gc.getImageData(cx-R-2,cy-R-2,R*2+4,R*2+4),d=id.data,w=R*2+4;
   gc.fillStyle='rgba(10,20,8,0.3)';gc.beginPath();gc.ellipse(cx+2,cy+R-1,R+1,3,0,0,7);gc.fill();
   const id2=gc.getImageData(cx-R-2,cy-R-2,w,w),d2=id2.data;
   for(let y=0;y<w;y++)for(let x=0;x<w;x++){const dx=(x-R-2)/R,dy=(y-R-2)/(R*0.85);const q=dx*dx+dy*dy;if(q>1)continue;const o=(y*w+x)*4;
-    let v=0.6-(dx+dy)*0.35+BAYER[(y&3)*4+(x&3)]*0.2;let pal=RGB.rock;if(dy<-0.25&&r()<0.75)pal=RGB.moss;if(q>0.8)v-=0.4;const c=pal[clamp(Math.floor(v*pal.length),0,pal.length-1)];d2[o]=c[0];d2[o+1]=c[1];d2[o+2]=c[2];d2[o+3]=255}
+    let v=0.6-(dx+dy)*0.35+BAYER[(y&3)*4+(x&3)]*0.2;let pal=palOv||RGB.rock;if(dy<-0.25&&r()<0.75)pal=RGB.moss;if(q>0.8)v-=0.4;const c=pal[clamp(Math.floor(v*pal.length),0,pal.length-1)];d2[o]=c[0];d2[o+1]=c[1];d2[o+2]=c[2];d2[o+3]=255}
   gc.putImageData(id2,cx-R-2,cy-R-2);
 }
 function th(x,y){return((x*73856093)^(y*19349663))>>>0}
@@ -1138,7 +1236,7 @@ function th(x,y){return((x*73856093)^(y*19349663))>>>0}
 /* ===================== STATE ===================== */
 const SAVE_KEY='discountmon-v1';
 let G=null,RUN=null,B=null,T=0;
-const P={x:30,y:24,fx:30,fy:24,d:'down',moving:false,mt:0,sx:0,sy:0,tx:0,ty:0,ph:0,steps:0,fol:{x:30,y:24,tx:30,ty:24}};
+const P={x:VSPAWN.x,y:VSPAWN.y,fx:VSPAWN.x,fy:VSPAWN.y,d:'down',moving:false,mt:0,sx:0,sy:0,tx:0,ty:0,ph:0,steps:0,fol:{x:VSPAWN.x,y:VSPAWN.y,tx:VSPAWN.x,ty:VSPAWN.y}};
 let NO_SAVE=false;function save(){if(!G||NO_SAVE)return;G.run=RUN;G.t=Date.now();if(RUN&&RUN.free)G.freeRun=RUN;try{localStorage.setItem(SAVE_KEY,JSON.stringify(G))}catch(e){}}
 addEventListener('pagehide',()=>{try{save()}catch(e){}});document.addEventListener('visibilitychange',()=>{if(document.hidden)try{save()}catch(e){}});
 function loadSave(){try{const s=localStorage.getItem(SAVE_KEY);if(s){const g=JSON.parse(s);if(g&&g.name){g.dex=g.dex||{};g.tro=g.tro||0;return g}}}catch(e){}return null}
@@ -1154,7 +1252,7 @@ function buildStart(){
   prev();
   // a new session always starts here: a lobby from an earlier session is not resumed (free-play team, dex and trophies are kept)
   $('#sgo').onclick=()=>{if(!pwOK()){const v=($('#spw').value||'').trim().toUpperCase();if(!pwCheck(v)){toast('Falsches Passwort.');$('#spw').focus();return}try{localStorage.setItem(PW_KEY,v)}catch(e){}if(!ROOM)initRoom()}
-    const nm=cleanName($('#sname').value);if(G){G.name=nm;G.color=pickColor;G.sex=pickSex;G.x=30;G.y=24;G.d='down';const live=G.run&&!G.run.free&&Date.now()-(G.t||0)<30*60000&&!(G.run.phase!=='lobby'&&G.run.end&&Date.now()-G.run.end>20*60000);G.run=live?G.run:(G.freeRun||null)}else G={name:nm,color:pickColor,sex:pickSex,dex:{},tro:0,x:30,y:24,d:'down',run:null};RUN=G.run||G.freeRun||null;save();begin()};
+    const nm=cleanName($('#sname').value);if(G){G.name=nm;G.color=pickColor;G.sex=pickSex;G.x=VSPAWN.x;G.y=VSPAWN.y;G.d='down';const live=G.run&&!G.run.free&&Date.now()-(G.t||0)<30*60000&&!(G.run.phase!=='lobby'&&G.run.end&&Date.now()-G.run.end>20*60000);G.run=live?G.run:(G.freeRun||null)}else G={mapv:2,name:nm,color:pickColor,sex:pickSex,dex:{},tro:0,x:VSPAWN.x,y:VSPAWN.y,d:'down',run:null};RUN=G.run||G.freeRun||null;save();begin()};
   $('#sname').addEventListener('keydown',e=>{if(e.key==='Enter')$('#sgo').click()});$('#spw').addEventListener('keydown',e=>{if(e.key==='Enter')$('#sgo').click()});
   if(pwOK())$('#spwf').style.display='none';
 }
@@ -1174,14 +1272,16 @@ function begin(){
   if(RUN&&RUN.free){RUN.phase='train';RUN.st='free';RUN.r=1;RUN.res=[];$('#arena').classList.remove('on')}
   if(RUN&&!RUN.free&&RUN.phase==='train'&&Date.now()>=RUN.end){RUN.phase='arena_pending'}
   if(RUN&&!RUN.free&&RUN.phase==='arena'){RUN.res=RUN.res||[];if(RUN.st==='duel'){RUN.res.push([RUN.r,RUN.dopp||'?',0]);RUN.r++;RUN.st=RUN.r>cfgOf().rounds?'done':'wait'}if(RUN.st==='pick')RUN.st='wait'}
-  P.x=P.fx=G.x;P.y=P.fy=G.y;P.d=G.d||'down';if(!walkable(P.x,P.y)){P.x=P.fx=30;P.y=P.fy=24}
+  // new world (map v2): old positions and toll passes no longer fit → back to Villingen
+  if(G.mapv!==2){G.mapv=2;G.x=VSPAWN.x;G.y=VSPAWN.y;for(const R of[G.run,G.freeRun])if(R){R.toll={};R.towns={vil:1};R.lastPad=null}}
+  P.x=P.fx=G.x;P.y=P.fy=G.y;P.d=G.d||'down';if(!walkable(P.x,P.y)){P.x=P.fx=VSPAWN.x;P.y=P.fy=VSPAWN.y}
   P.fol={x:P.x,y:P.y,tx:P.x,ty:P.y};
   renderTeam();updateHud();pushFull();sysChat(`Willkommen bei Pocket Peasants, ${G.name}! Dienstbeginn — schnapp sie dir alle!`);
   if(RUN&&RUN.phase==='arena_pending'){RUN.phase='train';enterArena()}else if(RUN&&RUN.phase==='arena')showArena();
 }
 
 /* ===================== CONTROL SETTINGS ===================== */
-const CHANGELOG=[["0.64.0", "2026-11-14", "Name wieder „Pocket Peasants“; Kader als Lobby-Einstellung (max. 4, Rest in die Box); Beutel per Wischen durchblättern, Doppeltipp benutzt; Flucht immer mit Frage (auch rundenbasiert); 🎓-Hut über dem Gegner im PvP, wenn er im Notfallmodus ist; 40 klassische Attacken aus Gold/Silber inkl. Buffs und Debuffs (Angriff/Verteidigung/Initiative-Stufen); Heil-Attacken kosten alle AP mit langer Abklingzeit, alle anderen Attacken nur noch die Hälfte; PÄD heilt pro richtiger Antwort 25 % (falsch = nächste Frage); wilde Monster erscheinen zuerst groß mit Infokarte (6 s oder Tippen)"], ["0.63.0", "2026-11-14", "Einstellbares Vorhalten der Zielhilfe (0–10), Changelog in den Einstellungen, Quizfragen überarbeitet und erweitert (15 je Monster, ausgewogene Antwortlängen), PÄD heilt 25 % pro richtiger Antwort, kurzer Stillstand nach dem Sprint, stärkere Trainer, Wirksamkeit direkt am Ziel, Trainer-Dialog länger (Tippen überspringt), Monsterdex-Eintrag beim Fangen, neue Angriffsarten (Strahl, Luftschlag, Hochwurf, Atem), typabhängiges Tempo, größere Arena mit unzerstörbaren Pollern"], ["0.62.0", "2026-11-14", "Fix kein Schaden mit Auto-Aim (NaN-Zielwinkel), Seitenmenü verschwindet nicht mehr beim erneuten Tab-Klick, Quellcode modular in src/ aufgeteilt"], ["0.61.0", "2026-11-13", "Flucht/Wechsel nur am Arenarand (Flucht mit 3-s-Quiz), Monster-Auswahl als Slotmaschine (A/D, X), Auto-Aim mit Vorhalten und Trägheit, Prof.-Lehrer mit Klausur/Bestechen/Kämpfen, max. 3 im Team, manuelles Speichern + Export/Import"], ["0.59.0", "2026-11-13", "Karte umgebaut – Stadt→Nordwiese frei, alle weiteren Gebiete nur über Engstellen mit Lehrern (GG→Ostwald, PolG→Südküste, StVO→Westhügel, StPO→Knast, StGB→Zellentrakt)"], ["0.58.0", "2026-11-13", "Zweite Chance bei Niederlage gegen Paragrafen-Monster (Paragrafenname in 5 s erraten, 25 % KP zurück, einmal pro Kampf)"], ["0.57.0", "2026-11-13", "Zoll-Lehrer an den Gebietsgrenzen (GG, PolG, StVO, StPO, StGB): 3 Fragen, sonst 300 $ oder Kampf gegen stärkere Paragrafen"], ["0.56.1", "2026-11-12", "Fix: laufendes Lobby-Spiel ging beim Neuladen (z. B. nach Update) verloren – wird jetzt fortgesetzt"], ["0.56.0", "2026-11-12", "Sprint pausiert AP-Regeneration 3 s, Schnellwahl zum Wechseln im Kampf, Auswahl ohne Timer (Tippen bestätigt, außer PvP), Handschellen-Wurf beim Einsetzen des eigenen Monsters"], ["0.55.0", "2026-11-12", "Sprint wieder ohne AP-Kosten, Mindestlevel pro Gebiet (Wiese 3, Küste 5, Wald 6, Hügel 8, Knast 26)"], ["0.54.0", "2026-11-12", "Neue Attacken per Dialog nach dem Kampf; bei 4 Attacken wählt der Spieler, welche verlernt wird (oder nicht lernen)"], ["0.53.0", "2026-11-12", "AP-Regeneration im Stand steigt progressiv, alle AP-Kosten auf 80 %, Treffer-Reaktion mit kurzem Freeze, Wechsel wenn der Gegner wechselt, Encounter-Intro mit Monster-Steckbrief, 3-2-1-Countdown bei Kampfbeginn und nach dem Notfallmodus"], ["0.52.0", "2026-11-12", "Sprint/Dash kostet 20 AP (auch beim Ausweichen der KI)"], ["0.51.0", "2026-11-12", "Neue Statuseffekte Schlaf und Verwirrung mit Partikeln (Zzz, kreisende Vögel/Fragezeichen), Fix: Spielstand löschen wurde beim Neuladen wieder gespeichert"], ["0.50.1", "2026-11-12", "Spielstand wird zusätzlich beim Schließen/Wechseln des Tabs gespeichert"], ["0.50.0", "2026-11-12", "Festnahme-Quiz beim Fangen (15 s, zufällige Antwortreihenfolge; falsch oder zu langsam = Monster flieht)"], ["0.49.0", "2026-11-12", "Bis zu 3 Team-Monster folgen dem Spieler in der Welt (Lobby-Einstellung 0-3)"], ["0.48.0", "2026-11-12", "Protokoll-Download zur Fehlersuche (Einstellungen und Bug-Dialog), kurze Verbindungsabbrüche erzeugen keine Beitritt-/Verlassen-Spam mehr, Figuren wieder in alter Größe"], ["0.46.0", "2026-11-12", "Profil im Spiel ändern (Name, Beamter/Beamtin, Mützenfarbe)"], ["0.45.0", "2026-11-12", "Neue Spieler-Sprites (Beamter/Beamtin, Mützenband in Spielerfarbe), neue Trainer-Sprites je Einheit, Dienststelle im HfPol-Look, Türme mit stimmiger 3/4-Perspektive"], ["0.44.0", "2026-11-12", "Zugangspasswort, max. 10 Spieler im Raum, max. 5 pro Lobby, Bug-melden-Button (GitHub-Issue)"], ["0.43.0", "2026-11-12", "Netzwerk spart Datenvolumen (nur Änderungen senden, seltenerer Heartbeat/Ping), AFK-Tabs trennen sich automatisch und verbinden bei Aktivität neu"], ["0.42.0", "2026-11-12", "Notfallmodus (Enter) mit zufälliger Rechtsnorm und Pause in KI-Kämpfen, Chat jetzt auf T, Copshop und HfPol im Turm-Stil des HfPol-Campus"], ["0.41.0", "2026-11-12", "Laden und HfPol als eigene Gebäude (Study nur in der HfPol), VS-Intro bei Cop-, Richter-Bot- und Spielerkämpfen"], ["0.40.0", "2026-11-12", "Bereitschaftsraum vor dem Gericht, 4 legendäre Einsatzmittel (Schlagstock, Taser, Pfefferspray, Kelle), Gerichtssaal-Kampfhintergrund, Version im Startbildschirm, Schilder folgen echtem Weg, Gesetzbuch im Namenssuffix, Study: 10 Fragen pro Monster"], ["0.39.1", "2026-11-12", "Knast dungeon (StGB only, Lv 26-34), update banner when a newer version is on the server, fix keyboard shortcuts blocked in Gericht duels / after chatting"], ["0.38.3", "2026-11-12", "town renamed Villingen-Knastningen"], ["0.38.2", "2026-11-12", "free play 'Neu anfangen' with a new random monster (dex and trophies stay)"], ["0.38.1", "2026-11-12", "Study quiz (150 questions on PolG, GG, StGB, StPO, EP for correct answers), chat overlay notifications, bold paragraph suffix, no dark drop shadow behind dark text"], ["0.37.1", "2026-11-12", "15 StPO monsters, town renamed Coptown, random starter in free play, 6 artwork starters to choose from in matches"], ["0.36.3", "2026-11-12", "title KNASTÉMON on one line"], ["0.36.2", "2026-11-12", "paragraph as name suffix (e.g. Owigon §26, Würdeadler Art.1); no 'Wild:' prefix in the foe HUD so long names fit"], ["0.36.1", "2026-11-12", "player and cops drawn as police officers (peaked cap with badge, navy uniform; chosen colour = cap band)"], ["0.36.0", "2026-11-12", "Knastémon — police theme"], ["0.35.0", "2026-11-12", "AP costs x1.45, AP regen 13->8/s, flee distance 160->120"], ["0.34.0", "2026-11-12", "complete German translation of the UI"], ["0.33.1", "2026-11-12", "embed pixel fonts (Press Start 2P, VT323) instead of loading from Google Fonts; monospace fallback"], ["0.33.0", "2026-11-12", "alternative monster set redrawn 1:1 from the new artwork"], ["0.32.0", "2026-11-12", "higher AP costs for all attacks (~1.6x), AP drains faster"], ["0.31.0", "2026-11-12", "field skills (CUT/SWIM/STRENGTH/FLY) unlocked by beating harder trainers"], ["0.30.0", "2026-11-12", "free 360° aiming as a lobby option"], ["0.29.0", "2026-11-12", "scrollable dialogs on phones, battle camera zoom, fullscreen button, 45° aiming, auto-aim option, trainer VMs, type chart"], ["0.27.0", "2026-11-12", "battle arenas themed per location (floor, rim, obstacles)"], ["0.26.0", "2026-11-12", "signposts with biome name, direction and recommended level"], ["0.25.0", "2026-11-12", "responsive layout for PC, tablets and phones (landscape and portrait)"], ["0.24.0", "2026-11-11", "money, rewards, items and the Budget Mart shop"], ["0.23.0", "2026-11-11", "monster dex and move details"], ["0.22.0", "2026-11-11", "manual aiming (no auto-aim), drag-to-aim touch controls, round pause on KO, lead pick"], ["0.20.0", "2026-11-11", "AP for all attacks, longer ranged cooldowns, movement inertia"], ["0.19.0", "2026-11-11", "round battle arena, you start at the bottom, destructible obstacles"], ["0.18.0", "2026-11-11", "top menu bar, version check, PvP-only arena, give up, lobby invites"]];
+const CHANGELOG=[["0.65.0", "2026-11-15", "Komplett neue, rund 20× größere Welt (300×200) nach der Konzeptkarte: Polizeischule Villingen-Knastingen mit Gericht in der Mitte, Ausbildungsstätten Lahribar (Schnee), Unterwertheim (Canyon), Damental (Wald), Mostbach (Dschungel) und Marderach (Hafen) – jede mit PÄD, Copshop und HfPol; Knast im Wüstenkrater; Flüsse, Seen, Meer und Inseln; neue Gebiete mit eigenen Monstern, Hintergründen und Hindernissen; 25 Profs an allen Gebietsgrenzen; 55 Trainer; Legendäre neu verteilt; Schnellreise zu besuchten Städten; nach einer Niederlage geht es beim zuletzt besuchten PÄD weiter; Lobby-Standardzeit 20 Minuten"], ["0.64.0", "2026-11-14", "Name wieder „Pocket Peasants“; Kader als Lobby-Einstellung (max. 4, Rest in die Box); Beutel per Wischen durchblättern, Doppeltipp benutzt; Flucht immer mit Frage (auch rundenbasiert); 🎓-Hut über dem Gegner im PvP, wenn er im Notfallmodus ist; 40 klassische Attacken aus Gold/Silber inkl. Buffs und Debuffs (Angriff/Verteidigung/Initiative-Stufen); Heil-Attacken kosten alle AP mit langer Abklingzeit, alle anderen Attacken nur noch die Hälfte; PÄD heilt pro richtiger Antwort 25 % (falsch = nächste Frage); wilde Monster erscheinen zuerst groß mit Infokarte (6 s oder Tippen)"], ["0.63.0", "2026-11-14", "Einstellbares Vorhalten der Zielhilfe (0–10), Changelog in den Einstellungen, Quizfragen überarbeitet und erweitert (15 je Monster, ausgewogene Antwortlängen), PÄD heilt 25 % pro richtiger Antwort, kurzer Stillstand nach dem Sprint, stärkere Trainer, Wirksamkeit direkt am Ziel, Trainer-Dialog länger (Tippen überspringt), Monsterdex-Eintrag beim Fangen, neue Angriffsarten (Strahl, Luftschlag, Hochwurf, Atem), typabhängiges Tempo, größere Arena mit unzerstörbaren Pollern"], ["0.62.0", "2026-11-14", "Fix kein Schaden mit Auto-Aim (NaN-Zielwinkel), Seitenmenü verschwindet nicht mehr beim erneuten Tab-Klick, Quellcode modular in src/ aufgeteilt"], ["0.61.0", "2026-11-13", "Flucht/Wechsel nur am Arenarand (Flucht mit 3-s-Quiz), Monster-Auswahl als Slotmaschine (A/D, X), Auto-Aim mit Vorhalten und Trägheit, Prof.-Lehrer mit Klausur/Bestechen/Kämpfen, max. 3 im Team, manuelles Speichern + Export/Import"], ["0.59.0", "2026-11-13", "Karte umgebaut – Stadt→Nordwiese frei, alle weiteren Gebiete nur über Engstellen mit Lehrern (GG→Ostwald, PolG→Südküste, StVO→Westhügel, StPO→Knast, StGB→Zellentrakt)"], ["0.58.0", "2026-11-13", "Zweite Chance bei Niederlage gegen Paragrafen-Monster (Paragrafenname in 5 s erraten, 25 % KP zurück, einmal pro Kampf)"], ["0.57.0", "2026-11-13", "Zoll-Lehrer an den Gebietsgrenzen (GG, PolG, StVO, StPO, StGB): 3 Fragen, sonst 300 $ oder Kampf gegen stärkere Paragrafen"], ["0.56.1", "2026-11-12", "Fix: laufendes Lobby-Spiel ging beim Neuladen (z. B. nach Update) verloren – wird jetzt fortgesetzt"], ["0.56.0", "2026-11-12", "Sprint pausiert AP-Regeneration 3 s, Schnellwahl zum Wechseln im Kampf, Auswahl ohne Timer (Tippen bestätigt, außer PvP), Handschellen-Wurf beim Einsetzen des eigenen Monsters"], ["0.55.0", "2026-11-12", "Sprint wieder ohne AP-Kosten, Mindestlevel pro Gebiet (Wiese 3, Küste 5, Wald 6, Hügel 8, Knast 26)"], ["0.54.0", "2026-11-12", "Neue Attacken per Dialog nach dem Kampf; bei 4 Attacken wählt der Spieler, welche verlernt wird (oder nicht lernen)"], ["0.53.0", "2026-11-12", "AP-Regeneration im Stand steigt progressiv, alle AP-Kosten auf 80 %, Treffer-Reaktion mit kurzem Freeze, Wechsel wenn der Gegner wechselt, Encounter-Intro mit Monster-Steckbrief, 3-2-1-Countdown bei Kampfbeginn und nach dem Notfallmodus"], ["0.52.0", "2026-11-12", "Sprint/Dash kostet 20 AP (auch beim Ausweichen der KI)"], ["0.51.0", "2026-11-12", "Neue Statuseffekte Schlaf und Verwirrung mit Partikeln (Zzz, kreisende Vögel/Fragezeichen), Fix: Spielstand löschen wurde beim Neuladen wieder gespeichert"], ["0.50.1", "2026-11-12", "Spielstand wird zusätzlich beim Schließen/Wechseln des Tabs gespeichert"], ["0.50.0", "2026-11-12", "Festnahme-Quiz beim Fangen (15 s, zufällige Antwortreihenfolge; falsch oder zu langsam = Monster flieht)"], ["0.49.0", "2026-11-12", "Bis zu 3 Team-Monster folgen dem Spieler in der Welt (Lobby-Einstellung 0-3)"], ["0.48.0", "2026-11-12", "Protokoll-Download zur Fehlersuche (Einstellungen und Bug-Dialog), kurze Verbindungsabbrüche erzeugen keine Beitritt-/Verlassen-Spam mehr, Figuren wieder in alter Größe"], ["0.46.0", "2026-11-12", "Profil im Spiel ändern (Name, Beamter/Beamtin, Mützenfarbe)"], ["0.45.0", "2026-11-12", "Neue Spieler-Sprites (Beamter/Beamtin, Mützenband in Spielerfarbe), neue Trainer-Sprites je Einheit, Dienststelle im HfPol-Look, Türme mit stimmiger 3/4-Perspektive"], ["0.44.0", "2026-11-12", "Zugangspasswort, max. 10 Spieler im Raum, max. 5 pro Lobby, Bug-melden-Button (GitHub-Issue)"], ["0.43.0", "2026-11-12", "Netzwerk spart Datenvolumen (nur Änderungen senden, seltenerer Heartbeat/Ping), AFK-Tabs trennen sich automatisch und verbinden bei Aktivität neu"], ["0.42.0", "2026-11-12", "Notfallmodus (Enter) mit zufälliger Rechtsnorm und Pause in KI-Kämpfen, Chat jetzt auf T, Copshop und HfPol im Turm-Stil des HfPol-Campus"], ["0.41.0", "2026-11-12", "Laden und HfPol als eigene Gebäude (Study nur in der HfPol), VS-Intro bei Cop-, Richter-Bot- und Spielerkämpfen"], ["0.40.0", "2026-11-12", "Bereitschaftsraum vor dem Gericht, 4 legendäre Einsatzmittel (Schlagstock, Taser, Pfefferspray, Kelle), Gerichtssaal-Kampfhintergrund, Version im Startbildschirm, Schilder folgen echtem Weg, Gesetzbuch im Namenssuffix, Study: 10 Fragen pro Monster"], ["0.39.1", "2026-11-12", "Knast dungeon (StGB only, Lv 26-34), update banner when a newer version is on the server, fix keyboard shortcuts blocked in Gericht duels / after chatting"], ["0.38.3", "2026-11-12", "town renamed Villingen-Knastningen"], ["0.38.2", "2026-11-12", "free play 'Neu anfangen' with a new random monster (dex and trophies stay)"], ["0.38.1", "2026-11-12", "Study quiz (150 questions on PolG, GG, StGB, StPO, EP for correct answers), chat overlay notifications, bold paragraph suffix, no dark drop shadow behind dark text"], ["0.37.1", "2026-11-12", "15 StPO monsters, town renamed Coptown, random starter in free play, 6 artwork starters to choose from in matches"], ["0.36.3", "2026-11-12", "title KNASTÉMON on one line"], ["0.36.2", "2026-11-12", "paragraph as name suffix (e.g. Owigon §26, Würdeadler Art.1); no 'Wild:' prefix in the foe HUD so long names fit"], ["0.36.1", "2026-11-12", "player and cops drawn as police officers (peaked cap with badge, navy uniform; chosen colour = cap band)"], ["0.36.0", "2026-11-12", "Knastémon — police theme"], ["0.35.0", "2026-11-12", "AP costs x1.45, AP regen 13->8/s, flee distance 160->120"], ["0.34.0", "2026-11-12", "complete German translation of the UI"], ["0.33.1", "2026-11-12", "embed pixel fonts (Press Start 2P, VT323) instead of loading from Google Fonts; monospace fallback"], ["0.33.0", "2026-11-12", "alternative monster set redrawn 1:1 from the new artwork"], ["0.32.0", "2026-11-12", "higher AP costs for all attacks (~1.6x), AP drains faster"], ["0.31.0", "2026-11-12", "field skills (CUT/SWIM/STRENGTH/FLY) unlocked by beating harder trainers"], ["0.30.0", "2026-11-12", "free 360° aiming as a lobby option"], ["0.29.0", "2026-11-12", "scrollable dialogs on phones, battle camera zoom, fullscreen button, 45° aiming, auto-aim option, trainer VMs, type chart"], ["0.27.0", "2026-11-12", "battle arenas themed per location (floor, rim, obstacles)"], ["0.26.0", "2026-11-12", "signposts with biome name, direction and recommended level"], ["0.25.0", "2026-11-12", "responsive layout for PC, tablets and phones (landscape and portrait)"], ["0.24.0", "2026-11-11", "money, rewards, items and the Budget Mart shop"], ["0.23.0", "2026-11-11", "monster dex and move details"], ["0.22.0", "2026-11-11", "manual aiming (no auto-aim), drag-to-aim touch controls, round pause on KO, lead pick"], ["0.20.0", "2026-11-11", "AP for all attacks, longer ranged cooldowns, movement inertia"], ["0.19.0", "2026-11-11", "round battle arena, you start at the bottom, destructible obstacles"], ["0.18.0", "2026-11-11", "top menu bar, version check, PvP-only arena, give up, lobby invites"]];
 const SET_KEY='discountmon-controls';
 const DEF_KEYS={a1:'1',a2:'2',a3:'3',a4:'4',dash:' ',sw:'x',cap:'c',run:'r'};
 const KEY_NAMES={a1:'Attacke 1',a2:'Attacke 2',a3:'Attacke 3',a4:'Attacke 4',dash:'Sprint / Ausweichen',sw:'Monster wechseln',cap:'Handschellen werfen',run:'Fliehen'};
@@ -1355,12 +1455,14 @@ function checkSight(){
     for(let k=1;k<=4;k++){const x=t.x+dx*k,y=t.y+dy*k;if(!walkable(x,y))break;if(x===P.x&&y===P.y){spotted(t);return true}}}
   return false;
 }
-function teleport(x,y){P.x=P.fx=x;P.y=P.fy=y;P.moving=false;P.fol={x,y,tx:x,ty:y};trailReset(P,x,y);G.x=x;G.y=y;pres({x,y,d:P.d})}
+function teleport(x,y){P.x=P.fx=x;P.y=P.fy=y;try{bakeNow()}catch(e){}P.moving=false;P.fol={x,y,tx:x,ty:y};trailReset(P,x,y);G.x=x;G.y=y;pres({x,y,d:P.d})}
 function onArrive(){
   G.x=P.x;G.y=P.y;G.d=P.d;P.steps++;if(P.steps%8===0)save();updateHud();
   const t=tget(P.x,P.y);
   if(t===22){if(RUN)openShop();else toast('Copshop — tritt einer Lobby bei oder starte das freie Spiel.')}
   if(t===23){if(RUN)openHfPol();else toast('HfPol — tritt einer Lobby bei oder starte das freie Spiel, um zu lernen.')}
+  if(BIOME[P.y*MW+P.x]===0&&RUN){const Tn=TOWNS.find(T=>Math.abs(T.x-P.x)<26&&Math.abs(T.y-P.y)<24);if(Tn){RUN.towns=RUN.towns||{};if(!RUN.towns[Tn.id]){RUN.towns[Tn.id]=1;save();if(Tn.id!=='vil')toast(`📍 ${Tn.n} entdeckt — Schnellreise über die Weltkarte (M) freigeschaltet!`)}}}
+  if(t===7&&RUN){const pd=PADS.find(p=>p.x===P.x&&p.y===P.y);if(pd){RUN.lastPad={x:pd.x,y:pd.y+1};save()}}
   if(t===7){if(RUN)healQuiz();else toast('PÄD — tritt einer Lobby bei oder starte das freie Spiel, um ein Team zu bekommen.')}
   if(t===12){if(RUN&&RUN.phase==='lobby')toast('Das Spiel hat noch nicht begonnen — warte auf den Host.');else if(RUN&&RUN.phase==='train'&&!RUN.free)confirmEarlyArena();else if(RUN&&RUN.free)toast('Im Gericht finden Lobby-Turniere statt — erstelle oder betritt eine Lobby!');else toast('Das Gericht — tritt zuerst einer Lobby bei oder erstelle eine!')}
   if(checkSight())return;
@@ -1385,6 +1487,8 @@ function healQuiz(){RUN.kap=Math.max(RUN.kap,10);updateHud();const all=()=>RUN.t
     $('#cqact').innerHTML=!done?`<button class="btn" id="cqnext">NÄCHSTE FRAGE</button><button class="btn ghost" id="cqstop">GEHEN</button>`:`<button class="btn" id="cqstop">WEITER</button>`;
     const nx=$('#cqnext');if(nx)nx.onclick=ask;$('#cqstop').onclick=stop};
   CQ_PICK=pick;ask()}
+// respawn after a defeat: in front of the last PÄD you entered (else Villingen)
+function padSpawn(){const l=RUN&&RUN.lastPad;if(l&&walkable(l.x,l.y))return l;const p=PADS[0];return p?{x:p.x,y:p.y+1}:VSPAWN}
 function healAll(){if(!RUN)return;for(const m of RUN.team.concat(RUN.box))m.hp=stats(m).mhp;RUN.kap=Math.max(RUN.kap,10);save();renderTeam();updateHud()}
 function updateHud(){
   const z=zoneAt(P.x,P.y);$('#hzone').textContent=z?ZONES[z].n:'Stadt';
@@ -1419,7 +1523,7 @@ function drawWorld(){
   const x0=Math.floor(camX/16),y0=Math.floor(camY/16),x1=x0+Math.ceil(LW/16)+1,y1=y0+Math.ceil(LH/16)+1;const wf=Math.floor(T*1.6)%2;
   if(!WORLD&&!BAKE_FAIL){bakeTick();c.fillStyle='#10121c';c.fillRect(0,0,LW,LH);c.font='8px "Press Start 2P",monospace';c.fillStyle='#ffcb3d';c.textAlign='center';c.fillText('WELT WIRD GELADEN…',LW/2,LH/2);c.fillStyle='#9aa1bd';c.fillText('v'+VERSION,LW/2,LH/2+14);c.textAlign='left';return}
   if(BAKE_FAIL){for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){if(x<0||y<0||x>=MW||y>=MH)continue;c.fillStyle=MCOL[tget(x,y)]||'#000';c.fillRect(x*16-camX,y*16-camY,16,16)}}
-  if(WORLD){const sx=Math.max(0,camX),sy=Math.max(0,camY),dx=sx-camX,dy=sy-camY,w=Math.min(LW-dx,MW*16-sx),h=Math.min(LH-dy,MH*16-sy);if(w>0&&h>0)c.drawImage(WORLD,sx,sy,w,h,dx,dy,w,h)}
+  if(WORLD)drawWorldLayer(c,camX,camY,LW,LH,'g');
   // animated water sparkle
   for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){if(tget(x,y)!==3)continue;const h=th(x,y);const ph=(T*1.3+(h%100)/100)%1;if(ph<0.5){const X=x*16-camX+(h%11)+2,Y=y*16-camY+((h>>4)%11)+2;c.fillStyle=ph<0.25?'#d8f0ff':'#8fc8f0';c.fillRect(X,Y,ph<0.25?3:2,1)}}
   // cuttable trees / boulders
@@ -1431,9 +1535,11 @@ function drawWorld(){
     c.fillStyle='#00000040';c.fillRect(X+3,Y+13,10,2);c.fillStyle='#2a1a0c';c.fillRect(X+6,Y+6,4,9);c.fillStyle='#7a4a22';c.fillRect(X+7,Y+6,2,8);
     c.fillStyle='#2a1a0c';c.fillRect(X+1,Y+1,14,8);c.fillStyle='#b07a3e';c.fillRect(X+2,Y+2,12,6);c.fillStyle='#d9a466';c.fillRect(X+2,Y+2,12,1);c.fillStyle='#6b4220';c.fillRect(X+4,Y+4,8,1);c.fillRect(X+4,Y+6,6,1)}
   // signs on roofs
-  c.font='7px "Press Start 2P",monospace';c.textBaseline='alphabetic';{c.save();c.font='8px VT323,monospace';c.textAlign='center';c.fillStyle='#ffffff';c.fillText('PÄD',22*16-camX+56,17*16-camY+36.5);c.restore();c.font='7px "Press Start 2P",monospace'}c.fillStyle='#14141f';c.fillText('GERICHT',33*16-camX+24,17*16-camY+13);c.fillStyle='#ffcb3d';c.fillText('GERICHT',33*16-camX+23,17*16-camY+12);
-  c.font='10px VT323,monospace';c.textAlign='center';c.fillStyle='#ffffff';c.fillText('COPSHOP',23*16-camX+40,24*16-camY+43);c.textAlign='left';
-  c.font='10px VT323,monospace';c.textAlign='center';c.fillStyle='#ffffff';c.fillText('HfPol',32*16-camX+56,24*16-camY+45.5);c.textAlign='left';
+  c.textBaseline='alphabetic';
+  for(const L of LABELS){const X=L.x*16-camX,Y=L.y*16-camY;if(X<-120||Y<-80||X>LW+40||Y>LH+40)continue;if(L.kind==='pad'){c.font='8px VT323,monospace';c.textAlign='center';c.fillStyle='#ffffff';c.fillText('PÄD',X+56,Y+36.5)}
+    else{c.font='7px "Press Start 2P",monospace';c.textAlign='center';c.fillStyle='#14141f';c.fillText(L.t,X+L.w*8+1,Y+13);c.fillStyle='#ffcb3d';c.fillText(L.t,X+L.w*8,Y+12)}}
+  for(const Bd of BLDG){const X=Bd.x*16-camX,Y=Bd.y*16-camY;if(X<-120||Y<-80||X>LW+40||Y>LH+40)continue;c.font='10px VT323,monospace';c.textAlign='center';c.fillStyle='#ffffff';c.fillText(Bd.n,X+Bd.w*8,Y+(Bd.id==='shop'?43:45.5))}
+  c.textAlign='left';
   // entities
   const ents=[];
   for(const o of OTH.values()){if(o.fx==null)continue;ents.push({fx:o.fx,fy:o.fy,col:o.c,sx:o.sx,d:o.d,ph:o.ph,mv:o.moving,name:o.n,bt:o.bt,bub:o.bub});if(o.lf)folEnts(o,o.lf,ents,o.fx,o.fy);else if(o.ld&&o.fol.fx!=null)ents.push({fx:o.fol.fx,fy:o.fol.fy,mon:o.ld})}
@@ -1448,7 +1554,7 @@ function drawWorld(){
     if(e.mon){const s=monSprite(e.mon,24);c.drawImage(s,X-4,Y+15-21,24,24)}
     else{const fr=e.mv?(Math.floor(e.ph/STEP*2)%2?1:2):0;if(tget(Math.round(e.fx),Math.round(e.fy))===3){const wb=Math.round(Math.sin(T*4)*1);c.drawImage(charSprite(e.col,e.d,fr,e.sx),0,0,16,13,X,Y+1+wb,16,13);c.fillStyle='#ffffffb0';c.fillRect(X+1,Y+13+wb,4,1);c.fillRect(X+11,Y+13+wb,4,1);c.fillStyle='#ffffff60';c.fillRect(X-1,Y+14,18,1)}else{const ti=e.npc&&trainerImg(e.npc,e.d);if(ti)c.drawImage(ti,Math.round(X+8-ti.naturalWidth/2),Y+15-ti.naturalHeight);else c.drawImage(charSprite(e.col,e.d,fr,e.sx),X,Y-4)}}
     {const tx=Math.round(e.fx),ty=Math.round(e.fy),tt=tget(tx,ty);if(ENC.has(tt))c.drawImage(TILE[tt][(tx*7+ty*3)%TILE[tt].length],0,8,16,8,X,Y+8,16,8)}}
-  {const sx=Math.max(0,camX),sy=Math.max(0,camY),dx=sx-camX,dy=sy-camY,w=Math.min(LW-dx,MW*16-sx),h=Math.min(LH-dy,MH*16-sy);if(CANOPY&&w>0&&h>0)c.drawImage(CANOPY,sx,sy,w,h,dx,dy,w,h)}
+  if(WORLD)drawWorldLayer(c,camX,camY,LW,LH,'c');
   for(const e of ents){if(e.mon)continue;const X=e.fx*16-camX+8,Y=Math.round(e.fy*16-camY)-2;
     if(e.legend){nameTag(c,X,Y-14,'???','#ffcb3d','');continue}
     if(e.npc){const beaten=RUN&&RUN.beat&&RUN.beat[e.npc.id];nameTag(c,X,Y-4,e.name,e.col,'');if(e.npc.alert&&performance.now()-e.npc.alert<1000){c.fillStyle='#14141f';c.fillRect(Math.round(X)-3,Y-26,6,11);c.fillStyle='#ffcb3d';c.fillRect(Math.round(X)-2,Y-25,4,6);c.fillRect(Math.round(X)-2,Y-18,4,2)}else if(beaten){vtText(c,'✓',X,Y-15,'#3ddc6b',10,'center')}continue}
@@ -1457,48 +1563,48 @@ function drawWorld(){
 }
 
 /* ===================== WORLD MAP ===================== */
-const MCOL={21:'#dcc690',22:'#7c4a22',23:'#7c4a22',20:'#6b6f7a',0:'#6cc44f',1:'#3f9a30',2:'#1f5e2a',3:'#3b8fd9',4:'#e0c890',5:'#ecd79a',6:'#efe8dc',7:'#7c4a22',8:'#d23b3b',9:'#7fd060',10:'#5b4bc4',11:'#a9a9bd',12:'#2d2350',13:'#f2e7b8',14:'#3f8a3a',15:'#c4a374',16:'#6d675d',17:'#25652a',18:'#9fbf5a',19:'#9a7d50'};
+const MCOL={21:'#dcc690',22:'#7c4a22',23:'#7c4a22',20:'#6b6f7a',0:'#6cc44f',1:'#3f9a30',2:'#1f5e2a',3:'#3b8fd9',4:'#e0c890',5:'#ecd79a',6:'#efe8dc',7:'#7c4a22',8:'#d23b3b',9:'#7fd060',10:'#5b4bc4',11:'#a9a9bd',12:'#2d2350',13:'#f2e7b8',14:'#3f8a3a',15:'#c4a374',16:'#6d675d',17:'#25652a',18:'#9fbf5a',19:'#9a7d50',24:'#b9cdd9',25:'#c29a58',26:'#1f8a46',27:'#a8743c',28:'#e8eef4',29:'#e4c48a',30:'#2f7a3c',31:'#7a808c'};
 const BIO_C=(()=>{const acc={};for(let y=0;y<MH;y++)for(let x=0;x<MW;x++){const b=BKEYS[BIOME[y*MW+x]];if(!b)continue;const a=acc[b]||(acc[b]={x:0,y:0,n:0});a.x+=x;a.y+=y;a.n++}const o={};for(const k in acc)o[k]={x:acc[k].x/acc[k].n,y:acc[k].y/acc[k].n};return o})();
 function mapOpen(){return $('#mapov').classList.contains('on')}
 function openMap(){if(B)return;$('#mapov').classList.add('on');held.length=0;drawMap();renderMapLegend();renderFly()}
 // FLY: quick travel to town or a signpost
-function flySpots(){const out=[{n:'Villingen-Knastningen',x:30,y:24}];for(const sg of SIGNS){if(sg.kind==='town')continue;for(const[dx,dy]of[[0,1],[1,0],[-1,0],[0,-1]])if(walkable(sg.x+dx,sg.y+dy)){out.push({n:`Schild ${BNAME[sg.to]} (${BNAME[BIOME[sg.y*MW+sg.x]]||'Stadt'})`,x:sg.x+dx,y:sg.y+dy});break}}return out}
+// quick travel: every town you have visited (free), with FLY also every signpost
+function flySpots(){const out=TOWNS.filter(T=>T.id==='vil'||(RUN&&RUN.towns&&RUN.towns[T.id])).map(T=>({n:T.n,x:T.x,y:T.y}));if(!hasHM('fly'))return out;for(const sg of SIGNS){if(sg.kind==='town')continue;for(const[dx,dy]of[[0,1],[1,0],[-1,0],[0,-1]])if(walkable(sg.x+dx,sg.y+dy)){out.push({n:`Schild ${BNAME[sg.to]} (${BNAME[BIOME[sg.y*MW+sg.x]]||'Stadt'})`,x:sg.x+dx,y:sg.y+dy});break}}return out}
 function renderFly(){let el=$('#flybar');if(!el){el=document.createElement('div');el.id='flybar';el.style.cssText='margin:8px 0;display:flex;flex-wrap:wrap;gap:6px;justify-content:center';const mb=$('#mapov .mapbox')||$('#mapov').firstElementChild;mb.insertBefore(el,mb.children[1]||null)}
-  if(!hasHM('fly')||!RUN||RUN.phase==='arena'){el.innerHTML='';return}
-  el.innerHTML=`<span class="small" style="align-self:center">🕊 FLIEGEN nach:</span>`+flySpots().map((f,i)=>`<button class="btn ghost" data-fly="${i}" style="font-family:VT323,monospace;font-size:17px;padding:3px 8px">${esc(f.n)}</button>`).join('');
-  el.querySelectorAll('[data-fly]').forEach(b=>b.onclick=()=>{const f=flySpots()[+b.dataset.fly];closeMap();transition('fade',()=>{teleport(f.x,f.y);toast('🕊 Du bist nach '+f.n+' geflogen!')})})}
+  if(!RUN||RUN.phase==='arena'||RUN.phase==='lobby'||B){el.innerHTML='';return}
+  el.innerHTML=`<span class="small" style="align-self:center">🕊 SCHNELLREISE nach:</span>`+flySpots().map((f,i)=>`<button class="btn ghost" data-fly="${i}" style="font-family:VT323,monospace;font-size:17px;padding:3px 8px">${esc(f.n)}</button>`).join('');
+  el.querySelectorAll('[data-fly]').forEach(b=>b.onclick=()=>{const f=flySpots()[+b.dataset.fly];closeMap();transition('fade',()=>{teleport(f.x,f.y);toast('🕊 Schnellreise nach '+f.n+'!')})})}
 function closeMap(){$('#mapov').classList.remove('on')}
 function toggleMap(){mapOpen()?closeMap():openMap()}
+let MINI=null;
+function miniMap(){if(MINI)return MINI;const c=mk(MW,MH),x=c.getContext('2d'),id=x.createImageData(MW,MH),d=id.data;const rgb={};
+  for(let i=0;i<MW*MH;i++){const t=MAP[i],h=MCOL[t]||'#000';const q=rgb[h]||(rgb[h]=hex2rgb(h));d[i*4]=q[0];d[i*4+1]=q[1];d[i*4+2]=q[2];d[i*4+3]=255}x.putImageData(id,0,0);MINI=c;return c}
 function drawMap(){
   if(!mapOpen())return;const cv=$('#mapcv'),st=$('#stage');
-  const ts=Math.max(3,Math.floor(Math.min((st.clientWidth-50)/MW,(st.clientHeight*0.66)/MH)));
-  const dpr=Math.min(3,devicePixelRatio||1);const W=MW*ts,H=MH*ts;
+  const ts=Math.max(1.4,Math.min((st.clientWidth-40)/MW,(st.clientHeight*0.7)/MH));
+  const dpr=Math.min(3,devicePixelRatio||1);const W=Math.round(MW*ts),H=Math.round(MH*ts);
   if(cv.width!==Math.round(W*dpr)){cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);cv.style.width=W+'px';cv.style.height=H+'px'}
-  const c=cv.getContext('2d');c.setTransform(dpr,0,0,dpr,0,0);c.imageSmoothingEnabled=false;
-  for(let y=0;y<MH;y++)for(let x=0;x<MW;x++){c.fillStyle=MCOL[tget(x,y)]||'#000';c.fillRect(x*ts,y*ts,ts,ts)}
-  // level rings (difficulty rises with distance from town)
-  c.setLineDash([ts,ts]);c.lineWidth=Math.max(1,ts/3);
-  for(const lv of[5,10,15]){const d=9+(lv-1)/0.47;c.strokeStyle='#ffffffaa';c.beginPath();c.arc((CX+.5)*ts,(CY+.5)*ts,d*ts,0,7);c.stroke();
-    c.font=`${Math.max(9,ts*2)}px VT323,monospace`;const ang=-0.42,lx=(CX+.5+Math.cos(ang)*d)*ts,ly=(CY+.5+Math.sin(ang)*d)*ts+ts*0.6;if(ly>ts*2&&lx<MW*ts-ts*2){c.fillStyle='#0b0d16c0';const tw=c.measureText('Lv ~'+lv).width+6;c.fillRect(lx-tw/2,ly-ts*1.6,tw,ts*2);c.fillStyle='#fff';c.textAlign='center';c.fillText('Lv ~'+lv,lx,ly)}}
-  c.setLineDash([]);c.textAlign='center';
-  const F=Math.max(9,ts*2);
-  for(const[k,p]of Object.entries(BIO_C)){c.font=`${Math.max(7,Math.round(ts*1.4))}px "Press Start 2P",monospace`;c.fillStyle='#000000a0';c.fillText(ZONES[k].n.toUpperCase(),p.x*ts+1,p.y*ts+1);c.fillStyle='#ffffff';c.fillText(ZONES[k].n.toUpperCase(),p.x*ts,p.y*ts)}
-  const mark=(x,y,txt,col)=>{c.font=`${F}px VT323,monospace`;c.fillStyle='#000';c.fillText(txt,(x+.5)*ts+1,(y+.5)*ts+F/3+1);c.fillStyle=col;c.fillText(txt,(x+.5)*ts,(y+.5)*ts+F/3)};
-  mark(25,19,'✚','#ffffff');mark(35.5,18,'⚔','#ffcb3d');mark(25,25.5,'🛒','#ffffff');mark(35,25.5,'🎓','#ffffff');
-  for(let y=24;y<28;y++)for(let x=23;x<39;x++){if(x>27&&x<32)continue;c.fillStyle='#dcc690';c.fillRect(x*ts,y*ts,ts,ts)}
+  const c=cv.getContext('2d');c.setTransform(dpr,0,0,dpr,0,0);c.imageSmoothingEnabled=false;c.drawImage(miniMap(),0,0,W,H);
+  c.textAlign='center';const F=Math.max(10,ts*5);
+  for(const[k,p]of Object.entries(BIO_C)){if(!ZONES[k])continue;const L=ZLV[k];c.font=`${Math.max(7,Math.round(ts*3.2))}px "Press Start 2P",monospace`;const t=ZONES[k].n.toUpperCase();c.fillStyle='#000000a0';c.fillText(t,p.x*ts+1,p.y*ts+1);c.fillStyle='#ffffff';c.fillText(t,p.x*ts,p.y*ts);
+    if(L){c.font=`${Math.max(9,Math.round(ts*4.5))}px VT323,monospace`;c.fillStyle='#000000a0';c.fillText(`Lv ${L.lo}–${L.hi}`,p.x*ts+1,p.y*ts+F*0.9+1);c.fillStyle='#ffcb3d';c.fillText(`Lv ${L.lo}–${L.hi}`,p.x*ts,p.y*ts+F*0.9)}}
+  const mark=(x,y,txt,col,f)=>{c.font=`${f||F}px VT323,monospace`;c.fillStyle='#000';c.fillText(txt,(x+.5)*ts+1,(y+.5)*ts+(f||F)/3+1);c.fillStyle=col;c.fillText(txt,(x+.5)*ts,(y+.5)*ts+(f||F)/3)};
+  for(const T of TOWNS){const vis=T.id==='vil'||(RUN&&RUN.towns&&RUN.towns[T.id]);c.fillStyle='#000';c.fillRect((T.x-6)*ts-1,(T.y-7)*ts-1,12*ts+2,8*ts+2);c.fillStyle=vis?'#ffcb3d':'#dcc690';c.fillRect((T.x-6)*ts,(T.y-7)*ts,12*ts,8*ts);
+    c.font=`${Math.max(9,Math.round(ts*4))}px VT323,monospace`;c.fillStyle='#000';c.fillText(T.n,T.x*ts+1,(T.y-9)*ts+1);c.fillStyle='#ffffff';c.fillText(T.n,T.x*ts,(T.y-9)*ts)}
+  mark(KNAST_C.x,KNAST_C.y,'⛓','#ffffff');
   for(const L of LEGENDS){const gone=RUN&&RUN.leg&&RUN.leg[L.id];mark(L.x,L.y,'★',gone?'#8a8ea6':'#ffcb3d')}
-  for(const f of FIELD){if(FIELDGONE.has(f.id))continue;c.fillStyle='#000';c.fillRect(f.x*ts-1,f.y*ts-1,ts+2,ts+2);c.fillStyle=f.kind==='cut'?'#56a83c':'#b8bcc4';c.fillRect(f.x*ts,f.y*ts,ts,ts)}
-  for(const sg of SIGNS){c.fillStyle='#000';c.fillRect(sg.x*ts-1,sg.y*ts-1,ts+2,ts+2);c.fillStyle='#d9a466';c.fillRect(sg.x*ts,sg.y*ts,ts,ts)}
-  for(const t of TRAINERS){const beat=RUN&&RUN.beat&&RUN.beat[t.id];c.fillStyle='#000';c.fillRect(t.x*ts-1,t.y*ts-1,ts+2,ts+2);c.fillStyle=beat?'#8a8ea6':t.c;c.fillRect(t.x*ts,t.y*ts,ts,ts);if(beat){c.fillStyle='#3ddc6b';c.font=`${F}px VT323,monospace`;c.fillText('✓',(t.x+.5)*ts,t.y*ts-2)}}
-  for(const o of OTH.values()){if(o.fx==null)continue;c.fillStyle='#000';c.fillRect(o.fx*ts-2,o.fy*ts-2,ts+4,ts+4);c.fillStyle=o.c||'#888';c.fillRect(o.fx*ts-1,o.fy*ts-1,ts+2,ts+2)}
-  const blink=Math.floor(performance.now()/350)%2;c.fillStyle=blink?'#ffffff':'#000';c.fillRect(P.fx*ts-3,P.fy*ts-3,ts+6,ts+6);c.fillStyle=G.color;c.fillRect(P.fx*ts-1,P.fy*ts-1,ts+2,ts+2);
+  const dot=(x,y,col,s)=>{s=s||Math.max(2,ts*1.6);c.fillStyle='#000';c.fillRect(x*ts-s/2-1,y*ts-s/2-1,s+2,s+2);c.fillStyle=col;c.fillRect(x*ts-s/2,y*ts-s/2,s,s)};
+  for(const t of tollSpots())dot(t.x+.5,t.y+.5,tollPaid(t.b)?'#3ddc6b':'#c27bff');
+  for(const t of TRAINERS){const beat=RUN&&RUN.beat&&RUN.beat[t.id];dot(t.x+.5,t.y+.5,beat?'#8a8ea6':t.c,Math.max(2,ts*1.2))}
+  for(const o of OTH.values()){if(o.fx==null)continue;dot(o.fx+.5,o.fy+.5,o.c||'#888',Math.max(3,ts*2.4))}
+  const blink=Math.floor(performance.now()/350)%2;dot(P.fx+.5,P.fy+.5,blink?'#ffffff':G.color,Math.max(4,ts*3));
   c.textAlign='left';
 }
 function renderMapLegend(){
   let h='';
   for(const[k,z]of Object.entries(ZONES)){
     h+=`<div class="mleg"><b style="color:${z.col==='#2f7a2c'?'#5fb04a':z.col}">${z.n.toUpperCase()}</b><br><span class="small">Monster verstecken sich in: ${z.enc}</span><br>${poolOf(k).map(sp=>{const seen=G.dex[sp]!==undefined;const r=rarOf(sp);return`<span style="color:${r.c}">${seen?nameHtml(sp):'???'}</span>`}).join(' · ')}</div>`}
-  h+=`<div class="mleg"><b style="color:var(--accent)">LEGENDE</b><br>⚕ PÄD · ⚖ Gericht · 🛒 Copshop · 🎓 HfPol (Study)<br>★ Legendärer Schrein · ■ Cop (✓ besiegt) ·<span style="color:#d9a466">■</span> Schild ·<span style="color:#56a83c">■</span> Bäumchen (Zerschneider) ·<span style="color:#b8bcc4">■</span> Felsbrocken<br>Ringe: Wilde Monster werden mit Abstand zur Stadt stärker.<br>Farben: <span style="color:${RARITY.common.c}">häufig</span> · <span style="color:${RARITY.uncommon.c}">ungewöhnlich</span> · <span style="color:${RARITY.rare.c}">selten</span></div>`;
+  h+=`<div class="mleg"><b style="color:var(--accent)">LEGENDE</b><br>⚕ PÄD · ⚖ Gericht · 🛒 Copshop · 🎓 HfPol (Study)<br>★ Legendärer Schrein · ⛓ Knast · ■ Cop (grau = besiegt) · <span style="color:#c27bff">■</span> Prof. (grün = bestanden)<br>Städte: gelb = besucht (Schnellreise möglich). Jede Stadt hat PÄD, Copshop und HfPol; das Gericht steht in Villingen.<br>Farben: <span style="color:${RARITY.common.c}">häufig</span> · <span style="color:${RARITY.uncommon.c}">ungewöhnlich</span> · <span style="color:${RARITY.rare.c}">selten</span></div>`;
   $('#mapleg').innerHTML=h;
 }
 $('#hmap').onclick=toggleMap;$('#hsave').onclick=manualSave;$('#hbug').onclick=()=>{openModal(`<h3>🐞 BUG MELDEN</h3><p>Lade zuerst das Protokoll herunter und hänge die Datei im GitHub-Ticket an (per Drag & Drop ins Textfeld). Es enthält Verbindungs- und Fehlerereignisse — keine Passwörter.</p><div class="acts"><button class="btn ghost" id="blog">🧾 PROTOKOLL</button><button class="btn" id="bgo">TICKET ÖFFNEN</button></div><div class="acts"><button class="btn ghost" id="mno">SCHLIESSEN</button></div>`);$('#blog').onclick=downloadLog;$('#bgo').onclick=()=>{closeModal();bugReport()};$('#mno').onclick=closeModal};$('#hdex').onclick=()=>{if(G)openDex()};$('#hshop').onclick=()=>{if(G)openShop()};$('#htimer').onclick=()=>{if(isMob())$('#side').classList.add('open');switchTab('lobby')};$('#mclose').onclick=closeMap;
@@ -1686,7 +1792,7 @@ function roomFull(){plog('[raum] voll — zurückgetreten');FULL=true;try{ROOM.l
   document.getElementById('fullx').onclick=()=>{el.style.display='none'}}
 
 /* ===================== MATCHES ===================== */
-const DEF_CFG={name:'',dur:10,rounds:3,team:3,kap:10,xp:1,enc:1,leg:1,tb:0,alt:1,money:100,aim:0,fol:3,kader:4};
+const DEF_CFG={name:'',dur:20,rounds:3,team:3,kap:10,xp:1,enc:1,leg:1,tb:0,alt:1,money:100,aim:0,fol:3,kader:4};
 /* ===================== MONEY, ITEMS & SHOP ===================== */
 const ITEMS={
  cap:{n:'Handschellen',p:20,d:'Damit nimmst du wilde Monster fest.',i:'⛓'},
@@ -1839,7 +1945,7 @@ function lobbyLine(m){return m.waiting?'wartet in der Lobby':`noch ${fmt(m.end-D
 let LOBBY_MIN=true;
 function startFree(){
   if(G.freeRun){RUN=G.freeRun;RUN.beat=RUN.beat||{};RUN.leg=RUN.leg||{};afterRunChange();toast('Willkommen zurück! Das freie Spiel geht weiter.');return}
-  {const sp_=ALT_BASES.filter(x=>RAR[x]!=='rare'),sid=sp_[Math.floor(Math.random()*sp_.length)];RUN={id:'f'+Math.random().toString(36).slice(2,10),free:true,end:0,phase:'train',team:[newMon(sid,START_LV)],box:[],kap:10,money:100,items:{},r:1,st:'free',res:[],beat:{},leg:{},cfg:Object.assign({},DEF_CFG,{alt:SET.alt==='0'?0:1})};G.dex[sid]=1;G.freeRun=RUN;afterRunChange();teleport(30,24);sysChat('Freies Spiel gestartet — dein Team wird gespeichert. Erstelle oder betrete jederzeit eine Lobby.');toast(`Dein zufälliges Start-Monster: ${SPECIES[sid].n}!`);setTimeout(()=>{if(!B&&!$('#modal').classList.contains('on'))dexReveal(sid,RUN.team[0],'★ DEIN START-MONSTER ★')},700)}
+  {const sp_=ALT_BASES.filter(x=>RAR[x]!=='rare'),sid=sp_[Math.floor(Math.random()*sp_.length)];RUN={id:'f'+Math.random().toString(36).slice(2,10),free:true,end:0,phase:'train',team:[newMon(sid,START_LV)],box:[],kap:10,money:100,items:{},r:1,st:'free',res:[],beat:{},leg:{},cfg:Object.assign({},DEF_CFG,{alt:SET.alt==='0'?0:1})};G.dex[sid]=1;G.freeRun=RUN;afterRunChange();teleport(VSPAWN.x,VSPAWN.y);sysChat('Freies Spiel gestartet — dein Team wird gespeichert. Erstelle oder betrete jederzeit eine Lobby.');toast(`Dein zufälliges Start-Monster: ${SPECIES[sid].n}!`);setTimeout(()=>{if(!B&&!$('#modal').classList.contains('on'))dexReveal(sid,RUN.team[0],'★ DEIN START-MONSTER ★')},700)}
 }
 // free play: throw away the free-play team and start over with a new random monster (dex and trophies stay)
 function restartFree(){if(!RUN||!RUN.free||B)return;
@@ -1900,7 +2006,7 @@ function startRun(id,end,sid,prev,cfg,phase){
   phase=phase||'train';if(phase==='train'&&end<Date.now()+5000){toast('Dieses Spiel ist fast vorbei.');return}
   cfg=sanitizeCfg(cfg||DEF_CFG);
   RUN={id,jt:Date.now(),starter:sid,rs:cfg.host===(MYPEER||'me')?0:null,end:phase==='lobby'?0:end,cfg,phase,team:[newMon(sid,START_LV)],box:[],kap:cfg.kap,money:cfg.money??100,items:{},r:1,st:phase==='lobby'?'lobby':'train',res:[],prev:prev||null,beat:{},leg:{}};G.dex[sid]=1;$('#arena').classList.remove('on');
-  save();$('#lobby').dataset.h='';renderLobby();renderTeam();updateHud();pushMt();teleport(30,24);
+  save();$('#lobby').dataset.h='';renderLobby();renderTeam();updateHud();pushMt();teleport(VSPAWN.x,VSPAWN.y);
   if(phase==='lobby'){sysChat(`Du bist in der Lobby${cfg.name?' „'+cfg.name+'“':''} (${cfgSummary(cfg)}). Der Host startet das Spiel.`);switchTab('lobby')}
   else{sysChat(`Spiel${cfg.name?' "'+cfg.name+'"':''} läuft! ${fmt(end-Date.now())} Training (${cfgSummary(cfg)}). Geh ins Gericht, wenn du bereit bist.`);toast('Streife gestartet! Ab ins hohe Gras.')}
 }
@@ -1929,7 +2035,7 @@ function hardExit(){
 }
 function leaveRun(){
   hardExit();RUN=G.freeRun||null;if(RUN){RUN.beat=RUN.beat||{};RUN.leg=RUN.leg||{}}
-  P.d='down';teleport(30,24);save();pres({mt:mtInfo(),ld:leadInfo(),lf:folInfo()});afterRunChange();
+  P.d='down';teleport(VSPAWN.x,VSPAWN.y);save();pres({mt:mtInfo(),ld:leadInfo(),lf:folInfo()});afterRunChange();
   switchTab('lobby');if(isMob())$('#side').classList.add('open');
   if(RUN)toast('Zurück am Start — freies Spiel. Tritt jederzeit einer Lobby bei oder erstelle eine.');else startFree();
 }
@@ -1937,7 +2043,7 @@ function leaveRun(){
 function resetRun(n){
   hardExit();const c=RUN.cfg,sid=RUN.starter||(RUN.team[0]&&RUN.team[0].s)||startersNow()[0];
   Object.assign(RUN,{rs:n,phase:'lobby',st:'lobby',end:0,r:1,res:[],gaveUp:0,solo:0,pick:null,dopp:null,trophy:0,team:[newMon(sid,START_LV)],box:[],kap:c.kap,money:c.money??100,items:{},beat:{},leg:{}});
-  P.d='down';teleport(30,24);save();afterRunChange();switchTab('lobby');
+  P.d='down';teleport(VSPAWN.x,VSPAWN.y);save();afterRunChange();switchTab('lobby');
   sysChat('Der Host hat die Sitzung zurückgesetzt — alle sind zurück am Start. Der Host startet das Spiel erneut.');toast('Sitzung zurückgesetzt — zurück am Start!');
 }
 function hostReset(){if(!isHost())return;openModal(`<h3>SITZUNG ZURÜCKSETZEN?</h3><p>Alle in dieser Lobby gehen zurück zum Start: neues Starter-Monster, keine Fänge, Timer und Urteile gelöscht. Danach könnt ihr neu starten.</p><div class="acts"><button class="btn ghost" id="mno">ABBRECHEN</button><button class="btn red" id="myes">ZURÜCKSETZEN</button></div>`);
@@ -1962,7 +2068,7 @@ function enterArena(early){
   if(B&&B.mode==='wild')endWild('Die Zeit ist um!');
   if(B&&(B.spar||B.mode==='trainer'))closeBattle();
   if(myCh)cancelCh();if(incoming){closeModal();incoming=null}
-  RUN.rdy=0;RUN.phase='arena';RUN.r=1;RUN.res=[];RUN.st='pick';healAll();teleport(35,21);P.d='up';
+  RUN.rdy=0;RUN.phase='arena';RUN.r=1;RUN.res=[];RUN.st='pick';healAll();teleport(COURT.x,COURT.y);P.d='up';
   sysChat(early?'Du bist früh ins Gericht gegangen. Warte auf die anderen…':'Die Streife ist vorbei — ab ins Gericht!');save();pushMt();showArena();pickArenaTeam();
 }
 function pickArenaTeam(){
@@ -2059,7 +2165,7 @@ function giveUpArena(){
     RUN.st='done';save();pushMt();sysChat('Du hast das Turnier aufgegeben.');$('#abox').dataset.h='';showArena()};
 }
 function canGoBack(){return RUN&&RUN.phase==='arena'&&RUN.r===1&&!(RUN.res||[]).length&&(RUN.st==='wait'||RUN.st==='pick')&&Date.now()<RUN.end&&!B&&!participants().some(p=>p.st==='duel')}
-function backToTraining(){if(!canGoBack())return;RUN.phase='train';RUN.st='train';RUN.pick=null;RUN.res=[];RUN.r=1;$('#arena').classList.remove('on');$('#abox').dataset.h='';teleport(35,23);P.d='down';save();pushMt();toast('Zurück ins Training!')}
+function backToTraining(){if(!canGoBack())return;RUN.phase='train';RUN.st='train';RUN.pick=null;RUN.res=[];RUN.r=1;$('#arena').classList.remove('on');$('#abox').dataset.h='';teleport(COURT.x,COURT.y+2);P.d='down';save();pushMt();toast('Zurück ins Training!')}
 function rematchHtml(){
   const seen=new Map();for(const p of others()){const mt=p.presence.mt;if(mt&&mt.prev===RUN.id&&(mt.st==='lobby'||(mt.st==='train'&&+mt.end>Date.now()+10000))&&typeof mt.id==='string'&&mt.id.length<40){const e=seen.get(mt.id)||{id:mt.id,end:+mt.end,n:[]};e.n.push(cleanName(p.presence.n));seen.set(mt.id,e)}}
   let h='<div style="margin-top:12px;display:flex;flex-direction:column;gap:8px">';
@@ -2189,7 +2295,7 @@ const OBK={rock:{mat:'rock',hp:70,r:12},boulder:{mat:'rock',hp:110,r:14},crystal
   bush:{mat:'plant',hp:14,r:9},flower:{mat:'plant',hp:8,r:8},fern:{mat:'plant',hp:12,r:9},reeds:{mat:'plant',hp:10,r:8},shrub:{mat:'plant',hp:10,r:8},
   stump:{mat:'wood',hp:45,r:11},log:{mat:'wood',hp:55,r:13},drift:{mat:'wood',hp:30,r:12},crate:{mat:'wood',hp:35,r:10},poller:{mat:'steel',hp:1,r:8,ind:1},menhir:{mat:'steel',hp:1,r:12,ind:1}};
 const ZONE_OBS={north:[['bush',3,4],['flower',1,2],['rock',1,2],['menhir',1,1]],east:[['stump',2,3],['fern',2,3],['log',1,2],['menhir',1,1]],south:[['reeds',2,3],['drift',2,2],['coral',1,2],['menhir',1,1]],
-  west:[['boulder',2,3],['rock',1,2],['crystal',1,1],['shrub',1,2],['menhir',1,2]],arena:[['pillar',2,3],['crate',2,3],['poller',2,2]],knast:[['pillar',3,3],['crate',2,2],['poller',2,3]]};
+  west:[['boulder',2,3],['rock',1,2],['crystal',1,1],['shrub',1,2],['menhir',1,2]],snow:[['crystal',2,3],['rock',1,2],['stump',1,1],['menhir',1,1]],desert:[['boulder',2,3],['rock',1,2],['shrub',1,2],['menhir',1,2]],jungle:[['fern',2,3],['bush',2,2],['log',1,2],['menhir',1,1]],arena:[['pillar',2,3],['crate',2,3],['poller',2,2]],knast:[['pillar',3,3],['crate',2,2],['poller',2,3]]};
 function genObs(seed,zone){const r=mulberry32(seed>>>0),out=[];const kinds=[];for(const[k,a,b]of(ZONE_OBS[zone]||ZONE_OBS.north)){const n=a+Math.floor(r()*(b-a+1));for(let i=0;i<n;i++)kinds.push(k)}
   let id=0;for(const kind of kinds){const K=OBK[kind],rad=K.r;for(let t=0;t<140;t++){const a=r()*6.283,q=0.2+r()*0.68,x=ACX+Math.cos(a)*ARX*q,y=ACY+Math.sin(a)*ARY*q;
       if(Math.hypot(x-ACX,(y-YT)*1.3)<48||Math.hypot(x-ACX,(y-YB)*1.3)<48)continue;if(K.ind&&Math.abs(x-ACX)<28)continue;if(out.some(o=>Math.hypot(o.x-x,(o.y-y)*1.3)<o.r+rad+24))continue;
@@ -2609,7 +2715,7 @@ function forfeit(){if(B&&B.tb&&B.state!=='over'&&B.mode!=='wild'&&B.mode!=='trai
 
 /* --- wild --- */
 function startWild(zk){
-  const z=ZONES[zk];const sid=pickWild(poolOf(zk),1+distC(P.x,P.y)/25);const l=lvAt(P.x,P.y);
+  const z=ZONES[zk];const sid=pickWild(poolOf(zk),1+distC(P.x,P.y)/80);const l=lvAt(P.x,P.y);
   const wild=newMon(sid,l);G.dex[sid]=G.dex[sid]||0;
   if(!RUN.team.some(m=>m.hp>0))healAll();
   newBattle({mode:'wild',zone:zk,wild,me:mkFighter('L',RUN.team.map(battler),XL,'local'),foe:mkFighter('R',[battler(wild)],XR,'ai')});
@@ -2671,7 +2777,7 @@ async function wildLose(){
       if(B.mode==='wild'||B.mode==='trainer'){const rm=RUN.team[i];if(rm)rm.hp=m.hp}
       say(`${SPECIES[m.s].n} rappelt sich mit 25 % KP wieder auf!`);if(B.tb){B.state='tbChoose'}else{B.state='count';B.leadDone=1;B.leadWait=false;B.cntEnd=performance.now()+3000}return}
     B.state='fight'}
-  B.state='over';finale(false);say('Alle deine Monster sind besiegt…');const myB=B;await sleep(2400);if(B!==myB)return;endWild();healAll();teleport(25,21);toast('Du bist zurück zum PÄD geeilt.')}
+  B.state='over';finale(false);say('Alle deine Monster sind besiegt…');const myB=B;await sleep(2400);if(B!==myB)return;endWild();healAll();{const sp=padSpawn();teleport(sp.x,sp.y)}toast('Du bist zurück zum PÄD geeilt.')}
 function throwBonus(){const r=ringR(performance.now());if(r<8){say('Hervorragender Wurf!');return 1.6}if(r<11.5){say('Toller Wurf!');return 1.3}return 1}
 // catch chance: low HP + weak (low level / common) -> high; full HP / strong / rare -> low. Three shake checks decide.
 function catchChance(w,bonus){const hpF=1-(w.hp/w.mhp)*0.85,lvF=clamp(1.15-w.l*0.03,0.35,1.1);return clamp(hpF*lvF*rarOf(w.s).cm*(bonus||1)+0.04,0.02,0.97)}
@@ -2880,7 +2986,10 @@ function courtBG(){const W=AW/2,H=AH/2,cv=mk(W,H),c=cv.getContext('2d'),r=mulber
   P(6,8,24,12,'#1c0f07');P(7,9,22,4,'#8a5530');P(7,13,22,6,'#6b3f1f');P(W-30,8,24,12,'#1c0f07');P(W-29,9,22,4,'#8a5530');P(W-29,13,22,6,'#6b3f1f');
   P(12,10,6,1,'#f2f2f2');P(W-22,10,5,1,'#f2f2f2');P(W-22,11,4,1,'#d9d9d9');
   return cv}
-function battleBG(z){if(BBG[z])return BBG[z];if(z==='arena')return BBG[z]=courtBG();const W=AW/2,H=AH/2,cv=mk(W,H),c=cv.getContext('2d'),id=c.createImageData(W,H),d=id.data;
+function battleBG(z){if(BBG[z])return BBG[z];if(z==='arena')return BBG[z]=courtBG();
+  // new areas reuse a base layout with their own palettes
+  if(z==='snow'||z==='desert'||z==='jungle'){const sw={snow:{meadow:RGB.snow,leaf:RGB.pine,dirt:RGB.stone},desert:{hills:RGB.desert,dirt:RGB.sand},jungle:{forest:RGB.jungle,dirt:RGB.dirt}}[z],base={snow:'north',desert:'west',jungle:'east'}[z],keep={};
+    for(const k in sw){keep[k]=RGB[k];RGB[k]=sw[k]}let out;try{const saved=BBG[base];delete BBG[base];out=battleBG(base);if(saved)BBG[base]=saved;else delete BBG[base]}finally{for(const k in keep)RGB[k]=keep[k]}return BBG[z]=out}const W=AW/2,H=AH/2,cv=mk(W,H),c=cv.getContext('2d'),id=c.createImageData(W,H),d=id.data;
   const seed=hashStr(z),nL=noise2(seed,22,W,H),nS=noise2(seed+1,6,W,H),nD=noise2(seed+2,10,W,H);
   const gp=z==='east'?RGB.forest:z==='south'?RGB.shore:z==='west'?RGB.hills:RGB.meadow;
   // round arena seen from above: floor oval (a bit larger than where the feet may go), a rim, scenery outside
@@ -4282,7 +4391,7 @@ $('#chatform').addEventListener('submit',e=>{e.preventDefault();const inp=$('#ch
 
 /* ===================== LOOP ===================== */
 let last=performance.now(),slow=0;
-function frame(now){if(!WORLD&&!BAKE_FAIL)bakeTick();const dt=Math.max(0,Math.min(0.05,(now-last)/1000));last=now;T+=dt;
+function frame(now){bakeTick();const dt=Math.max(0,Math.min(0.05,(now-last)/1000));last=now;T+=dt;
   try{if(G){if(!B)updatePlayer(dt);updateOthers(dt);if(B&&!panicPaused())bUpdate(dt);if(B&&$('#battle').classList.contains('on')){drawBattle();updateBattleUI()}else drawWorld();if(mapOpen())drawMap();
 }}catch(e){console.error(e);if(!frame.errShown){frame.errShown=1;showErr(e.message+' (frame)')}}
   try{drawFX()}catch(e){console.error(e)}
@@ -4315,9 +4424,12 @@ const STVO_QZ=[
  ["Wer muss während der Fahrt vorgeschriebene Sicherheitsgurte anlegen?",["Alle Fahrzeugführer und Mitfahrer auf Sitzen mit Gurt","Nur der Fahrer","Nur Kinder","Niemand innerorts"],"§ 21a Abs. 1 StVO."],
  ["Welche Pflicht regelt § 4 Abs. 1 StVO?",["Ausreichenden Abstand zum vorausfahrenden Fahrzeug halten","Das Rechtsfahrgebot","Die Beleuchtungspflicht","Das Halten an Bushaltestellen"],"Abstandsgebot."]
 ];
-const TOLL_LAW={2:'GG',3:'PolG',4:'StVO',5:'StPO',6:'StGB'};
-const TOLL_NAME={2:'Prof. Dr. Würde',3:'Prof. Gefahr',4:'Prof. Blinker',5:'Prof. Prozess',6:'Prof. Strafe'};
-const TOLL_AREA={2:'den Ostwald',3:'die Südküste',4:'die Westhügel',5:'den Knast',6:'den Zellentrakt'};
+const TOLL_LAW={2:'PolG',3:'PolG',4:'StVO',5:'StGB',6:'GG',7:'StGB',8:'StPO',9:'StGB'};
+const TOLL_NAME={2:'Prof. Gefahr',3:'Prof. Störer',4:'Prof. Blinker',5:'Prof. Strafe',6:'Prof. Dr. Würde',7:'Prof. Vorsatz',8:'Prof. Prozess',9:'Prof. Zelle'};
+// every road into an area has its own teacher; the teachers of one area share the law (passing one opens the area)
+const PROF_NAMES={PolG:['Prof. Gefahr','Prof. Störer','Prof. Gefahrenabwehr','Prof. Platzverweis','Prof. Gewahrsam'],StVO:['Prof. Blinker','Prof. Vorfahrt','Prof. Rettungsgasse','Prof. Tempo'],
+  GG:['Prof. Dr. Würde','Prof. Grundrecht','Prof. Verhältnismäßigkeit','Prof. Rechtsstaat'],StPO:['Prof. Prozess','Prof. Belehrung','Prof. Richtervorbehalt','Prof. Beweis'],StGB:['Prof. Strafe','Prof. Vorsatz','Prof. Tatbestand','Prof. Zelle']};
+const TOLL_AREA={2:'den Damentaler Wald',3:'die Marderacher Küste',4:'die Felsenhöhen',5:'den Knast',6:'das Lahribarer Gebirge',7:'den Unterwertheimer Canyon',8:'den Mostbacher Dschungel',9:'den Zellentrakt'};
 const TOLL_FEE=300;
 function lawOf(sid){const L=(SPECIES[sid]&&SPECIES[sid].law)||'';const m=L.match(/^(?:§|Art\.)\s*\d+[a-z]?\s+([A-Za-zÄÖÜäöü]+)/);return m?m[1]:null}
 function lawSpecies(law){if(law==='StVO')return['promillo','bleifuss','owigon'].filter(s=>SPECIES[s]);return Object.keys(SPECIES).filter(s=>ALT_IDS.has(s)&&RAR[s]!=='legendary'&&lawOf(s)===law)}
@@ -4325,9 +4437,9 @@ function lawQuestions(law){if(law==='StVO')return STVO_QZ.map(q=>({src:null,q}))
 let TOLLS=null;
 function tollSpots(){if(TOLLS)return TOLLS;TOLLS=[];
   // face the side the visitor comes from: the neighbour that is closest to town by walking distance
-  const dist=new Int32Array(MW*MH).fill(-1),q=[24*MW+30];dist[q[0]]=0;for(let h=0;h<q.length;h++){const i=q[h],x=i%MW,y=(i-x)/MW;for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]]){const nx=x+dx,ny=y+dy,j=ny*MW+nx;if(nx<0||ny<0||nx>=MW||ny>=MH||dist[j]>=0||!WALK0.has(MAP[j]))continue;dist[j]=dist[i]+1;q.push(j)}}
+  const dist=new Int32Array(MW*MH).fill(-1),q=[VSPAWN.y*MW+VSPAWN.x];dist[q[0]]=0;for(let h=0;h<q.length;h++){const i=q[h],x=i%MW,y=(i-x)/MW;for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]]){const nx=x+dx,ny=y+dy,j=ny*MW+nx;if(nx<0||ny<0||nx>=MW||ny>=MH||dist[j]>=0||!WALK0.has(MAP[j]))continue;dist[j]=dist[i]+1;q.push(j)}}
   for(const g of GATES){if(g.i==null)continue;const x=g.i%MW,y=(g.i-x)/MW;let d='down',bd=1e9;for(const[dx,dy,dn]of[[1,0,'right'],[-1,0,'left'],[0,1,'down'],[0,-1,'up']]){const j=(y+dy)*MW+x+dx;if(dist[j]>=0&&dist[j]<bd){bd=dist[j];d=dn}}
-    TOLLS.push({b:g.b,x,y,id:'toll'+g.b,n:TOLL_NAME[g.b]+' ('+TOLL_LAW[g.b]+')',c:'#7a5a3a',d})}
+    const law=TOLL_LAW[g.b],names=PROF_NAMES[law]||[TOLL_NAME[g.b]],k=TOLLS.filter(t=>TOLL_LAW[t.b]===law).length;TOLLS.push({b:g.b,x,y,id:'toll'+g.b+'_'+TOLLS.length,pn:names[k%names.length],n:names[k%names.length]+' ('+law+')',c:['#7a5a3a','#5a3a7a','#3a5a7a','#7a3a4a'][k%4],d})}
   return TOLLS}
 function tollPaid(b){return!!(RUN&&RUN.toll&&RUN.toll[b])}
 function tollAt(x,y){return tollSpots().find(t=>t.x===x&&t.y===y)}
@@ -4335,10 +4447,11 @@ let TOLL_BUSY=0;
 function tollBlock(nx,ny){if(!RUN||RUN.phase==='arena'||RUN.phase==='lobby')return false;
   const g=tollSpots().find(t=>t.x===nx&&t.y===ny);let b=g?g.b:null;
   // entering an area by another way (field-skill shortcuts) also needs that area's teacher
-  if(!b){const nb=BIOME[ny*MW+nx];if(nb>=2&&nb<=5&&BIOME[P.y*MW+P.x]!==nb&&TOLL_LAW[nb])b=nb}
+  if(!b){const nb=BIOME[ny*MW+nx];if(nb>=2&&BIOME[P.y*MW+P.x]!==nb&&TOLL_LAW[nb])b=nb}
   if(!b||tollPaid(b))return false;
-  if(performance.now()-TOLL_BUSY>800&&!modalOpen()&&!CQ){TOLL_BUSY=performance.now();tollDialog(b)}return true}
-function tollDialog(b){const law=TOLL_LAW[b],nm=TOLL_NAME[b];
+  if(performance.now()-TOLL_BUSY>800&&!modalOpen()&&!CQ){TOLL_BUSY=performance.now();TOLL_WHO=g?g.pn:(tollSpots().find(t=>t.b===b)||{}).pn;tollDialog(b)}return true}
+let TOLL_WHO=null;function tollName(b){return TOLL_WHO||TOLL_NAME[b]}
+function tollDialog(b){const law=TOLL_LAW[b],nm=tollName(b);
   const money=RUN.money||0;
   openModal(`<h3>🎓 ${esc(nm)} — ${esc(law)}</h3><p>„Halt! Wer in ${esc(TOLL_AREA[b]||'dieses Gebiet')} will, kommt an mir nicht so einfach vorbei. Wie hätten wir’s denn gern?“</p>
    <div style="display:flex;flex-direction:column;gap:6px;text-align:left">
@@ -4351,7 +4464,7 @@ function tollDialog(b){const law=TOLL_LAW[b],nm=TOLL_NAME[b];
   $('#tfight').onclick=()=>{closeModal();tollFight(b)}}
 function tollQuiz(b){const law=TOLL_LAW[b],pool=shuffleArr(lawQuestions(law)).slice(0,3);let i=0;
   const ask=()=>{const it=pool[i],order=shuffleArr([0,1,2,3]);CQ={it,order,end:Infinity,done:false,cb:null};
-    $('#cqbox').innerHTML=`<div class="sdlg"><span class="slaw">🎓 ${esc(TOLL_NAME[b])} · ${esc(law)} · Frage ${i+1}/3${it.src?' · '+esc(SPECIES[it.src].law||''):''}</span><br>${esc(it.q[0])}<div id="cqexp"></div></div>
+    $('#cqbox').innerHTML=`<div class="sdlg"><span class="slaw">🎓 ${esc(tollName(b))} · ${esc(law)} · Frage ${i+1}/3${it.src?' · '+esc(SPECIES[it.src].law||''):''}</span><br>${esc(it.q[0])}<div id="cqexp"></div></div>
       <div class="sans">${order.map((k,j)=>`<button class="sa" data-ck="${k}"><span class="sk">${j+1}</span>${esc(it.q[1][k])}</button>`).join('')}</div><div class="sacts" id="cqact"></div>`;
     $('#cquiz').classList.add('on');document.querySelectorAll('[data-ck]').forEach(bt=>bt.onclick=()=>pick(+bt.dataset.ck))};
   const pick=k=>{if(!CQ||CQ.done)return;CQ.done=true;const ok=k===0,it=CQ.it;
@@ -4361,16 +4474,16 @@ function tollQuiz(b){const law=TOLL_LAW[b],pool=shuffleArr(lawQuestions(law)).sl
     $('#cqnext').onclick=()=>{if(ok&&i<2){i++;ask();return}$('#cquiz').classList.remove('on');CQ=null;if(ok)tollPass(b,'Prüfung bestanden');else tollFail(b)}};
   CQ_PICK=pick;ask()}
 let CQ_PICK=null;
-function tollPass(b,why){RUN.toll=RUN.toll||{};RUN.toll[b]=1;save();sysChat(`${TOLL_NAME[b]}: „${why}. Du darfst passieren!“`);toast(`Weg in ${TOLL_AREA[b]||'das Gebiet'} frei!`)}
+function tollPass(b,why){RUN.toll=RUN.toll||{};RUN.toll[b]=1;save();sysChat(`${tollName(b)}: „${why}. Du darfst passieren!“`);toast(`Weg in ${TOLL_AREA[b]||'das Gebiet'} frei!`)}
 function tollFail(b){const money=RUN.money||0;
-  openModal(`<h3>🎓 NICHT BESTANDEN</h3><p>${esc(TOLL_NAME[b])}: „Das reicht noch nicht. Entweder ein kleines ‚Geschenk‘ über ${TOLL_FEE} $ — oder du stellst dich meinen Paragrafen aus dem <b>${esc(TOLL_LAW[b])}</b>.“</p>
+  openModal(`<h3>🎓 NICHT BESTANDEN</h3><p>${esc(tollName(b))}: „Das reicht noch nicht. Entweder ein kleines ‚Geschenk‘ über ${TOLL_FEE} $ — oder du stellst dich meinen Paragrafen aus dem <b>${esc(TOLL_LAW[b])}</b>.“</p>
    <div class="acts"><button class="btn ${money>=TOLL_FEE?'':'ghost'}" id="tpay" ${money>=TOLL_FEE?'':'disabled'}>💰 ${TOLL_FEE} $ BESTECHEN${money>=TOLL_FEE?'':' (du hast '+money+' $)'}</button><button class="btn red" id="tfight">KÄMPFEN</button></div><div class="acts"><button class="btn ghost" id="mno">ZURÜCK</button></div>`);
   $('#mno').onclick=closeModal;$('#tpay').onclick=()=>{if((RUN.money||0)<TOLL_FEE)return;RUN.money-=TOLL_FEE;updateHud();closeModal();tollPass(b,`${TOLL_FEE} $ — ich habe nichts gesehen`)};
   $('#tfight').onclick=()=>{closeModal();tollFight(b)}}
 function tollFight(b){const t=tollSpots().find(x=>x.b===b);const pool=lawSpecies(TOLL_LAW[b]);if(!t||!pool.length){tollPass(b,'Na gut');return}
   const alive=RUN.team.filter(m=>m.hp>0),n=clamp(alive.length||1,1,3),top=Math.max(...RUN.team.map(m=>m.l));
   const team=[];for(let i=0;i<n;i++)team.push([pool[Math.floor(Math.random()*pool.length)],clamp(top+1+(i===n-1?1:0),2,60)]);
-  const tr={id:'toll'+b,toll:b,fixed:true,x:t.x,y:t.y,n:TOLL_NAME[b],c:t.c,d:t.d,team,reward:1,line:`Dann zeige ich dir, was im ${TOLL_LAW[b]} steht!`,after:'Du darfst passieren.'};
+  const tr={id:'toll'+b,toll:b,fixed:true,x:t.x,y:t.y,n:tollName(b),c:t.c,d:t.d,team,reward:1,line:`Dann zeige ich dir, was im ${TOLL_LAW[b]} steht!`,after:'Du darfst passieren.'};
   startTrainer(tr)}
 
 // manual save + backup file (export/import)

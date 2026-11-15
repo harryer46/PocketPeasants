@@ -182,11 +182,16 @@ for(const k in SPECIES){const sp=SPECIES[k];if(!sp.law)continue;const m=sp.law.m
 function nameHtml(sid){const sp=SPECIES[sid];if(!sp)return'';return sp.sfx?esc(sp.base)+' <b class="psfx">'+esc(sp.sfx)+'</b>':esc(sp.n)}
 const ALT_IDS=new Set(['schlagstock','taser','pfefferspray','kelle','harrymon','harrymonx','goeggeli','goeggelix','pfisterio','pfisteriox','zenerentner','steini','aaronia','gianlueckmon','ibumon','owigon','ausweisadler','platzfuchs','sperrschild','drohnix','zellbaer','filzhund','kistenwasch','wohnkroete','sichereule','beschlagigel','erkennungsleon','fragfuchs','einwilligfee','bodycamar','wuerdeadler','freiheitsmarder','gleichlinge','glaubine','meinungseule','demofuchs','posttaube','heimkroete','rechtsritter','bundesadler','langfinger','schwindelfuchs','pruegelklops','schlaegerkopf','promillo','bleifuss','poebelblase','geruechtling','faelschling','sprayzi','probenwolf','fotodachs','asservadler','richtereule','ermittlerhund','spuerhund','handschuhwasch','lupenkauz','stoerkeiler','fesselstachler','protokollfuchs','vernehmpapagei','verbotsnatter','identiluchs','gewahrsamhirsch','arenamon','zhang','boorberg']);
 const ALT_STARTERS=['harrymon','goeggeli','pfisterio','zenerentner','aaronia','ibumon'];
-const ALT_POOLS={north:['zenerentner','aaronia','owigon','filzhund','gleichlinge','posttaube','meinungseule','langfinger','poebelblase','fragfuchs','fotodachs','lupenkauz','ermittlerhund','handschuhwasch'],
- east:['aaronia','ibumon','platzfuchs','kistenwasch','sichereule','freiheitsmarder','fragfuchs','sprayzi','pruegelklops','heimkroete','bodycamar','identiluchs','protokollfuchs','stoerkeiler','asservadler','verbotsnatter'],
- south:['zenerentner','promillo','ausweisadler','erkennungsleon','glaubine','posttaube','faelschling','sprayzi','owigon','zellbaer','wuerdeadler','probenwolf','handschuhwasch','asservadler','protokollfuchs'],
- west:['ibumon','pruegelklops','platzfuchs','kistenwasch','langfinger','faelschling','ausweisadler','heimkroete','rechtsritter','bundesadler','stoerkeiler','identiluchs','probenwolf','ermittlerhund','verbotsnatter'],
+// monsters per area (new world): law areas — PolG in the forest and at the coast, traffic & petty crime in the highlands, GG in the snow, StPO in the jungle, StGB in the desert & prison
+const ALT_POOLS={north:['zenerentner','aaronia','ibumon','owigon','filzhund','langfinger','poebelblase','fragfuchs','gleichlinge','meinungseule','posttaube'],
+ east:['aaronia','ibumon','platzfuchs','kistenwasch','sichereule','wohnkroete','filzhund','fragfuchs','ausweisadler','beschlagigel','freiheitsmarder'],
+ south:['zenerentner','promillo','zellbaer','sperrschild','drohnix','erkennungsleon','einwilligfee','bodycamar','posttaube','ausweisadler','beschlagigel'],
+ west:['ibumon','bleifuss','promillo','owigon','sprayzi','faelschling','langfinger','pruegelklops','poebelblase','geruechtling','steini'],
+ snow:['wuerdeadler','freiheitsmarder','gleichlinge','glaubine','meinungseule','demofuchs','posttaube','heimkroete','rechtsritter','bundesadler'],
+ jungle:['probenwolf','fotodachs','asservadler','richtereule','ermittlerhund','spuerhund','handschuhwasch','lupenkauz','stoerkeiler','fesselstachler','protokollfuchs','vernehmpapagei','verbotsnatter','identiluchs','gewahrsamhirsch'],
+ desert:['schwindelfuchs','schlaegerkopf','pruegelklops','faelschling','geruechtling','bleifuss','sprayzi','steini','gianlueckmon','gewahrsamhirsch'],
  knast:['langfinger','schwindelfuchs','pruegelklops','schlaegerkopf','promillo','bleifuss','poebelblase','geruechtling','faelschling','sprayzi']};
+for(const k in ALT_POOLS)ALT_POOLS[k]=ALT_POOLS[k].filter(s=>SPECIES[s]);
 const ALT_LEG={thunderroc:'boorberg',solarion:'arenamon',abyssfin:'zhang',schlagstock:'schlagstock',taser:'taser',pfefferspray:'pfefferspray',kelle:'kelle'};
 const ALT_IM={};function imgKey(sid){const v=SPECIES[sid].img;return v===1?sid:v}
 for(const k in ALT_IMG){const im=new Image();im.onload=()=>{const drop=o=>{for(const key in o){const sid=key.split(':')[0];if(SPECIES[sid]&&SPECIES[sid].img&&imgKey(sid)===k)delete o[key]}};drop(SPR);if(typeof WSPR!=='undefined')drop(WSPR)};im.src=ALT_IMG[k];ALT_IM[k]=im}
@@ -207,27 +212,29 @@ function legSid(L){return altOn()?ALT_LEG[L.id]:L.id}
 function rosterIds(){return Object.keys(SPECIES).filter(s=>altOn()===ALT_IDS.has(s))}
 // biomes: local monster pools (frequency is bound to the biome)
 const ZONES={
- north:{n:'Nordwiese',col:'#7fd060',enc:'hohes Gras',pool:[]},
- east:{n:'Ostwald',col:'#2f7a2c',enc:'Farne',pool:[]},
- south:{n:'Südküste',col:'#3b8fd9',enc:'Schilf',pool:[]},
- west:{n:'Westhügel',col:'#b89a6a',enc:'Geröll',pool:[]},
+ north:{n:'Villinger Land',col:'#7fd060',enc:'hohes Gras',pool:[]},
+ east:{n:'Damentaler Wald',col:'#2f7a2c',enc:'Farne',pool:[]},
+ south:{n:'Marderacher Küste',col:'#3b8fd9',enc:'Schilf',pool:[]},
+ west:{n:'Felsenhöhen',col:'#b89a6a',enc:'Geröll',pool:[]},
+ snow:{n:'Lahribarer Gebirge',col:'#dfe8f2',enc:'Schneegras',pool:[]},
+ desert:{n:'Unterwertheimer Canyon',col:'#e2b766',enc:'Dornbusch',pool:[]},
+ jungle:{n:'Mostbacher Dschungel',col:'#2fa36a',enc:'Dschungelgras',pool:[]},
  knast:{n:'Knast',col:'#8e929c',enc:'Zellentrakt',pool:[]}
 };
-const CX=30,CY=23;
+const CX=150,CY=88;
 function distC(x,y){return Math.hypot(x-CX,y-CY)}
-// difficulty: Lv 1–2 right outside town, rising with distance; harder biomes add a bonus that grows with distance
-const BIO_LV={north:0,south:1,east:2,west:4};
-// minimum wild level per area (also near the town edge)
-const BIO_MIN={north:3,south:7,east:6,west:8,knast:26};
-function baseLvAt(x,y){const d=distC(x,y),ramp=clamp((d-9)/10,0,1);return 1+Math.max(0,d-9)*0.47+(BIO_LV[zoneAt(x,y)]||0)*ramp}
+// level range per area; inside an area the level rises with the distance from Villingen (d0/d1 are measured when the map is built)
+const ZLV={north:{lo:2,hi:8},east:{lo:6,hi:12},south:{lo:8,hi:14},west:{lo:10,hi:16},snow:{lo:13,hi:19},jungle:{lo:16,hi:22},desert:{lo:19,hi:25},knast:{lo:26,hi:34}};
+const BIO_MIN={};for(const k in ZLV)BIO_MIN[k]=ZLV[k].lo;
+function baseLvAt(x,y){const z=zoneAt(x,y),L=ZLV[z];if(!L)return 1;const t=L.d1>L.d0?clamp((distC(x,y)-L.d0)/(L.d1-L.d0),0,1):0.5;return L.lo+t*(L.hi-L.lo)}
 const KNAST_LV=[26,34];
-function lvAt(x,y){if(zoneAt(x,y)==='knast')return KNAST_LV[0]+Math.floor(Math.random()*(KNAST_LV[1]-KNAST_LV[0]+1));return clamp(Math.max(BIO_MIN[zoneAt(x,y)]||1,Math.round(baseLvAt(x,y)+Math.random()*1.4-0.7)),1,30)}
+function lvAt(x,y){if(zoneAt(x,y)==='knast')return KNAST_LV[0]+Math.floor(Math.random()*(KNAST_LV[1]-KNAST_LV[0]+1));return clamp(Math.max(BIO_MIN[zoneAt(x,y)]||1,Math.round(baseLvAt(x,y)+Math.random()*1.4-0.7)),1,40)}
 // trainers are always 3–6 levels above the wild monsters around them
 function trainerTeam(t){if(t.fixed)return t.team;const z=zoneAt(t.x,t.y),w=z==='knast'?Math.round((KNAST_LV[0]+KNAST_LV[1])/2):Math.max(BIO_MIN[z]||1,Math.round(baseLvAt(t.x,t.y))),h=hashStr(String(t.id||t.n||''));const pool=altOn()?poolOf(zoneAt(t.x,t.y)||'north'):null;
   return t.team.map(([s,l],i)=>[pool?pool[(i+t.id.length)%pool.length]:s,clamp(w+3+((h>>>(i*3))%4),1,40)])}
 function pickWild(pool,boost){boost=boost||1;const w=s=>rarOf(s).w*(RAR[s]==='rare'?boost:1);const tot=pool.reduce((a,s)=>a+w(s),0);let r=Math.random()*tot;for(const s of pool){r-=w(s);if(r<=0)return s}return pool[0]}
 // legendary shrines (one encounter per player per match)
-const LEGENDS=[{id:'thunderroc',x:30,y:4,l:18,zone:'north'},{id:'solarion',x:54,y:9,l:19,zone:'east'},{id:'abyssfin',x:39,y:40,l:20,zone:'south'},{id:'schlagstock',x:45,y:5,l:22,zone:'north'},{id:'taser',x:56,y:40,l:23,zone:'east'},{id:'pfefferspray',x:3,y:40,l:23,zone:'south'},{id:'kelle',x:3,y:13,l:22,zone:'west'}];
+const LEGENDS=[{id:'thunderroc',x:150,y:14,l:20,zone:'west'},{id:'solarion',x:283,y:36,l:24,zone:'desert'},{id:'abyssfin',x:98,y:179,l:18,zone:'south'},{id:'schlagstock',x:22,y:24,l:22,zone:'snow'},{id:'taser',x:283,y:140,l:23,zone:'jungle'},{id:'pfefferspray',x:20,y:181,l:20,zone:'south'},{id:'kelle',x:70,y:131,l:16,zone:'east'}];
 // static AI trainers: spot you in their line of sight (4 tiles)
 const TRAINERS=[
  {id:'ben',n:'Polizeimeister Ben',x:24,y:10,d:'down',c:'#2f5fb3',team:[['owigon',5],['filzhund',5]],reward:2,line:'Allgemeine Verkehrskontrolle! Führerschein und Monster, bitte!',after:'Gute Fahrt. Und schnallen Sie Ihre Monster an.'},

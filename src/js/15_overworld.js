@@ -32,12 +32,14 @@ function checkSight(){
     for(let k=1;k<=4;k++){const x=t.x+dx*k,y=t.y+dy*k;if(!walkable(x,y))break;if(x===P.x&&y===P.y){spotted(t);return true}}}
   return false;
 }
-function teleport(x,y){P.x=P.fx=x;P.y=P.fy=y;P.moving=false;P.fol={x,y,tx:x,ty:y};trailReset(P,x,y);G.x=x;G.y=y;pres({x,y,d:P.d})}
+function teleport(x,y){P.x=P.fx=x;P.y=P.fy=y;try{bakeNow()}catch(e){}P.moving=false;P.fol={x,y,tx:x,ty:y};trailReset(P,x,y);G.x=x;G.y=y;pres({x,y,d:P.d})}
 function onArrive(){
   G.x=P.x;G.y=P.y;G.d=P.d;P.steps++;if(P.steps%8===0)save();updateHud();
   const t=tget(P.x,P.y);
   if(t===22){if(RUN)openShop();else toast('Copshop — tritt einer Lobby bei oder starte das freie Spiel.')}
   if(t===23){if(RUN)openHfPol();else toast('HfPol — tritt einer Lobby bei oder starte das freie Spiel, um zu lernen.')}
+  if(BIOME[P.y*MW+P.x]===0&&RUN){const Tn=TOWNS.find(T=>Math.abs(T.x-P.x)<26&&Math.abs(T.y-P.y)<24);if(Tn){RUN.towns=RUN.towns||{};if(!RUN.towns[Tn.id]){RUN.towns[Tn.id]=1;save();if(Tn.id!=='vil')toast(`📍 ${Tn.n} entdeckt — Schnellreise über die Weltkarte (M) freigeschaltet!`)}}}
+  if(t===7&&RUN){const pd=PADS.find(p=>p.x===P.x&&p.y===P.y);if(pd){RUN.lastPad={x:pd.x,y:pd.y+1};save()}}
   if(t===7){if(RUN)healQuiz();else toast('PÄD — tritt einer Lobby bei oder starte das freie Spiel, um ein Team zu bekommen.')}
   if(t===12){if(RUN&&RUN.phase==='lobby')toast('Das Spiel hat noch nicht begonnen — warte auf den Host.');else if(RUN&&RUN.phase==='train'&&!RUN.free)confirmEarlyArena();else if(RUN&&RUN.free)toast('Im Gericht finden Lobby-Turniere statt — erstelle oder betritt eine Lobby!');else toast('Das Gericht — tritt zuerst einer Lobby bei oder erstelle eine!')}
   if(checkSight())return;
@@ -62,6 +64,8 @@ function healQuiz(){RUN.kap=Math.max(RUN.kap,10);updateHud();const all=()=>RUN.t
     $('#cqact').innerHTML=!done?`<button class="btn" id="cqnext">NÄCHSTE FRAGE</button><button class="btn ghost" id="cqstop">GEHEN</button>`:`<button class="btn" id="cqstop">WEITER</button>`;
     const nx=$('#cqnext');if(nx)nx.onclick=ask;$('#cqstop').onclick=stop};
   CQ_PICK=pick;ask()}
+// respawn after a defeat: in front of the last PÄD you entered (else Villingen)
+function padSpawn(){const l=RUN&&RUN.lastPad;if(l&&walkable(l.x,l.y))return l;const p=PADS[0];return p?{x:p.x,y:p.y+1}:VSPAWN}
 function healAll(){if(!RUN)return;for(const m of RUN.team.concat(RUN.box))m.hp=stats(m).mhp;RUN.kap=Math.max(RUN.kap,10);save();renderTeam();updateHud()}
 function updateHud(){
   const z=zoneAt(P.x,P.y);$('#hzone').textContent=z?ZONES[z].n:'Stadt';
@@ -96,7 +100,7 @@ function drawWorld(){
   const x0=Math.floor(camX/16),y0=Math.floor(camY/16),x1=x0+Math.ceil(LW/16)+1,y1=y0+Math.ceil(LH/16)+1;const wf=Math.floor(T*1.6)%2;
   if(!WORLD&&!BAKE_FAIL){bakeTick();c.fillStyle='#10121c';c.fillRect(0,0,LW,LH);c.font='8px "Press Start 2P",monospace';c.fillStyle='#ffcb3d';c.textAlign='center';c.fillText('WELT WIRD GELADEN…',LW/2,LH/2);c.fillStyle='#9aa1bd';c.fillText('v'+VERSION,LW/2,LH/2+14);c.textAlign='left';return}
   if(BAKE_FAIL){for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){if(x<0||y<0||x>=MW||y>=MH)continue;c.fillStyle=MCOL[tget(x,y)]||'#000';c.fillRect(x*16-camX,y*16-camY,16,16)}}
-  if(WORLD){const sx=Math.max(0,camX),sy=Math.max(0,camY),dx=sx-camX,dy=sy-camY,w=Math.min(LW-dx,MW*16-sx),h=Math.min(LH-dy,MH*16-sy);if(w>0&&h>0)c.drawImage(WORLD,sx,sy,w,h,dx,dy,w,h)}
+  if(WORLD)drawWorldLayer(c,camX,camY,LW,LH,'g');
   // animated water sparkle
   for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){if(tget(x,y)!==3)continue;const h=th(x,y);const ph=(T*1.3+(h%100)/100)%1;if(ph<0.5){const X=x*16-camX+(h%11)+2,Y=y*16-camY+((h>>4)%11)+2;c.fillStyle=ph<0.25?'#d8f0ff':'#8fc8f0';c.fillRect(X,Y,ph<0.25?3:2,1)}}
   // cuttable trees / boulders
@@ -108,9 +112,11 @@ function drawWorld(){
     c.fillStyle='#00000040';c.fillRect(X+3,Y+13,10,2);c.fillStyle='#2a1a0c';c.fillRect(X+6,Y+6,4,9);c.fillStyle='#7a4a22';c.fillRect(X+7,Y+6,2,8);
     c.fillStyle='#2a1a0c';c.fillRect(X+1,Y+1,14,8);c.fillStyle='#b07a3e';c.fillRect(X+2,Y+2,12,6);c.fillStyle='#d9a466';c.fillRect(X+2,Y+2,12,1);c.fillStyle='#6b4220';c.fillRect(X+4,Y+4,8,1);c.fillRect(X+4,Y+6,6,1)}
   // signs on roofs
-  c.font='7px "Press Start 2P",monospace';c.textBaseline='alphabetic';{c.save();c.font='8px VT323,monospace';c.textAlign='center';c.fillStyle='#ffffff';c.fillText('PÄD',22*16-camX+56,17*16-camY+36.5);c.restore();c.font='7px "Press Start 2P",monospace'}c.fillStyle='#14141f';c.fillText('GERICHT',33*16-camX+24,17*16-camY+13);c.fillStyle='#ffcb3d';c.fillText('GERICHT',33*16-camX+23,17*16-camY+12);
-  c.font='10px VT323,monospace';c.textAlign='center';c.fillStyle='#ffffff';c.fillText('COPSHOP',23*16-camX+40,24*16-camY+43);c.textAlign='left';
-  c.font='10px VT323,monospace';c.textAlign='center';c.fillStyle='#ffffff';c.fillText('HfPol',32*16-camX+56,24*16-camY+45.5);c.textAlign='left';
+  c.textBaseline='alphabetic';
+  for(const L of LABELS){const X=L.x*16-camX,Y=L.y*16-camY;if(X<-120||Y<-80||X>LW+40||Y>LH+40)continue;if(L.kind==='pad'){c.font='8px VT323,monospace';c.textAlign='center';c.fillStyle='#ffffff';c.fillText('PÄD',X+56,Y+36.5)}
+    else{c.font='7px "Press Start 2P",monospace';c.textAlign='center';c.fillStyle='#14141f';c.fillText(L.t,X+L.w*8+1,Y+13);c.fillStyle='#ffcb3d';c.fillText(L.t,X+L.w*8,Y+12)}}
+  for(const Bd of BLDG){const X=Bd.x*16-camX,Y=Bd.y*16-camY;if(X<-120||Y<-80||X>LW+40||Y>LH+40)continue;c.font='10px VT323,monospace';c.textAlign='center';c.fillStyle='#ffffff';c.fillText(Bd.n,X+Bd.w*8,Y+(Bd.id==='shop'?43:45.5))}
+  c.textAlign='left';
   // entities
   const ents=[];
   for(const o of OTH.values()){if(o.fx==null)continue;ents.push({fx:o.fx,fy:o.fy,col:o.c,sx:o.sx,d:o.d,ph:o.ph,mv:o.moving,name:o.n,bt:o.bt,bub:o.bub});if(o.lf)folEnts(o,o.lf,ents,o.fx,o.fy);else if(o.ld&&o.fol.fx!=null)ents.push({fx:o.fol.fx,fy:o.fol.fy,mon:o.ld})}
@@ -125,7 +131,7 @@ function drawWorld(){
     if(e.mon){const s=monSprite(e.mon,24);c.drawImage(s,X-4,Y+15-21,24,24)}
     else{const fr=e.mv?(Math.floor(e.ph/STEP*2)%2?1:2):0;if(tget(Math.round(e.fx),Math.round(e.fy))===3){const wb=Math.round(Math.sin(T*4)*1);c.drawImage(charSprite(e.col,e.d,fr,e.sx),0,0,16,13,X,Y+1+wb,16,13);c.fillStyle='#ffffffb0';c.fillRect(X+1,Y+13+wb,4,1);c.fillRect(X+11,Y+13+wb,4,1);c.fillStyle='#ffffff60';c.fillRect(X-1,Y+14,18,1)}else{const ti=e.npc&&trainerImg(e.npc,e.d);if(ti)c.drawImage(ti,Math.round(X+8-ti.naturalWidth/2),Y+15-ti.naturalHeight);else c.drawImage(charSprite(e.col,e.d,fr,e.sx),X,Y-4)}}
     {const tx=Math.round(e.fx),ty=Math.round(e.fy),tt=tget(tx,ty);if(ENC.has(tt))c.drawImage(TILE[tt][(tx*7+ty*3)%TILE[tt].length],0,8,16,8,X,Y+8,16,8)}}
-  {const sx=Math.max(0,camX),sy=Math.max(0,camY),dx=sx-camX,dy=sy-camY,w=Math.min(LW-dx,MW*16-sx),h=Math.min(LH-dy,MH*16-sy);if(CANOPY&&w>0&&h>0)c.drawImage(CANOPY,sx,sy,w,h,dx,dy,w,h)}
+  if(WORLD)drawWorldLayer(c,camX,camY,LW,LH,'c');
   for(const e of ents){if(e.mon)continue;const X=e.fx*16-camX+8,Y=Math.round(e.fy*16-camY)-2;
     if(e.legend){nameTag(c,X,Y-14,'???','#ffcb3d','');continue}
     if(e.npc){const beaten=RUN&&RUN.beat&&RUN.beat[e.npc.id];nameTag(c,X,Y-4,e.name,e.col,'');if(e.npc.alert&&performance.now()-e.npc.alert<1000){c.fillStyle='#14141f';c.fillRect(Math.round(X)-3,Y-26,6,11);c.fillStyle='#ffcb3d';c.fillRect(Math.round(X)-2,Y-25,4,6);c.fillRect(Math.round(X)-2,Y-18,4,2)}else if(beaten){vtText(c,'✓',X,Y-15,'#3ddc6b',10,'center')}continue}

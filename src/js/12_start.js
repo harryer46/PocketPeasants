@@ -9,7 +9,7 @@ function buildStart(){
   prev();
   // a new session always starts here: a lobby from an earlier session is not resumed (free-play team, dex and trophies are kept)
   $('#sgo').onclick=()=>{if(!pwOK()){const v=($('#spw').value||'').trim().toUpperCase();if(!pwCheck(v)){toast('Falsches Passwort.');$('#spw').focus();return}try{localStorage.setItem(PW_KEY,v)}catch(e){}if(!ROOM)initRoom()}
-    const nm=cleanName($('#sname').value);if(G){G.name=nm;G.color=pickColor;G.sex=pickSex;G.x=30;G.y=24;G.d='down';const live=G.run&&!G.run.free&&Date.now()-(G.t||0)<30*60000&&!(G.run.phase!=='lobby'&&G.run.end&&Date.now()-G.run.end>20*60000);G.run=live?G.run:(G.freeRun||null)}else G={name:nm,color:pickColor,sex:pickSex,dex:{},tro:0,x:30,y:24,d:'down',run:null};RUN=G.run||G.freeRun||null;save();begin()};
+    const nm=cleanName($('#sname').value);if(G){G.name=nm;G.color=pickColor;G.sex=pickSex;G.x=VSPAWN.x;G.y=VSPAWN.y;G.d='down';const live=G.run&&!G.run.free&&Date.now()-(G.t||0)<30*60000&&!(G.run.phase!=='lobby'&&G.run.end&&Date.now()-G.run.end>20*60000);G.run=live?G.run:(G.freeRun||null)}else G={mapv:2,name:nm,color:pickColor,sex:pickSex,dex:{},tro:0,x:VSPAWN.x,y:VSPAWN.y,d:'down',run:null};RUN=G.run||G.freeRun||null;save();begin()};
   $('#sname').addEventListener('keydown',e=>{if(e.key==='Enter')$('#sgo').click()});$('#spw').addEventListener('keydown',e=>{if(e.key==='Enter')$('#sgo').click()});
   if(pwOK())$('#spwf').style.display='none';
 }
@@ -29,7 +29,9 @@ function begin(){
   if(RUN&&RUN.free){RUN.phase='train';RUN.st='free';RUN.r=1;RUN.res=[];$('#arena').classList.remove('on')}
   if(RUN&&!RUN.free&&RUN.phase==='train'&&Date.now()>=RUN.end){RUN.phase='arena_pending'}
   if(RUN&&!RUN.free&&RUN.phase==='arena'){RUN.res=RUN.res||[];if(RUN.st==='duel'){RUN.res.push([RUN.r,RUN.dopp||'?',0]);RUN.r++;RUN.st=RUN.r>cfgOf().rounds?'done':'wait'}if(RUN.st==='pick')RUN.st='wait'}
-  P.x=P.fx=G.x;P.y=P.fy=G.y;P.d=G.d||'down';if(!walkable(P.x,P.y)){P.x=P.fx=30;P.y=P.fy=24}
+  // new world (map v2): old positions and toll passes no longer fit → back to Villingen
+  if(G.mapv!==2){G.mapv=2;G.x=VSPAWN.x;G.y=VSPAWN.y;for(const R of[G.run,G.freeRun])if(R){R.toll={};R.towns={vil:1};R.lastPad=null}}
+  P.x=P.fx=G.x;P.y=P.fy=G.y;P.d=G.d||'down';if(!walkable(P.x,P.y)){P.x=P.fx=VSPAWN.x;P.y=P.fy=VSPAWN.y}
   P.fol={x:P.x,y:P.y,tx:P.x,ty:P.y};
   renderTeam();updateHud();pushFull();sysChat(`Willkommen bei Pocket Peasants, ${G.name}! Dienstbeginn — schnapp sie dir alle!`);
   if(RUN&&RUN.phase==='arena_pending'){RUN.phase='train';enterArena()}else if(RUN&&RUN.phase==='arena')showArena();

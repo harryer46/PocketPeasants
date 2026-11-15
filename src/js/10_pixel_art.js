@@ -174,6 +174,11 @@ function buildTiles(){
   TILE[17]=[0,1,2].map(v=>tileCanvas(x=>{const r=mulberry32(v+320);for(let i=0;i<4;i++){const a=1+i*4,h=7+Math.floor(r()*5);x.fillStyle='#123a12';x.fillRect(a,16-h,1,h);for(let k=0;k<h-1;k+=2){x.fillStyle=k%4?'#2e6a24':'#4a8c34';x.fillRect(a-1-(k%4?1:0),16-h+k+1,1+(k%4?1:0),1);x.fillRect(a+1,16-h+k+1,1+(k%4?0:1),1)}x.fillStyle='#6fb04a';x.fillRect(a,16-h,1,1)}}));
   TILE[18]=[0,1,2].map(v=>tileCanvas(x=>{const r=mulberry32(v+330);for(let i=0;i<6;i++){const a=1+i*2.5+Math.floor(r()*2),h=8+Math.floor(r()*6);x.fillStyle='#4f7a28';x.fillRect(a,16-h,1,h);x.fillStyle='#7fa83f';x.fillRect(a,16-h+2,1,h-3);if(i%2){x.fillStyle='#6a4420';x.fillRect(a,16-h-1,1,3);x.fillStyle='#8a5a2a';x.fillRect(a,16-h-1,1,1)}}}));
   TILE[19]=[0,1,2].map(v=>tileCanvas(x=>{const r=mulberry32(v+340);for(let i=0;i<6;i++){const a=Math.floor(r()*13),b=6+Math.floor(r()*8);x.fillStyle='#4f4a42';x.fillRect(a,b,3,2);x.fillStyle='#8a8478';x.fillRect(a,b,2,1);x.fillStyle='#a7a196';x.fillRect(a,b,1,1)}for(let i=0;i<4;i++){const a=1+i*4,h=5+Math.floor(r()*4);x.fillStyle='#8a7a3a';x.fillRect(a,16-h,1,h);x.fillStyle='#b8a456';x.fillRect(a+1,16-h+2,1,h-2)}}));
+  // new areas: snow grass, desert scrub, jungle grass, bridge planks
+  TILE[24]=[0,1,2].map(v=>tileCanvas(x=>{const r=mulberry32(v+410);for(let i=0;i<6;i++){const a=1+i*2.6+Math.floor(r()*2),h=5+Math.floor(r()*6);x.fillStyle='#2f5a4a';x.fillRect(a,16-h,2,h);x.fillStyle='#5f8f7a';x.fillRect(a,16-h+1,1,h-1);x.fillStyle='#f4f8fc';x.fillRect(a,16-h,2,1);x.fillStyle='#cfe0ea';x.fillRect(a+1,16-h+2,1,1)}}));
+  TILE[25]=[0,1,2].map(v=>tileCanvas(x=>{const r=mulberry32(v+420);for(let i=0;i<3;i++){const cx=2+i*5+Math.floor(r()*2),cy=10+Math.floor(r()*3);for(let k=0;k<6;k++){const a=-Math.PI/2+(k-2.5)*0.45,L=3+Math.floor(r()*3);for(let t=0;t<L;t++)P1(x,Math.round(cx+Math.cos(a)*t),Math.round(cy+Math.sin(a)*t),t===L-1?'#c9a25a':k%2?'#8a6a2a':'#6f5420')}}}));
+  TILE[26]=[0,1,2].map(v=>tileCanvas(x=>{const r=mulberry32(v+430);for(let i=0;i<4;i++){const a=1+i*4,h=8+Math.floor(r()*6);x.fillStyle='#0c3a1c';x.fillRect(a,16-h,1,h);for(let k=0;k<h-1;k+=2){x.fillStyle=k%4?'#1f7a3a':'#2fa050';x.fillRect(a-2,16-h+k+1,2,1);x.fillRect(a+1,16-h+k+1,2,1)}x.fillStyle='#7ad06a';x.fillRect(a,16-h,1,1)}}));
+  TILE[27]=[tileCanvas(x=>{x.fillStyle='#5a3a1c';x.fillRect(0,0,16,16);for(let y=0;y<16;y+=4){x.fillStyle='#a8743c';x.fillRect(0,y,16,3);x.fillStyle='#c48c4c';x.fillRect(0,y,16,1);x.fillStyle='#6b4420';x.fillRect(5+(y%8),y+1,1,1)}x.fillStyle='#3a2410';x.fillRect(0,0,1,16);x.fillRect(15,0,1,16)})];
   TILE[9]=[0,1,2].map(v=>tileCanvas(x=>{grassBase(x,v+12);const r=mulberry32(v+77);const cols=['#ffffff','#ffd84a','#ff7aa8'];for(let i=0;i<3;i++){const a=2+Math.floor(r()*11),b=2+Math.floor(r()*11),col=cols[i%3];P1(x,a,b-1,col);P1(x,a-1,b,col);P1(x,a+1,b,col);P1(x,a,b+1,col);P1(x,a,b,'#ffb02e')}}));
 }
 buildTiles();
@@ -187,57 +192,104 @@ const PAL={
  dirt:['#8e6338','#a5784a','#b98c57','#cca067','#dcb57a'],sand:['#cdb27a','#d9c08a','#e4cd98','#eedaa6','#f6e6b8'],
  water:['#255da6','#2f6fb8','#3b82c8','#4a95d6','#5fa8e0'],stone:['#8f8872','#a69f88','#bdb59c','#d2cab0','#e6dfc6'],
  leaf:['#173d16','#21521d','#2c6826','#3b8030','#56993c','#76b24c'],leafF:['#10300f','#183f15','#22521d','#2e6626','#3e7c30','#549439'],
- rock:['#4f4a42','#6a645a','#857e72','#a19a8c','#bdb6a6'],moss:['#3f7a26','#5c9a38','#7fbf4c']};
+ rock:['#4f4a42','#6a645a','#857e72','#a19a8c','#bdb6a6'],moss:['#3f7a26','#5c9a38','#7fbf4c'],
+ snow:['#a9b8c9','#bfccd9','#d3dde8','#e5ecf3','#f6f9fc'],desert:['#c08a4a','#cf9b58','#dcae6a','#e7c07e','#f0d294'],jungle:['#1f5a2a','#277034','#2f833c','#3a9646','#4aaa52'],
+ pine:['#0f2a1c','#163a26','#1e4a30','#2a5c3c','#3a704a','#4a8458'],palm:['#1a4a14','#22611a','#2d7a22','#3c9230','#55aa3e','#79c254'],cactus:['#1f4a22','#2a6a2e','#3a8a3c','#56a84e','#7cc46a'],peak:['#3a3e48','#545a66','#717885','#9aa2ae','#e8eef4','#ffffff']};
 const RGB={};for(const k in PAL)RGB[k]=PAL[k].map(hex2rgb);
-let WORLD=null,CANOPY=null;
-let BAKE=null,BAKE_FAIL=false;
-function bakeWorld(){try{const it=bakeWorldGen();let r;do{r=it.next()}while(!r.done)}catch(e){BAKE_FAIL=true;showErr('Karte: '+e.message)}}
-// baked in slices so phones never freeze; progress shown on the start screen
-function bakeTick(){if(WORLD||BAKE_FAIL)return;try{if(!BAKE)BAKE=bakeWorldGen();const t0=performance.now();let r;do{r=BAKE.next()}while(!r.done&&performance.now()-t0<12);
-  const lb=document.querySelector('#loadbar i');if(lb)lb.style.width=Math.round((r.done?1:r.value||0)*100)+'%';if(r.done){BAKE=null;const L=$('#loadbar');if(L)L.style.display='none'}}
-  catch(e){BAKE_FAIL=true;BAKE=null;showErr('Karte: '+e.message);const L=$('#loadbar');if(L)L.style.display='none'}}
-function* bakeWorldGen(){
-  const W=MW*16,H=MH*16;const g=mk(W,H),gc=g.getContext('2d'),id=gc.createImageData(W,H),d=id.data;
-  const nL=noise2(101,46,W,H),nS=noise2(202,13,W,H),nD=noise2(303,22,W,H),jx=noise2(404,9,W,H),jy=noise2(505,9,W,H),nW=noise2(606,30,W,H);
+// the world is baked lazily in chunks of 32×32 tiles (ground + tree-canopy layer) around the player, kept in a small LRU cache
+let WORLD=null,CANOPY=null,BAKE=null,BAKE_FAIL=false;const CS=32,CHUNKS=new Map(),CH_MAX=18;let BN=null;
+function bakeNoise(){if(BN)return BN;const W=MW*16,H=MH*16;BN={nL:noise2(101,46,W,H),nS:noise2(202,13,W,H),nD:noise2(303,22,W,H),jx:noise2(404,9,W,H),jy:noise2(505,9,W,H),nW:noise2(606,30,W,H)};return BN}
+function chunkKey(cx,cy){return cx+','+cy}
+function neededChunks(){const px=Math.floor((P.fx||VSPAWN.x)/CS),py=Math.floor((P.fy||VSPAWN.y)/CS),out=[];for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const cx=px+dx,cy=py+dy;if(cx<0||cy<0||cx*CS>=MW||cy*CS>=MH)continue;out.push([cx,cy,Math.abs(dx)+Math.abs(dy)])}return out.sort((a,b)=>a[2]-b[2])}
+function bakeTick(budget){if(BAKE_FAIL)return;try{const t0=performance.now();const urgent=neededChunks().some(c=>c[2]<=1&&!CHUNKS.has(chunkKey(c[0],c[1])));budget=budget||(urgent?28:8);
+  while(performance.now()-t0<budget){if(!BAKE){const nx=neededChunks().find(([cx,cy])=>!CHUNKS.has(chunkKey(cx,cy)));if(!nx)break;BAKE={k:chunkKey(nx[0],nx[1]),it:bakeChunkGen(nx[0],nx[1])}}
+    const r=BAKE.it.next();if(r.done){CHUNKS.set(BAKE.k,Object.assign(r.value,{t:performance.now()}));BAKE=null;
+      if(CHUNKS.size>CH_MAX){const keep=new Set(neededChunks().map(([a,b])=>chunkKey(a,b)));let old=null;for(const[k,v]of CHUNKS)if(!keep.has(k)&&(!old||v.t<old[1].t))old=[k,v];if(old)CHUNKS.delete(old[0])}}}
+  const need=neededChunks().filter(c=>c[2]<=1),done=need.filter(([a,b])=>CHUNKS.has(chunkKey(a,b))).length;
+  const lb=document.querySelector('#loadbar i');if(lb&&!WORLD)lb.style.width=Math.round(done/need.length*100)+'%';
+  if(!WORLD&&done===need.length){WORLD=true;CANOPY=true;const L=$('#loadbar');if(L)L.style.display='none'}}
+  catch(e){if(BAKE){CHUNKS.set(BAKE.k,{g:null,c:null,t:performance.now()});plog('[karte] chunk '+BAKE.k+': '+e.message)}BAKE=null}}
+function bakeWorld(){WORLD=true}
+// after a teleport: bake the chunks around the player right away (hidden behind the fade)
+function bakeNow(){const t0=performance.now();while(performance.now()-t0<1600&&neededChunks().some(c=>c[2]<=1&&!CHUNKS.has(chunkKey(c[0],c[1]))))bakeTick(60)}
+// draw the visible part of the baked world (layer 'g' = ground, 'c' = canopy); unbaked chunks fall back to flat colours
+function drawWorldLayer(c,camX,camY,LW,LH,layer){const x0=Math.floor(Math.max(0,camX)/(CS*16)),y0=Math.floor(Math.max(0,camY)/(CS*16)),x1=Math.floor((camX+LW)/(CS*16)),y1=Math.floor((camY+LH)/(CS*16));
+  for(let cy=y0;cy<=y1;cy++)for(let cx=x0;cx<=x1;cx++){if(cx*CS>=MW||cy*CS>=MH)continue;const ch=CHUNKS.get(chunkKey(cx,cy));const X=cx*CS*16-camX,Y=cy*CS*16-camY;
+    if(ch&&ch.g){ch.t=performance.now();c.drawImage(layer==='g'?ch.g:ch.c,X,Y);continue}
+    if(layer!=='g')continue;const tx0=Math.max(cx*CS,Math.floor(camX/16)),ty0=Math.max(cy*CS,Math.floor(camY/16)),tx1=Math.min(cx*CS+CS-1,Math.floor((camX+LW)/16),MW-1),ty1=Math.min(cy*CS+CS-1,Math.floor((camY+LH)/16),MH-1);
+    for(let y=ty0;y<=ty1;y++)for(let x=tx0;x<=tx1;x++){c.fillStyle=MCOL[tget(x,y)]||'#000';c.fillRect(x*16-camX,y*16-camY,16,16)}}}
+function townArea(x,y){let best=1,bd=1e9;for(const T of TOWN_DEF){const d=Math.abs(T.x-x)+Math.abs(T.y-y);if(d<bd){bd=d;best=T.b}}return best}
+const GROUND_PAL=b=>b===2?RGB.forest:b===3?RGB.shore:b===4?RGB.hills:b===6?RGB.snow:b===7?RGB.desert:b===8?RGB.jungle:RGB.meadow;
+function* bakeChunkGen(cx,cy){
+  const X0=cx*CS,Y0=cy*CS,S=CS*16,PX0=X0*16,PY0=Y0*16,g=mk(S,S),gc=g.getContext('2d'),id=gc.createImageData(S,S),d=id.data,{nL,nS,nD,jx,jy,nW}=bakeNoise();
   const T=(x,y)=>tget(Math.floor(x/16),Math.floor(y/16));
-  for(let py=0;py<H;py++){if((py&7)===0)yield py/H*0.9;for(let px=0;px<W;px++){
-    const ox=(jx(px,py)-0.5)*7,oy=(jy(px,py)-0.5)*7;let t=T(px+ox,py+oy);const t0=T(px,py);
-    if(t0===6||t0===7||t0===8||t0===10||t0===11||t0===12||t0===20||t0>=21&&t0<=23)t=t0;
+  const JX=new Float32Array((S>>1)+1),JY=new Float32Array((S>>1)+1);
+  const SW=Math.min(S,MW*16-PX0),SH=Math.min(S,MH*16-PY0);
+  for(let ly=0;ly<SH;ly++){if((ly&7)===0)yield;const py=PY0+ly;if(!(ly&1))for(let k=0;k<=S>>1;k++){JX[k]=(jx(PX0+k*2,py)-0.5)*7;JY[k]=(jy(PX0+k*2,py)-0.5)*7}
+    for(let lx=0;lx<SW;lx++){const px=PX0+lx;
+    const ox=JX[lx>>1],oy=JY[lx>>1];let t=T(px+ox,py+oy);const t0=T(px,py);
+    if(t0===6||t0===7||t0===8||t0===10||t0===11||t0===12||t0===20||t0>=21&&t0<=23||t0===27||t0===13)t=t0;
     const tx=clamp(Math.floor((px+ox)/16),0,MW-1),ty=clamp(Math.floor((py+oy)/16),0,MH-1),b=BIOME[ty*MW+tx];
-    const dth=BAYER[(py&3)*4+(px&3)]*0.22;let v=nL(px,py)*0.62+nS(px,py)*0.38+dth;let pal;
-    if(t===3){pal=RGB.water;v=nW(px,py+((px*7)%3))*0.7+0.15+dth;
-      const nearLand=[[-2,0],[2,0],[0,-2],[0,2]].some(([a,c])=>T(px+a+ox*0.3,py+c+oy*0.3)!==3);if(nearLand){const o=(py*W+px)*4;d[o]=200;d[o+1]=232;d[o+2]=245;d[o+3]=255;continue}}
+    const dth=BAYER[(py&3)*4+(px&3)]*0.22;let v=nL(px,py)*0.62+nS(px,py)*0.38+dth;let pal;const o=(ly*S+lx)*4;
+    if(t===3||t===27){pal=RGB.water;v=nW(px,py+((px*7)%3))*0.7+0.15+dth;
+      const nearLand=[[-2,0],[2,0],[0,-2],[0,2]].some(([a,c2])=>{const q=T(px+a+ox*0.3,py+c2+oy*0.3);return q!==3&&q!==27});if(nearLand){d[o]=200;d[o+1]=232;d[o+2]=245;d[o+3]=255;continue}}
     else if(t===5)pal=RGB.sand;else if(t===18)pal=nD(px,py)>0.5?RGB.sand:RGB.shore;
-    else if(t===4||t===7||t===12)pal=RGB.dirt;else if(t===13||t===20)pal=RGB.stone;
-    else{pal=b===2?RGB.forest:b===3?RGB.shore:b===4?RGB.hills:RGB.meadow;
+    else if(t===4||t===7||t===12)pal=b===6?RGB.stone:b===7?RGB.desert:RGB.dirt;else if(t===13||t===20)pal=RGB.stone;
+    else if(t===28||t===24)pal=RGB.snow;else if(t===29||t===25)pal=RGB.desert;else if(t===30||t===26)pal=RGB.jungle;
+    else{pal=GROUND_PAL(b);
       if(t===1||t===17)v-=0.18;
-      if((b===4&&nD(px,py)>0.52)||((b<=1||b===3)&&nD(px,py)>0.74&&t!==1&&t!==17)||(t===19&&nD(px,py)>0.4))pal=RGB.dirt;}
-    const k=clamp(Math.floor(v*pal.length),0,pal.length-1),c=pal[k],o=(py*W+px)*4;d[o]=c[0];d[o+1]=c[1];d[o+2]=c[2];d[o+3]=255}}
-  gc.putImageData(id,0,0);yield 0.92;
-  const r=mulberry32(777);
-  // buildings / doors keep their tiles; soft shadow under buildings
-  for(let y=0;y<MH;y++)for(let x=0;x<MW;x++){const t=tget(x,y);if([6,7,8,10,11,12,20].includes(t)){const arr=TILE[t];let v=t===6?((y===19&&x!==25)?1:0):t===11?((x===34||x===37)&&y===19?1:0):0;gc.drawImage(arr[Math.min(v,arr.length-1)],x*16,y*16)}}
-  gc.fillStyle='rgba(20,30,10,0.28)';gc.fillRect(22*16,21*16,6*16,4);gc.fillRect(33*16,21*16,6*16,4);
-  gc.drawImage(g,22*16,13*16,96,64,22*16,17*16,96,64);gc.drawImage(dienstSprite(),22*16,17*16);
-  for(const Bd of BLDG){gc.fillStyle='rgba(20,30,10,0.28)';gc.fillRect(Bd.x*16,(Bd.y+Bd.h)*16,Bd.w*16,4);gc.drawImage(Bd.id==='shop'?shopSprite():hfpolSprite(),Bd.x*16,Bd.y*16)}
+      if((b===4&&nD(px,py)>0.52)||((b<=1||b===3)&&nD(px,py)>0.74&&t!==1&&t!==17)||(t===19&&nD(px,py)>0.4))pal=RGB.dirt}
+    if(pal===RGB.desert&&nD(px,py)>0.7)v-=0.15;
+    const k=clamp(Math.floor(v*pal.length),0,pal.length-1),c=pal[k];d[o]=c[0];d[o+1]=c[1];d[o+2]=c[2];d[o+3]=255}}
+  gc.putImageData(id,0,0);yield;
+  gc.save();gc.translate(-PX0,-PY0);
+  const inC=(x,y)=>x>=X0&&y>=Y0&&x<X0+CS&&y<Y0+CS;
+  // building tiles (PÄD walls/roof are covered by its sprite)
+  for(let y=Y0;y<Y0+CS;y++)for(let x=X0;x<X0+CS;x++){const t=tget(x,y);if([10,11,12,20,27].includes(t)){const arr=TILE[t];gc.drawImage(arr[(t===20?(x+y)%arr.length:0)],x*16,y*16)}}
+  for(const p of PADS){if(p.bx+6<X0||p.bx>X0+CS||p.by+4<Y0||p.by>Y0+CS)continue;gc.fillStyle='rgba(20,30,10,0.28)';gc.fillRect(p.bx*16,(p.by+4)*16,96,4);gc.drawImage(dienstSprite(),p.bx*16,p.by*16)}
+  for(const Bd of BLDG){if(Bd.x+Bd.w<X0||Bd.x>X0+CS||Bd.y+Bd.h<Y0||Bd.y>Y0+CS)continue;gc.fillStyle='rgba(20,30,10,0.28)';gc.fillRect(Bd.x*16,(Bd.y+Bd.h)*16,Bd.w*16,4);gc.drawImage(Bd.id==='shop'?shopSprite():hfpolSprite(),Bd.x*16,Bd.y*16)}
+  for(let y=Y0;y<Y0+CS;y++)for(let x=X0;x<X0+CS;x++){const t=tget(x,y);if(t===13)gc.drawImage(TILE[13][0],x*16,y*16)}
   // ground details: tufts, flowers, pebbles
-  for(let y=0;y<MH;y++)for(let x=0;x<MW;x++){const t=tget(x,y),b=BIOME[y*MW+x];
-    if(t===0||t===14||t===15){const n=1+Math.floor(r()*3);for(let i=0;i<n;i++){const X=x*16+Math.floor(r()*14)+1,Y=y*16+Math.floor(r()*13)+2;gc.fillStyle=b===2?'#1d4416':b===4?'#6a6a2a':'#3a7424';gc.fillRect(X,Y,1,2);gc.fillRect(X-1,Y,1,1);gc.fillRect(X+1,Y-1,1,2);if(r()<0.4){gc.fillStyle=b===2?'#5c9a3a':'#9ad25a';gc.fillRect(X+1,Y-1,1,1)}}}
+  for(let y=Y0;y<Y0+CS;y++)for(let x=X0;x<X0+CS;x++){const t=tget(x,y),b=BIOME[y*MW+x],r=mulberry32(th(x,y));
+    if(t===0||t===14||t===15||t===30){const n=1+Math.floor(r()*3);for(let i=0;i<n;i++){const X=x*16+Math.floor(r()*14)+1,Y=y*16+Math.floor(r()*13)+2;gc.fillStyle=b===2?'#1d4416':b===4?'#6a6a2a':b===8?'#123a18':'#3a7424';gc.fillRect(X,Y,1,2);gc.fillRect(X-1,Y,1,1);gc.fillRect(X+1,Y-1,1,2);if(r()<0.4){gc.fillStyle=b===2?'#5c9a3a':'#9ad25a';gc.fillRect(X+1,Y-1,1,1)}}}
+    if(t===28&&r()<0.4){gc.fillStyle='#ffffff';gc.fillRect(x*16+Math.floor(r()*14),y*16+Math.floor(r()*14),2,1)}
+    if(t===29&&r()<0.35){gc.fillStyle='#b07a3e';gc.fillRect(x*16+Math.floor(r()*14),y*16+Math.floor(r()*14),2,1)}
     if(t===9||(t===0&&b<=1&&r()<0.12)){const cols=['#ffffff','#ffe36b','#ff8fb3','#c9b6ff'];for(let i=0;i<(t===9?4:1);i++){const X=x*16+2+Math.floor(r()*12),Y=y*16+2+Math.floor(r()*12),col=cols[Math.floor(r()*cols.length)];gc.fillStyle='#2f6a20';gc.fillRect(X,Y+1,1,2);gc.fillStyle=col;gc.fillRect(X-1,Y,3,1);gc.fillRect(X,Y-1,1,3);gc.fillStyle='#ffcb3d';gc.fillRect(X,Y,1,1)}}
     if((t===4||t===5||t===15)&&r()<0.5){gc.fillStyle=t===5?'#c2a56c':'#8a6a44';gc.fillRect(x*16+Math.floor(r()*14),y*16+Math.floor(r()*14),2,1)}}
-  // encounter vegetation
-  for(let y=0;y<MH;y++)for(let x=0;x<MW;x++){const t=tget(x,y);if(ENC.has(t))gc.drawImage(TILE[t][(x*7+y*3)%TILE[t].length],x*16,y*16)}
-  // rocks
-  for(let y=0;y<MH;y++)for(let x=0;x<MW;x++)if(tget(x,y)===16)paintRock(gc,x*16+8,y*16+10,7+Math.floor(r()*2),r);
-  // trees: shadow + trunk on ground, canopy on its own layer (drawn above players)
-  const cv=mk(W,H),cc=cv.getContext('2d'),cid=cc.createImageData(W,H);
-  const trees=[];for(let y=0;y<MH;y++)for(let x=0;x<MW;x++)if(tget(x,y)===2)trees.push([x,y]);
-  for(const[x,y]of trees){gc.fillStyle='rgba(10,25,8,0.32)';gc.beginPath();gc.ellipse(x*16+10,y*16+14,10,5,0,0,7);gc.fill();
-    gc.fillStyle='#3e2814';gc.fillRect(x*16+6,y*16+8,4,8);gc.fillStyle='#6b4423';gc.fillRect(x*16+7,y*16+8,2,7);gc.fillStyle='#8a5a30';gc.fillRect(x*16+7,y*16+9,1,4)}
-  for(const[x,y]of trees.sort((a,b)=>a[1]-b[1])){const forest=BIOME[y*MW+x]===2;paintCanopy(cid.data,W,H,x*16+8,y*16+3,forest?11:10,forest?RGB.leafF:RGB.leaf,x*31+y*17)}
-  cc.putImageData(cid,0,0);
-  WORLD=g;CANOPY=cv;return 1;
+  for(let y=Y0;y<Y0+CS;y++)for(let x=X0;x<X0+CS;x++){const t=tget(x,y);if(ENC.has(t))gc.drawImage(TILE[t][(x*7+y*3)%TILE[t].length],x*16,y*16)}
+  gc.restore();yield;
+  // rocks / peaks (local coordinates)
+  for(let y=Y0;y<Y0+CS;y++)for(let x=X0;x<X0+CS;x++){const t=tget(x,y);if(t!==16&&t!==31)continue;const v=th(x,y)%4;
+    if(t===16){const sp=propSprite('rock'+(BIOME[y*MW+x]===7?'d':'')+v);gc.drawImage(sp,(x-X0)*16-4,(y-Y0)*16-2)}else{const sp=propSprite('peak'+v);gc.drawImage(sp,(x-X0)*16-4,(y-Y0)*16-4)}}
+  // trees: shadow + trunk on the ground, canopy on its own layer (above the players)
+  const cv=mk(S,S),cc=cv.getContext('2d');
+  for(let y=Y0;y<Y0+CS;y++)for(let x=X0;x<X0+CS;x++){if(tget(x,y)!==2)continue;const b=BIOME[y*MW+x],X=(x-X0)*16,Y=(y-Y0)*16;gc.fillStyle='rgba(10,25,8,0.32)';gc.beginPath();gc.ellipse(X+10,Y+14,10,5,0,0,7);gc.fill();
+    if(b===7)continue;gc.fillStyle='#3e2814';gc.fillRect(X+6,Y+8,4,8);gc.fillStyle=b===8?'#8a6a3a':'#6b4423';gc.fillRect(X+7,Y+8,2,7);gc.fillStyle='#8a5a30';gc.fillRect(X+7,Y+9,1,4)}
+  const trees=[];for(let y=Y0-2;y<Y0+CS+2;y++)for(let x=X0-2;x<X0+CS+2;x++)if(tget(x,y)===2&&x>=0&&y>=0&&x<MW&&y<MH)trees.push([x,y]);
+  for(const[x,y]of trees.sort((a,b)=>a[1]-b[1])){const b=BIOME[y*MW+x]||townArea(x,y),X=(x-X0)*16+8,Y=(y-Y0)*16+3,v=th(x,y)%5;
+    const kind=b===6?'pine':b===7?'cactus':(b===8||(b===3&&tget(x,y+1)!==2))?'palm':b===2?'forest':'leaf';cc.drawImage(propSprite(kind+v),X-24,Y-24)}
+  return{g,c:cv};
 }
+// pre-rendered props (trees, rocks, peaks) – painted once per variant, then just blitted into the chunks
+const PROPS={};
+function propSprite(k){if(PROPS[k])return PROPS[k];const v=+k.slice(-1),kind=k.slice(0,-1),sd=v*977+13;let c;
+  if(kind==='rock'||kind==='rockd'){c=mk(24,24);const x=c.getContext('2d',{willReadFrequently:true});paintRock(x,12,12,7+(v%2),mulberry32(sd),kind==='rockd'?RGB.desert:null)}
+  else if(kind==='peak'){c=mk(24,24);const x=c.getContext('2d');paintPeak(x,4,4,mulberry32(sd))}
+  else{c=mk(48,48);const x=c.getContext('2d'),id=x.createImageData(48,48);
+    if(kind==='pine')paintPine(id.data,48,48,24,24,sd);else if(kind==='cactus')paintCactus(id.data,48,48,24,28,sd);else if(kind==='palm')paintPalm(id.data,48,48,24,24,sd);
+    else paintCanopy(id.data,48,48,24,24,kind==='forest'?11:10,kind==='forest'?RGB.leafF:RGB.leaf,sd);x.putImageData(id,0,0)}
+  PROPS[k]=c;return c}
+function paintPine(d,W,H,cx,cy,seed){const r=mulberry32(seed),pal=RGB.pine;for(let y=-12;y<=10;y++){const w=Math.max(1,Math.round((y+13)*0.42));for(let x=-w;x<=w;x++){const X=cx+x,Y=cy+y;if(X<0||Y<0||X>=W||Y>=H)continue;
+    let v=0.6-(x/w)*0.35+BAYER[((Y&3)*4)+(X&3)]*0.25;if(Math.abs(x)>=w-0.5)v-=0.3;let c=pal[clamp(Math.floor(v*(pal.length-1)),0,pal.length-2)];if((y%5===-1||y%5===4)&&x<w-1&&r()<0.8)c=[240,246,252];const o=(Y*W+X)*4;d[o]=c[0];d[o+1]=c[1];d[o+2]=c[2];d[o+3]=255}}}
+function paintPalm(d,W,H,cx,cy,seed){const r=mulberry32(seed),pal=RGB.palm;const put=(X,Y,c)=>{if(X<0||Y<0||X>=W||Y>=H)return;const o=(Y*W+X)*4;d[o]=c[0];d[o+1]=c[1];d[o+2]=c[2];d[o+3]=255};
+  for(let y=0;y<10;y++){put(cx-1+Math.round(Math.sin(y/4)),cy+y,[90,62,30]);put(cx+Math.round(Math.sin(y/4)),cy+y,[138,100,52])}
+  for(let k=0;k<7;k++){const a=-Math.PI/2+(k-3)*0.62+(r()-0.5)*0.2,L=9+Math.floor(r()*4);for(let t=0;t<L;t++){const X=Math.round(cx+Math.cos(a)*t),Y=Math.round(cy-2+Math.sin(a)*t+t*t*0.045);const c=pal[clamp(Math.floor((0.85-t/L*0.6)*pal.length),0,pal.length-1)];put(X,Y,c);if(t>2&&t<L-1){put(X,Y+1,pal[1])}}}
+  put(cx,cy-2,[200,170,60]);put(cx+1,cy-1,[160,120,40])}
+function paintCactus(d,W,H,cx,cy,seed){const r=mulberry32(seed),pal=RGB.cactus;const put=(X,Y,v)=>{if(X<0||Y<0||X>=W||Y>=H)return;const c=pal[clamp(Math.floor(v*pal.length),0,pal.length-1)],o=(Y*W+X)*4;d[o]=c[0];d[o+1]=c[1];d[o+2]=c[2];d[o+3]=255};
+  for(let y=-8;y<10;y++)for(let x=-2;x<=2;x++)put(cx+x,cy+y,0.7-x*0.15+(y===-8&&Math.abs(x)===2?-1:0));
+  const arm=(s,h)=>{for(let x=1;x<=3;x++)put(cx+s*(2+x),cy+h,0.45);for(let y=h-5;y<=h;y++){put(cx+s*5,cy+y,0.6);put(cx+s*6,cy+y,0.35)}};arm(1,0+Math.floor(r()*3));arm(-1,-3+Math.floor(r()*3))}
+function paintPeak(gc,X,Y,r){const pal=RGB.peak;gc.fillStyle='rgba(10,20,30,0.25)';gc.fillRect(X+1,Y+13,15,3);
+  const h=14+Math.floor(r()*4),top=Y+16-h,cx=X+8+Math.floor(r()*3)-1;for(let y=0;y<h;y++){const w=Math.round(y*0.62)+1;for(let x=-w;x<=w;x++){const xx=cx+x,yy=top+y;let v=0.55-(x/w)*0.3+BAYER[((yy&3)*4)+(xx&3)]*0.2;let c=pal[clamp(Math.floor(v*4),0,3)];if(y<h*0.35-(x>0?1:0))c=x>0?pal[4]:pal[5];gc.fillStyle=`rgb(${c[0]},${c[1]},${c[2]})`;gc.fillRect(xx,yy,1,1)}}}
 function paintCanopy(d,W,H,cx,cy,R,pal,seed){
   const r=mulberry32(seed),blobs=[[0,0,R]];for(let i=0;i<4;i++){const a=r()*6.28;blobs.push([Math.cos(a)*R*0.55,Math.sin(a)*R*0.45,R*(0.5+r()*0.25)])}
   const n=noise2(seed,4,40,40);
@@ -246,12 +298,12 @@ function paintCanopy(d,W,H,cx,cy,R,pal,seed){
     let v=0.55-(x+y)/(R*2.4)*0.6+(n(x+R+6,y+R+6)-0.5)*0.55+BAYER[((Y&3)*4)+(X&3)]*0.25;if(best>0.82)v-=0.35;
     const c=pal[clamp(Math.floor(v*pal.length),0,pal.length-1)],o=(Y*W+X)*4;d[o]=c[0];d[o+1]=c[1];d[o+2]=c[2];d[o+3]=255}
 }
-function paintRock(gc,cx,cy,R,r){
+function paintRock(gc,cx,cy,R,r,palOv){
   const id=gc.getImageData(cx-R-2,cy-R-2,R*2+4,R*2+4),d=id.data,w=R*2+4;
   gc.fillStyle='rgba(10,20,8,0.3)';gc.beginPath();gc.ellipse(cx+2,cy+R-1,R+1,3,0,0,7);gc.fill();
   const id2=gc.getImageData(cx-R-2,cy-R-2,w,w),d2=id2.data;
   for(let y=0;y<w;y++)for(let x=0;x<w;x++){const dx=(x-R-2)/R,dy=(y-R-2)/(R*0.85);const q=dx*dx+dy*dy;if(q>1)continue;const o=(y*w+x)*4;
-    let v=0.6-(dx+dy)*0.35+BAYER[(y&3)*4+(x&3)]*0.2;let pal=RGB.rock;if(dy<-0.25&&r()<0.75)pal=RGB.moss;if(q>0.8)v-=0.4;const c=pal[clamp(Math.floor(v*pal.length),0,pal.length-1)];d2[o]=c[0];d2[o+1]=c[1];d2[o+2]=c[2];d2[o+3]=255}
+    let v=0.6-(dx+dy)*0.35+BAYER[(y&3)*4+(x&3)]*0.2;let pal=palOv||RGB.rock;if(dy<-0.25&&r()<0.75)pal=RGB.moss;if(q>0.8)v-=0.4;const c=pal[clamp(Math.floor(v*pal.length),0,pal.length-1)];d2[o]=c[0];d2[o+1]=c[1];d2[o+2]=c[2];d2[o+3]=255}
   gc.putImageData(id2,cx-R-2,cy-R-2);
 }
 function th(x,y){return((x*73856093)^(y*19349663))>>>0}

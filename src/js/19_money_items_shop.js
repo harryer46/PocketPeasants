@@ -150,7 +150,7 @@ function lobbyLine(m){return m.waiting?'wartet in der Lobby':`noch ${fmt(m.end-D
 let LOBBY_MIN=true;
 function startFree(){
   if(G.freeRun){RUN=G.freeRun;RUN.beat=RUN.beat||{};RUN.leg=RUN.leg||{};afterRunChange();toast('Willkommen zurück! Das freie Spiel geht weiter.');return}
-  {const sp_=ALT_BASES.filter(x=>RAR[x]!=='rare'),sid=sp_[Math.floor(Math.random()*sp_.length)];RUN={id:'f'+Math.random().toString(36).slice(2,10),free:true,end:0,phase:'train',team:[newMon(sid,START_LV)],box:[],kap:10,money:100,items:{},r:1,st:'free',res:[],beat:{},leg:{},cfg:Object.assign({},DEF_CFG,{alt:SET.alt==='0'?0:1})};G.dex[sid]=1;G.freeRun=RUN;afterRunChange();teleport(30,24);sysChat('Freies Spiel gestartet — dein Team wird gespeichert. Erstelle oder betrete jederzeit eine Lobby.');toast(`Dein zufälliges Start-Monster: ${SPECIES[sid].n}!`);setTimeout(()=>{if(!B&&!$('#modal').classList.contains('on'))dexReveal(sid,RUN.team[0],'★ DEIN START-MONSTER ★')},700)}
+  {const sp_=ALT_BASES.filter(x=>RAR[x]!=='rare'),sid=sp_[Math.floor(Math.random()*sp_.length)];RUN={id:'f'+Math.random().toString(36).slice(2,10),free:true,end:0,phase:'train',team:[newMon(sid,START_LV)],box:[],kap:10,money:100,items:{},r:1,st:'free',res:[],beat:{},leg:{},cfg:Object.assign({},DEF_CFG,{alt:SET.alt==='0'?0:1})};G.dex[sid]=1;G.freeRun=RUN;afterRunChange();teleport(VSPAWN.x,VSPAWN.y);sysChat('Freies Spiel gestartet — dein Team wird gespeichert. Erstelle oder betrete jederzeit eine Lobby.');toast(`Dein zufälliges Start-Monster: ${SPECIES[sid].n}!`);setTimeout(()=>{if(!B&&!$('#modal').classList.contains('on'))dexReveal(sid,RUN.team[0],'★ DEIN START-MONSTER ★')},700)}
 }
 // free play: throw away the free-play team and start over with a new random monster (dex and trophies stay)
 function restartFree(){if(!RUN||!RUN.free||B)return;
@@ -211,7 +211,7 @@ function startRun(id,end,sid,prev,cfg,phase){
   phase=phase||'train';if(phase==='train'&&end<Date.now()+5000){toast('Dieses Spiel ist fast vorbei.');return}
   cfg=sanitizeCfg(cfg||DEF_CFG);
   RUN={id,jt:Date.now(),starter:sid,rs:cfg.host===(MYPEER||'me')?0:null,end:phase==='lobby'?0:end,cfg,phase,team:[newMon(sid,START_LV)],box:[],kap:cfg.kap,money:cfg.money??100,items:{},r:1,st:phase==='lobby'?'lobby':'train',res:[],prev:prev||null,beat:{},leg:{}};G.dex[sid]=1;$('#arena').classList.remove('on');
-  save();$('#lobby').dataset.h='';renderLobby();renderTeam();updateHud();pushMt();teleport(30,24);
+  save();$('#lobby').dataset.h='';renderLobby();renderTeam();updateHud();pushMt();teleport(VSPAWN.x,VSPAWN.y);
   if(phase==='lobby'){sysChat(`Du bist in der Lobby${cfg.name?' „'+cfg.name+'“':''} (${cfgSummary(cfg)}). Der Host startet das Spiel.`);switchTab('lobby')}
   else{sysChat(`Spiel${cfg.name?' "'+cfg.name+'"':''} läuft! ${fmt(end-Date.now())} Training (${cfgSummary(cfg)}). Geh ins Gericht, wenn du bereit bist.`);toast('Streife gestartet! Ab ins hohe Gras.')}
 }
@@ -240,7 +240,7 @@ function hardExit(){
 }
 function leaveRun(){
   hardExit();RUN=G.freeRun||null;if(RUN){RUN.beat=RUN.beat||{};RUN.leg=RUN.leg||{}}
-  P.d='down';teleport(30,24);save();pres({mt:mtInfo(),ld:leadInfo(),lf:folInfo()});afterRunChange();
+  P.d='down';teleport(VSPAWN.x,VSPAWN.y);save();pres({mt:mtInfo(),ld:leadInfo(),lf:folInfo()});afterRunChange();
   switchTab('lobby');if(isMob())$('#side').classList.add('open');
   if(RUN)toast('Zurück am Start — freies Spiel. Tritt jederzeit einer Lobby bei oder erstelle eine.');else startFree();
 }
@@ -248,7 +248,7 @@ function leaveRun(){
 function resetRun(n){
   hardExit();const c=RUN.cfg,sid=RUN.starter||(RUN.team[0]&&RUN.team[0].s)||startersNow()[0];
   Object.assign(RUN,{rs:n,phase:'lobby',st:'lobby',end:0,r:1,res:[],gaveUp:0,solo:0,pick:null,dopp:null,trophy:0,team:[newMon(sid,START_LV)],box:[],kap:c.kap,money:c.money??100,items:{},beat:{},leg:{}});
-  P.d='down';teleport(30,24);save();afterRunChange();switchTab('lobby');
+  P.d='down';teleport(VSPAWN.x,VSPAWN.y);save();afterRunChange();switchTab('lobby');
   sysChat('Der Host hat die Sitzung zurückgesetzt — alle sind zurück am Start. Der Host startet das Spiel erneut.');toast('Sitzung zurückgesetzt — zurück am Start!');
 }
 function hostReset(){if(!isHost())return;openModal(`<h3>SITZUNG ZURÜCKSETZEN?</h3><p>Alle in dieser Lobby gehen zurück zum Start: neues Starter-Monster, keine Fänge, Timer und Urteile gelöscht. Danach könnt ihr neu starten.</p><div class="acts"><button class="btn ghost" id="mno">ABBRECHEN</button><button class="btn red" id="myes">ZURÜCKSETZEN</button></div>`);
@@ -273,7 +273,7 @@ function enterArena(early){
   if(B&&B.mode==='wild')endWild('Die Zeit ist um!');
   if(B&&(B.spar||B.mode==='trainer'))closeBattle();
   if(myCh)cancelCh();if(incoming){closeModal();incoming=null}
-  RUN.rdy=0;RUN.phase='arena';RUN.r=1;RUN.res=[];RUN.st='pick';healAll();teleport(35,21);P.d='up';
+  RUN.rdy=0;RUN.phase='arena';RUN.r=1;RUN.res=[];RUN.st='pick';healAll();teleport(COURT.x,COURT.y);P.d='up';
   sysChat(early?'Du bist früh ins Gericht gegangen. Warte auf die anderen…':'Die Streife ist vorbei — ab ins Gericht!');save();pushMt();showArena();pickArenaTeam();
 }
 function pickArenaTeam(){
@@ -370,7 +370,7 @@ function giveUpArena(){
     RUN.st='done';save();pushMt();sysChat('Du hast das Turnier aufgegeben.');$('#abox').dataset.h='';showArena()};
 }
 function canGoBack(){return RUN&&RUN.phase==='arena'&&RUN.r===1&&!(RUN.res||[]).length&&(RUN.st==='wait'||RUN.st==='pick')&&Date.now()<RUN.end&&!B&&!participants().some(p=>p.st==='duel')}
-function backToTraining(){if(!canGoBack())return;RUN.phase='train';RUN.st='train';RUN.pick=null;RUN.res=[];RUN.r=1;$('#arena').classList.remove('on');$('#abox').dataset.h='';teleport(35,23);P.d='down';save();pushMt();toast('Zurück ins Training!')}
+function backToTraining(){if(!canGoBack())return;RUN.phase='train';RUN.st='train';RUN.pick=null;RUN.res=[];RUN.r=1;$('#arena').classList.remove('on');$('#abox').dataset.h='';teleport(COURT.x,COURT.y+2);P.d='down';save();pushMt();toast('Zurück ins Training!')}
 function rematchHtml(){
   const seen=new Map();for(const p of others()){const mt=p.presence.mt;if(mt&&mt.prev===RUN.id&&(mt.st==='lobby'||(mt.st==='train'&&+mt.end>Date.now()+10000))&&typeof mt.id==='string'&&mt.id.length<40){const e=seen.get(mt.id)||{id:mt.id,end:+mt.end,n:[]};e.n.push(cleanName(p.presence.n));seen.set(mt.id,e)}}
   let h='<div style="margin-top:12px;display:flex;flex-direction:column;gap:8px">';
