@@ -3,10 +3,15 @@
 const HM={cut:{n:'ZERSCHNEIDER',i:'✂',from:'rita',d:'Fällt kleine Bäume auf Nebenwegen (z. B. zu Schreinen).'},swim:{n:'SURFER',i:'🌊',from:'sue',d:'Schwimm über Seen und Flüsse.'},
   str:{n:'STÄRKE',i:'💪',from:'hank',d:'Schiebt Felsbrocken auf Nebenwegen weg.'},fly:{n:'FLIEGEN',i:'🕊',from:'axel',d:'Abheben und frei über die Karte fliegen – über Bäume, Wasser und Felsen (im Team-Menü einsetzen oder Taste F).'}};
 const HM_FROM={rita:'cut',sue:'swim',hank:'str',axel:'fly'};
+// a field skill is used by a monster of a fitting type in the squad (like teaching the HM to the right Pokémon)
+const HM_TYPES={cut:['grass','normal'],swim:['water'],str:['rock','fire'],fly:['flying']};
+function hmUser(k){try{return(RUN&&RUN.team||[]).find(m=>m&&m.hp>0&&HM_TYPES[k].includes(SPECIES[m.s].t))||null}catch(e){return null}}
+function canHM(k){return hasHM(k)&&!!hmUser(k)}
+function hmNeed(k){return HM_TYPES[k].map(t=>TYPES[t].n).join('- oder ')+'-Monster'}
 function hasHM(k){try{return!!(RUN&&RUN.hm&&RUN.hm[k])}catch(e){return false}}  // also called while the map is built, before the save is loaded
 const FIELD=[],FIELDGONE=new Set();
 function fieldAt(x,y){return FIELD.find(f=>f.x===x&&f.y===y&&!FIELDGONE.has(f.id))||null}
-function walkable(x,y){const t=tget(x,y);return(WALK.has(t)||(t===3&&hasHM('swim')))&&!SIGNSET.has(y*MW+x)&&!fieldAt(x,y)}
+function walkable(x,y){const t=tget(x,y);return(WALK.has(t)||(t===3&&canHM('swim')))&&!SIGNSET.has(y*MW+x)&&!fieldAt(x,y)}
 // optional side paths to some shrines are blocked by small trees (CUT) or boulders (STRENGTH); islands need SURFER
 (function placeField(){let id=0;const spots=[[70,122,'cut'],[71,123,'cut'],[150,22,'str'],[275,36,'str'],[276,124,'cut']];
   for(const[x,y,kind]of spots){let best=null,bd=9;for(let dy=-3;dy<=3;dy++)for(let dx=-3;dx<=3;dx++){const X=x+dx,Y=y+dy;if(tget(X,Y)!==4)continue;const d=Math.abs(dx)+Math.abs(dy);if(d<bd){bd=d;best={x:X,y:Y}}}

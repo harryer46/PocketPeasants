@@ -10,7 +10,7 @@ const MW=300,MH=200,MAP=new Uint8Array(MW*MH);const GATES=[];const BIOME=new Uin
 const BKEYS=[null,'north','east','south','west','knast','snow','desert','jungle'];
 const WALK0=new Set([0,1,4,5,7,9,12,13,14,15,17,18,19,20,22,23,24,25,26,27,28,29,30]);
 const ENC=new Set([1,17,18,19,24,25,26]);const BASE_T=[0,0,14,0,15,20,28,29,30],ENC_T=[0,1,17,18,19,20,24,25,26];
-const BLDG=[],PADS=[],LABELS=[],TOWNS=[];let VSPAWN={x:150,y:91},COURT={x:149,y:85};
+const BLDG=[],PADS=[],LABELS=[],TOWNS=[],LEDGES=[];const LEDGE_DIR={32:'down',33:'up',34:'left',35:'right'};let VSPAWN={x:150,y:91},COURT={x:149,y:85};
 function tget(x,y){return(x<0||y<0||x>=MW||y>=MH)?31:MAP[y*MW+x]}
 function tset(x,y,v){if(x>=0&&y>=0&&x<MW&&y<MH)MAP[y*MW+x]=v}
 function vnoise(seed,cell){
@@ -67,9 +67,9 @@ const KNAST_C={x:262,y:13};
    for(let y=cy+8;y<=cy+16;y++){tset(cx,y,4);if(tget(cx-1,y)===16)tset(cx-1,y,29);if(tget(cx+1,y)===16)tset(cx+1,y,29)}tset(cx,cy+7,20)}
   // ---- towns
   const fillRect=(x0,y0,x1,y1,t,b)=>{for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){tset(x,y,t);if(b!=null)BIOME[y*MW+x]=b}};
-  const pad=(x,y)=>{for(let X=x;X<x+6;X++){tset(X,y,8);tset(X,y+1,8);tset(X,y+2,6);tset(X,y+3,6)}tset(x+3,y+3,7);PADS.push({x:x+3,y:y+3,bx:x,by:y})};
-  const bld=(id,x,y,w,dxo,door)=>{for(let Y=y;Y<y+4;Y++)for(let X=x;X<x+w;X++)tset(X,Y,21);tset(x+dxo,y+3,door);BLDG.push({id,x,y,w,h:4,dx:x+dxo,door,n:id==='shop'?'COPSHOP':'HfPol'})};
-  for(const T of TOWN_DEF){
+  const pad=(x,y)=>{for(let X=x;X<x+6;X++){tset(X,y,8);tset(X,y+1,8);tset(X,y+2,6);tset(X,y+3,6)}tset(x+3,y+3,7);PADS.push({x:x+3,y:y+3,bx:x,by:y,old:!CUR_T||!CUR_T.center})};
+  const bld=(id,x,y,w,dxo,door)=>{for(let Y=y;Y<y+4;Y++)for(let X=x;X<x+w;X++)tset(X,Y,21);tset(x+dxo,y+3,door);BLDG.push({id,x,y,w,h:4,dx:x+dxo,door,n:id==='shop'?'COPSHOP':'HfPol',old:!CUR_T||!CUR_T.center})};let CUR_T=null;
+  for(const T of TOWN_DEF){CUR_T=T;
     // compact towns like the originals: buildings shoulder to shoulder inside a tree ring
     if(T.center){const{x:cx,y:cy}=T;
       for(let y=cy-13;y<=cy+13;y++)for(let x=cx-17;x<=cx+17;x++){const d=Math.hypot((x-cx)/15.5,(y-cy)/12.5);if(d<1){BIOME[y*MW+x]=0;tset(x,y,d>0.86?2:0);if(d<=0.86&&r()<0.04)tset(x,y,9)}}
@@ -153,6 +153,35 @@ const KNAST_C={x:262,y:13};
      for(const[dx,dy]of D4){const j=(y+dy)*MW+x+dx;if(!ROAD.has(j))continue;const nb=BIOME[j];if(nb===b||nb===0)continue;
        if([...seen].some(k=>{const kx=k%MW,ky=(k-kx)/MW;return BIOME[k]===b&&Math.abs(kx-x)+Math.abs(ky-y)<22}))continue;seen.add(i);GATES.push({b,i});break}}
    GATES.push({b:5,i:(KNAST_C.y+7)*MW+KNAST_C.x},{b:9,i:(KNAST_C.y-1)*MW+KNAST_C.x})}
+  // ---- ledges (one-way steps like the originals): the land rises away from Villingen. Going out you walk round the step through
+  //      tall grass; coming back you can hop down the step as a shortcut. 32 jump ↓, 33 ↑, 34 ←, 35 →
+  {const RD=new Int32Array(MW*MH).fill(-1);let st=-1;for(let r2=0;r2<12&&st<0;r2++)for(const i of ROAD){const x=i%MW,y=(i-x)/MW;if(Math.abs(x-VSPAWN.x)+Math.abs(y-VSPAWN.y)<=r2){st=i;break}}
+   const q=[st];RD[st]=0;for(let h=0;h<q.length;h++){const i=q[h],x=i%MW,y=(i-x)/MW;for(const[dx,dy]of D4){const j=(y+dy)*MW+x+dx;if(RD[j]<0&&ROAD.has(j)){RD[j]=RD[i]+1;q.push(j)}}}
+   const placed=[],gateNear=(x,y)=>GATES.some(g=>{const gx=g.i%MW,gy=(g.i-gx)/MW;return Math.abs(gx-x)+Math.abs(gy-y)<8}),open=i=>WALK0.has(MAP[i])&&MAP[i]!==27&&MAP[i]!==3&&MAP[i]!==13&&MAP[i]!==7&&MAP[i]<21;
+   const order=[...ROAD].filter(i=>RD[i]>=14&&RD[i]%12===2).sort((a,b)=>RD[a]-RD[b]);
+   for(const i of order){const x=i%MW,y=(i-x)/MW,b=BIOME[i];if(!b||b===5||gateNear(x,y)||placed.some(([a,c])=>Math.abs(a-x)+Math.abs(c-y)<18))continue;
+     // the direction back to Villingen
+     let back=null;for(const[dx,dy]of D4){const j=(y+dy)*MW+x+dx;if(RD[j]>=0&&RD[j]<RD[i]){back=[dx,dy];break}}if(!back)continue;
+     const[bx,by]=back,px=by!==0?1:0,py=by!==0?0:1;   // ledge runs perpendicular to the road
+     // straight road for a few tiles on both sides
+     let straight=true;for(let k=-2;k<=2;k++){const j=(y+by*k)*MW+x+bx*k;if(!ROAD.has(j)){straight=false;break}}if(!straight)continue;
+     let a=0,c=0;while(a<10&&open((y-py*(a+1))*MW+x-px*(a+1))&&BIOME[(y-py*(a+1))*MW+x-px*(a+1)]===b)a++;while(c<10&&open((y+py*(c+1))*MW+x+px*(c+1))&&BIOME[(y+py*(c+1))*MW+x+px*(c+1)]===b)c++;
+     if(a>=10||c>=10||a+c+1<3)continue;
+     // detour round one end of the step (through tall grass); pick the side whose rock/trees belong to the same area
+     const tryEnd=sgn=>{const e=sgn<0?-(a+1):c+1,cells=[],add=(X,Y)=>{if(X<3||Y<3||X>=MW-3||Y>=MH-3)return false;const j=Y*MW+X;if(ROAD.has(j))return true;if(BIOME[j]!==b||MAP[j]===3||MAP[j]===27||MAP[j]>=21&&MAP[j]<=23||MAP[j]===13||MAP[j]>=32)return false;cells.push(j);return true};
+       for(let w=0;w<2;w++)for(let k=-2;k<=2;k++)if(!add(x+px*(e+sgn*w)+bx*k,y+py*(e+sgn*w)+by*k))return null;
+       for(const k of[-2,2])for(let m=1;m<=Math.abs(e)+1;m++)if(!add(x+px*sgn*m+bx*k,y+py*sgn*m+by*k))return null;return cells};
+     const cells=tryEnd(1)||tryEnd(-1);if(!cells)continue;
+     const lt=bx===0?(by>0?32:33):(bx>0?35:34);
+     for(let k=-a;k<=c;k++){const j=(y+py*k)*MW+x+px*k;MAP[j]=lt;ROAD.delete(j)}
+     for(const j of cells)MAP[j]=ENC_T[b];
+     // tall grass right in front of the step on the low side's approach, so the way up leads through it
+     for(let k=-a;k<=c;k++)for(const s2 of[1,2]){const j=(y+py*k+by*s2)*MW+x+px*k+bx*s2;if(open(j)&&!ROAD.has(j)&&BIOME[j]===b)MAP[j]=ENC_T[b]}
+     // safety: the far side must still be reachable from Villingen without hopping (else undo)
+     const save=[];for(let k=-a;k<=c;k++){const j=(y+py*k)*MW+x+px*k;save.push(j)}
+     const seen=new Uint8Array(MW*MH),qq=[VSPAWN.y*MW+VSPAWN.x];seen[qq[0]]=1;const far=(y-by*2)*MW+x-bx*2;while(qq.length&&!seen[far]){const u=qq.pop(),ux=u%MW,uy=(u-ux)/MW;for(const[dx,dy]of D4){const j=(uy+dy)*MW+ux+dx;if(!seen[j]&&WALK0.has(MAP[j])){seen[j]=1;qq.push(j)}}}
+     if(!seen[far]){for(const j of save){MAP[j]=4;ROAD.add(j)}continue}
+     placed.push([x,y]);LEDGES.push({x,y,t:lt})}}
   // ---- reachability: carve pockets back to the network inside their own area (never across a border), else fill them
   const W0=i=>WALK0.has(MAP[i]);
   const reach=()=>{const seen=new Uint8Array(MW*MH),q=[VSPAWN.y*MW+VSPAWN.x];seen[q[0]]=1;while(q.length){const i=q.pop(),x=i%MW,y=(i-x)/MW;for(const[dx,dy]of D4){const nx=x+dx,ny=y+dy;if(nx<1||ny<1||nx>=MW-1||ny>=MH-1)continue;const j=ny*MW+nx;if(seen[j]||!W0(j))continue;seen[j]=1;q.push(j)}}return seen};

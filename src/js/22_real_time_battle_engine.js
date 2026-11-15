@@ -196,10 +196,10 @@ function effLabel(s,T){if(!B.me||s.side!==B.me.side)return;const e=eff(MOVES[s.m
 function specialShot(s,dt){const T=s.side===B.me.side?B.foe:B.me,alive=T&&!T.out&&T.faint<=0,mv=MOVES[s.mid],col=TYPES[mv.t].c;s.age+=dt;
   if(s.k==='lob'){s.x+=s.vx*dt;s.y+=s.vy*dt;if(s.age<s.life)return;s.dead=1;burst(s.x,s.y+12,col,16);burst(s.x,s.y+12,'#ffffff',6);B.shakeUntil=performance.now()+120;
     for(const o of B.obs||[])if(!o.dead&&Math.hypot(o.x-s.x,(o.y-(s.y+12))*1.3)<s.r+o.r)hitObs(o,s);
-    if(alive&&T.inv<=0&&Math.hypot(T.x-s.x,(T.y-(s.y+12))*1.3)<s.r+9)shotHit(s,T);return}
+    if(alive&&T.inv<=0&&Math.hypot(T.x-s.x,(T.y-(s.y+12))*1.3)<s.r+9)shotHit(s,T);else leaveHazard(s,s.x,s.y+12);return}
   if(s.k==='air'){if(s.age<s.life){if(s.age>s.life-0.18&&!s.fall){s.fall=1}return}s.dead=1;burst(s.x,s.y-4,col,22);burst(s.x,s.y-4,'#ffffff',10);B.shakeUntil=performance.now()+200;
     for(const o of B.obs||[])if(!o.dead&&Math.hypot(o.x-s.x,(o.y-s.y)*1.3)<s.r+o.r)hitObs(o,s);
-    if(alive&&T.inv<=0&&Math.hypot(T.x-s.x,(T.y-s.y)*1.3)<s.r+9)shotHit(s,T);return}
+    if(alive&&T.inv<=0&&Math.hypot(T.x-s.x,(T.y-s.y)*1.3)<s.r+9)shotHit(s,T);else leaveHazard(s,s.x,s.y);return}
   const L=Math.hypot(s.vx,s.vy)||1,ux=s.vx/L,uy=s.vy/L;
   if(s.k==='beam'){if(s.age>=s.life){s.dead=1;return}if(s.age<0.3||s.fired)return;s.fired=1;let len=250,hitO=null;
     for(const o of B.obs||[]){if(o.dead)continue;const ox=o.x-s.x,oy=(o.y-8)-s.y,t=ox*ux+oy*uy;if(t<0||t>len)continue;if(Math.hypot(ox-ux*t,oy-uy*t)<o.r){len=t;hitO=o}}
@@ -242,8 +242,8 @@ function controlMe(dt){
 }
 function move(F,dx,dy,dt){
   // slight inertia: velocity eases toward the input instead of jumping (dash stays instant)
-  if(F.dashT<=0&&F.pdz>0){F.vx=F.vy=0;obsPush(F);arenaClamp(F);return}
-  if(F.dashT>0){F.x+=F.ddx*265*dt;F.y+=F.ddy*265*dt;F.vx=F.ddx*fspeed(F);F.vy=F.ddy*fspeed(F)}else{const sp=fspeed(F),k=Math.min(1,dt*7.5);F.vx=(F.vx||0)+(dx*sp-(F.vx||0))*k;F.vy=(F.vy||0)+(dy*sp-(F.vy||0))*k;F.x+=F.vx*dt;F.y+=F.vy*dt}
+  // (post-dash freeze removed in v0.70)
+  if(F.dashT>0){F.x+=F.ddx*265*dt;F.y+=F.ddy*265*dt;F.vx=F.ddx*fspeed(F);F.vy=F.ddy*fspeed(F)}else{const sp=fspeed(F),k=Math.min(1,dt*((F.slip||0)>0?1.2:7.5));F.vx=(F.vx||0)+(dx*sp-(F.vx||0))*k;F.vy=(F.vy||0)+(dy*sp-(F.vy||0))*k;F.x+=F.vx*dt;F.y+=F.vy*dt}
   obsPush(F);arenaClamp(F);
   const T=F===B.me?B.foe:B.me;if(T)F.face=T.x<F.x?-1:1;
 }
@@ -271,6 +271,7 @@ function bUpdate(dt){
   if(B.state==='fight')for(const F of[B.me,B.foe]){if(!F||!F.st)continue;for(const k in F.st)F.st[k]=Math.max(0,F.st[k]-dt);
     if(F.st.burn>0&&F.ctrl!=='remote'&&act(F).hp>0){F.burnT+=dt;if(F.burnT>=0.5){F.burnT=0;dealDamage(F,Math.max(1,Math.round(act(F).mhp*0.03)),'#ff8a3d')}if(Math.random()<0.3)B.parts.push({x:F.x+(Math.random()*16-8),y:F.y-20,vx:0,vy:-20,life:0.4,age:0,c:'#ff8a3d'})}}
   if(B.state!=='fight')for(const F of[B.me,B.foe])if(F&&F.faint>0&&act(F).hp<=0)F.faint=Math.max(0,F.faint-dt);
+  hazardTick(dt);
   for(const p of B.parts){p.age+=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;if(p.conf){p.vx+=Math.sin(p.age*6+p.y)*4*dt}else{p.vx*=0.9;p.vy*=0.9}}B.parts=B.parts.filter(p=>p.age<p.life);
   B.nums=B.nums.filter(n=>now-n.at<(n.life||900));
   if(B.closing)return;
@@ -290,7 +291,7 @@ function bUpdate(dt){
     if(F.team.some((m,i)=>i!==F.a&&m.hp>0)){startBreak(F);return}
     if(F.ctrl==='remote')continue;F.faint-=dt;if(F.faint<=0)F.out=true}
   // shots
-  for(const s of B.shots){if(s.nm){specialShot(s,dt);continue}s.age+=dt;s.x+=s.vx*dt;s.y+=s.vy*dt;if(s.age>s.life||outArena(s.x,s.y+10)){s.dead=1;if(s.cap)say('Verfehlt!');continue}
+  for(const s of B.shots){if(s.nm){specialShot(s,dt);continue}s.age+=dt;s.x+=s.vx*dt;s.y+=s.vy*dt;if(s.age>s.life||outArena(s.x,s.y+10)){s.dead=1;if(s.cap)say('Verfehlt!');else if(!s.mel&&!outArena(s.x,s.y+10))leaveHazard(s,s.x,s.y+8);continue}
     if(!s.cap&&shotVsObs(s))continue;
     const T=s.side===B.me.side?B.foe:B.me;if(!T||T.out||T.faint>0)continue;
     if(Math.hypot(s.x-T.x,s.y-(T.y-12))<s.r+11){
@@ -481,10 +482,10 @@ function startLegend(L){
   newBattle({mode:'wild',legend:L.id,zone:L.zone,wild,me:mkFighter('L',RUN.team.map(battler),XL,'local'),foe:mkFighter('R',[battler(wild)],XR,'ai'),state:'count',cntEnd:performance.now()+2000});
   say(`★ Das legendäre ${SPECIES[LS_].n} erwacht! ★`);burst(ACX,YT-20,'#ffcb3d',40);
 }
-// trainers teach their monsters VMs: easy trainers a weaker move of another type, strong trainers the top moves of their own type plus coverage
+// trainers teach their monsters TMs (type-bound): own type or Normal; stronger trainers get stronger moves
 function vmTier(t){const b=Math.round(baseLvAt(t.x,t.y))+1;return b>=10?3:b>=5?2:1}
 function vmPick(type,lo,hi,r,not){const c=Object.keys(MOVES).filter(m=>{const v=MOVES[m];return v.t===type&&v.k!=='self'&&(v.p||0)>=lo&&(v.p||0)<=hi&&!not.includes(m)});return c.length?c[Math.floor(r()*c.length)]:null}
-function giveVMs(t,mon,i){const r=mulberry32(hashStr(t.id+':'+i)),tier=vmTier(t),own=SPECIES[mon.s].t,others=Object.keys(TYPES).filter(x=>x!==own&&x!=='normal'),cov=others[Math.floor(r()*others.length)],vms=[];
+function giveVMs(t,mon,i){const r=mulberry32(hashStr(t.id+':'+i)),tier=vmTier(t),own=SPECIES[mon.s].t,cov='normal',vms=[];
   if(tier===1){const m=vmPick(cov,30,55,r,mon.m);if(m)vms.push(m)}
   else if(tier===2){const a=vmPick(own,60,85,r,mon.m),b=vmPick(cov,50,75,r,mon.m);if(a)vms.push(a);if(b)vms.push(b)}
   else{const a=vmPick(own,85,140,r,mon.m)||vmPick(own,70,140,r,mon.m),b=vmPick(cov,70,110,r,mon.m);if(a)vms.push(a);if(b)vms.push(b)}
@@ -494,11 +495,11 @@ function startTrainer(t){
   if(teamDown()){P.lock=false;return}
   const vmList=[];const team=trainerTeam(t).map(([s,l],i)=>{const mon=newMon(s,l);const v=giveVMs(t,mon,i);if(v.length)vmList.push(SPECIES[s].n+': '+v.map(m=>MOVES[m].n).join(', '));return battler(mon)});
   newBattle({mode:'trainer',trainer:t,oppName:t.n,zone:zoneAt(t.x,t.y)||'north',me:mkFighter('L',RUN.team.map(battler),XL,'local'),foe:mkFighter('R',team,XR,'ai'),state:'count',cntEnd:performance.now()+2600});
-  if(vmList.length){say(`${t.n} hat VMs beigebracht (${['','Basis','Fortgeschritten','Elite'][vmTier(t)]})!`);sysChat(`VMs von ${t.n} — ${vmList.join(' · ')}`)}
+  if(vmList.length){say(`${t.n} hat TMs beigebracht (${['','Basis','Fortgeschritten','Elite'][vmTier(t)]})!`);sysChat(`TMs von ${t.n} — ${vmList.join(' · ')}`)}
   say(`${t.n} will kämpfen!`);
 }
 function trainerKO(def){const idx=B.me.a;syncBack();const m=RUN.team[idx];if(m){const msgs=gainXp(m,Math.round(xpGain(def.s,def.l)*1.4));Object.assign(B.me.team[idx],battler(m));msgs.forEach(say)}}
-async function trainerWin(){B.state='over';finale(true);const t=B.trainer;RUN.beat[t.id]=1;if(t.toll){RUN.toll=RUN.toll||{};RUN.toll[t.toll]=1;setTimeout(()=>sysChat(`${t.n}: „Respekt. Du darfst passieren!“`),2600)}RUN.kap+=t.reward;{const k=HM_FROM[t.id];if(k&&!hasHM(k)){RUN.hm=RUN.hm||{};RUN.hm[k]=1;say(`Du hast ${HM[k].i} ${HM[k].n} gelernt! ${HM[k].d}`);sysChat(`${t.n} hat dir ${HM[k].n} beigebracht: ${HM[k].d}`)}}earn(t.reward*40,'von '+t.n);syncBack();say(`Du hast ${t.n} besiegt!`);say(`Belohnung: ${t.reward} Handschellen.`);sysChat(`Du hast ${t.n} besiegt und ${t.reward} Handschellen bekommen.`);updateHud();const myB=B;await sleep(2400);if(B===myB)endWild()}
+async function trainerWin(){B.state='over';finale(true);const t=B.trainer;RUN.beat[t.id]=1;if(t.toll){RUN.toll=RUN.toll||{};RUN.toll[t.toll]=1;setTimeout(()=>sysChat(`${t.n}: „Respekt. Du darfst passieren!“`),2600)}RUN.kap+=t.reward;{const k=HM_FROM[t.id];if(k&&!hasHM(k)){RUN.hm=RUN.hm||{};RUN.hm[k]=1;say(`Du hast die VM ${HM[k].i} ${HM[k].n} bekommen! Einsetzbar mit einem ${hmNeed(k)} im Kader.`);sysChat(`${t.n} hat dir ${HM[k].n} beigebracht: ${HM[k].d}`)}}earn(t.reward*40,'von '+t.n);{const tm=tmRandom(mulberry32((Date.now()^hashStr(t.id))>>>0),vmTier(t));if(tm){tmGive(tm);say(`Belohnung: 💿 TM ${MOVES[tm].n} (${TYPES[MOVES[tm].t].n})!`)}}syncBack();say(`Du hast ${t.n} besiegt!`);say(`Belohnung: ${t.reward} Handschellen.`);sysChat(`Du hast ${t.n} besiegt und ${t.reward} Handschellen bekommen.`);updateHud();const myB=B;await sleep(2400);if(B===myB)endWild()}
 function syncBack(){if(B&&(B.mode==='wild'||B.mode==='trainer'))B.me.team.forEach((b,i)=>{if(RUN.team[i])RUN.team[i].hp=b.hp})}
 async function wildWin(){
   B.state='over';finale(true);const idx=B.me.a;syncBack();const m=RUN.team[idx];earn(B.legend?150:6+B.wild.l*3,'Preisgeld');if(B.legend){RUN.leg[B.legend]=1;say(`${SPECIES[B.legend].n} verschwindet im Licht…`)}
@@ -874,6 +875,7 @@ function drawBattle(){
   if(!B)return;const c=bc;const K=sizeBattle();const CM=updateCam(performance.now());c.setTransform(K*CM.z,0,0,K*CM.z,K*(AW/2-CM.x*CM.z),K*(CAMY-CM.y*CM.z));const _n=performance.now();if(B.shakeUntil&&_n<B.shakeUntil)c.translate(Math.round((Math.random()-.5)*4),Math.round((Math.random()-.5)*4));c.imageSmoothingEnabled=false;const now=performance.now();
   c.drawImage(battleBG(B.zone||'arena'),0,0,AW,AH);
 
+  drawHazards(c,_n);
   const ents=[B.me,B.foe].filter(Boolean).concat((B.obs||[]).filter(o=>!o.dead)).sort((a,b)=>a.y-b.y);
   for(const F of ents){if(F.kind){drawObs(c,F,now);continue}if(F.out&&act(F).hp<=0&&F.faint<=0&&F.ctrl!=='remote')continue;const mon=act(F);
     let catchK=-1;if(F===B.foe&&B.catch){const el=(now-B.catch.t0)/1000;if(el>0.4||B.catch.done)continue;catchK=el/0.4}
@@ -1001,3 +1003,26 @@ function drawVS(c,now){const V=B.vs,e=now-V.t0;if(e>V.dur){B.vs=null;return}
     const h=6+Math.max(1,lines.length)*10;c.fillStyle='#14141f';c.fillRect(6,UH-h-6,UW-12,h+2);c.fillStyle='#f6f1e1';c.fillRect(7,UH-h-5,UW-14,h);
     lines.forEach((l,i)=>vtText(c,l,12,UH-h+5+i*10,'#14141f',10))}
   c.restore()}
+
+// ===== ground hazards: attacks that miss leave something behind (water → puddle, slippery; fire → flames, burn;
+//       rock → light rubble obstacle; grass → roots, slow; electric → sparks, short stun). They fade after a few seconds and hit both sides.
+const HAZ_KIND={water:{k:'puddle',r:16,ms:7000},fire:{k:'fire',r:12,ms:4500},grass:{k:'roots',r:15,ms:6000},electric:{k:'spark',r:12,ms:4000}};
+function leaveHazard(s,x,y){if(!B||B.tb||B.state!=='fight')return;const mv=MOVES[s.mid];if(!mv||(mv.p||0)<=0)return;const now=performance.now();x=clamp(x,24,AW-24);y=clamp(y,24,AH-16);
+  if(mv.t==='rock'){if([B.me,B.foe].some(F=>F&&Math.hypot(F.x-x,(F.y-y)*1.3)<26))return;B.obs=B.obs||[];if(B.obs.filter(o=>o.tmp&&!o.dead).length>=4)return;
+    B.obs.push({id:'h'+now,kind:'rock',mat:'rock',ind:0,x:Math.round(x),y:Math.round(y),r:8,hp:18,max:18,v:Math.floor(Math.random()*3),tmp:now+12000});burst(x,y-6,'#a07848',10);return}
+  const H=HAZ_KIND[mv.t];if(!H)return;B.haz=(B.haz||[]).filter(h=>h.until>now);if(B.haz.length>=8)B.haz.shift();B.haz.push({k:H.k,x,y,r:H.r,t0:now,until:now+H.ms,seed:Math.floor(Math.random()*1e6)})}
+function hazardTick(dt){if(!B)return;const now=performance.now();if(B.haz)B.haz=B.haz.filter(h=>h.until>now);
+  if(B.obs)for(const o of B.obs)if(o.tmp&&!o.dead&&o.tmp<now){o.dead=1;burst(o.x,o.y-6,'#a07848',8)}
+  if(B.state!=='fight'||!B.haz)return;
+  for(const F of[B.me,B.foe]){if(!F||F.ctrl==='remote'||F.out||F.faint>0)continue;F.slip=Math.max(0,(F.slip||0)-dt);
+    for(const h of B.haz){if(Math.hypot(F.x-h.x,(F.y-h.y)*1.3)>h.r+4)continue;
+      if(h.k==='puddle')F.slip=0.35;
+      else if(h.k==='fire'){if(F.st.burn<=0){F.st.burn=2.5;say(`${SPECIES[act(F).s].n} läuft durchs Feuer und brennt!`)}}
+      else if(h.k==='roots')F.st.slow=Math.max(F.st.slow,0.4);
+      else if(h.k==='spark'&&Math.random()<dt*0.9&&F.st.stun<=0)F.st.stun=0.35}}}
+function drawHazards(c,now){if(!B||!B.haz)return;for(const h of B.haz){const life=(h.until-now)/(h.until-h.t0),a=Math.min(1,life*4,(now-h.t0)/200),X=Math.round(h.x),Y=Math.round(h.y),r=mulberry32(h.seed);c.save();c.globalAlpha=a;
+  if(h.k==='puddle'){c.fillStyle='#1f5fa0';c.beginPath();c.ellipse(X,Y,h.r,h.r*0.55,0,0,7);c.fill();c.fillStyle='#3d8bf2';c.beginPath();c.ellipse(X,Y,h.r-2,h.r*0.55-2,0,0,7);c.fill();c.fillStyle='#8fc8f0';c.fillRect(X-6,Y-3,5,1);c.fillRect(X+2,Y+1,3,1)}
+  else if(h.k==='fire'){c.fillStyle='#3a1a0a80';c.beginPath();c.ellipse(X,Y,h.r,h.r*0.5,0,0,7);c.fill();for(let i=0;i<6;i++){const fx=X+Math.round((r()-0.5)*h.r*1.6),fy=Y+Math.round((r()-0.5)*h.r*0.7),fl=(Math.floor(now/90)+i)%3,hh=4+fl*2;c.fillStyle='#ef4444';c.fillRect(fx-2,fy-hh,4,hh);c.fillStyle='#ffcb3d';c.fillRect(fx-1,fy-hh+2,2,hh-2)}}
+  else if(h.k==='roots'){c.fillStyle='#3a2a10b0';c.beginPath();c.ellipse(X,Y,h.r,h.r*0.5,0,0,7);c.fill();c.fillStyle='#8a5a28';for(let i=0;i<7;i++){const a2=r()*6.28,L=5+r()*8;for(let t=0;t<L;t+=1.5)c.fillRect(Math.round(X+Math.cos(a2)*t),Math.round(Y+Math.sin(a2)*t*0.5),2,1)}c.fillStyle='#3ddc6b';for(let i=0;i<4;i++)c.fillRect(X+Math.round((r()-0.5)*h.r*1.4),Y+Math.round((r()-0.5)*h.r*0.6),2,2)}
+  else if(h.k==='spark'){c.fillStyle='#d9a90b70';c.beginPath();c.ellipse(X,Y,h.r,h.r*0.5,0,0,7);c.fill();if(Math.floor(now/70)%3){c.fillStyle='#ffe36b';for(let i=0;i<5;i++){const sx=X+Math.round((r()-0.5)*h.r*1.6),sy=Y+Math.round((r()-0.5)*h.r*0.7);c.fillRect(sx,sy,3,1);c.fillRect(sx+2,sy+1,1,2)}}}
+  c.restore()}}

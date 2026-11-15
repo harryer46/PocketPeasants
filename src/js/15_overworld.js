@@ -4,18 +4,19 @@ function modalOpen(){return $('#modal').classList.contains('on')||$('#study').cl
 // FLY (field skill from Axel): take off right on the map – over trees, water and cliffs, twice as fast,
 //   no encounters; areas whose teacher you have not passed stay closed in the air too; land only on walkable ground
 function flyable(x,y){if(x<2||y<2||x>=MW-2||y>=MH-2)return false;const b=BIOME[y*MW+x];return!(TOLL_LAW[b]&&!tollPaid(b)&&RUN&&RUN.phase==='train')}
-function canFly(){return hasHM('fly')&&!B&&RUN&&RUN.phase!=='arena'}
-function toggleFly(){if(!P.fly){if(!canFly())return;if(P.moving)return;P.fly=true;P.flyT=performance.now();held.length=0;pres({fl:1});toast('🕊 Abgehoben! Landen über Team → Feldfähigkeiten oder Taste F.');flyBtn();return}
+function canFly(){return canHM('fly')&&!B&&RUN&&RUN.phase!=='arena'}
+function toggleFly(){if(!P.fly){if(hasHM('fly')&&!hmUser('fly')){toast(`Zum FLIEGEN brauchst du ein ${hmNeed('fly')} im Kader.`);return}if(!canFly())return;if(P.moving)return;P.fly=true;P.flyT=performance.now();held.length=0;pres({fl:1});toast(`🕊 ${SPECIES[hmUser('fly').s].n} trägt dich in die Luft! Landen über Team → Feldfähigkeiten oder Taste F.`);flyBtn();return}
   if(P.moving)return;const x=P.x,y=P.y;if(!walkable(x,y)||trainerAt(x,y)||LEGENDS.some(L=>L.x===x&&L.y===y)||tollAt(x,y)){toast('Hier kannst du nicht landen – such dir freien Boden.');return}
   P.fly=false;P.flyT=performance.now();P.fol={x,y,tx:x,ty:y,fx:x,fy:y};trailReset(P,x,y);if(P.fols)for(const f of P.fols){f.fx=f.tx=x;f.fy=f.ty=y}pres({fl:0});save();flyBtn();onArrive()}
 function flyBtn(){const b=document.querySelector('[data-hmuse="fly"]');if(b)b.textContent=P.fly?'🛬 LANDEN':HM.fly.i+' '+HM.fly.n}
 function flyAlt(){const t=(performance.now()-(P.flyT||0))/350;return P.fly?Math.min(1,t):Math.max(0,1-t)}
 function updatePlayer(dt){
-  if(P.moving){P.mt+=dt/(P.fly?STEP*0.5:STEP);P.ph+=dt;
-    if(P.mt>=1){P.moving=false;P.x=P.tx;P.y=P.ty;P.fx=P.x;P.fy=P.y;onArrive();if(B)return}
+  if(P.moving){P.mt+=dt/(P.fly?STEP*0.5:P.jump?STEP*2.2:STEP);P.ph+=dt;
+    if(P.mt>=1){P.moving=false;P.jump=false;P.x=P.tx;P.y=P.ty;P.fx=P.x;P.fy=P.y;onArrive();if(B)return}
     else{P.fx=P.sx+(P.tx-P.sx)*P.mt;P.fy=P.sy+(P.ty-P.sy)*P.mt}}
   if(!P.moving&&!B&&!modalOpen()&&!P.lock){const d=heldDir();if(d){const turned=P.d!==d;P.d=d;const[dx,dy]=DIRS[d];const nx=P.x+dx,ny=P.y+dy;
     if(P.fly){if(flyable(nx,ny)){P.moving=true;P.mt=0;P.sx=P.x;P.sy=P.y;P.tx=nx;P.ty=ny;pres({x:nx,y:ny,d})}else if(turned)pres({d});else if(P.bumpCd<=0){P.bumpCd=1.2;const b=BIOME[ny*MW+nx];if(TOLL_LAW[b])toast('Dieses Gebiet ist noch gesperrt – erst am Prof. vorbei, dann darfst du es überfliegen.')}}
+    else if(LEDGE_DIR[tget(nx,ny)]){const jx=nx+dx,jy=ny+dy;if(LEDGE_DIR[tget(nx,ny)]===d&&walkable(jx,jy)&&!trainerAt(jx,jy)&&!LEGENDS.some(L=>L.x===jx&&L.y===jy)){P.moving=true;P.jump=true;P.mt=0;P.sx=P.x;P.sy=P.y;P.tx=jx;P.ty=jy;P.fol.tx=P.x;P.fol.ty=P.y;trailPush(P,P.x,P.y);trailPush(P,nx,ny);pres({x:jx,y:jy,d})}else if(turned)pres({d})}
     else if(walkable(nx,ny)&&!trainerAt(nx,ny)&&!LEGENDS.some(L=>L.x===nx&&L.y===ny)&&!tollBlock(nx,ny)){P.moving=true;P.mt=0;P.sx=P.x;P.sy=P.y;P.tx=nx;P.ty=ny;P.fol.tx=P.x;P.fol.ty=P.y;trailPush(P,P.x,P.y);pres({x:nx,y:ny,d})}else{if(trainerAt(nx,ny)||LEGENDS.some(L=>L.x===nx&&L.y===ny))bump(nx,ny);if(turned)pres({d})}}}
   P.bumpCd=Math.max(0,(P.bumpCd||0)-dt);
   approach(P.fol,dt);if(P.fols)for(const f of P.fols)approach(f,dt);
@@ -25,8 +26,9 @@ function legendHere(x,y){if(!RUN||RUN.phase!=='train')return null;return LEGENDS
 function trainerAt(x,y){return TRAINERS.find(t=>t.x===x&&t.y===y)||null}
 function bump(nx,ny){
   if(P.bumpCd>0)return;P.bumpCd=0.5;
-  const fo=fieldAt(nx,ny);if(fo){const k=fo.kind,h=HM[k];if(hasHM(k)){FIELDGONE.add(fo.id);for(const f of FIELD)if(f.kind===k&&Math.abs(f.x-fo.x)+Math.abs(f.y-fo.y)<=1)FIELDGONE.add(f.id);toast(k==='cut'?'✂ Du setzt ZERSCHNEIDER ein — die Bäume fallen!':'💪 Du setzt STÄRKE ein — die Felsen rollen weg!')}
+  const fo=fieldAt(nx,ny);if(fo){const k=fo.kind,h=HM[k];if(hasHM(k)&&!hmUser(k)){toast(`Für ${h.n} brauchst du ein ${hmNeed(k)} im Kader.`);return}if(hasHM(k)){FIELDGONE.add(fo.id);for(const f of FIELD)if(f.kind===k&&Math.abs(f.x-fo.x)+Math.abs(f.y-fo.y)<=1)FIELDGONE.add(f.id);toast(`${k==='cut'?'✂':'💪'} ${SPECIES[hmUser(k).s].n} setzt ${h.n} ein — ${k==='cut'?'die Bäume fallen!':'die Felsen rollen weg!'}`)}
     else toast(k==='cut'?`Diese Bäumchen könnte man zerschneiden… ${TRAINERS.find(t=>t.id===h.from).n} weiß, wie.`:`Ein schwerer Felsbrocken… ${TRAINERS.find(t=>t.id===h.from).n} könnte dir STÄRKE beibringen.`);return}
+  if(tget(nx,ny)===3&&hasHM('swim')&&!hmUser('swim')){toast(`Zum SURFEN brauchst du ein ${hmNeed('swim')} im Kader.`);return}
   if(tget(nx,ny)===3&&!hasHM('swim')){toast(`Das Wasser ist tief… ${TRAINERS.find(t=>t.id==='sue').n} bringt dir SURFER bei.`);return}
   const sg=SIGNS.find(s=>s.x===nx&&s.y===ny);if(sg){if(!$('#signbox').classList.contains('on'))showSign(sg);return}
   const t=trainerAt(nx,ny);
@@ -56,25 +58,36 @@ function onArrive(){
   if(checkSight())return;
   if((ENC.has(t)||t===20)&&RUN&&RUN.phase==='train'){const z=zoneAt(P.x,P.y);if(z&&Math.random()<(t===20?0.16:0.13)*cfgOf().enc)startWild(z)}
 }
-// PÄD (Polizeiärztlicher Dienst): one question per 25 % — every correct answer heals the next hurt monster by a quarter (4 per monster); wrong answers just move on
+// PÄD (Polizeiärztlicher Dienst): overview of all your monsters (picture + KP); pick one → a question; every correct answer heals it by 25 %
 function healQuiz(){RUN.kap=Math.max(RUN.kap,10);updateHud();const all=()=>RUN.team.concat(RUN.box),full=()=>all().every(m=>m.hp>=stats(m).mhp);
   if(full()){toast('PÄD: Dein Team ist gesund. Handschellen aufgefüllt.');save();return}
-  const keys=Object.keys(QZ).filter(k=>SPECIES[k]&&QZ[k].length);let n=0;const seen=new Set();
+  const keys=Object.keys(QZ).filter(k=>SPECIES[k]&&QZ[k].length);let n=0,cur=null;const seen=new Set();
   const pickQ=()=>{for(let t=0;t<40;t++){const k=keys[Math.floor(Math.random()*keys.length)],q=QZ[k][Math.floor(Math.random()*QZ[k].length)];if(!seen.has(q[0])){seen.add(q[0]);return{src:k,q}}}return{src:keys[0],q:QZ[keys[0]][0]}};
-  const hpLine=()=>RUN.team.map(m=>`${esc(SPECIES[m.s].n)} ${Math.round(100*m.hp/stats(m).mhp)}%`).join(' · '),target=()=>RUN.team.concat(RUN.box).find(m=>m.hp<stats(m).mhp);
-  const ask=()=>{const it=pickQ(),order=shuffleArr([0,1,2,3]);n++;CQ={it,order,end:Infinity,done:false,cb:null};
-    $('#cqbox').innerHTML=`<div class="sdlg"><span class="slaw">⚕ PÄD · Polizeiärztlicher Dienst · Frage ${n} · ${esc(SPECIES[it.src].law||'')}</span><br><span class="small">Richtige Antwort = +25 % für <b>${esc(SPECIES[target().s].n)}</b> (4 Fragen pro Monster).<br>${hpLine()}</span><br>${esc(it.q[0])}<div id="cqexp"></div></div>
-      <div class="sans">${order.map((k,j)=>`<button class="sa" data-ck="${k}"><span class="sk">${j+1}</span>${esc(it.q[1][k])}</button>`).join('')}</div><div class="sacts" id="cqact"><button class="btn ghost" id="cqstop">GEHEN</button></div>`;
-    $('#cquiz').classList.add('on');document.querySelectorAll('[data-ck]').forEach(bt=>bt.onclick=()=>pick(+bt.dataset.ck));$('#cqstop').onclick=stop};
+  const img={};const pic=m=>img[m.s]||(img[m.s]=(()=>{const c=mk(48,48),x=c.getContext('2d');x.imageSmoothingEnabled=false;x.drawImage(monSprite(m.s,24),0,0,48,48);return c.toDataURL()})());
+  const card=(m,i,big)=>{const mx=stats(m).mhp,r=m.hp/mx,col=r>0.5?'#3ddc6b':r>0.2?'#ffcb3d':'#ef4444',hurt=m.hp<mx,inT=i<RUN.team.length;
+    return`<button class="pcard${hurt?'':' fit'}" ${big?'':`data-pm="${i}"`} ${hurt||big?'':'disabled'} style="display:flex;gap:8px;align-items:center;text-align:left;background:#f6f1e1;color:#14141f;border:3px solid #14141f;box-shadow:3px 3px 0 #000;padding:6px 8px;cursor:${hurt&&!big?'pointer':'default'};opacity:${hurt||big?1:0.6};font-family:VT323,monospace;font-size:18px;width:100%">
+      <img src="${pic(m)}" width="48" height="48" style="image-rendering:pixelated;flex:none;background:#e8e0c8;border:2px solid #14141f">
+      <span style="flex:1;min-width:0"><b>${esc(SPECIES[m.s].n)}</b> <span style="color:#4b4f63">Lv ${m.l}${inT?'':' · Box'}</span><br>
+      <span style="display:block;height:8px;background:#2b2f40;border:2px solid #14141f;margin:3px 0"><i style="display:block;height:100%;width:${Math.round(r*100)}%;background:${col}"></i></span>
+      <span style="color:#4b4f63">KP ${m.hp}/${mx}${hurt?(m.hp<=0?' · besiegt':''):' · fit ✓'}</span></span></button>`};
+  const overview=()=>{CQ=null;CQ_PICK=null;cur=null;
+    $('#cqbox').innerHTML=`<div class="sdlg" style="margin-bottom:8px"><span class="slaw">⚕ PÄD · Polizeiärztlicher Dienst</span><br><span class="small">Wähle ein Monster. Jede richtige Antwort heilt es um 25 %.</span></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px">${all().map((m,i)=>card(m,i)).join('')}</div>
+      <div class="sacts" style="margin-top:8px"><button class="btn ghost" id="cqstop">GEHEN</button></div>`;
+    $('#cquiz').classList.add('on');document.querySelectorAll('[data-pm]').forEach(b=>b.onclick=()=>{cur=all()[+b.dataset.pm];ask()});$('#cqstop').onclick=stop};
+  const ask=()=>{const it=pickQ(),order=shuffleArr([0,1,2,3]);n++;CQ={it,order,end:Infinity,done:false,cb:null};CQ_PICK=pick;
+    $('#cqbox').innerHTML=`<div style="margin-bottom:8px">${card(cur,all().indexOf(cur),true)}</div><div class="sdlg"><span class="slaw">⚕ PÄD · Frage ${n} · ${esc(SPECIES[it.src].law||'')}</span><br>${esc(it.q[0])}<div id="cqexp"></div></div>
+      <div class="sans">${order.map((k,j)=>`<button class="sa" data-ck="${k}"><span class="sk">${j+1}</span>${esc(it.q[1][k])}</button>`).join('')}</div><div class="sacts" id="cqact"><button class="btn ghost" id="cqback">ÜBERSICHT</button><button class="btn ghost" id="cqstop">GEHEN</button></div>`;
+    $('#cquiz').classList.add('on');document.querySelectorAll('[data-ck]').forEach(bt=>bt.onclick=()=>pick(+bt.dataset.ck));$('#cqstop').onclick=stop;$('#cqback').onclick=overview};
   const stop=()=>{$('#cquiz').classList.remove('on');CQ=null;CQ_PICK=null;save();renderTeam();updateHud()};
-  const pick=k=>{if(!CQ||CQ.done)return;CQ.done=true;const ok=k===0,it=CQ.it;
+  const pick=k=>{if(!CQ||CQ.done)return;CQ.done=true;const ok=k===0,it=CQ.it,tm=cur;
     document.querySelectorAll('[data-ck]').forEach(bt=>{const kk=+bt.dataset.ck;bt.disabled=true;bt.classList.add(kk===0?'ok':kk===k?'bad':'dim')});
-    const tm=target();if(ok&&tm){const mx=stats(tm).mhp;tm.hp=Math.min(mx,tm.hp+Math.ceil(mx*0.25))}
-    const done=ok&&full();renderTeam();
-    $('#cqexp').innerHTML=`<div class="sexp ${ok?'ok':'bad'}">${ok?(done?'✓ Richtig — dein Team ist wieder fit!':`✓ Richtig — +25 % KP für ${esc(SPECIES[tm.s].n)}.`):'✗ Falsch — keine Heilung, nächste Frage.'} ${esc(it.q[2])}</div>`;
-    $('#cqact').innerHTML=!done?`<button class="btn" id="cqnext">NÄCHSTE FRAGE</button><button class="btn ghost" id="cqstop">GEHEN</button>`:`<button class="btn" id="cqstop">WEITER</button>`;
-    const nx=$('#cqnext');if(nx)nx.onclick=ask;$('#cqstop').onclick=stop};
-  CQ_PICK=pick;ask()}
+    if(ok&&tm){const mx=stats(tm).mhp;tm.hp=Math.min(mx,tm.hp+Math.ceil(mx*0.25))}
+    const tmFull=tm.hp>=stats(tm).mhp,done=full();renderTeam();
+    $('#cqexp').innerHTML=`<div class="sexp ${ok?'ok':'bad'}">${ok?(done?'✓ Richtig — dein Team ist wieder fit!':tmFull?`✓ Richtig — ${esc(SPECIES[tm.s].n)} ist wieder fit!`:`✓ Richtig — +25 % KP für ${esc(SPECIES[tm.s].n)}.`):'✗ Falsch — keine Heilung.'} ${esc(it.q[2])}</div>`;
+    $('#cqact').innerHTML=done?`<button class="btn" id="cqstop">WEITER</button>`:tmFull?`<button class="btn" id="cqback">ÜBERSICHT</button><button class="btn ghost" id="cqstop">GEHEN</button>`:`<button class="btn" id="cqnext">NÄCHSTE FRAGE</button><button class="btn ghost" id="cqback">ÜBERSICHT</button><button class="btn ghost" id="cqstop">GEHEN</button>`;
+    const nx=$('#cqnext');if(nx)nx.onclick=ask;const bk=$('#cqback');if(bk)bk.onclick=overview;$('#cqstop').onclick=stop};
+  overview()}
 // respawn after a defeat: in front of the last PÄD you entered (else Villingen)
 function padSpawn(){const l=RUN&&RUN.lastPad;if(l&&walkable(l.x,l.y))return l;const p=PADS[0];return p?{x:p.x,y:p.y+1}:VSPAWN}
 function healAll(){if(!RUN)return;for(const m of RUN.team.concat(RUN.box))m.hp=stats(m).mhp;RUN.kap=Math.max(RUN.kap,10);save();renderTeam();updateHud()}
@@ -129,20 +142,21 @@ function drawWorld(){
     c.fillStyle='#2a1a0c';c.fillRect(X+1,Y+1,14,8);c.fillStyle='#b07a3e';c.fillRect(X+2,Y+2,12,6);c.fillStyle='#d9a466';c.fillRect(X+2,Y+2,12,1);c.fillStyle='#6b4220';c.fillRect(X+4,Y+4,8,1);c.fillRect(X+4,Y+6,6,1)}
   // signs on roofs
   c.textBaseline='alphabetic';
-  for(const L of LABELS){const X=L.x*16-camX,Y=L.y*16-camY;if(X<-120||Y<-80||X>LW+40||Y>LH+40)continue;if(L.kind==='pad'){c.font='8px VT323,monospace';c.textAlign='center';c.fillStyle='#ffffff';c.fillText('PÄD',X+56,Y+36.5)}
+  for(const L of LABELS){const X=L.x*16-camX,Y=L.y*16-camY;if(X<-120||Y<-80||X>LW+40||Y>LH+40)continue;if(L.kind==='pad'){c.font='8px VT323,monospace';c.textAlign='center';const pd=PADS.find(p=>p.bx===L.x&&p.by===L.y);if(pd&&pd.old){c.fillStyle='#14141f';c.fillText('PÄD',X+48,Y+28);c.fillStyle='#ffffff';c.fillText('PÄD',X+48,Y+27)}else{c.fillStyle='#ffffff';c.fillText('PÄD',X+56,Y+36.5)}}
     else{c.font='7px "Press Start 2P",monospace';c.textAlign='center';c.fillStyle='#14141f';c.fillText(L.t,X+L.w*8+1,Y+13);c.fillStyle='#ffcb3d';c.fillText(L.t,X+L.w*8,Y+12)}}
-  for(const Bd of BLDG){const X=Bd.x*16-camX,Y=Bd.y*16-camY;if(X<-120||Y<-80||X>LW+40||Y>LH+40)continue;c.font='10px VT323,monospace';c.textAlign='center';c.fillStyle='#ffffff';c.fillText(Bd.n,X+Bd.w*8,Y+(Bd.id==='shop'?43:45.5))}
+  for(const Bd of BLDG){const X=Bd.x*16-camX,Y=Bd.y*16-camY;if(X<-120||Y<-80||X>LW+40||Y>LH+40)continue;c.font='10px VT323,monospace';c.textAlign='center';c.fillStyle='#ffffff';if(Bd.old){c.font='8px VT323,monospace';c.fillText(Bd.id==='shop'?'COPSHOP':'HfPol',X+Bd.w*8,Bd.id==='shop'?Y+20:Y+40)}else c.fillText(Bd.n,X+Bd.w*8,Y+(Bd.id==='shop'?43:45.5))}
   c.textAlign='left';
   // entities
   const ents=[];
   for(const o of OTH.values()){if(o.fx==null)continue;ents.push({fx:o.fx,fy:o.fy,col:o.c,sx:o.sx,d:o.d,ph:o.ph,mv:o.moving,name:o.n,bt:o.bt,bub:o.bub,alt:o.fl?1:0});if(o.fl){}else if(o.lf)folEnts(o,o.lf,ents,o.fx,o.fy);else if(o.ld&&o.fol.fx!=null)ents.push({fx:o.fol.fx,fy:o.fol.fy,mon:o.ld})}
-  if(G){ents.push({fx:P.fx,fy:P.fy,col:G.color,sx:G.sex,d:P.d,ph:P.ph,mv:P.moving,name:G.name+' (du)',bt:B?(B.mode==='wild'?'wild':'duel'):null,bub:myBubble,me:1,alt:flyAlt()});if(RUN&&!P.fly&&flyAlt()===0)folEnts(P,folInfo(),ents,P.fx,P.fy)}
+  if(G){ents.push({fx:P.fx,fy:P.fy,col:G.color,sx:G.sex,d:P.d,ph:P.ph,mv:P.moving,name:G.name+' (du)',bt:B?(B.mode==='wild'?'wild':'duel'):null,bub:myBubble,me:1,alt:flyAlt(),hop:P.jump?Math.round(Math.sin(P.mt*Math.PI)*9):0});if(RUN&&!P.fly&&flyAlt()===0)folEnts(P,folInfo(),ents,P.fx,P.fy)}
   for(const t of tollSpots()){const paid=tollPaid(t.b);let fx=t.x,fy=t.y;if(paid){for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]])if(walkable(t.x+dx,t.y+dy)&&BIOME[(t.y+dy)*MW+t.x+dx]===t.b&&!(dx===0&&dy===0)){const side=DIRS[t.d];if(side&&dx===side[0]&&dy===side[1])continue;fx=t.x+dx;fy=t.y+dy;break}}ents.push({fx,fy,col:t.c,sx:/Würde|Strafe/.test(t.n)?'f':'m',d:t.d,npc:t,name:t.n})}
   for(const t of TRAINERS)ents.push({fx:t.x,fy:t.y,col:t.c,sx:/^\S+in\s/.test(t.n)?'f':'m',d:t.d,ph:0,mv:false,name:t.n,npc:t,bt:null});
   for(const L of LEGENDS){const gone=(RUN&&RUN.leg&&RUN.leg[L.id])||!cfgOf().leg;if(!gone)ents.push({fx:L.x,fy:L.y,legend:L})}
   ents.sort((a,b)=>a.fy-b.fy);
-  for(const e of ents){const X=Math.round(e.fx*16-camX),Y=Math.round(e.fy*16-camY);
+  for(const e of ents){const X=Math.round(e.fx*16-camX);let Y=Math.round(e.fy*16-camY);
     if(e.alt>0)continue;
+    if(e.hop){c.fillStyle='rgba(0,0,0,0.3)';c.fillRect(X+3,Y+13,10,2);Y-=e.hop}
     if(e.legend){if(X<-40||X>LW+40||Y<-40||Y>LH+40)continue;const s=monSprite(legSid(e.legend),32);const bob=Math.round(Math.sin(T*2)*1.5);c.globalAlpha=RUN&&RUN.phase==='train'?1:0.45;c.drawImage(s,X-8,Y+15-27+bob,32,32);c.globalAlpha=1;
       c.fillStyle='#ffcb3d';for(let i=0;i<3;i++){const a=T*1.5+i*2.1;c.fillRect(Math.round(X+8+Math.cos(a)*12),Math.round(Y+4+Math.sin(a)*7),1,1)}continue}
     if(e.mon){const s=monSprite(e.mon,24);c.drawImage(s,X-4,Y+15-21,24,24)}

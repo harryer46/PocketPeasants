@@ -13,6 +13,7 @@ function monCard(m,i,inTeam){
   {const b=document.createElement('button');b.className='mini';b.textContent='ℹ Details';b.onclick=()=>openMonInfo(m.s,m);acts.appendChild(b)}
   {const b=document.createElement('button');b.className='mini';b.textContent='📚 Study';b.disabled=!!B||RUN.phase==='arena';b.title=SPECIES[m.s].law?'Quiz zu '+SPECIES[m.s].law:'Quiz mit zufälligen Paragraphen';b.onclick=()=>openStudy(m);acts.appendChild(b)}
   if(RUN&&RUN.items&&['potion','superp','revive','candy'].some(k=>RUN.items[k]>0)){const b=document.createElement('button');b.className='mini';b.textContent='🎒 Item';b.disabled=!!B||RUN.phase==='arena';b.onclick=()=>openItemsFor(m);acts.appendChild(b)}
+  if(RUN&&tmOwned().some(k=>tmOK(m,k))){const b=document.createElement('button');b.className='mini';b.textContent='💿 TM';b.disabled=!!B||RUN.phase==='arena';b.onclick=()=>openTMFor(m);acts.appendChild(b)}
   info.appendChild(acts);d.appendChild(info);return d;
 }
 function changed(){save();renderTeam();pushMt()}

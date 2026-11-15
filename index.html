@@ -395,7 +395,7 @@ const TURN_CONFIG = {
 
 /* ===================== VERSION ===================== */
 // bump with every release (MAJOR.MINOR.PATCH). Players can only share lobbies/duels with the same version.
-const VERSION='0.69.0';
+const VERSION='0.70.0';
 // access password: only its hash is stored here; the password itself also keys the P2P room, so clients without it cannot connect
 const PW_KEY='knast_pw',PW_H=2361915375,MAX_ROOM=10,MAX_LOBBY=5;
 function pwHash(s){let h=2166136261;s='knast:'+s;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
@@ -739,7 +739,7 @@ const MW=300,MH=200,MAP=new Uint8Array(MW*MH);const GATES=[];const BIOME=new Uin
 const BKEYS=[null,'north','east','south','west','knast','snow','desert','jungle'];
 const WALK0=new Set([0,1,4,5,7,9,12,13,14,15,17,18,19,20,22,23,24,25,26,27,28,29,30]);
 const ENC=new Set([1,17,18,19,24,25,26]);const BASE_T=[0,0,14,0,15,20,28,29,30],ENC_T=[0,1,17,18,19,20,24,25,26];
-const BLDG=[],PADS=[],LABELS=[],TOWNS=[];let VSPAWN={x:150,y:91},COURT={x:149,y:85};
+const BLDG=[],PADS=[],LABELS=[],TOWNS=[],LEDGES=[];const LEDGE_DIR={32:'down',33:'up',34:'left',35:'right'};let VSPAWN={x:150,y:91},COURT={x:149,y:85};
 function tget(x,y){return(x<0||y<0||x>=MW||y>=MH)?31:MAP[y*MW+x]}
 function tset(x,y,v){if(x>=0&&y>=0&&x<MW&&y<MH)MAP[y*MW+x]=v}
 function vnoise(seed,cell){
@@ -796,9 +796,9 @@ const KNAST_C={x:262,y:13};
    for(let y=cy+8;y<=cy+16;y++){tset(cx,y,4);if(tget(cx-1,y)===16)tset(cx-1,y,29);if(tget(cx+1,y)===16)tset(cx+1,y,29)}tset(cx,cy+7,20)}
   // ---- towns
   const fillRect=(x0,y0,x1,y1,t,b)=>{for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){tset(x,y,t);if(b!=null)BIOME[y*MW+x]=b}};
-  const pad=(x,y)=>{for(let X=x;X<x+6;X++){tset(X,y,8);tset(X,y+1,8);tset(X,y+2,6);tset(X,y+3,6)}tset(x+3,y+3,7);PADS.push({x:x+3,y:y+3,bx:x,by:y})};
-  const bld=(id,x,y,w,dxo,door)=>{for(let Y=y;Y<y+4;Y++)for(let X=x;X<x+w;X++)tset(X,Y,21);tset(x+dxo,y+3,door);BLDG.push({id,x,y,w,h:4,dx:x+dxo,door,n:id==='shop'?'COPSHOP':'HfPol'})};
-  for(const T of TOWN_DEF){
+  const pad=(x,y)=>{for(let X=x;X<x+6;X++){tset(X,y,8);tset(X,y+1,8);tset(X,y+2,6);tset(X,y+3,6)}tset(x+3,y+3,7);PADS.push({x:x+3,y:y+3,bx:x,by:y,old:!CUR_T||!CUR_T.center})};
+  const bld=(id,x,y,w,dxo,door)=>{for(let Y=y;Y<y+4;Y++)for(let X=x;X<x+w;X++)tset(X,Y,21);tset(x+dxo,y+3,door);BLDG.push({id,x,y,w,h:4,dx:x+dxo,door,n:id==='shop'?'COPSHOP':'HfPol',old:!CUR_T||!CUR_T.center})};let CUR_T=null;
+  for(const T of TOWN_DEF){CUR_T=T;
     // compact towns like the originals: buildings shoulder to shoulder inside a tree ring
     if(T.center){const{x:cx,y:cy}=T;
       for(let y=cy-13;y<=cy+13;y++)for(let x=cx-17;x<=cx+17;x++){const d=Math.hypot((x-cx)/15.5,(y-cy)/12.5);if(d<1){BIOME[y*MW+x]=0;tset(x,y,d>0.86?2:0);if(d<=0.86&&r()<0.04)tset(x,y,9)}}
@@ -882,6 +882,35 @@ const KNAST_C={x:262,y:13};
      for(const[dx,dy]of D4){const j=(y+dy)*MW+x+dx;if(!ROAD.has(j))continue;const nb=BIOME[j];if(nb===b||nb===0)continue;
        if([...seen].some(k=>{const kx=k%MW,ky=(k-kx)/MW;return BIOME[k]===b&&Math.abs(kx-x)+Math.abs(ky-y)<22}))continue;seen.add(i);GATES.push({b,i});break}}
    GATES.push({b:5,i:(KNAST_C.y+7)*MW+KNAST_C.x},{b:9,i:(KNAST_C.y-1)*MW+KNAST_C.x})}
+  // ---- ledges (one-way steps like the originals): the land rises away from Villingen. Going out you walk round the step through
+  //      tall grass; coming back you can hop down the step as a shortcut. 32 jump ↓, 33 ↑, 34 ←, 35 →
+  {const RD=new Int32Array(MW*MH).fill(-1);let st=-1;for(let r2=0;r2<12&&st<0;r2++)for(const i of ROAD){const x=i%MW,y=(i-x)/MW;if(Math.abs(x-VSPAWN.x)+Math.abs(y-VSPAWN.y)<=r2){st=i;break}}
+   const q=[st];RD[st]=0;for(let h=0;h<q.length;h++){const i=q[h],x=i%MW,y=(i-x)/MW;for(const[dx,dy]of D4){const j=(y+dy)*MW+x+dx;if(RD[j]<0&&ROAD.has(j)){RD[j]=RD[i]+1;q.push(j)}}}
+   const placed=[],gateNear=(x,y)=>GATES.some(g=>{const gx=g.i%MW,gy=(g.i-gx)/MW;return Math.abs(gx-x)+Math.abs(gy-y)<8}),open=i=>WALK0.has(MAP[i])&&MAP[i]!==27&&MAP[i]!==3&&MAP[i]!==13&&MAP[i]!==7&&MAP[i]<21;
+   const order=[...ROAD].filter(i=>RD[i]>=14&&RD[i]%12===2).sort((a,b)=>RD[a]-RD[b]);
+   for(const i of order){const x=i%MW,y=(i-x)/MW,b=BIOME[i];if(!b||b===5||gateNear(x,y)||placed.some(([a,c])=>Math.abs(a-x)+Math.abs(c-y)<18))continue;
+     // the direction back to Villingen
+     let back=null;for(const[dx,dy]of D4){const j=(y+dy)*MW+x+dx;if(RD[j]>=0&&RD[j]<RD[i]){back=[dx,dy];break}}if(!back)continue;
+     const[bx,by]=back,px=by!==0?1:0,py=by!==0?0:1;   // ledge runs perpendicular to the road
+     // straight road for a few tiles on both sides
+     let straight=true;for(let k=-2;k<=2;k++){const j=(y+by*k)*MW+x+bx*k;if(!ROAD.has(j)){straight=false;break}}if(!straight)continue;
+     let a=0,c=0;while(a<10&&open((y-py*(a+1))*MW+x-px*(a+1))&&BIOME[(y-py*(a+1))*MW+x-px*(a+1)]===b)a++;while(c<10&&open((y+py*(c+1))*MW+x+px*(c+1))&&BIOME[(y+py*(c+1))*MW+x+px*(c+1)]===b)c++;
+     if(a>=10||c>=10||a+c+1<3)continue;
+     // detour round one end of the step (through tall grass); pick the side whose rock/trees belong to the same area
+     const tryEnd=sgn=>{const e=sgn<0?-(a+1):c+1,cells=[],add=(X,Y)=>{if(X<3||Y<3||X>=MW-3||Y>=MH-3)return false;const j=Y*MW+X;if(ROAD.has(j))return true;if(BIOME[j]!==b||MAP[j]===3||MAP[j]===27||MAP[j]>=21&&MAP[j]<=23||MAP[j]===13||MAP[j]>=32)return false;cells.push(j);return true};
+       for(let w=0;w<2;w++)for(let k=-2;k<=2;k++)if(!add(x+px*(e+sgn*w)+bx*k,y+py*(e+sgn*w)+by*k))return null;
+       for(const k of[-2,2])for(let m=1;m<=Math.abs(e)+1;m++)if(!add(x+px*sgn*m+bx*k,y+py*sgn*m+by*k))return null;return cells};
+     const cells=tryEnd(1)||tryEnd(-1);if(!cells)continue;
+     const lt=bx===0?(by>0?32:33):(bx>0?35:34);
+     for(let k=-a;k<=c;k++){const j=(y+py*k)*MW+x+px*k;MAP[j]=lt;ROAD.delete(j)}
+     for(const j of cells)MAP[j]=ENC_T[b];
+     // tall grass right in front of the step on the low side's approach, so the way up leads through it
+     for(let k=-a;k<=c;k++)for(const s2 of[1,2]){const j=(y+py*k+by*s2)*MW+x+px*k+bx*s2;if(open(j)&&!ROAD.has(j)&&BIOME[j]===b)MAP[j]=ENC_T[b]}
+     // safety: the far side must still be reachable from Villingen without hopping (else undo)
+     const save=[];for(let k=-a;k<=c;k++){const j=(y+py*k)*MW+x+px*k;save.push(j)}
+     const seen=new Uint8Array(MW*MH),qq=[VSPAWN.y*MW+VSPAWN.x];seen[qq[0]]=1;const far=(y-by*2)*MW+x-bx*2;while(qq.length&&!seen[far]){const u=qq.pop(),ux=u%MW,uy=(u-ux)/MW;for(const[dx,dy]of D4){const j=(uy+dy)*MW+ux+dx;if(!seen[j]&&WALK0.has(MAP[j])){seen[j]=1;qq.push(j)}}}
+     if(!seen[far]){for(const j of save){MAP[j]=4;ROAD.add(j)}continue}
+     placed.push([x,y]);LEDGES.push({x,y,t:lt})}}
   // ---- reachability: carve pockets back to the network inside their own area (never across a border), else fill them
   const W0=i=>WALK0.has(MAP[i]);
   const reach=()=>{const seen=new Uint8Array(MW*MH),q=[VSPAWN.y*MW+VSPAWN.x];seen[q[0]]=1;while(q.length){const i=q.pop(),x=i%MW,y=(i-x)/MW;for(const[dx,dy]of D4){const nx=x+dx,ny=y+dy;if(nx<1||ny<1||nx>=MW-1||ny>=MH-1)continue;const j=ny*MW+nx;if(seen[j]||!W0(j))continue;seen[j]=1;q.push(j)}}return seen};
@@ -926,10 +955,15 @@ const SIGNS=[],SIGNSET=new Set(),BNAME=['Stadt','Villinger Land','Damentaler Wal
 const HM={cut:{n:'ZERSCHNEIDER',i:'✂',from:'rita',d:'Fällt kleine Bäume auf Nebenwegen (z. B. zu Schreinen).'},swim:{n:'SURFER',i:'🌊',from:'sue',d:'Schwimm über Seen und Flüsse.'},
   str:{n:'STÄRKE',i:'💪',from:'hank',d:'Schiebt Felsbrocken auf Nebenwegen weg.'},fly:{n:'FLIEGEN',i:'🕊',from:'axel',d:'Abheben und frei über die Karte fliegen – über Bäume, Wasser und Felsen (im Team-Menü einsetzen oder Taste F).'}};
 const HM_FROM={rita:'cut',sue:'swim',hank:'str',axel:'fly'};
+// a field skill is used by a monster of a fitting type in the squad (like teaching the HM to the right Pokémon)
+const HM_TYPES={cut:['grass','normal'],swim:['water'],str:['rock','fire'],fly:['flying']};
+function hmUser(k){try{return(RUN&&RUN.team||[]).find(m=>m&&m.hp>0&&HM_TYPES[k].includes(SPECIES[m.s].t))||null}catch(e){return null}}
+function canHM(k){return hasHM(k)&&!!hmUser(k)}
+function hmNeed(k){return HM_TYPES[k].map(t=>TYPES[t].n).join('- oder ')+'-Monster'}
 function hasHM(k){try{return!!(RUN&&RUN.hm&&RUN.hm[k])}catch(e){return false}}  // also called while the map is built, before the save is loaded
 const FIELD=[],FIELDGONE=new Set();
 function fieldAt(x,y){return FIELD.find(f=>f.x===x&&f.y===y&&!FIELDGONE.has(f.id))||null}
-function walkable(x,y){const t=tget(x,y);return(WALK.has(t)||(t===3&&hasHM('swim')))&&!SIGNSET.has(y*MW+x)&&!fieldAt(x,y)}
+function walkable(x,y){const t=tget(x,y);return(WALK.has(t)||(t===3&&canHM('swim')))&&!SIGNSET.has(y*MW+x)&&!fieldAt(x,y)}
 // optional side paths to some shrines are blocked by small trees (CUT) or boulders (STRENGTH); islands need SURFER
 (function placeField(){let id=0;const spots=[[70,122,'cut'],[71,123,'cut'],[150,22,'str'],[275,36,'str'],[276,124,'cut']];
   for(const[x,y,kind]of spots){let best=null,bd=9;for(let dy=-3;dy<=3;dy++)for(let dx=-3;dx<=3;dx++){const X=x+dx,Y=y+dy;if(tget(X,Y)!==4)continue;const d=Math.abs(dx)+Math.abs(dy);if(d<bd){bd=d;best={x:X,y:Y}}}
@@ -1203,9 +1237,15 @@ function* bakeChunkGen(cx,cy){
   const inC=(x,y)=>x>=X0&&y>=Y0&&x<X0+CS&&y<Y0+CS;
   // building tiles (PÄD walls/roof are covered by its sprite)
   for(let y=Y0;y<Y0+CS;y++)for(let x=X0;x<X0+CS;x++){const t=tget(x,y);if([10,11,12,20,27].includes(t)){const arr=TILE[t];gc.drawImage(arr[(t===20?(x+y)%arr.length:0)],x*16,y*16)}}
-  for(const p of PADS){if(p.bx+6<X0||p.bx>X0+CS||p.by+4<Y0||p.by>Y0+CS)continue;gc.fillStyle='rgba(20,30,10,0.28)';gc.fillRect(p.bx*16,(p.by+4)*16,96,4);gc.drawImage(dienstSprite(),p.bx*16,p.by*16)}
-  for(const Bd of BLDG){if(Bd.x+Bd.w<X0||Bd.x>X0+CS||Bd.y+Bd.h<Y0||Bd.y>Y0+CS)continue;gc.fillStyle='rgba(20,30,10,0.28)';gc.fillRect(Bd.x*16,(Bd.y+Bd.h)*16,Bd.w*16,4);gc.drawImage(Bd.id==='shop'?shopSprite():hfpolSprite(),Bd.x*16,Bd.y*16)}
+  for(const p of PADS){if(p.bx+6<X0||p.bx>X0+CS||p.by+4<Y0||p.by>Y0+CS)continue;gc.fillStyle='rgba(20,30,10,0.28)';gc.fillRect(p.bx*16,(p.by+4)*16,96,4);gc.drawImage(p.old?padSpriteOld():dienstSprite(),p.bx*16,p.by*16)}
+  for(const Bd of BLDG){if(Bd.x+Bd.w<X0||Bd.x>X0+CS||Bd.y+Bd.h<Y0||Bd.y>Y0+CS)continue;gc.fillStyle='rgba(20,30,10,0.28)';gc.fillRect(Bd.x*16,(Bd.y+Bd.h)*16,Bd.w*16,4);gc.drawImage(Bd.id==='shop'?(Bd.old?shopSpriteOld():shopSprite()):(Bd.old?hfpolSpriteOld():hfpolSprite()),Bd.x*16,Bd.y*16)}
   for(let y=Y0;y<Y0+CS;y++)for(let x=X0;x<X0+CS;x++){const t=tget(x,y);if(t===13)gc.drawImage(TILE[13][0],x*16,y*16)}
+  // ledges: a grassy lip with a short earth face on the low side
+  for(let y=Y0;y<Y0+CS;y++)for(let x=X0;x<X0+CS;x++){const t=tget(x,y);if(t<32||t>35)continue;const X=x*16,Y=y*16,F=(c0,a,b,w,h)=>{gc.fillStyle=c0;gc.fillRect(X+a,Y+b,w,h)};
+    if(t===32){F('#3a7424',0,7,16,2);F('#2a5a1a',0,9,16,1);F('#a07848',0,10,16,3);F('#7a5430',0,13,16,2);F('#00000030',0,15,16,1);for(let k=1;k<16;k+=5)F('#c49a62',k,10,2,1)}
+    else if(t===33){F('#00000030',0,0,16,1);F('#7a5430',0,1,16,2);F('#a07848',0,3,16,3);F('#2a5a1a',0,6,16,1);F('#3a7424',0,7,16,2);for(let k=2;k<16;k+=5)F('#c49a62',k,3,2,1)}
+    else if(t===34){F('#00000030',0,0,1,16);F('#7a5430',1,0,2,16);F('#a07848',3,0,3,16);F('#2a5a1a',6,0,1,16);F('#3a7424',7,0,2,16)}
+    else{F('#3a7424',7,0,2,16);F('#2a5a1a',9,0,1,16);F('#a07848',10,0,3,16);F('#7a5430',13,0,2,16);F('#00000030',15,0,1,16)}}
   // ground details: tufts, flowers, pebbles
   for(let y=Y0;y<Y0+CS;y++)for(let x=X0;x<X0+CS;x++){const t=tget(x,y),b=BIOME[y*MW+x],r=mulberry32(th(x,y));
     if(t===0||t===14||t===15||t===30){const n=1+Math.floor(r()*3);for(let i=0;i<n;i++){const X=x*16+Math.floor(r()*14)+1,Y=y*16+Math.floor(r()*13)+2;gc.fillStyle=b===2?'#1d4416':b===4?'#6a6a2a':b===8?'#123a18':'#3a7424';gc.fillRect(X,Y,1,2);gc.fillRect(X-1,Y,1,1);gc.fillRect(X+1,Y-1,1,2);if(r()<0.4){gc.fillStyle=b===2?'#5c9a3a':'#9ad25a';gc.fillRect(X+1,Y-1,1,1)}}}
@@ -1265,6 +1305,15 @@ function paintRock(gc,cx,cy,R,r,palOv){
 }
 function th(x,y){return((x*73856093)^(y*19349663))>>>0}
 
+
+// classic PÄD (before the tower style): red tiled roof, white wall with windows, wooden door, blue light on the ridge
+let PADSPR0=null;function padSpriteOld(){if(PADSPR0)return PADSPR0;const c=mk(96,64),x=c.getContext('2d'),F=(col,a,b,w,h)=>{x.fillStyle=col;x.fillRect(a,b,w,h)};
+  F('#14141f',0,0,96,64);F('#d23b3b',1,1,94,31);for(let y=4;y<32;y+=4)F('#a92b2b',1,y,94,1);for(let y=1;y<32;y+=4)F('#e85c5c',1,y,94,1);F('#14141f',0,31,96,1);
+  F('#efe8dc',1,32,94,31);F('#bfb6a2',1,60,94,3);
+  for(const wx of[0,1,2,4,5]){const X=wx*16;F('#3c3c4c',X+3,35,10,8);F('#8fd0ff',X+4,36,8,6);F('#c8ecff',X+4,36,3,2);if(wx!==2&&wx!==4){F('#3c3c4c',X+3,48,10,8);F('#8fd0ff',X+4,49,8,6);F('#c8ecff',X+4,49,3,2)}}
+  F('#3a2210',50,49,12,15);F('#7c4a22',51,50,10,14);F('#9a5d2c',51,50,1,14);F('#ffd23f',59,57,1,1);
+  F('#14141f',42,8,12,8);F('#2f6fd0',43,9,10,6);F('#8fc8ff',44,10,3,2);F('#ffffff',46,10,4,1);
+  return PADSPR0=c}
 /* ===================== STATE ===================== */
 const SAVE_KEY='discountmon-v1';
 let G=null,RUN=null,B=null,T=0;
@@ -1314,7 +1363,7 @@ function begin(){
 }
 
 /* ===================== CONTROL SETTINGS ===================== */
-const CHANGELOG=[["0.69.0", "2026-11-15", "Wilde Monster: Vollbild-Auftritt 10 s (Tippen überspringt) mit diagonalem Farbbalken im Pokémon-Stil, die zweite Infobox danach entfällt; dein eigenes Monster erscheint erst, nachdem du es ausgewählt hast; Trainer-Dialog erscheint nur noch einmal"], ["0.68.1", "2026-11-15", "Obere Leiste aufgeräumt: Laden-, Bug- und Speichern-Knopf entfernt (Laden über den Copshop in der Stadt, Speichern läuft automatisch); FLIEGEN wird jetzt wie eine VM im Team-Menü unter Feldfähigkeiten eingesetzt (oder Taste F), kein Extra-Knopf mehr"], ["0.68.0", "2026-11-15", "Hauptwege 1:1 nach dem Referenzbild nachgezogen (Verlauf, Kreuzungen, Brücken), Gebiete angepasst (östlicher Wald statt Wüste); Städte wieder kompakt wie im Original; FLIEGEN: Abheben direkt auf der Karte mit Schatten – über Bäume, Wasser und Felsen, doppelt so schnell, Landen auf freiem Boden (Taste F / Knopf); gesperrte Gebiete bleiben auch in der Luft zu"], ["0.67.0", "2026-11-15", "Wegenetz wie im Referenzbild: Wege mit 90°-Kurven und Treppenstufen, viele Kreuzungen und verschachtelte Rundwege in jedem Gebiet (nur die Hauptwege führen über die Gebietsgrenzen zu den Profs); mehr Trainer an den neuen Wegen"], ["0.66.0", "2026-11-15", "Karte näher an der Vorlage: dichte Wälder, Kiefern, Palmen und Klippen statt offener Flächen – Wege sind schmale Routen mit Grasflächen am Rand; zusätzliche Rundwege wie im Konzept; Flüsse vom Nordsee links und rechts am Plateau vorbei zum Meer; nach einer Niederlage werden die Monster nicht mehr automatisch geheilt – am PÄD per Fragen (25 % je richtige Antwort), vorher keine Kämpfe"], ["0.65.0", "2026-11-15", "Komplett neue, rund 20× größere Welt (300×200) nach der Konzeptkarte: Polizeischule Villingen-Knastingen mit Gericht in der Mitte, Ausbildungsstätten Lahribar (Schnee), Unterwertheim (Canyon), Damental (Wald), Mostbach (Dschungel) und Marderach (Hafen) – jede mit PÄD, Copshop und HfPol; Knast im Wüstenkrater; Flüsse, Seen, Meer und Inseln; neue Gebiete mit eigenen Monstern, Hintergründen und Hindernissen; 25 Profs an allen Gebietsgrenzen; 55 Trainer; Legendäre neu verteilt; Schnellreise zu besuchten Städten; nach einer Niederlage geht es beim zuletzt besuchten PÄD weiter; Lobby-Standardzeit 20 Minuten"], ["0.64.0", "2026-11-14", "Name wieder „Pocket Peasants“; Kader als Lobby-Einstellung (max. 4, Rest in die Box); Beutel per Wischen durchblättern, Doppeltipp benutzt; Flucht immer mit Frage (auch rundenbasiert); 🎓-Hut über dem Gegner im PvP, wenn er im Notfallmodus ist; 40 klassische Attacken aus Gold/Silber inkl. Buffs und Debuffs (Angriff/Verteidigung/Initiative-Stufen); Heil-Attacken kosten alle AP mit langer Abklingzeit, alle anderen Attacken nur noch die Hälfte; PÄD heilt pro richtiger Antwort 25 % (falsch = nächste Frage); wilde Monster erscheinen zuerst groß mit Infokarte (6 s oder Tippen)"], ["0.63.0", "2026-11-14", "Einstellbares Vorhalten der Zielhilfe (0–10), Changelog in den Einstellungen, Quizfragen überarbeitet und erweitert (15 je Monster, ausgewogene Antwortlängen), PÄD heilt 25 % pro richtiger Antwort, kurzer Stillstand nach dem Sprint, stärkere Trainer, Wirksamkeit direkt am Ziel, Trainer-Dialog länger (Tippen überspringt), Monsterdex-Eintrag beim Fangen, neue Angriffsarten (Strahl, Luftschlag, Hochwurf, Atem), typabhängiges Tempo, größere Arena mit unzerstörbaren Pollern"], ["0.62.0", "2026-11-14", "Fix kein Schaden mit Auto-Aim (NaN-Zielwinkel), Seitenmenü verschwindet nicht mehr beim erneuten Tab-Klick, Quellcode modular in src/ aufgeteilt"], ["0.61.0", "2026-11-13", "Flucht/Wechsel nur am Arenarand (Flucht mit 3-s-Quiz), Monster-Auswahl als Slotmaschine (A/D, X), Auto-Aim mit Vorhalten und Trägheit, Prof.-Lehrer mit Klausur/Bestechen/Kämpfen, max. 3 im Team, manuelles Speichern + Export/Import"], ["0.59.0", "2026-11-13", "Karte umgebaut – Stadt→Nordwiese frei, alle weiteren Gebiete nur über Engstellen mit Lehrern (GG→Ostwald, PolG→Südküste, StVO→Westhügel, StPO→Knast, StGB→Zellentrakt)"], ["0.58.0", "2026-11-13", "Zweite Chance bei Niederlage gegen Paragrafen-Monster (Paragrafenname in 5 s erraten, 25 % KP zurück, einmal pro Kampf)"], ["0.57.0", "2026-11-13", "Zoll-Lehrer an den Gebietsgrenzen (GG, PolG, StVO, StPO, StGB): 3 Fragen, sonst 300 $ oder Kampf gegen stärkere Paragrafen"], ["0.56.1", "2026-11-12", "Fix: laufendes Lobby-Spiel ging beim Neuladen (z. B. nach Update) verloren – wird jetzt fortgesetzt"], ["0.56.0", "2026-11-12", "Sprint pausiert AP-Regeneration 3 s, Schnellwahl zum Wechseln im Kampf, Auswahl ohne Timer (Tippen bestätigt, außer PvP), Handschellen-Wurf beim Einsetzen des eigenen Monsters"], ["0.55.0", "2026-11-12", "Sprint wieder ohne AP-Kosten, Mindestlevel pro Gebiet (Wiese 3, Küste 5, Wald 6, Hügel 8, Knast 26)"], ["0.54.0", "2026-11-12", "Neue Attacken per Dialog nach dem Kampf; bei 4 Attacken wählt der Spieler, welche verlernt wird (oder nicht lernen)"], ["0.53.0", "2026-11-12", "AP-Regeneration im Stand steigt progressiv, alle AP-Kosten auf 80 %, Treffer-Reaktion mit kurzem Freeze, Wechsel wenn der Gegner wechselt, Encounter-Intro mit Monster-Steckbrief, 3-2-1-Countdown bei Kampfbeginn und nach dem Notfallmodus"], ["0.52.0", "2026-11-12", "Sprint/Dash kostet 20 AP (auch beim Ausweichen der KI)"], ["0.51.0", "2026-11-12", "Neue Statuseffekte Schlaf und Verwirrung mit Partikeln (Zzz, kreisende Vögel/Fragezeichen), Fix: Spielstand löschen wurde beim Neuladen wieder gespeichert"], ["0.50.1", "2026-11-12", "Spielstand wird zusätzlich beim Schließen/Wechseln des Tabs gespeichert"], ["0.50.0", "2026-11-12", "Festnahme-Quiz beim Fangen (15 s, zufällige Antwortreihenfolge; falsch oder zu langsam = Monster flieht)"], ["0.49.0", "2026-11-12", "Bis zu 3 Team-Monster folgen dem Spieler in der Welt (Lobby-Einstellung 0-3)"], ["0.48.0", "2026-11-12", "Protokoll-Download zur Fehlersuche (Einstellungen und Bug-Dialog), kurze Verbindungsabbrüche erzeugen keine Beitritt-/Verlassen-Spam mehr, Figuren wieder in alter Größe"], ["0.46.0", "2026-11-12", "Profil im Spiel ändern (Name, Beamter/Beamtin, Mützenfarbe)"], ["0.45.0", "2026-11-12", "Neue Spieler-Sprites (Beamter/Beamtin, Mützenband in Spielerfarbe), neue Trainer-Sprites je Einheit, Dienststelle im HfPol-Look, Türme mit stimmiger 3/4-Perspektive"], ["0.44.0", "2026-11-12", "Zugangspasswort, max. 10 Spieler im Raum, max. 5 pro Lobby, Bug-melden-Button (GitHub-Issue)"], ["0.43.0", "2026-11-12", "Netzwerk spart Datenvolumen (nur Änderungen senden, seltenerer Heartbeat/Ping), AFK-Tabs trennen sich automatisch und verbinden bei Aktivität neu"], ["0.42.0", "2026-11-12", "Notfallmodus (Enter) mit zufälliger Rechtsnorm und Pause in KI-Kämpfen, Chat jetzt auf T, Copshop und HfPol im Turm-Stil des HfPol-Campus"], ["0.41.0", "2026-11-12", "Laden und HfPol als eigene Gebäude (Study nur in der HfPol), VS-Intro bei Cop-, Richter-Bot- und Spielerkämpfen"], ["0.40.0", "2026-11-12", "Bereitschaftsraum vor dem Gericht, 4 legendäre Einsatzmittel (Schlagstock, Taser, Pfefferspray, Kelle), Gerichtssaal-Kampfhintergrund, Version im Startbildschirm, Schilder folgen echtem Weg, Gesetzbuch im Namenssuffix, Study: 10 Fragen pro Monster"], ["0.39.1", "2026-11-12", "Knast dungeon (StGB only, Lv 26-34), update banner when a newer version is on the server, fix keyboard shortcuts blocked in Gericht duels / after chatting"], ["0.38.3", "2026-11-12", "town renamed Villingen-Knastningen"], ["0.38.2", "2026-11-12", "free play 'Neu anfangen' with a new random monster (dex and trophies stay)"], ["0.38.1", "2026-11-12", "Study quiz (150 questions on PolG, GG, StGB, StPO, EP for correct answers), chat overlay notifications, bold paragraph suffix, no dark drop shadow behind dark text"], ["0.37.1", "2026-11-12", "15 StPO monsters, town renamed Coptown, random starter in free play, 6 artwork starters to choose from in matches"], ["0.36.3", "2026-11-12", "title KNASTÉMON on one line"], ["0.36.2", "2026-11-12", "paragraph as name suffix (e.g. Owigon §26, Würdeadler Art.1); no 'Wild:' prefix in the foe HUD so long names fit"], ["0.36.1", "2026-11-12", "player and cops drawn as police officers (peaked cap with badge, navy uniform; chosen colour = cap band)"], ["0.36.0", "2026-11-12", "Knastémon — police theme"], ["0.35.0", "2026-11-12", "AP costs x1.45, AP regen 13->8/s, flee distance 160->120"], ["0.34.0", "2026-11-12", "complete German translation of the UI"], ["0.33.1", "2026-11-12", "embed pixel fonts (Press Start 2P, VT323) instead of loading from Google Fonts; monospace fallback"], ["0.33.0", "2026-11-12", "alternative monster set redrawn 1:1 from the new artwork"], ["0.32.0", "2026-11-12", "higher AP costs for all attacks (~1.6x), AP drains faster"], ["0.31.0", "2026-11-12", "field skills (CUT/SWIM/STRENGTH/FLY) unlocked by beating harder trainers"], ["0.30.0", "2026-11-12", "free 360° aiming as a lobby option"], ["0.29.0", "2026-11-12", "scrollable dialogs on phones, battle camera zoom, fullscreen button, 45° aiming, auto-aim option, trainer VMs, type chart"], ["0.27.0", "2026-11-12", "battle arenas themed per location (floor, rim, obstacles)"], ["0.26.0", "2026-11-12", "signposts with biome name, direction and recommended level"], ["0.25.0", "2026-11-12", "responsive layout for PC, tablets and phones (landscape and portrait)"], ["0.24.0", "2026-11-11", "money, rewards, items and the Budget Mart shop"], ["0.23.0", "2026-11-11", "monster dex and move details"], ["0.22.0", "2026-11-11", "manual aiming (no auto-aim), drag-to-aim touch controls, round pause on KO, lead pick"], ["0.20.0", "2026-11-11", "AP for all attacks, longer ranged cooldowns, movement inertia"], ["0.19.0", "2026-11-11", "round battle arena, you start at the bottom, destructible obstacles"], ["0.18.0", "2026-11-11", "top menu bar, version check, PvP-only arena, give up, lobby invites"]];
+const CHANGELOG=[["0.70.0", "2026-11-15", "Stufen wie im Original: vom Ort weg geht es bergauf (Umweg durchs hohe Gras), zurück springt man die Stufe herunter; VMs (Zerschneider, Surfer, Stärke, Fliegen) brauchen ein Monster vom passenden Typ im Kader; TMs: Typ-gebundene Attacken als Trainer-Belohnung und im Copshop (jede Stadt hat ihr eigenes Angebot), Trainer-Monster lernen nur noch eigene oder Normal-Attacken; PÄD mit Monster-Übersicht (Bild + KP), antippen → Frage zum Heilen; verfehlte Angriffe hinterlassen Bodeneffekte (Wasser: Pfütze/rutschig, Feuer: Flammen/Verbrennung, Gestein: Geröll-Hindernis, Pflanze: Wurzeln/langsam, Elektro: Funken); kein Bewegungsstopp mehr nach dem Sprint; Copshop und HfPol außerhalb Villingens wieder im alten Gebäude-Look"], ["0.69.0", "2026-11-15", "Wilde Monster: Vollbild-Auftritt 10 s (Tippen überspringt) mit diagonalem Farbbalken im Pokémon-Stil, die zweite Infobox danach entfällt; dein eigenes Monster erscheint erst, nachdem du es ausgewählt hast; Trainer-Dialog erscheint nur noch einmal"], ["0.68.1", "2026-11-15", "Obere Leiste aufgeräumt: Laden-, Bug- und Speichern-Knopf entfernt (Laden über den Copshop in der Stadt, Speichern läuft automatisch); FLIEGEN wird jetzt wie eine VM im Team-Menü unter Feldfähigkeiten eingesetzt (oder Taste F), kein Extra-Knopf mehr"], ["0.68.0", "2026-11-15", "Hauptwege 1:1 nach dem Referenzbild nachgezogen (Verlauf, Kreuzungen, Brücken), Gebiete angepasst (östlicher Wald statt Wüste); Städte wieder kompakt wie im Original; FLIEGEN: Abheben direkt auf der Karte mit Schatten – über Bäume, Wasser und Felsen, doppelt so schnell, Landen auf freiem Boden (Taste F / Knopf); gesperrte Gebiete bleiben auch in der Luft zu"], ["0.67.0", "2026-11-15", "Wegenetz wie im Referenzbild: Wege mit 90°-Kurven und Treppenstufen, viele Kreuzungen und verschachtelte Rundwege in jedem Gebiet (nur die Hauptwege führen über die Gebietsgrenzen zu den Profs); mehr Trainer an den neuen Wegen"], ["0.66.0", "2026-11-15", "Karte näher an der Vorlage: dichte Wälder, Kiefern, Palmen und Klippen statt offener Flächen – Wege sind schmale Routen mit Grasflächen am Rand; zusätzliche Rundwege wie im Konzept; Flüsse vom Nordsee links und rechts am Plateau vorbei zum Meer; nach einer Niederlage werden die Monster nicht mehr automatisch geheilt – am PÄD per Fragen (25 % je richtige Antwort), vorher keine Kämpfe"], ["0.65.0", "2026-11-15", "Komplett neue, rund 20× größere Welt (300×200) nach der Konzeptkarte: Polizeischule Villingen-Knastingen mit Gericht in der Mitte, Ausbildungsstätten Lahribar (Schnee), Unterwertheim (Canyon), Damental (Wald), Mostbach (Dschungel) und Marderach (Hafen) – jede mit PÄD, Copshop und HfPol; Knast im Wüstenkrater; Flüsse, Seen, Meer und Inseln; neue Gebiete mit eigenen Monstern, Hintergründen und Hindernissen; 25 Profs an allen Gebietsgrenzen; 55 Trainer; Legendäre neu verteilt; Schnellreise zu besuchten Städten; nach einer Niederlage geht es beim zuletzt besuchten PÄD weiter; Lobby-Standardzeit 20 Minuten"], ["0.64.0", "2026-11-14", "Name wieder „Pocket Peasants“; Kader als Lobby-Einstellung (max. 4, Rest in die Box); Beutel per Wischen durchblättern, Doppeltipp benutzt; Flucht immer mit Frage (auch rundenbasiert); 🎓-Hut über dem Gegner im PvP, wenn er im Notfallmodus ist; 40 klassische Attacken aus Gold/Silber inkl. Buffs und Debuffs (Angriff/Verteidigung/Initiative-Stufen); Heil-Attacken kosten alle AP mit langer Abklingzeit, alle anderen Attacken nur noch die Hälfte; PÄD heilt pro richtiger Antwort 25 % (falsch = nächste Frage); wilde Monster erscheinen zuerst groß mit Infokarte (6 s oder Tippen)"], ["0.63.0", "2026-11-14", "Einstellbares Vorhalten der Zielhilfe (0–10), Changelog in den Einstellungen, Quizfragen überarbeitet und erweitert (15 je Monster, ausgewogene Antwortlängen), PÄD heilt 25 % pro richtiger Antwort, kurzer Stillstand nach dem Sprint, stärkere Trainer, Wirksamkeit direkt am Ziel, Trainer-Dialog länger (Tippen überspringt), Monsterdex-Eintrag beim Fangen, neue Angriffsarten (Strahl, Luftschlag, Hochwurf, Atem), typabhängiges Tempo, größere Arena mit unzerstörbaren Pollern"], ["0.62.0", "2026-11-14", "Fix kein Schaden mit Auto-Aim (NaN-Zielwinkel), Seitenmenü verschwindet nicht mehr beim erneuten Tab-Klick, Quellcode modular in src/ aufgeteilt"], ["0.61.0", "2026-11-13", "Flucht/Wechsel nur am Arenarand (Flucht mit 3-s-Quiz), Monster-Auswahl als Slotmaschine (A/D, X), Auto-Aim mit Vorhalten und Trägheit, Prof.-Lehrer mit Klausur/Bestechen/Kämpfen, max. 3 im Team, manuelles Speichern + Export/Import"], ["0.59.0", "2026-11-13", "Karte umgebaut – Stadt→Nordwiese frei, alle weiteren Gebiete nur über Engstellen mit Lehrern (GG→Ostwald, PolG→Südküste, StVO→Westhügel, StPO→Knast, StGB→Zellentrakt)"], ["0.58.0", "2026-11-13", "Zweite Chance bei Niederlage gegen Paragrafen-Monster (Paragrafenname in 5 s erraten, 25 % KP zurück, einmal pro Kampf)"], ["0.57.0", "2026-11-13", "Zoll-Lehrer an den Gebietsgrenzen (GG, PolG, StVO, StPO, StGB): 3 Fragen, sonst 300 $ oder Kampf gegen stärkere Paragrafen"], ["0.56.1", "2026-11-12", "Fix: laufendes Lobby-Spiel ging beim Neuladen (z. B. nach Update) verloren – wird jetzt fortgesetzt"], ["0.56.0", "2026-11-12", "Sprint pausiert AP-Regeneration 3 s, Schnellwahl zum Wechseln im Kampf, Auswahl ohne Timer (Tippen bestätigt, außer PvP), Handschellen-Wurf beim Einsetzen des eigenen Monsters"], ["0.55.0", "2026-11-12", "Sprint wieder ohne AP-Kosten, Mindestlevel pro Gebiet (Wiese 3, Küste 5, Wald 6, Hügel 8, Knast 26)"], ["0.54.0", "2026-11-12", "Neue Attacken per Dialog nach dem Kampf; bei 4 Attacken wählt der Spieler, welche verlernt wird (oder nicht lernen)"], ["0.53.0", "2026-11-12", "AP-Regeneration im Stand steigt progressiv, alle AP-Kosten auf 80 %, Treffer-Reaktion mit kurzem Freeze, Wechsel wenn der Gegner wechselt, Encounter-Intro mit Monster-Steckbrief, 3-2-1-Countdown bei Kampfbeginn und nach dem Notfallmodus"], ["0.52.0", "2026-11-12", "Sprint/Dash kostet 20 AP (auch beim Ausweichen der KI)"], ["0.51.0", "2026-11-12", "Neue Statuseffekte Schlaf und Verwirrung mit Partikeln (Zzz, kreisende Vögel/Fragezeichen), Fix: Spielstand löschen wurde beim Neuladen wieder gespeichert"], ["0.50.1", "2026-11-12", "Spielstand wird zusätzlich beim Schließen/Wechseln des Tabs gespeichert"], ["0.50.0", "2026-11-12", "Festnahme-Quiz beim Fangen (15 s, zufällige Antwortreihenfolge; falsch oder zu langsam = Monster flieht)"], ["0.49.0", "2026-11-12", "Bis zu 3 Team-Monster folgen dem Spieler in der Welt (Lobby-Einstellung 0-3)"], ["0.48.0", "2026-11-12", "Protokoll-Download zur Fehlersuche (Einstellungen und Bug-Dialog), kurze Verbindungsabbrüche erzeugen keine Beitritt-/Verlassen-Spam mehr, Figuren wieder in alter Größe"], ["0.46.0", "2026-11-12", "Profil im Spiel ändern (Name, Beamter/Beamtin, Mützenfarbe)"], ["0.45.0", "2026-11-12", "Neue Spieler-Sprites (Beamter/Beamtin, Mützenband in Spielerfarbe), neue Trainer-Sprites je Einheit, Dienststelle im HfPol-Look, Türme mit stimmiger 3/4-Perspektive"], ["0.44.0", "2026-11-12", "Zugangspasswort, max. 10 Spieler im Raum, max. 5 pro Lobby, Bug-melden-Button (GitHub-Issue)"], ["0.43.0", "2026-11-12", "Netzwerk spart Datenvolumen (nur Änderungen senden, seltenerer Heartbeat/Ping), AFK-Tabs trennen sich automatisch und verbinden bei Aktivität neu"], ["0.42.0", "2026-11-12", "Notfallmodus (Enter) mit zufälliger Rechtsnorm und Pause in KI-Kämpfen, Chat jetzt auf T, Copshop und HfPol im Turm-Stil des HfPol-Campus"], ["0.41.0", "2026-11-12", "Laden und HfPol als eigene Gebäude (Study nur in der HfPol), VS-Intro bei Cop-, Richter-Bot- und Spielerkämpfen"], ["0.40.0", "2026-11-12", "Bereitschaftsraum vor dem Gericht, 4 legendäre Einsatzmittel (Schlagstock, Taser, Pfefferspray, Kelle), Gerichtssaal-Kampfhintergrund, Version im Startbildschirm, Schilder folgen echtem Weg, Gesetzbuch im Namenssuffix, Study: 10 Fragen pro Monster"], ["0.39.1", "2026-11-12", "Knast dungeon (StGB only, Lv 26-34), update banner when a newer version is on the server, fix keyboard shortcuts blocked in Gericht duels / after chatting"], ["0.38.3", "2026-11-12", "town renamed Villingen-Knastningen"], ["0.38.2", "2026-11-12", "free play 'Neu anfangen' with a new random monster (dex and trophies stay)"], ["0.38.1", "2026-11-12", "Study quiz (150 questions on PolG, GG, StGB, StPO, EP for correct answers), chat overlay notifications, bold paragraph suffix, no dark drop shadow behind dark text"], ["0.37.1", "2026-11-12", "15 StPO monsters, town renamed Coptown, random starter in free play, 6 artwork starters to choose from in matches"], ["0.36.3", "2026-11-12", "title KNASTÉMON on one line"], ["0.36.2", "2026-11-12", "paragraph as name suffix (e.g. Owigon §26, Würdeadler Art.1); no 'Wild:' prefix in the foe HUD so long names fit"], ["0.36.1", "2026-11-12", "player and cops drawn as police officers (peaked cap with badge, navy uniform; chosen colour = cap band)"], ["0.36.0", "2026-11-12", "Knastémon — police theme"], ["0.35.0", "2026-11-12", "AP costs x1.45, AP regen 13->8/s, flee distance 160->120"], ["0.34.0", "2026-11-12", "complete German translation of the UI"], ["0.33.1", "2026-11-12", "embed pixel fonts (Press Start 2P, VT323) instead of loading from Google Fonts; monospace fallback"], ["0.33.0", "2026-11-12", "alternative monster set redrawn 1:1 from the new artwork"], ["0.32.0", "2026-11-12", "higher AP costs for all attacks (~1.6x), AP drains faster"], ["0.31.0", "2026-11-12", "field skills (CUT/SWIM/STRENGTH/FLY) unlocked by beating harder trainers"], ["0.30.0", "2026-11-12", "free 360° aiming as a lobby option"], ["0.29.0", "2026-11-12", "scrollable dialogs on phones, battle camera zoom, fullscreen button, 45° aiming, auto-aim option, trainer VMs, type chart"], ["0.27.0", "2026-11-12", "battle arenas themed per location (floor, rim, obstacles)"], ["0.26.0", "2026-11-12", "signposts with biome name, direction and recommended level"], ["0.25.0", "2026-11-12", "responsive layout for PC, tablets and phones (landscape and portrait)"], ["0.24.0", "2026-11-11", "money, rewards, items and the Budget Mart shop"], ["0.23.0", "2026-11-11", "monster dex and move details"], ["0.22.0", "2026-11-11", "manual aiming (no auto-aim), drag-to-aim touch controls, round pause on KO, lead pick"], ["0.20.0", "2026-11-11", "AP for all attacks, longer ranged cooldowns, movement inertia"], ["0.19.0", "2026-11-11", "round battle arena, you start at the bottom, destructible obstacles"], ["0.18.0", "2026-11-11", "top menu bar, version check, PvP-only arena, give up, lobby invites"]];
 const SET_KEY='discountmon-controls';
 const DEF_KEYS={a1:'1',a2:'2',a3:'3',a4:'4',dash:' ',sw:'x',cap:'c',run:'r'};
 const KEY_NAMES={a1:'Attacke 1',a2:'Attacke 2',a3:'Attacke 3',a4:'Attacke 4',dash:'Sprint / Ausweichen',sw:'Monster wechseln',cap:'Handschellen werfen',run:'Fliehen'};
@@ -1462,18 +1511,19 @@ function modalOpen(){return $('#modal').classList.contains('on')||$('#study').cl
 // FLY (field skill from Axel): take off right on the map – over trees, water and cliffs, twice as fast,
 //   no encounters; areas whose teacher you have not passed stay closed in the air too; land only on walkable ground
 function flyable(x,y){if(x<2||y<2||x>=MW-2||y>=MH-2)return false;const b=BIOME[y*MW+x];return!(TOLL_LAW[b]&&!tollPaid(b)&&RUN&&RUN.phase==='train')}
-function canFly(){return hasHM('fly')&&!B&&RUN&&RUN.phase!=='arena'}
-function toggleFly(){if(!P.fly){if(!canFly())return;if(P.moving)return;P.fly=true;P.flyT=performance.now();held.length=0;pres({fl:1});toast('🕊 Abgehoben! Landen über Team → Feldfähigkeiten oder Taste F.');flyBtn();return}
+function canFly(){return canHM('fly')&&!B&&RUN&&RUN.phase!=='arena'}
+function toggleFly(){if(!P.fly){if(hasHM('fly')&&!hmUser('fly')){toast(`Zum FLIEGEN brauchst du ein ${hmNeed('fly')} im Kader.`);return}if(!canFly())return;if(P.moving)return;P.fly=true;P.flyT=performance.now();held.length=0;pres({fl:1});toast(`🕊 ${SPECIES[hmUser('fly').s].n} trägt dich in die Luft! Landen über Team → Feldfähigkeiten oder Taste F.`);flyBtn();return}
   if(P.moving)return;const x=P.x,y=P.y;if(!walkable(x,y)||trainerAt(x,y)||LEGENDS.some(L=>L.x===x&&L.y===y)||tollAt(x,y)){toast('Hier kannst du nicht landen – such dir freien Boden.');return}
   P.fly=false;P.flyT=performance.now();P.fol={x,y,tx:x,ty:y,fx:x,fy:y};trailReset(P,x,y);if(P.fols)for(const f of P.fols){f.fx=f.tx=x;f.fy=f.ty=y}pres({fl:0});save();flyBtn();onArrive()}
 function flyBtn(){const b=document.querySelector('[data-hmuse="fly"]');if(b)b.textContent=P.fly?'🛬 LANDEN':HM.fly.i+' '+HM.fly.n}
 function flyAlt(){const t=(performance.now()-(P.flyT||0))/350;return P.fly?Math.min(1,t):Math.max(0,1-t)}
 function updatePlayer(dt){
-  if(P.moving){P.mt+=dt/(P.fly?STEP*0.5:STEP);P.ph+=dt;
-    if(P.mt>=1){P.moving=false;P.x=P.tx;P.y=P.ty;P.fx=P.x;P.fy=P.y;onArrive();if(B)return}
+  if(P.moving){P.mt+=dt/(P.fly?STEP*0.5:P.jump?STEP*2.2:STEP);P.ph+=dt;
+    if(P.mt>=1){P.moving=false;P.jump=false;P.x=P.tx;P.y=P.ty;P.fx=P.x;P.fy=P.y;onArrive();if(B)return}
     else{P.fx=P.sx+(P.tx-P.sx)*P.mt;P.fy=P.sy+(P.ty-P.sy)*P.mt}}
   if(!P.moving&&!B&&!modalOpen()&&!P.lock){const d=heldDir();if(d){const turned=P.d!==d;P.d=d;const[dx,dy]=DIRS[d];const nx=P.x+dx,ny=P.y+dy;
     if(P.fly){if(flyable(nx,ny)){P.moving=true;P.mt=0;P.sx=P.x;P.sy=P.y;P.tx=nx;P.ty=ny;pres({x:nx,y:ny,d})}else if(turned)pres({d});else if(P.bumpCd<=0){P.bumpCd=1.2;const b=BIOME[ny*MW+nx];if(TOLL_LAW[b])toast('Dieses Gebiet ist noch gesperrt – erst am Prof. vorbei, dann darfst du es überfliegen.')}}
+    else if(LEDGE_DIR[tget(nx,ny)]){const jx=nx+dx,jy=ny+dy;if(LEDGE_DIR[tget(nx,ny)]===d&&walkable(jx,jy)&&!trainerAt(jx,jy)&&!LEGENDS.some(L=>L.x===jx&&L.y===jy)){P.moving=true;P.jump=true;P.mt=0;P.sx=P.x;P.sy=P.y;P.tx=jx;P.ty=jy;P.fol.tx=P.x;P.fol.ty=P.y;trailPush(P,P.x,P.y);trailPush(P,nx,ny);pres({x:jx,y:jy,d})}else if(turned)pres({d})}
     else if(walkable(nx,ny)&&!trainerAt(nx,ny)&&!LEGENDS.some(L=>L.x===nx&&L.y===ny)&&!tollBlock(nx,ny)){P.moving=true;P.mt=0;P.sx=P.x;P.sy=P.y;P.tx=nx;P.ty=ny;P.fol.tx=P.x;P.fol.ty=P.y;trailPush(P,P.x,P.y);pres({x:nx,y:ny,d})}else{if(trainerAt(nx,ny)||LEGENDS.some(L=>L.x===nx&&L.y===ny))bump(nx,ny);if(turned)pres({d})}}}
   P.bumpCd=Math.max(0,(P.bumpCd||0)-dt);
   approach(P.fol,dt);if(P.fols)for(const f of P.fols)approach(f,dt);
@@ -1483,8 +1533,9 @@ function legendHere(x,y){if(!RUN||RUN.phase!=='train')return null;return LEGENDS
 function trainerAt(x,y){return TRAINERS.find(t=>t.x===x&&t.y===y)||null}
 function bump(nx,ny){
   if(P.bumpCd>0)return;P.bumpCd=0.5;
-  const fo=fieldAt(nx,ny);if(fo){const k=fo.kind,h=HM[k];if(hasHM(k)){FIELDGONE.add(fo.id);for(const f of FIELD)if(f.kind===k&&Math.abs(f.x-fo.x)+Math.abs(f.y-fo.y)<=1)FIELDGONE.add(f.id);toast(k==='cut'?'✂ Du setzt ZERSCHNEIDER ein — die Bäume fallen!':'💪 Du setzt STÄRKE ein — die Felsen rollen weg!')}
+  const fo=fieldAt(nx,ny);if(fo){const k=fo.kind,h=HM[k];if(hasHM(k)&&!hmUser(k)){toast(`Für ${h.n} brauchst du ein ${hmNeed(k)} im Kader.`);return}if(hasHM(k)){FIELDGONE.add(fo.id);for(const f of FIELD)if(f.kind===k&&Math.abs(f.x-fo.x)+Math.abs(f.y-fo.y)<=1)FIELDGONE.add(f.id);toast(`${k==='cut'?'✂':'💪'} ${SPECIES[hmUser(k).s].n} setzt ${h.n} ein — ${k==='cut'?'die Bäume fallen!':'die Felsen rollen weg!'}`)}
     else toast(k==='cut'?`Diese Bäumchen könnte man zerschneiden… ${TRAINERS.find(t=>t.id===h.from).n} weiß, wie.`:`Ein schwerer Felsbrocken… ${TRAINERS.find(t=>t.id===h.from).n} könnte dir STÄRKE beibringen.`);return}
+  if(tget(nx,ny)===3&&hasHM('swim')&&!hmUser('swim')){toast(`Zum SURFEN brauchst du ein ${hmNeed('swim')} im Kader.`);return}
   if(tget(nx,ny)===3&&!hasHM('swim')){toast(`Das Wasser ist tief… ${TRAINERS.find(t=>t.id==='sue').n} bringt dir SURFER bei.`);return}
   const sg=SIGNS.find(s=>s.x===nx&&s.y===ny);if(sg){if(!$('#signbox').classList.contains('on'))showSign(sg);return}
   const t=trainerAt(nx,ny);
@@ -1514,25 +1565,36 @@ function onArrive(){
   if(checkSight())return;
   if((ENC.has(t)||t===20)&&RUN&&RUN.phase==='train'){const z=zoneAt(P.x,P.y);if(z&&Math.random()<(t===20?0.16:0.13)*cfgOf().enc)startWild(z)}
 }
-// PÄD (Polizeiärztlicher Dienst): one question per 25 % — every correct answer heals the next hurt monster by a quarter (4 per monster); wrong answers just move on
+// PÄD (Polizeiärztlicher Dienst): overview of all your monsters (picture + KP); pick one → a question; every correct answer heals it by 25 %
 function healQuiz(){RUN.kap=Math.max(RUN.kap,10);updateHud();const all=()=>RUN.team.concat(RUN.box),full=()=>all().every(m=>m.hp>=stats(m).mhp);
   if(full()){toast('PÄD: Dein Team ist gesund. Handschellen aufgefüllt.');save();return}
-  const keys=Object.keys(QZ).filter(k=>SPECIES[k]&&QZ[k].length);let n=0;const seen=new Set();
+  const keys=Object.keys(QZ).filter(k=>SPECIES[k]&&QZ[k].length);let n=0,cur=null;const seen=new Set();
   const pickQ=()=>{for(let t=0;t<40;t++){const k=keys[Math.floor(Math.random()*keys.length)],q=QZ[k][Math.floor(Math.random()*QZ[k].length)];if(!seen.has(q[0])){seen.add(q[0]);return{src:k,q}}}return{src:keys[0],q:QZ[keys[0]][0]}};
-  const hpLine=()=>RUN.team.map(m=>`${esc(SPECIES[m.s].n)} ${Math.round(100*m.hp/stats(m).mhp)}%`).join(' · '),target=()=>RUN.team.concat(RUN.box).find(m=>m.hp<stats(m).mhp);
-  const ask=()=>{const it=pickQ(),order=shuffleArr([0,1,2,3]);n++;CQ={it,order,end:Infinity,done:false,cb:null};
-    $('#cqbox').innerHTML=`<div class="sdlg"><span class="slaw">⚕ PÄD · Polizeiärztlicher Dienst · Frage ${n} · ${esc(SPECIES[it.src].law||'')}</span><br><span class="small">Richtige Antwort = +25 % für <b>${esc(SPECIES[target().s].n)}</b> (4 Fragen pro Monster).<br>${hpLine()}</span><br>${esc(it.q[0])}<div id="cqexp"></div></div>
-      <div class="sans">${order.map((k,j)=>`<button class="sa" data-ck="${k}"><span class="sk">${j+1}</span>${esc(it.q[1][k])}</button>`).join('')}</div><div class="sacts" id="cqact"><button class="btn ghost" id="cqstop">GEHEN</button></div>`;
-    $('#cquiz').classList.add('on');document.querySelectorAll('[data-ck]').forEach(bt=>bt.onclick=()=>pick(+bt.dataset.ck));$('#cqstop').onclick=stop};
+  const img={};const pic=m=>img[m.s]||(img[m.s]=(()=>{const c=mk(48,48),x=c.getContext('2d');x.imageSmoothingEnabled=false;x.drawImage(monSprite(m.s,24),0,0,48,48);return c.toDataURL()})());
+  const card=(m,i,big)=>{const mx=stats(m).mhp,r=m.hp/mx,col=r>0.5?'#3ddc6b':r>0.2?'#ffcb3d':'#ef4444',hurt=m.hp<mx,inT=i<RUN.team.length;
+    return`<button class="pcard${hurt?'':' fit'}" ${big?'':`data-pm="${i}"`} ${hurt||big?'':'disabled'} style="display:flex;gap:8px;align-items:center;text-align:left;background:#f6f1e1;color:#14141f;border:3px solid #14141f;box-shadow:3px 3px 0 #000;padding:6px 8px;cursor:${hurt&&!big?'pointer':'default'};opacity:${hurt||big?1:0.6};font-family:VT323,monospace;font-size:18px;width:100%">
+      <img src="${pic(m)}" width="48" height="48" style="image-rendering:pixelated;flex:none;background:#e8e0c8;border:2px solid #14141f">
+      <span style="flex:1;min-width:0"><b>${esc(SPECIES[m.s].n)}</b> <span style="color:#4b4f63">Lv ${m.l}${inT?'':' · Box'}</span><br>
+      <span style="display:block;height:8px;background:#2b2f40;border:2px solid #14141f;margin:3px 0"><i style="display:block;height:100%;width:${Math.round(r*100)}%;background:${col}"></i></span>
+      <span style="color:#4b4f63">KP ${m.hp}/${mx}${hurt?(m.hp<=0?' · besiegt':''):' · fit ✓'}</span></span></button>`};
+  const overview=()=>{CQ=null;CQ_PICK=null;cur=null;
+    $('#cqbox').innerHTML=`<div class="sdlg" style="margin-bottom:8px"><span class="slaw">⚕ PÄD · Polizeiärztlicher Dienst</span><br><span class="small">Wähle ein Monster. Jede richtige Antwort heilt es um 25 %.</span></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px">${all().map((m,i)=>card(m,i)).join('')}</div>
+      <div class="sacts" style="margin-top:8px"><button class="btn ghost" id="cqstop">GEHEN</button></div>`;
+    $('#cquiz').classList.add('on');document.querySelectorAll('[data-pm]').forEach(b=>b.onclick=()=>{cur=all()[+b.dataset.pm];ask()});$('#cqstop').onclick=stop};
+  const ask=()=>{const it=pickQ(),order=shuffleArr([0,1,2,3]);n++;CQ={it,order,end:Infinity,done:false,cb:null};CQ_PICK=pick;
+    $('#cqbox').innerHTML=`<div style="margin-bottom:8px">${card(cur,all().indexOf(cur),true)}</div><div class="sdlg"><span class="slaw">⚕ PÄD · Frage ${n} · ${esc(SPECIES[it.src].law||'')}</span><br>${esc(it.q[0])}<div id="cqexp"></div></div>
+      <div class="sans">${order.map((k,j)=>`<button class="sa" data-ck="${k}"><span class="sk">${j+1}</span>${esc(it.q[1][k])}</button>`).join('')}</div><div class="sacts" id="cqact"><button class="btn ghost" id="cqback">ÜBERSICHT</button><button class="btn ghost" id="cqstop">GEHEN</button></div>`;
+    $('#cquiz').classList.add('on');document.querySelectorAll('[data-ck]').forEach(bt=>bt.onclick=()=>pick(+bt.dataset.ck));$('#cqstop').onclick=stop;$('#cqback').onclick=overview};
   const stop=()=>{$('#cquiz').classList.remove('on');CQ=null;CQ_PICK=null;save();renderTeam();updateHud()};
-  const pick=k=>{if(!CQ||CQ.done)return;CQ.done=true;const ok=k===0,it=CQ.it;
+  const pick=k=>{if(!CQ||CQ.done)return;CQ.done=true;const ok=k===0,it=CQ.it,tm=cur;
     document.querySelectorAll('[data-ck]').forEach(bt=>{const kk=+bt.dataset.ck;bt.disabled=true;bt.classList.add(kk===0?'ok':kk===k?'bad':'dim')});
-    const tm=target();if(ok&&tm){const mx=stats(tm).mhp;tm.hp=Math.min(mx,tm.hp+Math.ceil(mx*0.25))}
-    const done=ok&&full();renderTeam();
-    $('#cqexp').innerHTML=`<div class="sexp ${ok?'ok':'bad'}">${ok?(done?'✓ Richtig — dein Team ist wieder fit!':`✓ Richtig — +25 % KP für ${esc(SPECIES[tm.s].n)}.`):'✗ Falsch — keine Heilung, nächste Frage.'} ${esc(it.q[2])}</div>`;
-    $('#cqact').innerHTML=!done?`<button class="btn" id="cqnext">NÄCHSTE FRAGE</button><button class="btn ghost" id="cqstop">GEHEN</button>`:`<button class="btn" id="cqstop">WEITER</button>`;
-    const nx=$('#cqnext');if(nx)nx.onclick=ask;$('#cqstop').onclick=stop};
-  CQ_PICK=pick;ask()}
+    if(ok&&tm){const mx=stats(tm).mhp;tm.hp=Math.min(mx,tm.hp+Math.ceil(mx*0.25))}
+    const tmFull=tm.hp>=stats(tm).mhp,done=full();renderTeam();
+    $('#cqexp').innerHTML=`<div class="sexp ${ok?'ok':'bad'}">${ok?(done?'✓ Richtig — dein Team ist wieder fit!':tmFull?`✓ Richtig — ${esc(SPECIES[tm.s].n)} ist wieder fit!`:`✓ Richtig — +25 % KP für ${esc(SPECIES[tm.s].n)}.`):'✗ Falsch — keine Heilung.'} ${esc(it.q[2])}</div>`;
+    $('#cqact').innerHTML=done?`<button class="btn" id="cqstop">WEITER</button>`:tmFull?`<button class="btn" id="cqback">ÜBERSICHT</button><button class="btn ghost" id="cqstop">GEHEN</button>`:`<button class="btn" id="cqnext">NÄCHSTE FRAGE</button><button class="btn ghost" id="cqback">ÜBERSICHT</button><button class="btn ghost" id="cqstop">GEHEN</button>`;
+    const nx=$('#cqnext');if(nx)nx.onclick=ask;const bk=$('#cqback');if(bk)bk.onclick=overview;$('#cqstop').onclick=stop};
+  overview()}
 // respawn after a defeat: in front of the last PÄD you entered (else Villingen)
 function padSpawn(){const l=RUN&&RUN.lastPad;if(l&&walkable(l.x,l.y))return l;const p=PADS[0];return p?{x:p.x,y:p.y+1}:VSPAWN}
 function healAll(){if(!RUN)return;for(const m of RUN.team.concat(RUN.box))m.hp=stats(m).mhp;RUN.kap=Math.max(RUN.kap,10);save();renderTeam();updateHud()}
@@ -1587,20 +1649,21 @@ function drawWorld(){
     c.fillStyle='#2a1a0c';c.fillRect(X+1,Y+1,14,8);c.fillStyle='#b07a3e';c.fillRect(X+2,Y+2,12,6);c.fillStyle='#d9a466';c.fillRect(X+2,Y+2,12,1);c.fillStyle='#6b4220';c.fillRect(X+4,Y+4,8,1);c.fillRect(X+4,Y+6,6,1)}
   // signs on roofs
   c.textBaseline='alphabetic';
-  for(const L of LABELS){const X=L.x*16-camX,Y=L.y*16-camY;if(X<-120||Y<-80||X>LW+40||Y>LH+40)continue;if(L.kind==='pad'){c.font='8px VT323,monospace';c.textAlign='center';c.fillStyle='#ffffff';c.fillText('PÄD',X+56,Y+36.5)}
+  for(const L of LABELS){const X=L.x*16-camX,Y=L.y*16-camY;if(X<-120||Y<-80||X>LW+40||Y>LH+40)continue;if(L.kind==='pad'){c.font='8px VT323,monospace';c.textAlign='center';const pd=PADS.find(p=>p.bx===L.x&&p.by===L.y);if(pd&&pd.old){c.fillStyle='#14141f';c.fillText('PÄD',X+48,Y+28);c.fillStyle='#ffffff';c.fillText('PÄD',X+48,Y+27)}else{c.fillStyle='#ffffff';c.fillText('PÄD',X+56,Y+36.5)}}
     else{c.font='7px "Press Start 2P",monospace';c.textAlign='center';c.fillStyle='#14141f';c.fillText(L.t,X+L.w*8+1,Y+13);c.fillStyle='#ffcb3d';c.fillText(L.t,X+L.w*8,Y+12)}}
-  for(const Bd of BLDG){const X=Bd.x*16-camX,Y=Bd.y*16-camY;if(X<-120||Y<-80||X>LW+40||Y>LH+40)continue;c.font='10px VT323,monospace';c.textAlign='center';c.fillStyle='#ffffff';c.fillText(Bd.n,X+Bd.w*8,Y+(Bd.id==='shop'?43:45.5))}
+  for(const Bd of BLDG){const X=Bd.x*16-camX,Y=Bd.y*16-camY;if(X<-120||Y<-80||X>LW+40||Y>LH+40)continue;c.font='10px VT323,monospace';c.textAlign='center';c.fillStyle='#ffffff';if(Bd.old){c.font='8px VT323,monospace';c.fillText(Bd.id==='shop'?'COPSHOP':'HfPol',X+Bd.w*8,Bd.id==='shop'?Y+20:Y+40)}else c.fillText(Bd.n,X+Bd.w*8,Y+(Bd.id==='shop'?43:45.5))}
   c.textAlign='left';
   // entities
   const ents=[];
   for(const o of OTH.values()){if(o.fx==null)continue;ents.push({fx:o.fx,fy:o.fy,col:o.c,sx:o.sx,d:o.d,ph:o.ph,mv:o.moving,name:o.n,bt:o.bt,bub:o.bub,alt:o.fl?1:0});if(o.fl){}else if(o.lf)folEnts(o,o.lf,ents,o.fx,o.fy);else if(o.ld&&o.fol.fx!=null)ents.push({fx:o.fol.fx,fy:o.fol.fy,mon:o.ld})}
-  if(G){ents.push({fx:P.fx,fy:P.fy,col:G.color,sx:G.sex,d:P.d,ph:P.ph,mv:P.moving,name:G.name+' (du)',bt:B?(B.mode==='wild'?'wild':'duel'):null,bub:myBubble,me:1,alt:flyAlt()});if(RUN&&!P.fly&&flyAlt()===0)folEnts(P,folInfo(),ents,P.fx,P.fy)}
+  if(G){ents.push({fx:P.fx,fy:P.fy,col:G.color,sx:G.sex,d:P.d,ph:P.ph,mv:P.moving,name:G.name+' (du)',bt:B?(B.mode==='wild'?'wild':'duel'):null,bub:myBubble,me:1,alt:flyAlt(),hop:P.jump?Math.round(Math.sin(P.mt*Math.PI)*9):0});if(RUN&&!P.fly&&flyAlt()===0)folEnts(P,folInfo(),ents,P.fx,P.fy)}
   for(const t of tollSpots()){const paid=tollPaid(t.b);let fx=t.x,fy=t.y;if(paid){for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]])if(walkable(t.x+dx,t.y+dy)&&BIOME[(t.y+dy)*MW+t.x+dx]===t.b&&!(dx===0&&dy===0)){const side=DIRS[t.d];if(side&&dx===side[0]&&dy===side[1])continue;fx=t.x+dx;fy=t.y+dy;break}}ents.push({fx,fy,col:t.c,sx:/Würde|Strafe/.test(t.n)?'f':'m',d:t.d,npc:t,name:t.n})}
   for(const t of TRAINERS)ents.push({fx:t.x,fy:t.y,col:t.c,sx:/^\S+in\s/.test(t.n)?'f':'m',d:t.d,ph:0,mv:false,name:t.n,npc:t,bt:null});
   for(const L of LEGENDS){const gone=(RUN&&RUN.leg&&RUN.leg[L.id])||!cfgOf().leg;if(!gone)ents.push({fx:L.x,fy:L.y,legend:L})}
   ents.sort((a,b)=>a.fy-b.fy);
-  for(const e of ents){const X=Math.round(e.fx*16-camX),Y=Math.round(e.fy*16-camY);
+  for(const e of ents){const X=Math.round(e.fx*16-camX);let Y=Math.round(e.fy*16-camY);
     if(e.alt>0)continue;
+    if(e.hop){c.fillStyle='rgba(0,0,0,0.3)';c.fillRect(X+3,Y+13,10,2);Y-=e.hop}
     if(e.legend){if(X<-40||X>LW+40||Y<-40||Y>LH+40)continue;const s=monSprite(legSid(e.legend),32);const bob=Math.round(Math.sin(T*2)*1.5);c.globalAlpha=RUN&&RUN.phase==='train'?1:0.45;c.drawImage(s,X-8,Y+15-27+bob,32,32);c.globalAlpha=1;
       c.fillStyle='#ffcb3d';for(let i=0;i<3;i++){const a=T*1.5+i*2.1;c.fillRect(Math.round(X+8+Math.cos(a)*12),Math.round(Y+4+Math.sin(a)*7),1,1)}continue}
     if(e.mon){const s=monSprite(e.mon,24);c.drawImage(s,X-4,Y+15-21,24,24)}
@@ -1616,7 +1679,7 @@ function drawWorld(){
 }
 
 /* ===================== WORLD MAP ===================== */
-const MCOL={21:'#dcc690',22:'#7c4a22',23:'#7c4a22',20:'#6b6f7a',0:'#6cc44f',1:'#3f9a30',2:'#1f5e2a',3:'#3b8fd9',4:'#e0c890',5:'#ecd79a',6:'#efe8dc',7:'#7c4a22',8:'#d23b3b',9:'#7fd060',10:'#5b4bc4',11:'#a9a9bd',12:'#2d2350',13:'#f2e7b8',14:'#3f8a3a',15:'#c4a374',16:'#6d675d',17:'#25652a',18:'#9fbf5a',19:'#9a7d50',24:'#b9cdd9',25:'#c29a58',26:'#1f8a46',27:'#a8743c',28:'#e8eef4',29:'#e4c48a',30:'#2f7a3c',31:'#7a808c'};
+const MCOL={32:'#a07848',33:'#a07848',34:'#a07848',35:'#a07848',21:'#dcc690',22:'#7c4a22',23:'#7c4a22',20:'#6b6f7a',0:'#6cc44f',1:'#3f9a30',2:'#1f5e2a',3:'#3b8fd9',4:'#e0c890',5:'#ecd79a',6:'#efe8dc',7:'#7c4a22',8:'#d23b3b',9:'#7fd060',10:'#5b4bc4',11:'#a9a9bd',12:'#2d2350',13:'#f2e7b8',14:'#3f8a3a',15:'#c4a374',16:'#6d675d',17:'#25652a',18:'#9fbf5a',19:'#9a7d50',24:'#b9cdd9',25:'#c29a58',26:'#1f8a46',27:'#a8743c',28:'#e8eef4',29:'#e4c48a',30:'#2f7a3c',31:'#7a808c'};
 const BIO_C=(()=>{const acc={};for(let y=0;y<MH;y++)for(let x=0;x<MW;x++){const b=BKEYS[BIOME[y*MW+x]];if(!b)continue;const a=acc[b]||(acc[b]={x:0,y:0,n:0});a.x+=x;a.y+=y;a.n++}const o={};for(const k in acc)o[k]={x:acc[k].x/acc[k].n,y:acc[k].y/acc[k].n};return o})();
 function mapOpen(){return $('#mapov').classList.contains('on')}
 function openMap(){if(B)return;$('#mapov').classList.add('on');held.length=0;drawMap();renderMapLegend();renderFly()}
@@ -1934,8 +1997,9 @@ function buy(k){const it=ITEMS[k];if(!it||!RUN)return;if(!shopOK()){toast('Läde
 function openShop(){if(!RUN){toast('Starte zuerst das freie Spiel oder tritt einer Lobby bei.');return}if(!shopOK()){toast(B?"Während eines Kampfes kannst du nicht einkaufen.":RUN.phase==='arena'?'Während des Gerichtsturniers ist der Laden geschlossen.':'Der Copshop ist ein eigenes Gebäude: in der Stadt südlich der Hauptstraße, links (🛒 auf der Karte). Geh durch die Tür hinein.');return}
   openModal(`<h3>🛒 COPSHOP</h3><p class="small" style="margin-bottom:6px">Dein Geld: <b style="color:var(--accent);font-size:20px">$${money()}</b> · Handschellen ⛓ ${RUN.kap}</p>
    ${Object.entries(ITEMS).map(([k,it])=>`<div class="mvrow" style="display:flex;align-items:center;gap:8px"><span style="font-size:22px;width:26px;text-align:center">${it.i}</span><span style="flex:1"><b>${esc(it.n)}</b> <span class="small">· owned ${k==='cap'||k==='cap5'?RUN.kap:inv(k)}</span><br><span class="small">${esc(it.d)}</span></span><button class="btn ${money()>=it.p?'':'ghost'}" data-buy="${k}" ${money()>=it.p?'':'disabled'}>$${it.p}</button></div>`).join('')}
+   ${(()=>{const T=shopTown(),L=tmShopList();return L.length?`<h3 style="margin-top:10px">💿 TMs · Angebot ${esc(T.n)}</h3>`+L.map(k=>`<div class="mvrow" style="display:flex;align-items:center;gap:8px"><span style="font-size:22px;width:26px;text-align:center">💿</span><span style="flex:1"><b>${esc(MOVES[k].n)}</b> <span class="tb" style="background:${TYPES[MOVES[k].t].c}">${TYPES[MOVES[k].t].n.toUpperCase()}</span> <span class="small">· Stärke ${MOVES[k].p} · owned ${(RUN.tm&&RUN.tm[k])||0}</span><br><span class="small">Nur für ${esc(TYPES[MOVES[k].t].n)}-Monster${MOVES[k].t==='normal'?' (Normal: alle)':''}.</span></span><button class="btn ${money()>=tmPrice(k)?'':'ghost'}" data-btm="${k}" ${money()>=tmPrice(k)?'':'disabled'}>$${tmPrice(k)}</button></div>`).join(''):''})()}
    <div class="acts" style="margin-top:8px"><button class="btn" id="mok">FERTIG</button></div>`);
-  $('#mbox').style.maxHeight='92%';$('#mbox').style.overflow='auto';document.querySelectorAll('[data-buy]').forEach(b=>b.onclick=()=>buy(b.dataset.buy));$('#mok').onclick=closeModal}
+  $('#mbox').style.maxHeight='92%';$('#mbox').style.overflow='auto';document.querySelectorAll('[data-buy]').forEach(b=>b.onclick=()=>buy(b.dataset.buy));document.querySelectorAll('[data-btm]').forEach(b=>b.onclick=()=>buyTM(b.dataset.btm));$('#mok').onclick=closeModal}
 // use an item on one of your monsters outside battle
 function useItemOn(k,m){const it=ITEMS[k];if(!inv(k)||!m)return;const st=stats(m);
   if(it.heal){if(m.hp<=0){toast('Besiegt — nimm einen Beleber.');return}if(m.hp>=st.mhp){toast('KP sind schon voll.');return}m.hp=Math.min(st.mhp,m.hp+it.heal)}
@@ -2227,6 +2291,64 @@ function rematchHtml(){
 function openModal(h){const mb=$('#mbox');mb.style.maxWidth='';mb.style.maxHeight='';mb.style.overflow='';mb.innerHTML=h;$('#modal').classList.add('on')}
 function closeModal(){$('#modal').classList.remove('on')}
 
+
+// classic flat-roof look (before the tower style) – used in every town except Villingen
+let SHOPSPR0=null,HFSPR0=null;
+function shopSpriteOld(){if(SHOPSPR0)return SHOPSPR0;const W=80,H=64,c=mk(W,H),x=c.getContext('2d');const F=(col,a,b,w,h)=>{x.fillStyle=col;x.fillRect(a,b,w,h)};
+  // roof: blue shop roof with ridges and a light front edge
+  F('#14141f',0,2,W,30);F('#2f6fd0',1,3,W-2,28);for(let y=6;y<30;y+=4)F('#2458b0',1,y,W-2,1);F('#5a92ea',1,3,W-2,2);F('#14141f',0,31,W,1);
+  // walls
+  F('#14141f',0,32,W,32);F('#f1ece0',1,32,W-2,31);F('#cfc6b0',1,60,W-2,3);
+  // striped awning
+  for(let i=0;i<W-2;i+=6){F('#d23b3b',1+i,33,3,6);F('#ffffff',4+i,33,3,6)}F('#14141f',1,39,W-2,1);for(let i=0;i<W-2;i+=6){F('#d23b3b',1+i,39,3,2);F('#14141f',1+i,41,3,1)}
+  // shop windows with goods (left and right of the door)
+  const win=(a)=>{F('#14141f',a,43,22,15);F('#8fd0ff',a+1,44,20,13);F('#c8ecff',a+1,44,6,3);
+    F('#a5784a',a+1,51,20,1);F('#a5784a',a+1,55,20,1);
+    const g=['#ffcb3d','#3ddc6b','#ef4444','#4aa3ff','#c084fc'];for(let k=0;k<5;k++){F(g[k],a+2+k*4,48,3,3);F(g[(k+2)%5],a+2+k*4,52,3,3)}};
+  win(4);win(54);
+  // glass sliding door (door tile = column 2 → x 32..47)
+  F('#14141f',33,42,14,22);F('#5a5f70',34,43,12,21);F('#9fd8ff',35,44,4,19);F('#9fd8ff',41,44,4,19);F('#d6f0ff',35,44,1,19);F('#d6f0ff',41,44,1,19);F('#14141f',40,43,1,21);
+  // little € sign over the door
+  F('#14141f',36,34,8,5);F('#ffcb3d',37,35,6,3);F('#14141f',39,35,2,3);
+  return SHOPSPR0=c}
+function hfpolSpriteOld(){if(HFSPR0)return HFSPR0;const W=112,H=64,c=mk(W,H),x=c.getContext('2d');const F=(col,a,b,w,h)=>{x.fillStyle=col;x.fillRect(a,b,w,h)};
+  // flat roof (seen from above): grey membrane, parapet, skylights and solar panels
+  F('#14141f',0,4,W,28);F('#9a9fa8',1,5,W-2,26);F('#b4b9c2',1,5,W-2,2);F('#7d828c',1,29,W-2,2);
+  for(let i=0;i<4;i++){F('#14141f',8+i*12,10,9,7);F('#2a3f6a',9+i*12,11,7,5);F('#4f6fa8',9+i*12,11,7,1)}
+  for(let i=0;i<3;i++){F('#14141f',64+i*14,9,11,9);F('#d9e6f5',65+i*14,10,9,7);F('#ffffff',65+i*14,10,3,2)}
+  F('#7d828c',10,21,92,1);F('#14141f',50,20,12,8);F('#6b7080',51,21,10,6); // roof hatch / technics
+  // facade: wooden slats
+  F('#14141f',0,32,W,32);F('#c9a46a',1,32,W-2,31);for(let a=2;a<W-1;a+=3)F('#b08a50',a,32,1,31);F('#e0c08a',1,32,W-2,1);F('#8a6a3a',1,61,W-2,2);
+  // two ribbon-window floors
+  const ribbon=(y)=>{for(let a=3;a<W-3;a+=11){if(a>44&&a<64)continue;F('#14141f',a,y,9,8);F('#2f4c78',a+1,y+1,7,6);F('#6f9bd6',a+1,y+1,3,2)}};ribbon(35);ribbon(48);
+  // blue name band + police star
+  F('#14141f',38,33,36,9);F('#1d3f8f',39,34,34,7);
+  // glazed entrance (door tile = column 3 → x 48..63) with canopy
+  F('#14141f',44,43,24,2);F('#d9dde4',45,43,22,1);
+  F('#14141f',48,46,16,18);F('#3b5f8c',49,47,14,17);F('#9fd8ff',50,48,5,16);F('#9fd8ff',57,48,5,16);F('#d6f0ff',50,48,1,16);F('#14141f',55,47,2,17);
+  // flagpole with the Baden-Württemberg colours (black/yellow)
+  F('#14141f',104,30,1,32);F('#14141f',105,30,7,6);F('#14141f',106,31,5,2);F('#ffcb3d',106,33,5,2);
+  return HFSPR0=c}
+
+// ===== TMs: random regular attacks, type-bound (the monster's own type, Normal moves for everyone). From trainers and regional shop offers
+const TM_SHOP={vil:['normal','electric'],lah:['water','rock'],unt:['fire','rock'],dam:['grass','normal'],mos:['grass','flying'],mar:['water','flying']};
+function tmMoves(){return Object.keys(MOVES).filter(k=>{const v=MOVES[k];return v.k!=='self'&&(v.p||0)>=25&&TYPES[v.t]})}
+function tmRandom(r,tier){const lo=[0,30,55,80][tier||1],hi=[0,60,85,130][tier||1];const c=tmMoves().filter(k=>MOVES[k].p>=lo&&MOVES[k].p<=hi);return c.length?c[Math.floor(r()*c.length)]:null}
+function tmGive(k){RUN.tm=RUN.tm||{};RUN.tm[k]=(RUN.tm[k]||0)+1;save()}
+function tmOK(m,k){const v=MOVES[k];return!!v&&!m.m.includes(k)&&(v.t===SPECIES[m.s].t||v.t==='normal')}
+function tmOwned(){return Object.entries(RUN&&RUN.tm||{}).filter(e=>e[1]>0).map(e=>e[0])}
+function tmPrice(k){return 120+Math.round((MOVES[k].p||40)*4)}
+function shopTown(){let best=null,bd=1e9;for(const T of TOWNS){const d=Math.abs(T.x-P.x)+Math.abs(T.y-P.y);if(d<bd){bd=d;best=T}}return best}
+function tmShopList(){const T=shopTown();if(!T)return[];const ty=TM_SHOP[T.id]||['normal'],r=mulberry32(hashStr('tm:'+T.id)),pool=tmMoves().filter(k=>ty.includes(MOVES[k].t)&&MOVES[k].p<=95),out=[];
+  while(out.length<4&&pool.length){out.push(pool.splice(Math.floor(r()*pool.length),1)[0])}return out}
+function buyTM(k){if(!shopOK()||!tmShopList().includes(k))return;const p=tmPrice(k);if(money()<p){toast('Nicht genug Geld.');return}RUN.money-=p;tmGive(k);updateHud();toast(`💿 TM ${MOVES[k].n} gekauft.`);openShop()}
+function openTMFor(m){const ks=tmOwned().filter(k=>tmOK(m,k));if(!ks.length){toast('Keine passende TM — TMs gibt es von Trainern und regional im Copshop.');return}
+  openModal(`<h3>💿 TM FÜR ${esc(SPECIES[m.s].n.toUpperCase())}</h3><p class="small">Nur Attacken vom Typ ${esc(TYPES[SPECIES[m.s].t].n)} oder Normal.</p><div style="display:flex;flex-direction:column;gap:6px">${ks.map(k=>`<button class="btn ghost" data-tm="${k}" style="font-family:VT323,monospace;font-size:19px">💿 ${esc(MOVES[k].n)} · ${esc(TYPES[MOVES[k].t].n)} · Stärke ${MOVES[k].p} ×${RUN.tm[k]}</button>`).join('')}</div><div class="acts" style="margin-top:8px"><button class="btn" id="mok">SCHLIESSEN</button></div>`);
+  document.querySelectorAll('[data-tm]').forEach(b=>b.onclick=()=>tmTeach(m,b.dataset.tm));$('#mok').onclick=closeModal}
+function tmTeach(m,k){const fin=()=>{RUN.tm[k]--;closeModal();toast(`${SPECIES[m.s].n} hat ${MOVES[k].n} gelernt!`);changed()};
+  if(m.m.length<4){m.m.push(k);fin();return}
+  openModal(`<h3>WELCHE ATTACKE VERGESSEN?</h3><p class="small">${esc(SPECIES[m.s].n)} lernt ${esc(MOVES[k].n)}.</p><div style="display:flex;flex-direction:column;gap:6px">${m.m.map((mv,i)=>`<button class="btn ghost" data-fg="${i}" style="font-family:VT323,monospace;font-size:19px">${esc(MOVES[mv].n)} · ${esc(TYPES[MOVES[mv].t].n)} · Stärke ${MOVES[mv].p||0}</button>`).join('')}</div><div class="acts" style="margin-top:8px"><button class="btn ghost" id="mno">ABBRECHEN</button></div>`);
+  document.querySelectorAll('[data-fg]').forEach(b=>b.onclick=()=>{m.m[+b.dataset.fg]=k;fin()});$('#mno').onclick=closeModal}
 /* ===================== PLAYER CHALLENGES (during training) ===================== */
 let myCh=null,incoming=null;const handledCh=new Set();
 function canSpar(){return!!(RUN&&(RUN.phase==='train'||RUN.phase==='lobby')&&!B)}
@@ -2497,10 +2619,10 @@ function effLabel(s,T){if(!B.me||s.side!==B.me.side)return;const e=eff(MOVES[s.m
 function specialShot(s,dt){const T=s.side===B.me.side?B.foe:B.me,alive=T&&!T.out&&T.faint<=0,mv=MOVES[s.mid],col=TYPES[mv.t].c;s.age+=dt;
   if(s.k==='lob'){s.x+=s.vx*dt;s.y+=s.vy*dt;if(s.age<s.life)return;s.dead=1;burst(s.x,s.y+12,col,16);burst(s.x,s.y+12,'#ffffff',6);B.shakeUntil=performance.now()+120;
     for(const o of B.obs||[])if(!o.dead&&Math.hypot(o.x-s.x,(o.y-(s.y+12))*1.3)<s.r+o.r)hitObs(o,s);
-    if(alive&&T.inv<=0&&Math.hypot(T.x-s.x,(T.y-(s.y+12))*1.3)<s.r+9)shotHit(s,T);return}
+    if(alive&&T.inv<=0&&Math.hypot(T.x-s.x,(T.y-(s.y+12))*1.3)<s.r+9)shotHit(s,T);else leaveHazard(s,s.x,s.y+12);return}
   if(s.k==='air'){if(s.age<s.life){if(s.age>s.life-0.18&&!s.fall){s.fall=1}return}s.dead=1;burst(s.x,s.y-4,col,22);burst(s.x,s.y-4,'#ffffff',10);B.shakeUntil=performance.now()+200;
     for(const o of B.obs||[])if(!o.dead&&Math.hypot(o.x-s.x,(o.y-s.y)*1.3)<s.r+o.r)hitObs(o,s);
-    if(alive&&T.inv<=0&&Math.hypot(T.x-s.x,(T.y-s.y)*1.3)<s.r+9)shotHit(s,T);return}
+    if(alive&&T.inv<=0&&Math.hypot(T.x-s.x,(T.y-s.y)*1.3)<s.r+9)shotHit(s,T);else leaveHazard(s,s.x,s.y);return}
   const L=Math.hypot(s.vx,s.vy)||1,ux=s.vx/L,uy=s.vy/L;
   if(s.k==='beam'){if(s.age>=s.life){s.dead=1;return}if(s.age<0.3||s.fired)return;s.fired=1;let len=250,hitO=null;
     for(const o of B.obs||[]){if(o.dead)continue;const ox=o.x-s.x,oy=(o.y-8)-s.y,t=ox*ux+oy*uy;if(t<0||t>len)continue;if(Math.hypot(ox-ux*t,oy-uy*t)<o.r){len=t;hitO=o}}
@@ -2543,8 +2665,8 @@ function controlMe(dt){
 }
 function move(F,dx,dy,dt){
   // slight inertia: velocity eases toward the input instead of jumping (dash stays instant)
-  if(F.dashT<=0&&F.pdz>0){F.vx=F.vy=0;obsPush(F);arenaClamp(F);return}
-  if(F.dashT>0){F.x+=F.ddx*265*dt;F.y+=F.ddy*265*dt;F.vx=F.ddx*fspeed(F);F.vy=F.ddy*fspeed(F)}else{const sp=fspeed(F),k=Math.min(1,dt*7.5);F.vx=(F.vx||0)+(dx*sp-(F.vx||0))*k;F.vy=(F.vy||0)+(dy*sp-(F.vy||0))*k;F.x+=F.vx*dt;F.y+=F.vy*dt}
+  // (post-dash freeze removed in v0.70)
+  if(F.dashT>0){F.x+=F.ddx*265*dt;F.y+=F.ddy*265*dt;F.vx=F.ddx*fspeed(F);F.vy=F.ddy*fspeed(F)}else{const sp=fspeed(F),k=Math.min(1,dt*((F.slip||0)>0?1.2:7.5));F.vx=(F.vx||0)+(dx*sp-(F.vx||0))*k;F.vy=(F.vy||0)+(dy*sp-(F.vy||0))*k;F.x+=F.vx*dt;F.y+=F.vy*dt}
   obsPush(F);arenaClamp(F);
   const T=F===B.me?B.foe:B.me;if(T)F.face=T.x<F.x?-1:1;
 }
@@ -2572,6 +2694,7 @@ function bUpdate(dt){
   if(B.state==='fight')for(const F of[B.me,B.foe]){if(!F||!F.st)continue;for(const k in F.st)F.st[k]=Math.max(0,F.st[k]-dt);
     if(F.st.burn>0&&F.ctrl!=='remote'&&act(F).hp>0){F.burnT+=dt;if(F.burnT>=0.5){F.burnT=0;dealDamage(F,Math.max(1,Math.round(act(F).mhp*0.03)),'#ff8a3d')}if(Math.random()<0.3)B.parts.push({x:F.x+(Math.random()*16-8),y:F.y-20,vx:0,vy:-20,life:0.4,age:0,c:'#ff8a3d'})}}
   if(B.state!=='fight')for(const F of[B.me,B.foe])if(F&&F.faint>0&&act(F).hp<=0)F.faint=Math.max(0,F.faint-dt);
+  hazardTick(dt);
   for(const p of B.parts){p.age+=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;if(p.conf){p.vx+=Math.sin(p.age*6+p.y)*4*dt}else{p.vx*=0.9;p.vy*=0.9}}B.parts=B.parts.filter(p=>p.age<p.life);
   B.nums=B.nums.filter(n=>now-n.at<(n.life||900));
   if(B.closing)return;
@@ -2591,7 +2714,7 @@ function bUpdate(dt){
     if(F.team.some((m,i)=>i!==F.a&&m.hp>0)){startBreak(F);return}
     if(F.ctrl==='remote')continue;F.faint-=dt;if(F.faint<=0)F.out=true}
   // shots
-  for(const s of B.shots){if(s.nm){specialShot(s,dt);continue}s.age+=dt;s.x+=s.vx*dt;s.y+=s.vy*dt;if(s.age>s.life||outArena(s.x,s.y+10)){s.dead=1;if(s.cap)say('Verfehlt!');continue}
+  for(const s of B.shots){if(s.nm){specialShot(s,dt);continue}s.age+=dt;s.x+=s.vx*dt;s.y+=s.vy*dt;if(s.age>s.life||outArena(s.x,s.y+10)){s.dead=1;if(s.cap)say('Verfehlt!');else if(!s.mel&&!outArena(s.x,s.y+10))leaveHazard(s,s.x,s.y+8);continue}
     if(!s.cap&&shotVsObs(s))continue;
     const T=s.side===B.me.side?B.foe:B.me;if(!T||T.out||T.faint>0)continue;
     if(Math.hypot(s.x-T.x,s.y-(T.y-12))<s.r+11){
@@ -2782,10 +2905,10 @@ function startLegend(L){
   newBattle({mode:'wild',legend:L.id,zone:L.zone,wild,me:mkFighter('L',RUN.team.map(battler),XL,'local'),foe:mkFighter('R',[battler(wild)],XR,'ai'),state:'count',cntEnd:performance.now()+2000});
   say(`★ Das legendäre ${SPECIES[LS_].n} erwacht! ★`);burst(ACX,YT-20,'#ffcb3d',40);
 }
-// trainers teach their monsters VMs: easy trainers a weaker move of another type, strong trainers the top moves of their own type plus coverage
+// trainers teach their monsters TMs (type-bound): own type or Normal; stronger trainers get stronger moves
 function vmTier(t){const b=Math.round(baseLvAt(t.x,t.y))+1;return b>=10?3:b>=5?2:1}
 function vmPick(type,lo,hi,r,not){const c=Object.keys(MOVES).filter(m=>{const v=MOVES[m];return v.t===type&&v.k!=='self'&&(v.p||0)>=lo&&(v.p||0)<=hi&&!not.includes(m)});return c.length?c[Math.floor(r()*c.length)]:null}
-function giveVMs(t,mon,i){const r=mulberry32(hashStr(t.id+':'+i)),tier=vmTier(t),own=SPECIES[mon.s].t,others=Object.keys(TYPES).filter(x=>x!==own&&x!=='normal'),cov=others[Math.floor(r()*others.length)],vms=[];
+function giveVMs(t,mon,i){const r=mulberry32(hashStr(t.id+':'+i)),tier=vmTier(t),own=SPECIES[mon.s].t,cov='normal',vms=[];
   if(tier===1){const m=vmPick(cov,30,55,r,mon.m);if(m)vms.push(m)}
   else if(tier===2){const a=vmPick(own,60,85,r,mon.m),b=vmPick(cov,50,75,r,mon.m);if(a)vms.push(a);if(b)vms.push(b)}
   else{const a=vmPick(own,85,140,r,mon.m)||vmPick(own,70,140,r,mon.m),b=vmPick(cov,70,110,r,mon.m);if(a)vms.push(a);if(b)vms.push(b)}
@@ -2795,11 +2918,11 @@ function startTrainer(t){
   if(teamDown()){P.lock=false;return}
   const vmList=[];const team=trainerTeam(t).map(([s,l],i)=>{const mon=newMon(s,l);const v=giveVMs(t,mon,i);if(v.length)vmList.push(SPECIES[s].n+': '+v.map(m=>MOVES[m].n).join(', '));return battler(mon)});
   newBattle({mode:'trainer',trainer:t,oppName:t.n,zone:zoneAt(t.x,t.y)||'north',me:mkFighter('L',RUN.team.map(battler),XL,'local'),foe:mkFighter('R',team,XR,'ai'),state:'count',cntEnd:performance.now()+2600});
-  if(vmList.length){say(`${t.n} hat VMs beigebracht (${['','Basis','Fortgeschritten','Elite'][vmTier(t)]})!`);sysChat(`VMs von ${t.n} — ${vmList.join(' · ')}`)}
+  if(vmList.length){say(`${t.n} hat TMs beigebracht (${['','Basis','Fortgeschritten','Elite'][vmTier(t)]})!`);sysChat(`TMs von ${t.n} — ${vmList.join(' · ')}`)}
   say(`${t.n} will kämpfen!`);
 }
 function trainerKO(def){const idx=B.me.a;syncBack();const m=RUN.team[idx];if(m){const msgs=gainXp(m,Math.round(xpGain(def.s,def.l)*1.4));Object.assign(B.me.team[idx],battler(m));msgs.forEach(say)}}
-async function trainerWin(){B.state='over';finale(true);const t=B.trainer;RUN.beat[t.id]=1;if(t.toll){RUN.toll=RUN.toll||{};RUN.toll[t.toll]=1;setTimeout(()=>sysChat(`${t.n}: „Respekt. Du darfst passieren!“`),2600)}RUN.kap+=t.reward;{const k=HM_FROM[t.id];if(k&&!hasHM(k)){RUN.hm=RUN.hm||{};RUN.hm[k]=1;say(`Du hast ${HM[k].i} ${HM[k].n} gelernt! ${HM[k].d}`);sysChat(`${t.n} hat dir ${HM[k].n} beigebracht: ${HM[k].d}`)}}earn(t.reward*40,'von '+t.n);syncBack();say(`Du hast ${t.n} besiegt!`);say(`Belohnung: ${t.reward} Handschellen.`);sysChat(`Du hast ${t.n} besiegt und ${t.reward} Handschellen bekommen.`);updateHud();const myB=B;await sleep(2400);if(B===myB)endWild()}
+async function trainerWin(){B.state='over';finale(true);const t=B.trainer;RUN.beat[t.id]=1;if(t.toll){RUN.toll=RUN.toll||{};RUN.toll[t.toll]=1;setTimeout(()=>sysChat(`${t.n}: „Respekt. Du darfst passieren!“`),2600)}RUN.kap+=t.reward;{const k=HM_FROM[t.id];if(k&&!hasHM(k)){RUN.hm=RUN.hm||{};RUN.hm[k]=1;say(`Du hast die VM ${HM[k].i} ${HM[k].n} bekommen! Einsetzbar mit einem ${hmNeed(k)} im Kader.`);sysChat(`${t.n} hat dir ${HM[k].n} beigebracht: ${HM[k].d}`)}}earn(t.reward*40,'von '+t.n);{const tm=tmRandom(mulberry32((Date.now()^hashStr(t.id))>>>0),vmTier(t));if(tm){tmGive(tm);say(`Belohnung: 💿 TM ${MOVES[tm].n} (${TYPES[MOVES[tm].t].n})!`)}}syncBack();say(`Du hast ${t.n} besiegt!`);say(`Belohnung: ${t.reward} Handschellen.`);sysChat(`Du hast ${t.n} besiegt und ${t.reward} Handschellen bekommen.`);updateHud();const myB=B;await sleep(2400);if(B===myB)endWild()}
 function syncBack(){if(B&&(B.mode==='wild'||B.mode==='trainer'))B.me.team.forEach((b,i)=>{if(RUN.team[i])RUN.team[i].hp=b.hp})}
 async function wildWin(){
   B.state='over';finale(true);const idx=B.me.a;syncBack();const m=RUN.team[idx];earn(B.legend?150:6+B.wild.l*3,'Preisgeld');if(B.legend){RUN.leg[B.legend]=1;say(`${SPECIES[B.legend].n} verschwindet im Licht…`)}
@@ -3175,6 +3298,7 @@ function drawBattle(){
   if(!B)return;const c=bc;const K=sizeBattle();const CM=updateCam(performance.now());c.setTransform(K*CM.z,0,0,K*CM.z,K*(AW/2-CM.x*CM.z),K*(CAMY-CM.y*CM.z));const _n=performance.now();if(B.shakeUntil&&_n<B.shakeUntil)c.translate(Math.round((Math.random()-.5)*4),Math.round((Math.random()-.5)*4));c.imageSmoothingEnabled=false;const now=performance.now();
   c.drawImage(battleBG(B.zone||'arena'),0,0,AW,AH);
 
+  drawHazards(c,_n);
   const ents=[B.me,B.foe].filter(Boolean).concat((B.obs||[]).filter(o=>!o.dead)).sort((a,b)=>a.y-b.y);
   for(const F of ents){if(F.kind){drawObs(c,F,now);continue}if(F.out&&act(F).hp<=0&&F.faint<=0&&F.ctrl!=='remote')continue;const mon=act(F);
     let catchK=-1;if(F===B.foe&&B.catch){const el=(now-B.catch.t0)/1000;if(el>0.4||B.catch.done)continue;catchK=el/0.4}
@@ -3302,6 +3426,29 @@ function drawVS(c,now){const V=B.vs,e=now-V.t0;if(e>V.dur){B.vs=null;return}
     const h=6+Math.max(1,lines.length)*10;c.fillStyle='#14141f';c.fillRect(6,UH-h-6,UW-12,h+2);c.fillStyle='#f6f1e1';c.fillRect(7,UH-h-5,UW-14,h);
     lines.forEach((l,i)=>vtText(c,l,12,UH-h+5+i*10,'#14141f',10))}
   c.restore()}
+
+// ===== ground hazards: attacks that miss leave something behind (water → puddle, slippery; fire → flames, burn;
+//       rock → light rubble obstacle; grass → roots, slow; electric → sparks, short stun). They fade after a few seconds and hit both sides.
+const HAZ_KIND={water:{k:'puddle',r:16,ms:7000},fire:{k:'fire',r:12,ms:4500},grass:{k:'roots',r:15,ms:6000},electric:{k:'spark',r:12,ms:4000}};
+function leaveHazard(s,x,y){if(!B||B.tb||B.state!=='fight')return;const mv=MOVES[s.mid];if(!mv||(mv.p||0)<=0)return;const now=performance.now();x=clamp(x,24,AW-24);y=clamp(y,24,AH-16);
+  if(mv.t==='rock'){if([B.me,B.foe].some(F=>F&&Math.hypot(F.x-x,(F.y-y)*1.3)<26))return;B.obs=B.obs||[];if(B.obs.filter(o=>o.tmp&&!o.dead).length>=4)return;
+    B.obs.push({id:'h'+now,kind:'rock',mat:'rock',ind:0,x:Math.round(x),y:Math.round(y),r:8,hp:18,max:18,v:Math.floor(Math.random()*3),tmp:now+12000});burst(x,y-6,'#a07848',10);return}
+  const H=HAZ_KIND[mv.t];if(!H)return;B.haz=(B.haz||[]).filter(h=>h.until>now);if(B.haz.length>=8)B.haz.shift();B.haz.push({k:H.k,x,y,r:H.r,t0:now,until:now+H.ms,seed:Math.floor(Math.random()*1e6)})}
+function hazardTick(dt){if(!B)return;const now=performance.now();if(B.haz)B.haz=B.haz.filter(h=>h.until>now);
+  if(B.obs)for(const o of B.obs)if(o.tmp&&!o.dead&&o.tmp<now){o.dead=1;burst(o.x,o.y-6,'#a07848',8)}
+  if(B.state!=='fight'||!B.haz)return;
+  for(const F of[B.me,B.foe]){if(!F||F.ctrl==='remote'||F.out||F.faint>0)continue;F.slip=Math.max(0,(F.slip||0)-dt);
+    for(const h of B.haz){if(Math.hypot(F.x-h.x,(F.y-h.y)*1.3)>h.r+4)continue;
+      if(h.k==='puddle')F.slip=0.35;
+      else if(h.k==='fire'){if(F.st.burn<=0){F.st.burn=2.5;say(`${SPECIES[act(F).s].n} läuft durchs Feuer und brennt!`)}}
+      else if(h.k==='roots')F.st.slow=Math.max(F.st.slow,0.4);
+      else if(h.k==='spark'&&Math.random()<dt*0.9&&F.st.stun<=0)F.st.stun=0.35}}}
+function drawHazards(c,now){if(!B||!B.haz)return;for(const h of B.haz){const life=(h.until-now)/(h.until-h.t0),a=Math.min(1,life*4,(now-h.t0)/200),X=Math.round(h.x),Y=Math.round(h.y),r=mulberry32(h.seed);c.save();c.globalAlpha=a;
+  if(h.k==='puddle'){c.fillStyle='#1f5fa0';c.beginPath();c.ellipse(X,Y,h.r,h.r*0.55,0,0,7);c.fill();c.fillStyle='#3d8bf2';c.beginPath();c.ellipse(X,Y,h.r-2,h.r*0.55-2,0,0,7);c.fill();c.fillStyle='#8fc8f0';c.fillRect(X-6,Y-3,5,1);c.fillRect(X+2,Y+1,3,1)}
+  else if(h.k==='fire'){c.fillStyle='#3a1a0a80';c.beginPath();c.ellipse(X,Y,h.r,h.r*0.5,0,0,7);c.fill();for(let i=0;i<6;i++){const fx=X+Math.round((r()-0.5)*h.r*1.6),fy=Y+Math.round((r()-0.5)*h.r*0.7),fl=(Math.floor(now/90)+i)%3,hh=4+fl*2;c.fillStyle='#ef4444';c.fillRect(fx-2,fy-hh,4,hh);c.fillStyle='#ffcb3d';c.fillRect(fx-1,fy-hh+2,2,hh-2)}}
+  else if(h.k==='roots'){c.fillStyle='#3a2a10b0';c.beginPath();c.ellipse(X,Y,h.r,h.r*0.5,0,0,7);c.fill();c.fillStyle='#8a5a28';for(let i=0;i<7;i++){const a2=r()*6.28,L=5+r()*8;for(let t=0;t<L;t+=1.5)c.fillRect(Math.round(X+Math.cos(a2)*t),Math.round(Y+Math.sin(a2)*t*0.5),2,1)}c.fillStyle='#3ddc6b';for(let i=0;i<4;i++)c.fillRect(X+Math.round((r()-0.5)*h.r*1.4),Y+Math.round((r()-0.5)*h.r*0.6),2,2)}
+  else if(h.k==='spark'){c.fillStyle='#d9a90b70';c.beginPath();c.ellipse(X,Y,h.r,h.r*0.5,0,0,7);c.fill();if(Math.floor(now/70)%3){c.fillStyle='#ffe36b';for(let i=0;i<5;i++){const sx=X+Math.round((r()-0.5)*h.r*1.6),sy=Y+Math.round((r()-0.5)*h.r*0.7);c.fillRect(sx,sy,3,1);c.fillRect(sx+2,sy+1,1,2)}}}
+  c.restore()}}
 /* ===================== SIDE PANELS ===================== */
 let curTab='team',unread=0;
 document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>switchTab(b.dataset.t));
@@ -3317,6 +3464,7 @@ function monCard(m,i,inTeam){
   {const b=document.createElement('button');b.className='mini';b.textContent='ℹ Details';b.onclick=()=>openMonInfo(m.s,m);acts.appendChild(b)}
   {const b=document.createElement('button');b.className='mini';b.textContent='📚 Study';b.disabled=!!B||RUN.phase==='arena';b.title=SPECIES[m.s].law?'Quiz zu '+SPECIES[m.s].law:'Quiz mit zufälligen Paragraphen';b.onclick=()=>openStudy(m);acts.appendChild(b)}
   if(RUN&&RUN.items&&['potion','superp','revive','candy'].some(k=>RUN.items[k]>0)){const b=document.createElement('button');b.className='mini';b.textContent='🎒 Item';b.disabled=!!B||RUN.phase==='arena';b.onclick=()=>openItemsFor(m);acts.appendChild(b)}
+  if(RUN&&tmOwned().some(k=>tmOK(m,k))){const b=document.createElement('button');b.className='mini';b.textContent='💿 TM';b.disabled=!!B||RUN.phase==='arena';b.onclick=()=>openTMFor(m);acts.appendChild(b)}
   info.appendChild(acts);d.appendChild(info);return d;
 }
 function changed(){save();renderTeam();pushMt()}
@@ -4368,7 +4516,7 @@ function openProfile(){if(!G)return;let sx=G.sex==='f'?'f':'m',col=G.color;
   render()}
 function renderTeam(){
   if(!G)return;const el=$('#pane-team');el.innerHTML='';
-  el.insertAdjacentHTML('beforeend',`<div class="stats"><div class="stat" id="sprof" style="cursor:pointer" title="Name, Figur und Farbe ändern">${G.sex==='f'?'Beamtin':'Beamter'} <span style="color:var(--accent)">✏</span><b style="color:${G.color}">${esc(G.name)}</b></div><div class="stat">Trophäen<b>🏆 ${G.tro}</b></div><div class="stat">Monster Dex<b>${rosterIds().filter(s=>G.dex[s]).length} / ${rosterIds().length}</b></div><div class="stat">Handschellen<b>⛓ ${RUN?RUN.kap:'-'}</b></div><div class="stat">Geld<b style="color:var(--accent)">$${RUN?money():'-'}</b></div><div class="stat">Beutel<b style="font-size:17px">${RUN&&RUN.items&&Object.values(RUN.items).some(v=>v>0)?Object.entries(RUN.items).filter(e=>e[1]>0).map(([k,v])=>ITEMS[k].i+v).join(' '):'leer'}</b></div><div class="stat" style="grid-column:1/-1">Feldfähigkeiten<b style="font-size:16px">${Object.entries(HM).map(([k,h])=>hasHM(k)?(k==='fly'?`<button class="btn ghost" data-hmuse="fly" title="${esc(h.d)}" style="font-size:14px;padding:3px 8px">${P.fly?'🛬 LANDEN':h.i+' '+h.n}</button>`:`<span title="${esc(h.d)}">${h.i} ${h.n}</span>`):`<span style="color:var(--muted)" title="${esc(h.d)}">🔒 ${h.n} (${esc(TRAINERS.find(t=>t.id===h.from).n)})</span>`).join(' · ')}</b></div></div>`);
+  el.insertAdjacentHTML('beforeend',`<div class="stats"><div class="stat" id="sprof" style="cursor:pointer" title="Name, Figur und Farbe ändern">${G.sex==='f'?'Beamtin':'Beamter'} <span style="color:var(--accent)">✏</span><b style="color:${G.color}">${esc(G.name)}</b></div><div class="stat">Trophäen<b>🏆 ${G.tro}</b></div><div class="stat">Monster Dex<b>${rosterIds().filter(s=>G.dex[s]).length} / ${rosterIds().length}</b></div><div class="stat">Handschellen<b>⛓ ${RUN?RUN.kap:'-'}</b></div><div class="stat">Geld<b style="color:var(--accent)">$${RUN?money():'-'}</b></div><div class="stat">Beutel<b style="font-size:17px">${RUN&&RUN.items&&Object.values(RUN.items).some(v=>v>0)?Object.entries(RUN.items).filter(e=>e[1]>0).map(([k,v])=>ITEMS[k].i+v).join(' '):'leer'}</b></div><div class="stat" style="grid-column:1/-1">Feldfähigkeiten<b style="font-size:16px">${Object.entries(HM).map(([k,h])=>hasHM(k)?(!hmUser(k)?`<span style="color:var(--muted)" title="${esc(h.d)}">${h.i} ${h.n} (braucht ${esc(hmNeed(k))})</span>`:k==='fly'?`<button class="btn ghost" data-hmuse="fly" title="${esc(h.d)}" style="font-size:14px;padding:3px 8px">${P.fly?'🛬 LANDEN':h.i+' '+h.n}</button> <span class="small">${esc(SPECIES[hmUser(k).s].n)}</span>`:`<span title="${esc(h.d)}">${h.i} ${h.n} <span class="small">(${esc(SPECIES[hmUser(k).s].n)})</span></span>`):`<span style="color:var(--muted)" title="${esc(h.d)}">🔒 ${h.n} (${esc(TRAINERS.find(t=>t.id===h.from).n)})</span>`).join(' · ')}</b></div></div>`);
   el.querySelectorAll('[data-hmuse]').forEach(b=>b.onclick=()=>{if(b.dataset.hmuse==='fly'){if(isMob())$('#side').classList.remove('open');toggleFly()}});
   {const sp=$("#sprof");if(sp)sp.onclick=openProfile}
   if(!RUN){el.insertAdjacentHTML('beforeend',`<div class="sec">IN KEINER LOBBY</div><div class="small" style="line-height:1.1">Tritt einer Lobby bei oder erstelle eine (Reiter LOBBY oder unten auf der Karte). Du wählst ein Starter-Monster, der Host startet das Spiel, dann gehst du auf Streife vor dem Gerichtsturnier.</div>`)}

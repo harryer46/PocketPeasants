@@ -246,9 +246,15 @@ function* bakeChunkGen(cx,cy){
   const inC=(x,y)=>x>=X0&&y>=Y0&&x<X0+CS&&y<Y0+CS;
   // building tiles (PÄD walls/roof are covered by its sprite)
   for(let y=Y0;y<Y0+CS;y++)for(let x=X0;x<X0+CS;x++){const t=tget(x,y);if([10,11,12,20,27].includes(t)){const arr=TILE[t];gc.drawImage(arr[(t===20?(x+y)%arr.length:0)],x*16,y*16)}}
-  for(const p of PADS){if(p.bx+6<X0||p.bx>X0+CS||p.by+4<Y0||p.by>Y0+CS)continue;gc.fillStyle='rgba(20,30,10,0.28)';gc.fillRect(p.bx*16,(p.by+4)*16,96,4);gc.drawImage(dienstSprite(),p.bx*16,p.by*16)}
-  for(const Bd of BLDG){if(Bd.x+Bd.w<X0||Bd.x>X0+CS||Bd.y+Bd.h<Y0||Bd.y>Y0+CS)continue;gc.fillStyle='rgba(20,30,10,0.28)';gc.fillRect(Bd.x*16,(Bd.y+Bd.h)*16,Bd.w*16,4);gc.drawImage(Bd.id==='shop'?shopSprite():hfpolSprite(),Bd.x*16,Bd.y*16)}
+  for(const p of PADS){if(p.bx+6<X0||p.bx>X0+CS||p.by+4<Y0||p.by>Y0+CS)continue;gc.fillStyle='rgba(20,30,10,0.28)';gc.fillRect(p.bx*16,(p.by+4)*16,96,4);gc.drawImage(p.old?padSpriteOld():dienstSprite(),p.bx*16,p.by*16)}
+  for(const Bd of BLDG){if(Bd.x+Bd.w<X0||Bd.x>X0+CS||Bd.y+Bd.h<Y0||Bd.y>Y0+CS)continue;gc.fillStyle='rgba(20,30,10,0.28)';gc.fillRect(Bd.x*16,(Bd.y+Bd.h)*16,Bd.w*16,4);gc.drawImage(Bd.id==='shop'?(Bd.old?shopSpriteOld():shopSprite()):(Bd.old?hfpolSpriteOld():hfpolSprite()),Bd.x*16,Bd.y*16)}
   for(let y=Y0;y<Y0+CS;y++)for(let x=X0;x<X0+CS;x++){const t=tget(x,y);if(t===13)gc.drawImage(TILE[13][0],x*16,y*16)}
+  // ledges: a grassy lip with a short earth face on the low side
+  for(let y=Y0;y<Y0+CS;y++)for(let x=X0;x<X0+CS;x++){const t=tget(x,y);if(t<32||t>35)continue;const X=x*16,Y=y*16,F=(c0,a,b,w,h)=>{gc.fillStyle=c0;gc.fillRect(X+a,Y+b,w,h)};
+    if(t===32){F('#3a7424',0,7,16,2);F('#2a5a1a',0,9,16,1);F('#a07848',0,10,16,3);F('#7a5430',0,13,16,2);F('#00000030',0,15,16,1);for(let k=1;k<16;k+=5)F('#c49a62',k,10,2,1)}
+    else if(t===33){F('#00000030',0,0,16,1);F('#7a5430',0,1,16,2);F('#a07848',0,3,16,3);F('#2a5a1a',0,6,16,1);F('#3a7424',0,7,16,2);for(let k=2;k<16;k+=5)F('#c49a62',k,3,2,1)}
+    else if(t===34){F('#00000030',0,0,1,16);F('#7a5430',1,0,2,16);F('#a07848',3,0,3,16);F('#2a5a1a',6,0,1,16);F('#3a7424',7,0,2,16)}
+    else{F('#3a7424',7,0,2,16);F('#2a5a1a',9,0,1,16);F('#a07848',10,0,3,16);F('#7a5430',13,0,2,16);F('#00000030',15,0,1,16)}}
   // ground details: tufts, flowers, pebbles
   for(let y=Y0;y<Y0+CS;y++)for(let x=X0;x<X0+CS;x++){const t=tget(x,y),b=BIOME[y*MW+x],r=mulberry32(th(x,y));
     if(t===0||t===14||t===15||t===30){const n=1+Math.floor(r()*3);for(let i=0;i<n;i++){const X=x*16+Math.floor(r()*14)+1,Y=y*16+Math.floor(r()*13)+2;gc.fillStyle=b===2?'#1d4416':b===4?'#6a6a2a':b===8?'#123a18':'#3a7424';gc.fillRect(X,Y,1,2);gc.fillRect(X-1,Y,1,1);gc.fillRect(X+1,Y-1,1,2);if(r()<0.4){gc.fillStyle=b===2?'#5c9a3a':'#9ad25a';gc.fillRect(X+1,Y-1,1,1)}}}
@@ -308,3 +314,12 @@ function paintRock(gc,cx,cy,R,r,palOv){
 }
 function th(x,y){return((x*73856093)^(y*19349663))>>>0}
 
+
+// classic PÄD (before the tower style): red tiled roof, white wall with windows, wooden door, blue light on the ridge
+let PADSPR0=null;function padSpriteOld(){if(PADSPR0)return PADSPR0;const c=mk(96,64),x=c.getContext('2d'),F=(col,a,b,w,h)=>{x.fillStyle=col;x.fillRect(a,b,w,h)};
+  F('#14141f',0,0,96,64);F('#d23b3b',1,1,94,31);for(let y=4;y<32;y+=4)F('#a92b2b',1,y,94,1);for(let y=1;y<32;y+=4)F('#e85c5c',1,y,94,1);F('#14141f',0,31,96,1);
+  F('#efe8dc',1,32,94,31);F('#bfb6a2',1,60,94,3);
+  for(const wx of[0,1,2,4,5]){const X=wx*16;F('#3c3c4c',X+3,35,10,8);F('#8fd0ff',X+4,36,8,6);F('#c8ecff',X+4,36,3,2);if(wx!==2&&wx!==4){F('#3c3c4c',X+3,48,10,8);F('#8fd0ff',X+4,49,8,6);F('#c8ecff',X+4,49,3,2)}}
+  F('#3a2210',50,49,12,15);F('#7c4a22',51,50,10,14);F('#9a5d2c',51,50,1,14);F('#ffd23f',59,57,1,1);
+  F('#14141f',42,8,12,8);F('#2f6fd0',43,9,10,6);F('#8fc8ff',44,10,3,2);F('#ffffff',46,10,4,1);
+  return PADSPR0=c}

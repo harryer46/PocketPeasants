@@ -87,8 +87,9 @@ function buy(k){const it=ITEMS[k];if(!it||!RUN)return;if(!shopOK()){toast('Läde
 function openShop(){if(!RUN){toast('Starte zuerst das freie Spiel oder tritt einer Lobby bei.');return}if(!shopOK()){toast(B?"Während eines Kampfes kannst du nicht einkaufen.":RUN.phase==='arena'?'Während des Gerichtsturniers ist der Laden geschlossen.':'Der Copshop ist ein eigenes Gebäude: in der Stadt südlich der Hauptstraße, links (🛒 auf der Karte). Geh durch die Tür hinein.');return}
   openModal(`<h3>🛒 COPSHOP</h3><p class="small" style="margin-bottom:6px">Dein Geld: <b style="color:var(--accent);font-size:20px">$${money()}</b> · Handschellen ⛓ ${RUN.kap}</p>
    ${Object.entries(ITEMS).map(([k,it])=>`<div class="mvrow" style="display:flex;align-items:center;gap:8px"><span style="font-size:22px;width:26px;text-align:center">${it.i}</span><span style="flex:1"><b>${esc(it.n)}</b> <span class="small">· owned ${k==='cap'||k==='cap5'?RUN.kap:inv(k)}</span><br><span class="small">${esc(it.d)}</span></span><button class="btn ${money()>=it.p?'':'ghost'}" data-buy="${k}" ${money()>=it.p?'':'disabled'}>$${it.p}</button></div>`).join('')}
+   ${(()=>{const T=shopTown(),L=tmShopList();return L.length?`<h3 style="margin-top:10px">💿 TMs · Angebot ${esc(T.n)}</h3>`+L.map(k=>`<div class="mvrow" style="display:flex;align-items:center;gap:8px"><span style="font-size:22px;width:26px;text-align:center">💿</span><span style="flex:1"><b>${esc(MOVES[k].n)}</b> <span class="tb" style="background:${TYPES[MOVES[k].t].c}">${TYPES[MOVES[k].t].n.toUpperCase()}</span> <span class="small">· Stärke ${MOVES[k].p} · owned ${(RUN.tm&&RUN.tm[k])||0}</span><br><span class="small">Nur für ${esc(TYPES[MOVES[k].t].n)}-Monster${MOVES[k].t==='normal'?' (Normal: alle)':''}.</span></span><button class="btn ${money()>=tmPrice(k)?'':'ghost'}" data-btm="${k}" ${money()>=tmPrice(k)?'':'disabled'}>$${tmPrice(k)}</button></div>`).join(''):''})()}
    <div class="acts" style="margin-top:8px"><button class="btn" id="mok">FERTIG</button></div>`);
-  $('#mbox').style.maxHeight='92%';$('#mbox').style.overflow='auto';document.querySelectorAll('[data-buy]').forEach(b=>b.onclick=()=>buy(b.dataset.buy));$('#mok').onclick=closeModal}
+  $('#mbox').style.maxHeight='92%';$('#mbox').style.overflow='auto';document.querySelectorAll('[data-buy]').forEach(b=>b.onclick=()=>buy(b.dataset.buy));document.querySelectorAll('[data-btm]').forEach(b=>b.onclick=()=>buyTM(b.dataset.btm));$('#mok').onclick=closeModal}
 // use an item on one of your monsters outside battle
 function useItemOn(k,m){const it=ITEMS[k];if(!inv(k)||!m)return;const st=stats(m);
   if(it.heal){if(m.hp<=0){toast('Besiegt — nimm einen Beleber.');return}if(m.hp>=st.mhp){toast('KP sind schon voll.');return}m.hp=Math.min(st.mhp,m.hp+it.heal)}
@@ -380,3 +381,61 @@ function rematchHtml(){
 function openModal(h){const mb=$('#mbox');mb.style.maxWidth='';mb.style.maxHeight='';mb.style.overflow='';mb.innerHTML=h;$('#modal').classList.add('on')}
 function closeModal(){$('#modal').classList.remove('on')}
 
+
+// classic flat-roof look (before the tower style) – used in every town except Villingen
+let SHOPSPR0=null,HFSPR0=null;
+function shopSpriteOld(){if(SHOPSPR0)return SHOPSPR0;const W=80,H=64,c=mk(W,H),x=c.getContext('2d');const F=(col,a,b,w,h)=>{x.fillStyle=col;x.fillRect(a,b,w,h)};
+  // roof: blue shop roof with ridges and a light front edge
+  F('#14141f',0,2,W,30);F('#2f6fd0',1,3,W-2,28);for(let y=6;y<30;y+=4)F('#2458b0',1,y,W-2,1);F('#5a92ea',1,3,W-2,2);F('#14141f',0,31,W,1);
+  // walls
+  F('#14141f',0,32,W,32);F('#f1ece0',1,32,W-2,31);F('#cfc6b0',1,60,W-2,3);
+  // striped awning
+  for(let i=0;i<W-2;i+=6){F('#d23b3b',1+i,33,3,6);F('#ffffff',4+i,33,3,6)}F('#14141f',1,39,W-2,1);for(let i=0;i<W-2;i+=6){F('#d23b3b',1+i,39,3,2);F('#14141f',1+i,41,3,1)}
+  // shop windows with goods (left and right of the door)
+  const win=(a)=>{F('#14141f',a,43,22,15);F('#8fd0ff',a+1,44,20,13);F('#c8ecff',a+1,44,6,3);
+    F('#a5784a',a+1,51,20,1);F('#a5784a',a+1,55,20,1);
+    const g=['#ffcb3d','#3ddc6b','#ef4444','#4aa3ff','#c084fc'];for(let k=0;k<5;k++){F(g[k],a+2+k*4,48,3,3);F(g[(k+2)%5],a+2+k*4,52,3,3)}};
+  win(4);win(54);
+  // glass sliding door (door tile = column 2 → x 32..47)
+  F('#14141f',33,42,14,22);F('#5a5f70',34,43,12,21);F('#9fd8ff',35,44,4,19);F('#9fd8ff',41,44,4,19);F('#d6f0ff',35,44,1,19);F('#d6f0ff',41,44,1,19);F('#14141f',40,43,1,21);
+  // little € sign over the door
+  F('#14141f',36,34,8,5);F('#ffcb3d',37,35,6,3);F('#14141f',39,35,2,3);
+  return SHOPSPR0=c}
+function hfpolSpriteOld(){if(HFSPR0)return HFSPR0;const W=112,H=64,c=mk(W,H),x=c.getContext('2d');const F=(col,a,b,w,h)=>{x.fillStyle=col;x.fillRect(a,b,w,h)};
+  // flat roof (seen from above): grey membrane, parapet, skylights and solar panels
+  F('#14141f',0,4,W,28);F('#9a9fa8',1,5,W-2,26);F('#b4b9c2',1,5,W-2,2);F('#7d828c',1,29,W-2,2);
+  for(let i=0;i<4;i++){F('#14141f',8+i*12,10,9,7);F('#2a3f6a',9+i*12,11,7,5);F('#4f6fa8',9+i*12,11,7,1)}
+  for(let i=0;i<3;i++){F('#14141f',64+i*14,9,11,9);F('#d9e6f5',65+i*14,10,9,7);F('#ffffff',65+i*14,10,3,2)}
+  F('#7d828c',10,21,92,1);F('#14141f',50,20,12,8);F('#6b7080',51,21,10,6); // roof hatch / technics
+  // facade: wooden slats
+  F('#14141f',0,32,W,32);F('#c9a46a',1,32,W-2,31);for(let a=2;a<W-1;a+=3)F('#b08a50',a,32,1,31);F('#e0c08a',1,32,W-2,1);F('#8a6a3a',1,61,W-2,2);
+  // two ribbon-window floors
+  const ribbon=(y)=>{for(let a=3;a<W-3;a+=11){if(a>44&&a<64)continue;F('#14141f',a,y,9,8);F('#2f4c78',a+1,y+1,7,6);F('#6f9bd6',a+1,y+1,3,2)}};ribbon(35);ribbon(48);
+  // blue name band + police star
+  F('#14141f',38,33,36,9);F('#1d3f8f',39,34,34,7);
+  // glazed entrance (door tile = column 3 → x 48..63) with canopy
+  F('#14141f',44,43,24,2);F('#d9dde4',45,43,22,1);
+  F('#14141f',48,46,16,18);F('#3b5f8c',49,47,14,17);F('#9fd8ff',50,48,5,16);F('#9fd8ff',57,48,5,16);F('#d6f0ff',50,48,1,16);F('#14141f',55,47,2,17);
+  // flagpole with the Baden-Württemberg colours (black/yellow)
+  F('#14141f',104,30,1,32);F('#14141f',105,30,7,6);F('#14141f',106,31,5,2);F('#ffcb3d',106,33,5,2);
+  return HFSPR0=c}
+
+// ===== TMs: random regular attacks, type-bound (the monster's own type, Normal moves for everyone). From trainers and regional shop offers
+const TM_SHOP={vil:['normal','electric'],lah:['water','rock'],unt:['fire','rock'],dam:['grass','normal'],mos:['grass','flying'],mar:['water','flying']};
+function tmMoves(){return Object.keys(MOVES).filter(k=>{const v=MOVES[k];return v.k!=='self'&&(v.p||0)>=25&&TYPES[v.t]})}
+function tmRandom(r,tier){const lo=[0,30,55,80][tier||1],hi=[0,60,85,130][tier||1];const c=tmMoves().filter(k=>MOVES[k].p>=lo&&MOVES[k].p<=hi);return c.length?c[Math.floor(r()*c.length)]:null}
+function tmGive(k){RUN.tm=RUN.tm||{};RUN.tm[k]=(RUN.tm[k]||0)+1;save()}
+function tmOK(m,k){const v=MOVES[k];return!!v&&!m.m.includes(k)&&(v.t===SPECIES[m.s].t||v.t==='normal')}
+function tmOwned(){return Object.entries(RUN&&RUN.tm||{}).filter(e=>e[1]>0).map(e=>e[0])}
+function tmPrice(k){return 120+Math.round((MOVES[k].p||40)*4)}
+function shopTown(){let best=null,bd=1e9;for(const T of TOWNS){const d=Math.abs(T.x-P.x)+Math.abs(T.y-P.y);if(d<bd){bd=d;best=T}}return best}
+function tmShopList(){const T=shopTown();if(!T)return[];const ty=TM_SHOP[T.id]||['normal'],r=mulberry32(hashStr('tm:'+T.id)),pool=tmMoves().filter(k=>ty.includes(MOVES[k].t)&&MOVES[k].p<=95),out=[];
+  while(out.length<4&&pool.length){out.push(pool.splice(Math.floor(r()*pool.length),1)[0])}return out}
+function buyTM(k){if(!shopOK()||!tmShopList().includes(k))return;const p=tmPrice(k);if(money()<p){toast('Nicht genug Geld.');return}RUN.money-=p;tmGive(k);updateHud();toast(`💿 TM ${MOVES[k].n} gekauft.`);openShop()}
+function openTMFor(m){const ks=tmOwned().filter(k=>tmOK(m,k));if(!ks.length){toast('Keine passende TM — TMs gibt es von Trainern und regional im Copshop.');return}
+  openModal(`<h3>💿 TM FÜR ${esc(SPECIES[m.s].n.toUpperCase())}</h3><p class="small">Nur Attacken vom Typ ${esc(TYPES[SPECIES[m.s].t].n)} oder Normal.</p><div style="display:flex;flex-direction:column;gap:6px">${ks.map(k=>`<button class="btn ghost" data-tm="${k}" style="font-family:VT323,monospace;font-size:19px">💿 ${esc(MOVES[k].n)} · ${esc(TYPES[MOVES[k].t].n)} · Stärke ${MOVES[k].p} ×${RUN.tm[k]}</button>`).join('')}</div><div class="acts" style="margin-top:8px"><button class="btn" id="mok">SCHLIESSEN</button></div>`);
+  document.querySelectorAll('[data-tm]').forEach(b=>b.onclick=()=>tmTeach(m,b.dataset.tm));$('#mok').onclick=closeModal}
+function tmTeach(m,k){const fin=()=>{RUN.tm[k]--;closeModal();toast(`${SPECIES[m.s].n} hat ${MOVES[k].n} gelernt!`);changed()};
+  if(m.m.length<4){m.m.push(k);fin();return}
+  openModal(`<h3>WELCHE ATTACKE VERGESSEN?</h3><p class="small">${esc(SPECIES[m.s].n)} lernt ${esc(MOVES[k].n)}.</p><div style="display:flex;flex-direction:column;gap:6px">${m.m.map((mv,i)=>`<button class="btn ghost" data-fg="${i}" style="font-family:VT323,monospace;font-size:19px">${esc(MOVES[mv].n)} · ${esc(TYPES[MOVES[mv].t].n)} · Stärke ${MOVES[mv].p||0}</button>`).join('')}</div><div class="acts" style="margin-top:8px"><button class="btn ghost" id="mno">ABBRECHEN</button></div>`);
+  document.querySelectorAll('[data-fg]').forEach(b=>b.onclick=()=>{m.m[+b.dataset.fg]=k;fin()});$('#mno').onclick=closeModal}
