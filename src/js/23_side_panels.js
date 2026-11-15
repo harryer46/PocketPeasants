@@ -28,6 +28,7 @@ const QZ={};
 //@inc js/data/qz/07_stgb.js
 //@inc js/data/qz/08_stpo.js
 //@inc js/data/qz/09_stpo.js
+//@inc js/data/qz/10_stpo.js
 //@inc js/data/dex_text.js
 
 
