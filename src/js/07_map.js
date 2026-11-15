@@ -96,8 +96,14 @@ const KNAST_C={x:262,y:13};
   // ---- roads (4-connected, organic wiggle); water → bridge
   const ROAD=new Set();
   const rset=(x,y)=>{if(x<2||y<2||x>=MW-2||y>=MH-2)return;const i=y*MW+x,t=MAP[i];if(t===11||t===20||t===10||t===12||t===6||t===8||t===21||t===7||t===22||t===23)return;MAP[i]=(t===3||t===27)?27:4;ROAD.add(i)};
-  const road=(pts,w)=>{for(let k=0;k+1<pts.length;k++){let[x,y]=pts[k];const[tx,ty]=pts[k+1];rset(x,y);let guard=0;
-    while((x!==tx||y!==ty)&&guard++<2000){const dx=tx-x,dy=ty-y;const wob=n3(x,y)-0.5;if(Math.abs(dx)>Math.abs(dy)+wob*6||dy===0)x+=Math.sign(dx);else y+=Math.sign(dy);rset(x,y);if(w>1){rset(x+1,y);rset(x,y+1)}}}};
+  // roads run in straight legs with 90° turns (like the routes of the originals): each stretch is split into 2–3 orthogonal legs
+  const rr=mulberry32(515);
+  const leg=(x,y,tx,ty,w)=>{const st=(nx,ny)=>{rset(nx,ny);if(w>1){rset(nx+1,ny);rset(nx,ny+1)}};while(x!==tx){x+=Math.sign(tx-x);st(x,y)}while(y!==ty){y+=Math.sign(ty-y);st(x,y)}return[x,y]};
+  const lpath=(x,y,tx,ty,w)=>{rset(x,y);const dx=tx-x,dy=ty-y;if(Math.abs(dx)<3||Math.abs(dy)<3||rr()<0.35){
+      if(rr()<0.5){leg(x,y,tx,y,w);leg(tx,y,tx,ty,w)}else{leg(x,y,x,ty,w);leg(x,ty,tx,ty,w)}return}
+    // staircase: horizontal – vertical – horizontal (or the other way round) with a random break point
+    const f=0.3+rr()*0.4;if(rr()<0.5){const mx=Math.round(x+dx*f);leg(x,y,mx,y,w);leg(mx,y,mx,ty,w);leg(mx,ty,tx,ty,w)}else{const my=Math.round(y+dy*f);leg(x,y,x,my,w);leg(x,my,tx,my,w);leg(tx,my,tx,ty,w)}};
+  const road=(pts,w)=>{for(let k=0;k+1<pts.length;k++){const[x,y]=pts[k],[tx,ty]=pts[k+1];lpath(x,y,tx,ty,w)}};
   const RD=[
     // Villingen exits (south, west, east, north)
     [[150,108],[150,122],[146,134],[141,146]],[[129,88],[116,90],[104,94],[92,98],[76,101],[62,104]],[[171,88],[184,92],[196,96],[210,102],[226,108],[233,110]],
@@ -117,6 +123,21 @@ const KNAST_C={x:262,y:13};
     [[38,68],[24,70]],[[44,84],[24,92]],[[196,38],[206,26],[218,20],[232,22],[244,26]],[[266,110],[282,104],[288,94]]
   ];
   for(const p of RD)road(p,p===RD[0]||p===RD[1]||p===RD[2]?2:1);
+  // dense local path network inside every area: nodes on a jittered grid, linked to their neighbours with 90° paths
+  //  (only inside one area – areas are still entered over the main roads with their teachers)
+  {const GS=14,nodes=[],gw=Math.ceil(MW/GS),gh=Math.ceil(MH/GS);
+   for(let gy=0;gy<gh;gy++)for(let gx=0;gx<gw;gx++){const x=Math.round(gx*GS+2+rr()*(GS-4)),y=Math.round(gy*GS+2+rr()*(GS-4));if(x<4||y<4||x>=MW-4||y>=MH-4){nodes.push(null);continue}
+     const i=y*MW+x,t=MAP[i],b=BIOME[i];nodes.push(!b||t===3||t===31||t===11||t===20||t===13||t===27||t===21||t===6||t===8||(b===3&&y>160)?null:{x,y,b})}
+   const water=(a,c)=>{let n=0;const cnt=(x,y)=>{if(MAP[y*MW+x]===3)n++};let x=a.x,y=a.y;while(x!==c.x){x+=Math.sign(c.x-x);cnt(x,y)}while(y!==c.y){y+=Math.sign(c.y-y);cnt(x,y)}return n};
+   for(let gy=0;gy<gh;gy++)for(let gx=0;gx<gw;gx++){const a=nodes[gy*gw+gx];if(!a)continue;
+     for(const[ox,oy]of[[1,0],[0,1]]){const c=gx+ox<gw&&gy+oy<gh?nodes[(gy+oy)*gw+gx+ox]:null;if(!c||c.b!==a.b)continue;if(rr()>(a.b===1||a.b===2||a.b===8?0.62:0.48))continue;if(water(a,c)>4)continue;
+       const mid=BIOME[Math.round((a.y+c.y)/2)*MW+Math.round((a.x+c.x)/2)];if(mid!==a.b)continue;lpath(a.x,a.y,c.x,c.y,1)}}
+   // hook every network piece onto the roads of its own area
+   const reach=()=>{const seen=new Uint8Array(MW*MH),q=[];for(const p of RD){const i=p[0][1]*MW+p[0][0];if(ROAD.has(i)){seen[i]=1;q.push(i)}}
+     while(q.length){const i=q.pop(),x=i%MW,y=(i-x)/MW;for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]]){const j=(y+dy)*MW+x+dx;if(seen[j]||!ROAD.has(j))continue;seen[j]=1;q.push(j)}}return seen};
+   for(let it=0;it<3;it++){const seen=reach();for(const a of nodes){if(!a||seen[a.y*MW+a.x]||!ROAD.has(a.y*MW+a.x))continue;let best=null,bd=1e9;
+       for(let dy=-26;dy<=26;dy++)for(let dx=-26;dx<=26;dx++){const x=a.x+dx,y=a.y+dy;if(x<3||y<3||x>=MW-3||y>=MH-3)continue;const j=y*MW+x;if(!seen[j]||BIOME[j]!==a.b)continue;const d=Math.abs(dx)+Math.abs(dy);if(d<bd){bd=d;best={x,y}}}
+       if(best&&water(a,best)<=4){lpath(a.x,a.y,best.x,best.y,1);seen[a.y*MW+a.x]=1}}}}
   // ---- legendary shrines (+ clear around them)
   for(const L of LEGENDS){for(let dy=-2;dy<=2;dy++)for(let dx=-2;dx<=2;dx++){const t=tget(L.x+dx,L.y+dy);if(!WALK0.has(t)||t===27)tset(L.x+dx,L.y+dy,BASE_T[B(L.x+dx,L.y+dy)]||0)}for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++)tset(L.x+dx,L.y+dy,13)}
   // ---- dense forests like the concept map: everything away from the routes grows shut (trees, pines, palms, cliffs, peaks);
@@ -164,7 +185,7 @@ const KNAST_C={x:262,y:13};
       for(const[ddx,ddy,d]of[[1,0,'right'],[-1,0,'left'],[0,1,'down'],[0,-1,'up']]){const j=(Y+ddy)*MW+X+ddx;if(ROAD.has(j)&&BIOME[j]===b)return{x:X,y:Y,d}}}return null};
   const roadsIn=b=>[...ROAD].filter(i=>BIOME[i]===b);
   const FIX={ben:[150,124,1],lina:[160,52,1],gwen:[118,90,1],rita:[78,101,2],hank:[120,30,4],sue:[176,159,3],axel:[262,124,8]};
-  const used=[];const okSpot=(x,y)=>!used.some(([a,b])=>Math.abs(a-x)+Math.abs(b-y)<9)&&!GATES.some(g=>{const gx=g.i%MW,gy=(g.i-gx)/MW;return Math.abs(gx-x)+Math.abs(gy-y)<6})&&!TOWNS.some(t=>Math.abs(t.x-x)<18&&Math.abs(t.y-y)<12);
+  const used=[];const okSpot=(x,y)=>!used.some(([a,b])=>Math.abs(a-x)+Math.abs(b-y)<15)&&!GATES.some(g=>{const gx=g.i%MW,gy=(g.i-gx)/MW;return Math.abs(gx-x)+Math.abs(gy-y)<6})&&!TOWNS.some(t=>Math.abs(t.x-x)<18&&Math.abs(t.y-y)<12);
   for(const t of TRAINERS){const f=FIX[t.id];if(!f)continue;const s=near(f[0],f[1],f[2])||{x:f[0],y:f[1],d:t.d};Object.assign(t,s);used.push([s.x,s.y])}
   const RANKS=['Polizeimeisterin','Polizeimeister','Kommissar','Kommissarin','Polizeiobermeister','Oberkommissarin','Hauptkommissar','Anwärterin','Anwärter','Polizeihauptmeister','Kriminalkommissarin','Diensthundeführer','Verkehrspolizist','Bereitschaftspolizistin'];
   const NAMES=['Jonas','Lea','Finn','Mila','Paul','Emma','Luis','Hanna','Ben','Sofia','Noah','Lina','Elias','Clara','Felix','Ida','Max','Nele','Tim','Greta','Moritz','Pia','Jan','Zoe','Karl','Frieda','Emil','Lotta','Oskar','Ella','Theo','Maja','Anton','Leni','Jakob','Marie','David','Ronja','Leon','Amelie'];
