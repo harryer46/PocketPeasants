@@ -473,7 +473,9 @@ function forfeit(){if(B&&B.tb&&B.state!=='over'&&B.mode!=='wild'&&B.mode!=='trai
 
 /* --- wild --- */
 // a knocked-out team has to be healed at a PÄD (questions) before the next fight
-function teamDown(){if(RUN&&RUN.team.some(m=>m.hp>0))return false;const n=performance.now();if(!teamDown.t||n-teamDown.t>4000){teamDown.t=n;toast('Dein Team ist kampfunfähig — heile es zuerst im ⚕ PÄD (Fragen beantworten).')}return true}
+// whole team knocked out: back to the last PÄD and the heal window opens right away
+function respawnHeal(){if(!RUN)return;RUN.kap=Math.max(RUN.kap,10);P.lock=false;held.length=0;{const sp=padSpawn();teleport(sp.x,sp.y)}try{closeModal()}catch(e){}if(TALK)endTalk(true);let n=0;const open=()=>{if(!RUN)return;if((B||CQ)&&n++<40){setTimeout(open,100);return}if(!B&&!CQ&&!$('#cquiz').classList.contains('on'))healQuiz()};open();toast('Du bist zurück zum PÄD geeilt.')}
+function teamDown(){if(RUN&&RUN.team.some(m=>m.hp>0))return false;const n=performance.now();if(!teamDown.t||n-teamDown.t>1500){teamDown.t=n;setTimeout(respawnHeal,0)}return true}
 function startWild(zk){if(teamDown())return;
   const z=ZONES[zk];const sid=pickWild(poolOf(zk),1+distC(P.x,P.y)/80);const l=lvAt(P.x,P.y);
   const wild=newMon(sid,l);G.dex[sid]=G.dex[sid]||0;
@@ -536,7 +538,7 @@ async function wildLose(){
       if(B.mode==='wild'||B.mode==='trainer'){const rm=RUN.team[i];if(rm)rm.hp=m.hp}
       say(`${SPECIES[m.s].n} rappelt sich mit 25 % KP wieder auf!`);if(B.tb){B.state='tbChoose'}else{B.state='count';B.leadDone=1;B.leadWait=false;B.cntEnd=performance.now()+3000}return}
     B.state='fight'}
-  B.state='over';finale(false);say('Alle deine Monster sind besiegt…');const myB=B;await sleep(2400);if(B!==myB)return;endWild();RUN.kap=Math.max(RUN.kap,10);{const sp=padSpawn();teleport(sp.x,sp.y)}setTimeout(()=>{if(!B&&RUN&&!modalOpen()&&!CQ)healQuiz()},900);toast('Du bist zurück zum PÄD geeilt.')}
+  B.state='over';finale(false);say('Alle deine Monster sind besiegt…');const myB=B;await sleep(2400);if(B!==myB)return;endWild();respawnHeal()}
 function throwBonus(){const r=ringR(performance.now());if(r<8){say('Hervorragender Wurf!');return 1.6}if(r<11.5){say('Toller Wurf!');return 1.3}return 1}
 // catch chance: low HP + weak (low level / common) -> high; full HP / strong / rare -> low. Three shake checks decide.
 function catchChance(w,bonus){const hpF=1-(w.hp/w.mhp)*0.85,lvF=clamp(1.15-w.l*0.03,0.35,1.1);return clamp(hpF*lvF*rarOf(w.s).cm*(bonus||1)+0.04,0.02,0.97)}
