@@ -172,7 +172,7 @@ const KNAST_C={x:262,y:13};
        for(let w=0;w<2;w++)for(let k=-2;k<=2;k++)if(!add(x+px*(e+sgn*w)+bx*k,y+py*(e+sgn*w)+by*k))return null;
        for(const k of[-2,2])for(let m=1;m<=Math.abs(e)+1;m++)if(!add(x+px*sgn*m+bx*k,y+py*sgn*m+by*k))return null;return cells};
      const cells=tryEnd(1)||tryEnd(-1);if(!cells)continue;
-     const lt=bx===0?(by>0?32:33):(bx>0?35:34);
+     const lt=bx===0?(by>0?32:33):(bx>0?35:34);if(lt===33)continue;   // like the originals: no steps you hop up-screen
      for(let k=-a;k<=c;k++){const j=(y+py*k)*MW+x+px*k;MAP[j]=lt;ROAD.delete(j)}
      for(const j of cells)MAP[j]=ENC_T[b];
      // tall grass right in front of the step on the low side's approach, so the way up leads through it

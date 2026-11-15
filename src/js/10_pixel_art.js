@@ -249,11 +249,19 @@ function* bakeChunkGen(cx,cy){
   for(const p of PADS){if(p.bx+6<X0||p.bx>X0+CS||p.by+4<Y0||p.by>Y0+CS)continue;gc.fillStyle='rgba(20,30,10,0.28)';gc.fillRect(p.bx*16,(p.by+4)*16,96,4);gc.drawImage(p.old?padSpriteOld():dienstSprite(),p.bx*16,p.by*16)}
   for(const Bd of BLDG){if(Bd.x+Bd.w<X0||Bd.x>X0+CS||Bd.y+Bd.h<Y0||Bd.y>Y0+CS)continue;gc.fillStyle='rgba(20,30,10,0.28)';gc.fillRect(Bd.x*16,(Bd.y+Bd.h)*16,Bd.w*16,4);gc.drawImage(Bd.id==='shop'?(Bd.old?shopSpriteOld():shopSprite()):(Bd.old?hfpolSpriteOld():hfpolSprite()),Bd.x*16,Bd.y*16)}
   for(let y=Y0;y<Y0+CS;y++)for(let x=X0;x<X0+CS;x++){const t=tget(x,y);if(t===13)gc.drawImage(TILE[13][0],x*16,y*16)}
-  // ledges: a row of stones with a cast shadow at their lower end (one-way step)
-  for(let y=Y0;y<Y0+CS;y++)for(let x=X0;x<X0+CS;x++){const t=tget(x,y);if(t<32||t>35)continue;const X=x*16,Y=y*16,F=(c0,a,b,w,h)=>{gc.fillStyle=c0;gc.fillRect(X+a,Y+b,w,h)},hv=t<34,v=th(x,y);
-    const stone=(a,b,w,h)=>{F('rgba(0,0,0,0.38)',a+1,b+h,w,3);F('rgba(0,0,0,0.18)',a+2,b+h+3,w-2,1);F('#2a2a30',a,b+1,w,h-1);F('#2a2a30',a+1,b,w-2,h+1);F('#8e8e98',a+1,b+1,w-2,h-1);F('#b8b8c2',a+1,b+1,w-3,2);F('#d6d6de',a+2,b+1,2,1);F('#6a6a76',a+1,b+h-2,w-2,1);F('#76767f',a+w-2,b+2,1,h-3)};
-    if(hv){const by=t===32?5:3;stone(0,by+(v&1),8,6);stone(8,by+((v>>1)&1),8,6)}
-    else{const bx=t===34?3:5;stone(bx,0,8,6);stone(bx+((v>>2)&1),8,8,6)}}
+  // ledges: a row of stones; rounded tops that blend into the grass on the high side, cast shadow on the side you jump down to
+  for(let y=Y0;y<Y0+CS;y++)for(let x=X0;x<X0+CS;x++){const t=tget(x,y);if(t<32||t>35)continue;const X=x*16,Y=y*16,v0=th(x,y);
+    // local coords: u runs along the step (0..15), v across it (0 = high side … 15 = low side / jump side)
+    const P_=(u,v,col)=>{if(u<0||u>15||v<0||v>15)return;gc.fillStyle=col;const px=t===32?u:t===33?u:t===34?15-v:v,py=t===32?v:t===33?15-v:u;gc.fillRect(X+px,Y+py,1,1)};
+    const R_=(u,v,w,h,col)=>{for(let j=0;j<h;j++)for(let i=0;i<w;i++)P_(u+i,v+j,col)};
+    for(let k=0;k<2;k++){const u0=k*8,v=4+((v0>>k)&1),w=8,h=7;
+      // shadow on the jump side
+      R_(u0+1,v+h,w-1,3,'rgba(0,0,0,0.34)');R_(u0+2,v+h+3,w-3,1,'rgba(0,0,0,0.16)');
+      // body with rounded high side
+      for(let j=0;j<h;j++){const ins=j===0?2:j===1?1:0;R_(u0+ins,v+j,w-ins*2,1,'#2a2a30');if(j>0&&j<h-1){const ii=j===1?2:1;R_(u0+ii,v+j,w-ii*2,1,j<3?'#b4b4be':j<h-2?'#8e8e98':'#6e6e78')}}
+      P_(u0+3,v+2,'#dcdce4');P_(u0+4,v+2,'#dcdce4');P_(u0+w-2,v+3,'#76767f');
+      // grass growing over the rounded top
+      const g=mulberry32(v0+k*7);for(let i=0;i<4;i++){const uu=u0+1+Math.floor(g()*(w-2));P_(uu,v-1,'#3a7424');P_(uu,v,'#4ea53c');if(g()<0.5)P_(uu+1,v,'#5cb848')}}}
   // ground details: tufts, flowers, pebbles
   for(let y=Y0;y<Y0+CS;y++)for(let x=X0;x<X0+CS;x++){const t=tget(x,y),b=BIOME[y*MW+x],r=mulberry32(th(x,y));
     if(t===0||t===14||t===15||t===30){const n=1+Math.floor(r()*3);for(let i=0;i<n;i++){const X=x*16+Math.floor(r()*14)+1,Y=y*16+Math.floor(r()*13)+2;gc.fillStyle=b===2?'#1d4416':b===4?'#6a6a2a':b===8?'#123a18':'#3a7424';gc.fillRect(X,Y,1,2);gc.fillRect(X-1,Y,1,1);gc.fillRect(X+1,Y-1,1,2);if(r()<0.4){gc.fillStyle=b===2?'#5c9a3a':'#9ad25a';gc.fillRect(X+1,Y-1,1,1)}}}

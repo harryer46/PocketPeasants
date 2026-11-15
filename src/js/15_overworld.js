@@ -42,10 +42,11 @@ function spotted(t){if(P.lock||B)return;P.lock=true;held.length=0;t.alert=perfor
 let TALK=null;
 function talk(who,text,cb){if(TALK)endTalk(true);const ov=document.createElement('div');ov.id='talkov';ov.innerHTML=`<div id="talkbox"><b>${esc(who)}</b><br><span id="talktx"></span><i id="talkarr">▼</i></div>`;document.body.appendChild(ov);
   {const r=$('#stage').getBoundingClientRect(),bx=$('#talkbox');if(r.width>0){bx.style.left=(r.left+r.width/2)+'px';bx.style.width=Math.min(620,r.width*0.94)+'px';bx.style.bottom=(innerHeight-r.bottom+56)+'px'}}
-  held.length=0;const full=text||'';TALK={full,n:0,cb,ov,t:setInterval(()=>{if(!TALK)return;TALK.n=Math.min(full.length,TALK.n+1);$('#talktx').textContent=full.slice(0,TALK.n);if(TALK.n>=full.length){clearInterval(TALK.t);$('#talkarr').style.visibility='visible'}},28)};
+  held.length=0;const full=text||'';TALK={full,n:0,cb,ov,t:setInterval(()=>{if(!TALK)return;TALK.n=Math.min(full.length,TALK.n+1);$('#talktx').textContent=full.slice(0,TALK.n);if(TALK.n>=full.length)talkDone()},28)};
   ov.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();talkTap()})}
-function talkTap(){if(!TALK)return;if(TALK.n<TALK.full.length){TALK.n=TALK.full.length;clearInterval(TALK.t);$('#talktx').textContent=TALK.full;$('#talkarr').style.visibility='visible';return}endTalk()}
-function endTalk(silent){const T_=TALK;if(!T_)return;TALK=null;clearInterval(T_.t);T_.ov.remove();held.length=0;if(!silent&&T_.cb)T_.cb()}
+function talkDone(){if(!TALK||TALK.auto)return;clearInterval(TALK.t);$('#talkarr').style.visibility='visible';const T_=TALK;T_.auto=setTimeout(()=>{if(TALK===T_)endTalk()},10000)}
+function talkTap(){if(!TALK)return;if(TALK.n<TALK.full.length){TALK.n=TALK.full.length;$('#talktx').textContent=TALK.full;talkDone();return}endTalk()}
+function endTalk(silent){const T_=TALK;if(!T_)return;TALK=null;clearInterval(T_.t);clearTimeout(T_.auto);T_.ov.remove();held.length=0;if(!silent&&T_.cb)T_.cb()}
 function checkSight(){
   if(!RUN||RUN.phase!=='train')return false;
   for(const t of TRAINERS){if(RUN.beat&&RUN.beat[t.id])continue;const[dx,dy]=DIRS[t.d];
@@ -77,12 +78,15 @@ function healQuiz(){RUN.kap=Math.max(RUN.kap,10);updateHud();const all=()=>RUN.t
       <img src="${pic(m)}" width="48" height="48" style="image-rendering:pixelated;flex:none;background:#e8e0c8;border:2px solid #14141f">
       <span style="flex:1;min-width:0"><b>${esc(SPECIES[m.s].n)}</b> <span style="color:#4b4f63">Lv ${m.l}${inT?'':' · Box'}</span><br>
       <span style="display:block;height:8px;background:#2b2f40;border:2px solid #14141f;margin:3px 0"><i style="display:block;height:100%;width:${Math.round(r*100)}%;background:${col}"></i></span>
-      <span style="color:#4b4f63">KP ${m.hp}/${mx}${hurt?(m.hp<=0?' · besiegt':''):' · fit ✓'}</span></span></button>`};
+      <span style="color:#4b4f63">KP ${m.hp}/${mx}${hurt?(m.hp<=0?' · besiegt':''):' · fit ✓'}</span></span></button>${!big&&hurt?`<button class="btn ghost" data-ph="${i}" title="Ohne Frage: +5 % KP, danach 5 s warten" style="margin-top:4px;width:100%;font-size:12px;padding:4px">➕ 5 % heilen</button>`:''}`};
   const overview=()=>{CQ=null;CQ_PICK=null;cur=null;
-    $('#cqbox').innerHTML=`<div class="sdlg" style="margin-bottom:8px"><span class="slaw">⚕ PÄD · Polizeiärztlicher Dienst</span><br><span class="small">Wähle ein Monster. Jede richtige Antwort heilt es um 25 %.</span></div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px">${all().map((m,i)=>card(m,i)).join('')}</div>
+    $('#cqbox').innerHTML=`<div class="sdlg" style="margin-bottom:8px"><span class="slaw">⚕ PÄD · Polizeiärztlicher Dienst</span><br><span class="small">Wähle ein Monster: jede richtige Antwort heilt es um 25 %. Oder ➕ ohne Frage: 5 % (alle 5 s).</span></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px">${all().map((m,i)=>`<div>${card(m,i)}</div>`).join('')}</div>
       <div class="sacts" style="margin-top:8px"><button class="btn ghost" id="cqstop">GEHEN</button></div>`;
-    $('#cquiz').classList.add('on');document.querySelectorAll('[data-pm]').forEach(b=>b.onclick=()=>{cur=all()[+b.dataset.pm];ask()});$('#cqstop').onclick=stop};
+    $('#cquiz').classList.add('on');document.querySelectorAll('[data-pm]').forEach(b=>b.onclick=()=>{cur=all()[+b.dataset.pm];ask()});
+    // manual heal: +5 % without a question, then 5 s cooldown
+    const hcd=()=>{const l=(healQuiz.cd||0)-Date.now();document.querySelectorAll('[data-ph]').forEach(b=>{b.disabled=l>0;b.textContent=l>0?`➕ ${Math.ceil(l/1000)} s`:'➕ 5 % heilen'});if(l>0&&$('[data-ph]'))setTimeout(hcd,250)};
+    document.querySelectorAll('[data-ph]').forEach(b=>b.onclick=()=>{if((healQuiz.cd||0)>Date.now())return;const m=all()[+b.dataset.ph],mx=stats(m).mhp;m.hp=Math.min(mx,m.hp+Math.max(1,Math.round(mx*0.05)));healQuiz.cd=Date.now()+5000;renderTeam();if(full()){stop();toast('PÄD: Dein Team ist wieder fit!');return}overview()});hcd();$('#cqstop').onclick=stop};
   const ask=()=>{const it=pickQ(),order=shuffleArr([0,1,2,3]);n++;CQ={it,order,end:Infinity,done:false,cb:null};CQ_PICK=pick;
     $('#cqbox').innerHTML=`<div style="margin-bottom:8px">${card(cur,all().indexOf(cur),true)}</div><div class="sdlg"><span class="slaw">⚕ PÄD · Frage ${n} · ${esc(SPECIES[it.src].law||'')}</span><br>${esc(it.q[0])}<div id="cqexp"></div></div>
       <div class="sans">${order.map((k,j)=>`<button class="sa" data-ck="${k}"><span class="sk">${j+1}</span>${esc(it.q[1][k])}</button>`).join('')}</div><div class="sacts" id="cqact"><button class="btn ghost" id="cqback">ÜBERSICHT</button><button class="btn ghost" id="cqstop">GEHEN</button></div>`;

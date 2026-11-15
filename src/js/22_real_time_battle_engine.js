@@ -642,7 +642,6 @@ function buildBattleUI(){
   const add=(t,cls,fn,id)=>{const b=document.createElement('button');b.className='btn '+cls;b.textContent=t;b.onclick=fn;if(id)b.id=id;row.appendChild(b)};
   if(!B.tb)add(DASH_AP?'SPRINT · '+DASH_AP+' AP':'SPRINT','ghost',battleDash);add('WECHSELN','ghost',battleSwitch,'bsw');
   if(B.mode==='wild'){add('HALTEN: HANDSCHELLEN','',()=>{},'bcap');add('FLIEHEN','ghost',tryRun)}else if(B.mode!=='trainer')add('AUFGEBEN','red',forfeit);
-  if(!B.tb)add('➕ HEILEN','ghost',manualHeal,'bheal');
   add('🎒 BEUTEL','ghost',()=>{},'bbag');add('ℹ ATTACKEN','ghost',()=>{if(B&&B.me)openMonInfo(act(B.me).s,act(B.me))});add('⚙','ghost',openSettings);
   el.appendChild(row);
   const K=SET.keys;
@@ -1013,7 +1012,7 @@ function leaveHazard(s,x,y){if(!B||B.tb||B.state!=='fight')return;const mv=MOVES
   if(mv.t==='rock'){if([B.me,B.foe].some(F=>F&&Math.hypot(F.x-x,(F.y-y)*1.3)<26))return;B.obs=B.obs||[];if(B.obs.filter(o=>o.tmp&&!o.dead).length>=4)return;
     B.obs.push({id:'h'+now,kind:'rock',mat:'rock',ind:0,x:Math.round(x),y:Math.round(y),r:8,hp:18,max:18,v:Math.floor(Math.random()*3),tmp:now+12000});burst(x,y-6,'#a07848',10);return}
   const H=HAZ_KIND[mv.t];if(!H)return;B.haz=(B.haz||[]).filter(h=>h.until>now);if(B.haz.length>=8)B.haz.shift();B.haz.push({k:H.k,x,y,r:H.r,t0:now,until:now+H.ms,seed:Math.floor(Math.random()*1e6)})}
-function hazardTick(dt){if(!B)return;const now=performance.now();{const hb=$('#bheal');if(hb){const l=Math.max(0,(B.healCd||0)-now);const t=l>0?`➕ ${Math.ceil(l/1000)} s`:'➕ HEILEN';if(hb.textContent!==t){hb.textContent=t;hb.disabled=l>0}}}if(B.haz)B.haz=B.haz.filter(h=>h.until>now);
+function hazardTick(dt){if(!B)return;const now=performance.now();if(B.haz)B.haz=B.haz.filter(h=>h.until>now);
   if(B.obs)for(const o of B.obs)if(o.tmp&&!o.dead&&o.tmp<now){o.dead=1;burst(o.x,o.y-6,'#a07848',8)}
   if(B.state!=='fight'||!B.haz)return;
   for(const F of[B.me,B.foe]){if(!F||F.ctrl==='remote'||F.out||F.faint>0)continue;F.slip=Math.max(0,(F.slip||0)-dt);
@@ -1029,6 +1028,3 @@ function drawHazards(c,now){if(!B||!B.haz)return;for(const h of B.haz){const lif
   else if(h.k==='spark'){c.fillStyle='#d9a90b70';c.beginPath();c.ellipse(X,Y,h.r,h.r*0.5,0,0,7);c.fill();if(Math.floor(now/70)%3){c.fillStyle='#ffe36b';for(let i=0;i<5;i++){const sx=X+Math.round((r()-0.5)*h.r*1.6),sy=Y+Math.round((r()-0.5)*h.r*0.7);c.fillRect(sx,sy,3,1);c.fillRect(sx+2,sy+1,1,2)}}}
   c.restore()}}
 
-// manual heal: +5 % KP of the active monster, then 5 s cooldown (real-time battles)
-function manualHeal(){if(!B||B.tb||B.state!=='fight')return;const now=performance.now();if((B.healCd||0)>now)return;const F=B.me;if(F.out||F.faint>0)return;const m=act(F);if(m.hp<=0||m.hp>=m.mhp){say('KP sind schon voll.');return}
-  const h=Math.max(1,Math.round(m.mhp*0.05));m.hp=Math.min(m.mhp,m.hp+h);B.healCd=now+5000;B.nums.push({x:F.x,y:F.y-34,t:'+'+h,c:'#3ddc6b',at:now});burst(F.x,F.y-14,'#3ddc6b',8);if(B.mode==='duel')publishDuel(true)}
