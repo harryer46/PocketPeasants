@@ -68,10 +68,10 @@ function renderStudy(){if(!ST)return;const m=ST.m,sp=SPECIES[m.s],st=stats(m);co
     h+=`<div class="sdlg"><b>${ST.ok===ST.qs.length?'Bestanden mit Auszeichnung!':ST.ok>0?'Prüfung beendet.':'Durchgefallen…'}</b><br>${ST.ok}/${ST.qs.length} richtig · +${ST.xp} EP für ${nameHtml(m.s)}${(ST.msgs||[]).filter(t=>!/erhält/.test(t)).map(t=>'<br>'+esc(t)).join('')}</div>
       <div class="sacts"><button class="btn" id="sclose">SCHLIESSEN</button></div>`;
   }else{
-    const q=cur.q;if(!cur.order)cur.order=shuffleArr([0,1,2,3]);
+    const q=cur.q;if(!cur.order)cur.order=shuffleArr([0,1,2,3]);const LB=`<button class="btn ghost" id="slearn" title="Ohne Frage: +5 % EP-Fortschritt, danach 5 s warten">📖 LERNEN +5 %</button>`;
     h+=`<div class="sdlg"><span class="slaw">${esc(SPECIES[cur.src].law||'')}</span><br>${esc(q[0])}${ST.state==='shown'?`<div class="sexp ${cur.right?'ok':'bad'}">${cur.right?'✓ Richtig!':'✗ Falsch.'} ${esc(q[2])}</div>`:''}</div>
       <div class="sans">${cur.order.map((k,j)=>`<button class="sa ${ST.state==='shown'?(k===0?'ok':(cur.pick===k?'bad':'dim')):''}" data-k="${k}" ${ST.state==='shown'?'disabled':''}><span class="sk">${'ABCD'[j]}</span>${esc(q[1][k])}</button>`).join('')}</div>
-      ${ST.state==='shown'?`<div class="sacts"><button class="btn" id="snext">${ST.i+1<ST.qs.length?'WEITER ▶':'ERGEBNIS ▶'}</button></div>`:`<div class="sacts"><button class="btn ghost" id="squit">AUFGEBEN</button></div>`}<div class="sacts"><button class="btn ghost" id="slearn" title="Ohne Frage: +5 % EP-Fortschritt, danach 5 s warten">📖 LERNEN +5 %</button></div>`}
+      ${ST.state==='shown'?`<div class="sacts"><button class="btn" id="snext">${ST.i+1<ST.qs.length?'WEITER ▶':'ERGEBNIS ▶'}</button>${LB}</div>`:`<div class="sacts"><button class="btn ghost" id="squit">AUFGEBEN</button>${LB}</div>`}`}
   const el=$('#sbox');el.innerHTML=h;
   el.querySelectorAll('.sa').forEach(b=>b.onclick=()=>studyAnswer(+b.dataset.k));
   const n=$('#snext');if(n)n.onclick=()=>{ST.i++;ST.state=ST.i>=ST.qs.length?'done':'ask';if(ST.state==='done')studyFinish();renderStudy()};
