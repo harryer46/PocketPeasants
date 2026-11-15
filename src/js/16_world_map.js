@@ -14,7 +14,7 @@ function closeMap(){$('#mapov').classList.remove('on')}
 function toggleMap(){mapOpen()?closeMap():openMap()}
 let MINI=null;
 function miniMap(){if(MINI)return MINI;const c=mk(MW,MH),x=c.getContext('2d'),id=x.createImageData(MW,MH),d=id.data;const rgb={};
-  for(let i=0;i<MW*MH;i++){const t=MAP[i],h=MCOL[t]||'#000';const q=rgb[h]||(rgb[h]=hex2rgb(h));d[i*4]=q[0];d[i*4+1]=q[1];d[i*4+2]=q[2];d[i*4+3]=255}x.putImageData(id,0,0);MINI=c;return c}
+  for(let i=0;i<MW*MH;i++){const t=MAP[i],b=BIOME[i],h=(t===16&&b===7)?'#a87a44':(t===2&&b===6)?'#3f6a5a':(t===2&&b===7)?'#5a8a3a':(t===2&&b===8)?'#1f6a32':MCOL[t]||'#000';const q=rgb[h]||(rgb[h]=hex2rgb(h));d[i*4]=q[0];d[i*4+1]=q[1];d[i*4+2]=q[2];d[i*4+3]=255}x.putImageData(id,0,0);MINI=c;return c}
 function drawMap(){
   if(!mapOpen())return;const cv=$('#mapcv'),st=$('#stage');
   const ts=Math.max(1.4,Math.min((st.clientWidth-40)/MW,(st.clientHeight*0.7)/MH));

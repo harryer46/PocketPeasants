@@ -465,15 +465,16 @@ function fleeUpdate(dt){const F=B.me;F.y+=150*dt;if(Math.random()<0.5)B.parts.pu
 function forfeit(){if(B&&B.tb&&B.state!=='over'&&B.mode!=='wild'&&B.mode!=='trainer'){if(B.mode==='duel'&&B.foe){B.tbActs['t'+B.turn]={k:'ff'};publishDuel(true)}duelResult(false,'Du hast aufgegeben.');return}if(!B||B.mode==='wild'||B.state==='over')return;if(B.state==='fight'||B.state==='count'||B.state==='wait'){B.me.team.forEach(m=>m.hp=0);B.me.out=true;if(B.mode==='duel')publishDuel(true);duelResult(false,'Du hast aufgegeben.')}}
 
 /* --- wild --- */
-function startWild(zk){
+// a knocked-out team has to be healed at a PÄD (questions) before the next fight
+function teamDown(){if(RUN&&RUN.team.some(m=>m.hp>0))return false;const n=performance.now();if(!teamDown.t||n-teamDown.t>4000){teamDown.t=n;toast('Dein Team ist kampfunfähig — heile es zuerst im ⚕ PÄD (Fragen beantworten).')}return true}
+function startWild(zk){if(teamDown())return;
   const z=ZONES[zk];const sid=pickWild(poolOf(zk),1+distC(P.x,P.y)/80);const l=lvAt(P.x,P.y);
   const wild=newMon(sid,l);G.dex[sid]=G.dex[sid]||0;
-  if(!RUN.team.some(m=>m.hp>0))healAll();
   newBattle({mode:'wild',zone:zk,wild,me:mkFighter('L',RUN.team.map(battler),XL,'local'),foe:mkFighter('R',[battler(wild)],XR,'ai')});
   B.foe.inv=0.6;const rr=RAR[sid];say(rr==='rare'?`✦ Ein SELTENES ${SPECIES[wild.s].n} (Lv ${l}) erscheint! ✦`:rr==='uncommon'?`Ein ungewöhnliches ${SPECIES[wild.s].n} (Lv ${l}) erscheint!`:`Ein wildes ${SPECIES[wild.s].n} (Lv ${l}) erscheint!`);if(rr==='rare')burst(XR,64,'#4aa3ff',24);
 }
 function startLegend(L){
-  if(!RUN.team.some(m=>m.hp>0))healAll();
+  if(teamDown())return;
   const LS_=legSid(L),wild=newMon(LS_,L.l);G.dex[LS_]=G.dex[LS_]||0;
   newBattle({mode:'wild',legend:L.id,zone:L.zone,wild,me:mkFighter('L',RUN.team.map(battler),XL,'local'),foe:mkFighter('R',[battler(wild)],XR,'ai'),state:'count',cntEnd:performance.now()+2000});
   say(`★ Das legendäre ${SPECIES[LS_].n} erwacht! ★`);burst(ACX,YT-20,'#ffcb3d',40);
@@ -488,7 +489,7 @@ function giveVMs(t,mon,i){const r=mulberry32(hashStr(t.id+':'+i)),tier=vmTier(t)
   for(const m of vms){if(mon.m.length<4)mon.m.push(m);else{let wi=0;for(let k=1;k<mon.m.length;k++)if((MOVES[mon.m[k]].p||0)<(MOVES[mon.m[wi]].p||0))wi=k;mon.m[wi]=m}}
   return vms}
 function startTrainer(t){
-  if(!RUN.team.some(m=>m.hp>0))healAll();
+  if(teamDown()){P.lock=false;return}
   const vmList=[];const team=trainerTeam(t).map(([s,l],i)=>{const mon=newMon(s,l);const v=giveVMs(t,mon,i);if(v.length)vmList.push(SPECIES[s].n+': '+v.map(m=>MOVES[m].n).join(', '));return battler(mon)});
   newBattle({mode:'trainer',trainer:t,oppName:t.n,zone:zoneAt(t.x,t.y)||'north',me:mkFighter('L',RUN.team.map(battler),XL,'local'),foe:mkFighter('R',team,XR,'ai'),state:'count',cntEnd:performance.now()+2600});
   if(vmList.length){say(`${t.n} hat VMs beigebracht (${['','Basis','Fortgeschritten','Elite'][vmTier(t)]})!`);sysChat(`VMs von ${t.n} — ${vmList.join(' · ')}`)}
@@ -528,7 +529,7 @@ async function wildLose(){
       if(B.mode==='wild'||B.mode==='trainer'){const rm=RUN.team[i];if(rm)rm.hp=m.hp}
       say(`${SPECIES[m.s].n} rappelt sich mit 25 % KP wieder auf!`);if(B.tb){B.state='tbChoose'}else{B.state='count';B.leadDone=1;B.leadWait=false;B.cntEnd=performance.now()+3000}return}
     B.state='fight'}
-  B.state='over';finale(false);say('Alle deine Monster sind besiegt…');const myB=B;await sleep(2400);if(B!==myB)return;endWild();healAll();{const sp=padSpawn();teleport(sp.x,sp.y)}toast('Du bist zurück zum PÄD geeilt.')}
+  B.state='over';finale(false);say('Alle deine Monster sind besiegt…');const myB=B;await sleep(2400);if(B!==myB)return;endWild();RUN.kap=Math.max(RUN.kap,10);{const sp=padSpawn();teleport(sp.x,sp.y)}setTimeout(()=>{if(!B&&RUN&&!modalOpen()&&!CQ)healQuiz()},900);toast('Du bist zurück zum PÄD geeilt.')}
 function throwBonus(){const r=ringR(performance.now());if(r<8){say('Hervorragender Wurf!');return 1.6}if(r<11.5){say('Toller Wurf!');return 1.3}return 1}
 // catch chance: low HP + weak (low level / common) -> high; full HP / strong / rare -> low. Three shake checks decide.
 function catchChance(w,bonus){const hpF=1-(w.hp/w.mhp)*0.85,lvF=clamp(1.15-w.l*0.03,0.35,1.1);return clamp(hpF*lvF*rarOf(w.s).cm*(bonus||1)+0.04,0.02,0.97)}
