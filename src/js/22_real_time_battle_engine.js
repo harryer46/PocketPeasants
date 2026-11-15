@@ -450,7 +450,7 @@ function throwCap(){capPress()}
 function throwCapOld(){if(!B||B.mode!=='wild'||B.state!=='fight'||B.capCd>0)return;if(RUN.kap<=0){say('Keine Handschellen mehr!');return}
   RUN.kap--;B.capCd=1.2;updateHud();const F=B.me,T=B.foe;let dx=T.x-F.x,dy=(T.y-12)-(F.y-12);const L=Math.hypot(dx,dy)||1;
   B.shots.push({cap:1,side:F.side,x:F.x,y:F.y-14,vx:dx/L*190,vy:dy/L*190,age:0,life:1.6,r:6,mid:'bump',flight:L/190});say('Handschellen geworfen!')}
-function fleeItem(sid){const it=secondChanceItem(sid);if(it){it.q[0]=it.q[0].replace('Zweite Chance! ','');return it}const pool=QZ[sid]||Object.values(QZ).flat().map(q=>q);const q=QZ[sid]?QZ[sid][Math.floor(Math.random()*QZ[sid].length)]:pool[Math.floor(Math.random()*pool.length)];return{src:sid,q}}
+function fleeItem(sid){if(!QZ[sid]){const it=secondChanceItem(sid);if(it){it.q[0]=it.q[0].replace('Zweite Chance! ','');return it}}const pool=QZ[sid]||Object.values(QZ).flat().map(q=>q);const q=QZ[sid]?QZ[sid][Math.floor(Math.random()*QZ[sid].length)]:pool[Math.floor(Math.random()*pool.length)];return{src:sid,q}}
 // fleeing always needs a correct answer (3 s): real-time only at the arena edge, turn-based as the turn's action
 function tryRun(){if(!B||B.mode!=='wild'||CQ)return;
   if(B.tb){if(B.state!=='tbChoose')return;const myB=B;fleeQuiz(ok=>{if(B!==myB||B.state!=='tbChoose')return;B.runQ=ok?1:0;tbChoose({k:'run'})});return}
@@ -458,7 +458,8 @@ function tryRun(){if(!B||B.mode!=='wild'||CQ)return;
   if(!atEdge(B.me)){say('Lauf an den Rand der Arena, um zu fliehen!');return}
   // the fight keeps running while the question is answered (small panel at the bottom, arena stays visible)
   const myB=B;fleeQuiz(ok=>{if(B!==myB||B.state!=='fight')return;if(ok){B.state='flee';B.fleeT=performance.now();B.me.face=-1;B.shots=[];say('Erfolgreich geflohen!')}else say('Flucht gescheitert!')})}
-function fleeQuiz(cb){const it=fleeItem(act(B.foe).s),order=shuffleArr([0,1,2,3]);
+// flee question: about your own active monster (its paragraph)
+function fleeQuiz(cb){const it=fleeItem(act(B.me).s),order=shuffleArr([0,1,2,3]);
   CQ={it,order,end:performance.now()+3000,T:3000,done:false,cb,okMsg:'✓ Richtig — die Flucht gelingt!'};held.length=0;aimHeld.length=0;
   $('#cqbox').innerHTML=`<div class="sdlg"><span class="slaw">🏃 FLUCHT — 3 SEKUNDEN</span><br>${esc(it.q[0])}<div class="cqt"><i id="cqbar"></i></div><div class="small" id="cqtime" style="text-align:right">3 s</div><div id="cqexp"></div></div>
     <div class="sans">${order.map((k,j)=>`<button class="sa" data-ck="${k}"><span class="sk">${j+1}</span>${esc(it.q[1][k])}</button>`).join('')}</div><div class="sacts" id="cqact"></div>`;
