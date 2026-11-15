@@ -1,6 +1,6 @@
 /* ===================== OVERWORLD ===================== */
 const STEP=0.16;
-function modalOpen(){return $('#modal').classList.contains('on')||$('#study').classList.contains('on')||$('#arena').classList.contains('on')||$('#mapov').classList.contains('on')||!!FX}
+function modalOpen(){return !!TALK||$('#modal').classList.contains('on')||$('#study').classList.contains('on')||$('#arena').classList.contains('on')||$('#mapov').classList.contains('on')||!!FX}
 // FLY (field skill from Axel): take off right on the map – over trees, water and cliffs, twice as fast,
 //   no encounters; areas whose teacher you have not passed stay closed in the air too; land only on walkable ground
 function flyable(x,y){if(x<2||y<2||x>=MW-2||y>=MH-2)return false;const b=BIOME[y*MW+x];return!(TOLL_LAW[b]&&!tollPaid(b)&&RUN&&RUN.phase==='train')}
@@ -32,12 +32,20 @@ function bump(nx,ny){
   if(tget(nx,ny)===3&&!hasHM('swim')){toast(`Das Wasser ist tief… ${TRAINERS.find(t=>t.id==='sue').n} bringt dir SURFER bei.`);return}
   const sg=SIGNS.find(s=>s.x===nx&&s.y===ny);if(sg){if(!$('#signbox').classList.contains('on'))showSign(sg);return}
   const t=trainerAt(nx,ny);
-  if(t){if(!RUN||RUN.phase!=='train')toast(`${t.n}: „Komm wieder, wenn dein Spiel begonnen hat!“`);else if(RUN.beat&&RUN.beat[t.id])toast(`${t.n}: "${t.after}"`);else spotted(t);return}
+  if(t){if(!RUN||RUN.phase!=='train')toast(`${t.n}: „Komm wieder, wenn dein Spiel begonnen hat!“`);else if(RUN.beat&&RUN.beat[t.id])talk(t.n,t.after);else spotted(t);return}
   const L=LEGENDS.find(L=>L.x===nx&&L.y===ny);
   if(L&&!cfgOf().leg){toast('Der Schrein bleibt in diesem Spiel still.');return}
   if(L){if(!RUN||RUN.phase!=='train')toast('Ein geheimnisvoller Schrein. Hier schläft etwas…');else if(RUN.leg&&RUN.leg[L.id])toast('Der Schrein ist jetzt leer.');else startLegend(L)}
 }
-function spotted(t){if(P.lock||B)return;P.lock=true;held.length=0;t.alert=performance.now();setTimeout(()=>{P.lock=false;if(!B&&RUN&&RUN.phase==='train')startTrainer(t)},900)}
+function spotted(t){if(P.lock||B)return;P.lock=true;held.length=0;t.alert=performance.now();setTimeout(()=>talk(t.n,t.line,()=>{P.lock=false;if(!B&&RUN&&RUN.phase==='train')startTrainer(t)}),700)}
+// dialogue box like the originals: text types itself out; a tap/click anywhere on the screen (or any key) completes it, the next tap closes it
+let TALK=null;
+function talk(who,text,cb){if(TALK)endTalk(true);const ov=document.createElement('div');ov.id='talkov';ov.innerHTML=`<div id="talkbox"><b>${esc(who)}</b><br><span id="talktx"></span><i id="talkarr">▼</i></div>`;document.body.appendChild(ov);
+  {const r=$('#stage').getBoundingClientRect(),bx=$('#talkbox');if(r.width>0){bx.style.left=(r.left+r.width/2)+'px';bx.style.width=Math.min(620,r.width*0.94)+'px';bx.style.bottom=(innerHeight-r.bottom+56)+'px'}}
+  held.length=0;const full=text||'';TALK={full,n:0,cb,ov,t:setInterval(()=>{if(!TALK)return;TALK.n=Math.min(full.length,TALK.n+1);$('#talktx').textContent=full.slice(0,TALK.n);if(TALK.n>=full.length){clearInterval(TALK.t);$('#talkarr').style.visibility='visible'}},28)};
+  ov.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();talkTap()})}
+function talkTap(){if(!TALK)return;if(TALK.n<TALK.full.length){TALK.n=TALK.full.length;clearInterval(TALK.t);$('#talktx').textContent=TALK.full;$('#talkarr').style.visibility='visible';return}endTalk()}
+function endTalk(silent){const T_=TALK;if(!T_)return;TALK=null;clearInterval(T_.t);T_.ov.remove();held.length=0;if(!silent&&T_.cb)T_.cb()}
 function checkSight(){
   if(!RUN||RUN.phase!=='train')return false;
   for(const t of TRAINERS){if(RUN.beat&&RUN.beat[t.id])continue;const[dx,dy]=DIRS[t.d];
@@ -115,7 +123,7 @@ function drawFlyer(c,e,X,Y){const a=e.alt,h=Math.round(a*16),bob=Math.round(Math
   const sw=Math.round(12-a*4);c.fillStyle='rgba(0,0,0,'+(0.38-a*0.12).toFixed(2)+')';c.fillRect(X+8-sw/2,Y+13,sw,2);c.fillRect(X+8-sw/2+1,Y+12,sw-2,1);c.fillRect(X+8-sw/2+1,Y+15,sw-2,1);
   const y0=Y-h+bob;c.fillStyle='#14141f';const wy=y0+(flap?5:3),wh=flap?3:5;c.fillRect(X-5,wy,7,wh);c.fillRect(X+14,wy,7,wh);c.fillStyle='#f4f4f8';c.fillRect(X-4,wy+1,5,wh-2);c.fillRect(X+15,wy+1,5,wh-2);c.fillStyle='#c8d0e0';c.fillRect(X-4,wy+wh-2,5,1);c.fillRect(X+15,wy+wh-2,5,1);
   c.drawImage(charSprite(e.col,e.d,0,e.sx),X,y0)}
-function drawSignCaptions(c,camX,camY){for(const sg of SIGNS){const d=Math.hypot(sg.x-P.fx,sg.y-P.fy);if(d>3.2)continue;nameTag(c,sg.x*16-camX+8,sg.y*16-camY-1,signShort(sg),'#d9a466','')}}
+function drawSignCaptions(c,camX,camY){for(const sg of SIGNS){if(P.moving||Math.abs(sg.x-P.x)+Math.abs(sg.y-P.y)!==1)continue;nameTag(c,sg.x*16-camX+8,sg.y*16-camY-1,signShort(sg),'#d9a466','')}}
 function drawWorld(){
   const cw=wcv.parentElement.clientWidth,ch=wcv.parentElement.clientHeight;const dpr=Math.min(3,devicePixelRatio||1);
   SC=Math.max(2,Math.round(Math.min(cw/240,ch/160)));

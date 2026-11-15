@@ -249,12 +249,11 @@ function* bakeChunkGen(cx,cy){
   for(const p of PADS){if(p.bx+6<X0||p.bx>X0+CS||p.by+4<Y0||p.by>Y0+CS)continue;gc.fillStyle='rgba(20,30,10,0.28)';gc.fillRect(p.bx*16,(p.by+4)*16,96,4);gc.drawImage(p.old?padSpriteOld():dienstSprite(),p.bx*16,p.by*16)}
   for(const Bd of BLDG){if(Bd.x+Bd.w<X0||Bd.x>X0+CS||Bd.y+Bd.h<Y0||Bd.y>Y0+CS)continue;gc.fillStyle='rgba(20,30,10,0.28)';gc.fillRect(Bd.x*16,(Bd.y+Bd.h)*16,Bd.w*16,4);gc.drawImage(Bd.id==='shop'?(Bd.old?shopSpriteOld():shopSprite()):(Bd.old?hfpolSpriteOld():hfpolSprite()),Bd.x*16,Bd.y*16)}
   for(let y=Y0;y<Y0+CS;y++)for(let x=X0;x<X0+CS;x++){const t=tget(x,y);if(t===13)gc.drawImage(TILE[13][0],x*16,y*16)}
-  // ledges: a grassy lip with a short earth face on the low side
-  for(let y=Y0;y<Y0+CS;y++)for(let x=X0;x<X0+CS;x++){const t=tget(x,y);if(t<32||t>35)continue;const X=x*16,Y=y*16,F=(c0,a,b,w,h)=>{gc.fillStyle=c0;gc.fillRect(X+a,Y+b,w,h)};
-    if(t===32){F('#3a7424',0,7,16,2);F('#2a5a1a',0,9,16,1);F('#a07848',0,10,16,3);F('#7a5430',0,13,16,2);F('#00000030',0,15,16,1);for(let k=1;k<16;k+=5)F('#c49a62',k,10,2,1)}
-    else if(t===33){F('#00000030',0,0,16,1);F('#7a5430',0,1,16,2);F('#a07848',0,3,16,3);F('#2a5a1a',0,6,16,1);F('#3a7424',0,7,16,2);for(let k=2;k<16;k+=5)F('#c49a62',k,3,2,1)}
-    else if(t===34){F('#00000030',0,0,1,16);F('#7a5430',1,0,2,16);F('#a07848',3,0,3,16);F('#2a5a1a',6,0,1,16);F('#3a7424',7,0,2,16)}
-    else{F('#3a7424',7,0,2,16);F('#2a5a1a',9,0,1,16);F('#a07848',10,0,3,16);F('#7a5430',13,0,2,16);F('#00000030',15,0,1,16)}}
+  // ledges: a row of stones with a cast shadow at their lower end (one-way step)
+  for(let y=Y0;y<Y0+CS;y++)for(let x=X0;x<X0+CS;x++){const t=tget(x,y);if(t<32||t>35)continue;const X=x*16,Y=y*16,F=(c0,a,b,w,h)=>{gc.fillStyle=c0;gc.fillRect(X+a,Y+b,w,h)},hv=t<34,v=th(x,y);
+    const stone=(a,b,w,h)=>{F('rgba(0,0,0,0.38)',a+1,b+h,w,3);F('rgba(0,0,0,0.18)',a+2,b+h+3,w-2,1);F('#2a2a30',a,b+1,w,h-1);F('#2a2a30',a+1,b,w-2,h+1);F('#8e8e98',a+1,b+1,w-2,h-1);F('#b8b8c2',a+1,b+1,w-3,2);F('#d6d6de',a+2,b+1,2,1);F('#6a6a76',a+1,b+h-2,w-2,1);F('#76767f',a+w-2,b+2,1,h-3)};
+    if(hv){const by=t===32?5:3;stone(0,by+(v&1),8,6);stone(8,by+((v>>1)&1),8,6)}
+    else{const bx=t===34?3:5;stone(bx,0,8,6);stone(bx+((v>>2)&1),8,8,6)}}
   // ground details: tufts, flowers, pebbles
   for(let y=Y0;y<Y0+CS;y++)for(let x=X0;x<X0+CS;x++){const t=tget(x,y),b=BIOME[y*MW+x],r=mulberry32(th(x,y));
     if(t===0||t===14||t===15||t===30){const n=1+Math.floor(r()*3);for(let i=0;i<n;i++){const X=x*16+Math.floor(r()*14)+1,Y=y*16+Math.floor(r()*13)+2;gc.fillStyle=b===2?'#1d4416':b===4?'#6a6a2a':b===8?'#123a18':'#3a7424';gc.fillRect(X,Y,1,2);gc.fillRect(X-1,Y,1,1);gc.fillRect(X+1,Y-1,1,2);if(r()<0.4){gc.fillStyle=b===2?'#5c9a3a':'#9ad25a';gc.fillRect(X+1,Y-1,1,1)}}}

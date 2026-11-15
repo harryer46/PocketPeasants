@@ -123,11 +123,11 @@ function newBattle(o){try{if(typing())document.activeElement.blur()}catch(e){}
     // every real-time battle starts with a 3-2-1 countdown (the lead can be changed meanwhile)
     B.introAt=performance.now()+introMs;const go=()=>{if(B===myB&&B.state==='intro'){if(!B.tb&&(realState==='fight'||realState==='count')){B.state='count';B.cntEnd=performance.now()+3000;if(B.mode!=='duel'&&B.me.team.filter(m=>m.hp>0).length>1)B.leadWait=true}else B.state=realState}};B.introGo=go;B.introTO=setTimeout(go,introMs)},undefined,350);
 }
-function closeBattle(){const myB=B;if(!myB)return;myB.closing=true;if(CQ){CQ.done=true;CQ=null}$('#cquiz').classList.remove('on');$('#bpick').classList.remove('on');transition('fade',()=>{if(B===myB)B=null;placeDpad();$('#battle').classList.remove('on');$('#stage').style.transform='';pres({bt:null,du:null,ld:leadInfo(),lf:folInfo()});renderTeam();updateHud()},300,350)}
+function closeBattle(){const myB=B;if(!myB)return;myB.closing=true;if(CQ){CQ.done=true;CQ=null}$('#cquiz').classList.remove('on','lite');$('#bpick').classList.remove('on');transition('fade',()=>{if(B===myB)B=null;placeDpad();$('#battle').classList.remove('on');$('#stage').style.transform='';pres({bt:null,du:null,ld:leadInfo(),lf:folInfo()});renderTeam();updateHud()},300,350)}
 function fire(F,i,remote){
   const bt=act(F);const mid=bt.m[i];if(!mid||F.cd[i]>0||F.faint>0||F.out||F.st.stun>0||F.st.sleep>0||F.hitstun>0)return;
   const cost=apCost(mid);if(F.ctrl!=='remote'){if((F.ap??AP_MAX)<cost){if(F===B.me){F.apShake=performance.now();const n=performance.now();if(!B.apMsgT||n-B.apMsgT>1200){B.apMsgT=n;say('Nicht genug AP!')}}return}F.ap=(F.ap??AP_MAX)-cost}
-  const T=F===B.me?B.foe:B.me;F.cd[i]=cdOf(mid)*(F.ctrl==='ai'?1.35:1);
+  const T=F===B.me?B.foe:B.me;F.cd[i]=cdOf(mid)*(F.ctrl==='ai'?1.35:1);seenMove(mid);
   const mvv=MOVES[mid];if(mvv.k==='self'){selfMove(F,mvv);return}F.atkT=performance.now();
   if(mvv.fx==='selfbuff'&&F.ctrl!=='remote'&&Math.random()<(mvv.stc??1))applyStages(F,mvv.bs);const am=stageMul(stgOf(F).a);
   let dx=T.x-F.x,dy=T.y-F.y;const L=Math.hypot(dx,dy)||1;dx/=L;dy/=L;
@@ -334,7 +334,7 @@ function tbResolve(st,acts,rng,label){
     if(st[S].st.conf>0){st[S].st.conf--;if(rng()<0.33){const me_=cur(S);const dmg=Math.max(1,Math.round(me_.mhp/8));me_.hp=Math.max(0,me_.hp-dmg);ev.push({msg:`${label(S,att)} ist verwirrt und verletzt sich selbst!`,hit:1,snap:snap()});continue}}
     const mid=att.m[acts[S].i]||att.m[0]||'bump',mv=MOVES[mid]||MOVES.bump;
     if(st[S].ap<apCost(mid)){ev.push({msg:`${label(S,att)} hat keine AP mehr und muss verschnaufen!`,snap:snap()});continue}st[S].ap-=apCost(mid);
-    ev.push({msg:`${label(S,att)} setzt ${mv.n} ein!`,atk:S,mid,snap:snap()});
+    ev.push({msg:`${label(S,att)} setzt ${mv.n} ein!`,atk:S,mid,snap:snap()});seenMove(mid);
     if(mv.k==='self'&&mv.fx==='buff'){bump(S,mv.bs,att);continue}
     if(mv.fx==='selfbuff'&&rng()<(mv.stc??1))bump(S,mv.bs,att);
     if(mv.k==='self'){if(mv.fx==='heal'){const h=Math.round(att.mhp*0.3);att.hp=Math.min(att.mhp,att.hp+h);ev.push({heal:S,v:h,snap:snap()})}else{st[S].st[mv.fx]=mv.fx==='shield'?2:3;ev.push({msg:mv.fx==='shield'?`${label(S,att)} ist geschützt!`:`${label(S,att)} wird schneller!`,snap:snap()})}continue}
@@ -456,12 +456,13 @@ function tryRun(){if(!B||B.mode!=='wild'||CQ)return;
   if(B.tb){if(B.state!=='tbChoose')return;const myB=B;fleeQuiz(ok=>{if(B!==myB||B.state!=='tbChoose')return;B.runQ=ok?1:0;tbChoose({k:'run'})});return}
   if(B.state!=='fight')return;
   if(!atEdge(B.me)){say('Lauf an den Rand der Arena, um zu fliehen!');return}
-  const myB=B;B.state='fleeq';fleeQuiz(ok=>{if(B!==myB)return;if(ok){B.state='flee';B.fleeT=performance.now();B.me.face=-1;B.shots=[];say('Erfolgreich geflohen!')}else{B.state='fight';say('Flucht gescheitert!')}})}
+  // the fight keeps running while the question is answered (small panel at the bottom, arena stays visible)
+  const myB=B;fleeQuiz(ok=>{if(B!==myB||B.state!=='fight')return;if(ok){B.state='flee';B.fleeT=performance.now();B.me.face=-1;B.shots=[];say('Erfolgreich geflohen!')}else say('Flucht gescheitert!')})}
 function fleeQuiz(cb){const it=fleeItem(act(B.foe).s),order=shuffleArr([0,1,2,3]);
   CQ={it,order,end:performance.now()+3000,T:3000,done:false,cb,okMsg:'✓ Richtig — die Flucht gelingt!'};held.length=0;aimHeld.length=0;
   $('#cqbox').innerHTML=`<div class="sdlg"><span class="slaw">🏃 FLUCHT — 3 SEKUNDEN</span><br>${esc(it.q[0])}<div class="cqt"><i id="cqbar"></i></div><div class="small" id="cqtime" style="text-align:right">3 s</div><div id="cqexp"></div></div>
     <div class="sans">${order.map((k,j)=>`<button class="sa" data-ck="${k}"><span class="sk">${j+1}</span>${esc(it.q[1][k])}</button>`).join('')}</div><div class="sacts" id="cqact"></div>`;
-  $('#cquiz').classList.add('on');document.querySelectorAll('[data-ck]').forEach(b=>b.onclick=()=>cqAnswer(+b.dataset.ck));cqTick()}
+  $('#cquiz').classList.toggle('lite',!B.tb);$('#cquiz').classList.add('on');document.querySelectorAll('[data-ck]').forEach(b=>b.onclick=()=>cqAnswer(+b.dataset.ck));cqTick()}
 function fleeUpdate(dt){const F=B.me;F.y+=150*dt;if(Math.random()<0.5)B.parts.push({x:F.x,y:F.y-8,vx:(Math.random()-.5)*20,vy:-20-Math.random()*15,life:0.4,age:0,c:'#e8dcc0'});
   for(const p of B.parts){p.age+=dt;p.x+=p.vx*dt;p.y+=p.vy*dt}B.parts=B.parts.filter(p=>p.age<p.life);
   if(F.y>AH+50&&!B.fleeDone){B.fleeDone=true;endWild()}}
@@ -554,14 +555,14 @@ function catchQuiz(sid,cb){
   const law=SPECIES[it.src].law||'';
   $('#cqbox').innerHTML=`<div class="sdlg"><span class="slaw">⛓ FESTNAHME — ${esc(law||nameHtml(it.src))}</span><br>${esc(it.q[0])}<div class="cqt"><i id="cqbar"></i></div><div class="small" id="cqtime" style="text-align:right">15 s</div><div id="cqexp"></div></div>
     <div class="sans">${order.map((k,j)=>`<button class="sa" data-ck="${k}"><span class="sk">${j+1}</span>${esc(it.q[1][k])}</button>`).join('')}</div><div class="sacts" id="cqact"></div>`;
-  $('#cquiz').classList.add('on');document.querySelectorAll('[data-ck]').forEach(b=>b.onclick=()=>cqAnswer(+b.dataset.ck));cqTick()}
+  $('#cquiz').classList.toggle('lite',!B.tb);$('#cquiz').classList.add('on');document.querySelectorAll('[data-ck]').forEach(b=>b.onclick=()=>cqAnswer(+b.dataset.ck));cqTick()}
 function cqTick(){if(!CQ||CQ.done)return;const now=performance.now();if(PANIC){CQ.end+=50;setTimeout(cqTick,50);return}
   const left=Math.max(0,CQ.end-now),bar=$('#cqbar');if(bar){bar.style.width=(left/((CQ.T||15000)/100))+'%';bar.style.background=left<(CQ.T||15000)/3?'#ef4444':'#ffcb3d'}const tt=$('#cqtime');if(tt)tt.textContent=Math.ceil(left/1000)+' s';
   if(left<=0){cqAnswer(-1);return}setTimeout(cqTick,50)}
 function cqAnswer(k){if(!CQ||CQ.done)return;CQ.done=true;const ok=k===0,it=CQ.it;
   document.querySelectorAll('[data-ck]').forEach(b=>{const kk=+b.dataset.ck;b.disabled=true;b.classList.add(kk===0?'ok':kk===k?'bad':'dim')});
   $('#cqexp').innerHTML=`<div class="sexp ${ok?'ok':'bad'}">${ok?(CQ.okMsg||'✓ Richtig — Festnahme!'):k<0?'⏱ Zeit abgelaufen!':'✗ Falsch.'} ${esc(it.q[2])}</div>`;
-  const cb=CQ.cb,fast=!!CQ.T;setTimeout(()=>{$('#cquiz').classList.remove('on');CQ=null;cb(ok)},ok?(fast?900:1400):(fast?1800:2600))}
+  const cb=CQ.cb,fast=!!CQ.T;setTimeout(()=>{$('#cquiz').classList.remove('on','lite');CQ=null;cb(ok)},ok?(fast?900:1400):(fast?1800:2600))}
 function endWild(msg){if(!B)return;syncBack();if(msg)toast(msg);closeBattle();save();pushMt()}
 
 /* --- duels (AI + PvP) --- */
@@ -973,7 +974,7 @@ function vsStart(now){if(!B||B.vs||!(B.mode==='trainer'||B.mode==='ai'||B.mode==
   let tr=null,rn=B.oppName||'Gegner',rc='#5b4bc4',rs='m',line='Die Verhandlung ist eröffnet!';
   if(B.mode==='trainer'&&B.trainer){rc=B.trainer.c||rc;line=B.trainer.line||line;rs=/^\S+in\s/.test(B.trainer.n)?'f':'m';tr=B.trainer}
   else if(B.mode==='duel'){const op=findPeer(B.opp);if(op){rc=validColor(op.presence.c);rs=op.presence.sx==='f'?'f':'m'}line=VS_LINES[Math.abs(hashStr(String(B.id)+String(B.opp)))%VS_LINES.length]}
-  const dur=B.mode==='trainer'?6800:VS_MS;B.vs={t0:now,dur,ln:G.name||'Du',lc:G.color||'#2f5fb3',ls:G.sex,rn,rc,rs,tr,line};return dur}
+  const dur=B.mode==='trainer'?3600:VS_MS;B.vs={t0:now,dur,ln:G.name||'Du',lc:G.color||'#2f5fb3',ls:G.sex,rn,rc,rs,tr,line};return dur}
 // tap / click / any key during the trainer intro skips the rest of it
 function vsSkip(){if(B&&B.wi)return wiSkip();if(!B||!B.vs||B.mode==='duel'||B.state!=='intro')return false;const now=performance.now(),V=B.vs,e=now-V.t0;if(e<500||V.dur-e<400)return false;
   const cut=V.dur-e-300;V.dur=e+300;for(const F of[B.me,B.foe])if(F&&F.spawnT)F.spawnT-=cut;B.enterT-=cut;clearTimeout(B.introTO);B.introTO=setTimeout(B.introGo,Math.max(0,B.introAt-cut-now));return true}
@@ -999,7 +1000,7 @@ function drawVS(c,now){const V=B.vs,e=now-V.t0;if(e>V.dur){B.vs=null;return}
   if(e>420){const p=slide((e-420)/220),sz=Math.round(8+p*12+(e<760?Math.sin((e-420)/30)*2:0));if(e<520){c.fillStyle='#ffffff';c.globalAlpha=0.6*fade;c.fillRect(0,0,UW,UH);c.globalAlpha=fade}
     pxText(c,'VS',UW/2,UH/2+sz/2-6,'#ffcb3d',sz,'center')}
   // speech box with typewriter text
-  if(e>700){const full=`${V.rn}: „${V.line}“`,n=Math.min(full.length,Math.floor((e-700)/14)),lines=vsWrap(c,full.slice(0,n),UW-24);
+  if(e>700&&B.mode!=='trainer'){const full=`${V.rn}: „${V.line}“`,n=Math.min(full.length,Math.floor((e-700)/14)),lines=vsWrap(c,full.slice(0,n),UW-24);
     const h=6+Math.max(1,lines.length)*10;c.fillStyle='#14141f';c.fillRect(6,UH-h-6,UW-12,h+2);c.fillStyle='#f6f1e1';c.fillRect(7,UH-h-5,UW-14,h);
     lines.forEach((l,i)=>vtText(c,l,12,UH-h+5+i*10,'#14141f',10))}
   c.restore()}

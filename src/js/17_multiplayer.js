@@ -5,7 +5,7 @@ function pres(p){if(!ROOM)return;try{ROOM.presence(p).catch(()=>{})}catch(e){}}
 function leadInfo(){return RUN&&RUN.team[0]?[RUN.team[0].s,RUN.team[0].l]:null}
 // followers: up to 3 team monsters walk behind the player along the last tiles they stepped on (only the species list is shared, positions are derived locally)
 function folCount(){const f=RUN&&RUN.cfg&&RUN.cfg.fol!=null?+RUN.cfg.fol:3;return clamp(isNaN(f)?3:f,0,4)}
-function folInfo(){if(!RUN)return null;const n=Math.min(folCount(),RUN.team.length);return n?RUN.team.slice(0,n).map(m=>m.s):[]}
+function folInfo(){if(!RUN)return null;const n=Math.min(4,RUN.team.length);return n?RUN.team.slice(0,n).map(m=>m.s):[]}
 function trailPush(o,x,y){o.trail=o.trail||[];o.trail.unshift({x,y});if(o.trail.length>5)o.trail.length=5;o.fols=o.fols||[];for(let k=0;k<4;k++){const t=o.trail[k];if(!t)break;const f=o.fols[k]||(o.fols[k]={x:t.x,y:t.y,fx:t.x,fy:t.y,tx:t.x,ty:t.y});f.tx=t.x;f.ty=t.y}}
 function trailReset(o,x,y){o.trail=[];o.fols=[];for(let k=0;k<4;k++)o.fols[k]={x,y,fx:x,fy:y,tx:x,ty:y}}
 function folEnts(o,list,ents,px,py){if(!list||!list.length||!o.fols)return;for(let k=0;k<list.length&&k<4;k++){const f=o.fols[k];if(!f||f.fx==null||!SPECIES[list[k]])continue;

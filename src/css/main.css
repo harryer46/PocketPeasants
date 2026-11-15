@@ -286,3 +286,7 @@ body.mob.portrait #rotate.show{display:block}
 @keyframes updp{50%{transform:scale(1.15)}}
 
 
+
+#talkov{position:fixed;inset:0;z-index:60;cursor:pointer;touch-action:none}#talkbox{position:absolute;left:50%;bottom:28px;transform:translateX(-50%);width:min(620px,92vw);background:#f6f1e1;color:#14141f;border:4px solid #14141f;box-shadow:0 0 0 3px #f6f1e1,0 0 0 6px #2f6fd0,4px 4px 0 6px #000;padding:10px 14px 14px;font-family:VT323,monospace;font-size:24px;line-height:1.1;min-height:70px}#talkbox b{color:#2f6fd0}#talkarr{position:absolute;right:12px;bottom:4px;font-style:normal;color:#d23b3b;visibility:hidden;animation:tblink .6s steps(2) infinite}@keyframes tblink{50%{opacity:0}}
+
+#cquiz.lite{background:transparent;align-items:flex-end;pointer-events:none;padding:4px}#cquiz.lite #cqbox{pointer-events:auto;width:min(620px,98%)}#cquiz.lite .sdlg{font-size:17px;padding:5px 8px;opacity:.96}#cquiz.lite .sans{gap:4px}#cquiz.lite .sa{padding:4px 6px;font-size:16px;opacity:.96}

@@ -4,6 +4,7 @@ const KEYMAP={ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right',
 const held=[],aimHeld=[];
 function typing(){const a=document.activeElement;return a&&(a.tagName==='INPUT'||a.tagName==='TEXTAREA'||a.tagName==='SELECT')}
 addEventListener('keydown',e=>{if(B&&(B.vs||B.wi)&&!e.repeat&&vsSkip()){e.preventDefault();return}
+  if(TALK){if(!e.repeat){e.preventDefault();talkTap()}return}
   if(capturing){captureKey(e);return}
   if(PANIC){e.preventDefault();if(e.key==='Enter'&&!e.repeat)panicOff();return}
   if(e.key==='Enter'&&!typing()&&!e.repeat&&G){e.preventDefault();panicOn();return}

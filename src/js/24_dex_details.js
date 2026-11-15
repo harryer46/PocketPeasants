@@ -4,6 +4,10 @@ const FX_LONG={sleep:'Kann das Ziel einschläfern (wacht bei Treffer auf)',conf:
 function moveInfoHtml(mid,learnLv){const mv=MOVES[mid];if(!mv)return'';const T=TYPES[mv.t];
   return`<div class="mvrow"><b>${esc(mv.n)}</b>${learnLv!=null?` <span class="small">· gelernt mit Lv ${learnLv}</span>`:''}<br><span class="tb" style="background:${T.c}">${T.n.toUpperCase()}</span> <span class="small">${esc(KIND_TXT[mv.k]||mv.k)}</span><br>
    <span class="small">Stärke <b style="font-size:17px;color:var(--text)">${mv.p||'—'}</b> · AP <b style="font-size:17px;color:#4aa3ff">${apCost(mid)}</b> · Abklingzeit ${cdOf(mid).toFixed(1)} s · Genauigkeit (rundenbasiert) ${TB_ACC[mv.k]||100}%${mv.fx?`<br>Effekt: ${esc(mv.bs?(mv.fx==='debuff'?'senkt beim Ziel ':mv.fx==='selfbuff'?'kann dich stärken: ':'stärkt dich: ')+bsText(mv)+(mv.stc&&mv.stc<1?` (${Math.round(mv.stc*100)} %)`:''):(FX_LONG[mv.fx]||mv.fx))}`:''}</span></div>`}
+// attacks you have seen (used by you or an opponent, or known by one of your monsters); everything else stays ??? in the dex
+function seenMove(mid){try{if(!G||!MOVES[mid])return;G.mvSeen=G.mvSeen||{};if(!G.mvSeen[mid]){G.mvSeen[mid]=1}}catch(e){}}
+function moveSeen(mid){if(G&&G.mvSeen&&G.mvSeen[mid])return true;try{return RUN&&RUN.team.concat(RUN.box).some(m=>m.m.includes(mid))}catch(e){return false}}
+function moveUnknownHtml(lv){return`<div class="mvrow"><b>???</b>${lv!=null?` <span class="small">· gelernt mit Lv ${lv}</span>`:''}<br><span class="small">Noch nicht gesehen.</span></div>`}
 function prevForm(sid){return Object.keys(SPECIES).find(k=>SPECIES[k].evo&&SPECIES[k].evo[1]===sid)}
 function habitatOf(sid){const out=[];if(RAR[sid]==='unique')out.push('Starter (einzigartig — nie wild)');else if(startersNow().includes(sid))out.push('Starter im Match');
   for(const z in ZONES)if(poolOf(z).includes(sid))out.push(ZONES[z].n);for(const L of LEGENDS)if(legSid(L)===sid)out.push('Legendärer Schrein ('+ZONES[L.zone].n+')');
@@ -12,7 +16,7 @@ function habitatOf(sid){const out=[];if(RAR[sid]==='unique')out.push('Starter (e
 // dex entry: a fixed legal fact for § monsters, else a short note from type and rarity
 function dexText(sid){const sp=SPECIES[sid];if(!sp)return'';if(typeof DEX_TXT!=='undefined'&&DEX_TXT[sid])return DEX_TXT[sid];return`${rarOf(sid).n}es ${TYPES[sp.t].n}-Monster${sp.evo?`, das sich ab Lv ${sp.evo[0]} weiterentwickelt`:''}.`}
 // shown when a new monster joins (catch, new start): the dex card with a banner
-function dexReveal(sid,m,title){if(!SPECIES[sid])return;openMonInfo(sid,m);const b=document.createElement('div');b.style.cssText="font-family:'Press Start 2P',monospace;font-size:9px;color:#14141f;background:#ffcb3d;border:2px solid #000;padding:5px;margin:-4px 0 8px";b.textContent=title||'★ NEUER DEX-EINTRAG ★';$('#mbox').prepend(b)}
+function dexReveal(sid,m,title){if(!SPECIES[sid])return;openMonInfo(sid,m?Object.assign(Object.create(Object.getPrototypeOf(m)),m,{isNew:1}):m);const b=document.createElement('div');b.style.cssText="font-family:'Press Start 2P',monospace;font-size:9px;color:#14141f;background:#ffcb3d;border:2px solid #000;padding:5px;margin:-4px 0 8px";b.textContent=title||'★ NEUER DEX-EINTRAG ★';$('#mbox').prepend(b)}
 function openMonInfo(sid,m,back){const sp=SPECIES[sid];if(!sp)return;const caught=!!(G.dex&&G.dex[sid])||!!m;
   let h=`<h3>${nameHtml(sid)}${m?` · Lv ${m.l}`:''}</h3><canvas id="minfocv" width="52" height="52" style="width:96px;height:96px;image-rendering:pixelated;display:block;margin:0 auto 4px"></canvas><div><span class="tb" style="background:${TYPES[sp.t].c}">${TYPES[sp.t].n.toUpperCase()}</span> <span class="tb" style="background:${rarOf(sid).c};color:#14141f">${rarOf(sid).n.toUpperCase()}</span></div>
     ${sp.law?`<p style="margin:6px 0 0;color:var(--accent);font-size:17px">${esc(sp.law)}</p>`:''}${caught&&dexText(sid)?`<p style="margin:6px 0 0;text-align:left;font-size:17px;line-height:1.1;background:#0b0d16;border:2px solid #000;padding:4px 6px">📖 ${esc(dexText(sid))}</p>`:''}<p class="small" style="margin:6px 0 8px">Fundort: ${esc(habitatOf(sid))}${sp.evo?` · entwickelt sich ab Lv ${sp.evo[0]} zu ${caught?esc(SPECIES[sp.evo[1]].n):'???'}`:''}</p>`;
@@ -21,7 +25,7 @@ function openMonInfo(sid,m,back){const sp=SPECIES[sid];if(!sp)return;const caugh
     h+=`<div style="margin:4px 0 10px">${names.map((n,i)=>`<div class="statrow"><span>${n}</span><span style="background:#0b0d16;border:1px solid #000"><i style="width:${Math.min(100,vals[i]/mx*100)}%"></i></span><span>${vals[i]}</span></div>`).join('')}</div>`;
     if(m)h+=`<div class="small" style="margin-bottom:8px">KP ${m.hp}/${st.mhp}${m.xp!=null?` · EP ${m.xp}/${xpNeed(m.l)} bis Lv ${m.l+1}`:''}</div><div class="lbl2" style="margin-bottom:4px">BEKANNTE ATTACKEN</div>${m.m.map(mid=>moveInfoHtml(mid)).join('')}`;
     const next=sp.ls.filter(e=>!m||!m.m.includes(e[1]));
-    if(next.length)h+=`<div class="lbl2" style="margin:8px 0 4px">${m?'WEITERE ATTACKEN DIESER LINIE':'ERLERNBARE ATTACKEN'}</div>${next.map(e=>moveInfoHtml(e[1],e[0])).join('')}`}
+    if(next.length&&!(m&&m.isNew))h+=`<div class="lbl2" style="margin:8px 0 4px">${m?'WEITERE ATTACKEN DIESER LINIE':'ERLERNBARE ATTACKEN'}</div>${next.map(e=>moveSeen(e[1])?moveInfoHtml(e[1],e[0]):moveUnknownHtml(e[0])).join('')}`}
   h+=`<div class="acts" style="margin-top:10px">${back?'<button class="btn ghost" id="mback">◀ DEX</button>':''}<button class="btn" id="mok">SCHLIESSEN</button></div>`;
   openModal(h);$('#mbox').style.maxHeight='92%';$('#mbox').style.overflow='auto';
   const c=$('#minfocv').getContext('2d');c.imageSmoothingEnabled=false;c.drawImage(monSprite(sid,24),0,0,52,52);
