@@ -221,7 +221,7 @@ const ZONES={
  jungle:{n:'Mostbacher Dschungel',col:'#2fa36a',enc:'Dschungelgras',pool:[]},
  knast:{n:'Knast',col:'#8e929c',enc:'Zellentrakt',pool:[]}
 };
-const CX=150,CY=88;
+const CX=149,CY=92;
 function distC(x,y){return Math.hypot(x-CX,y-CY)}
 // level range per area; inside an area the level rises with the distance from Villingen (d0/d1 are measured when the map is built)
 const ZLV={north:{lo:2,hi:8},east:{lo:6,hi:12},south:{lo:8,hi:14},west:{lo:10,hi:16},snow:{lo:13,hi:19},jungle:{lo:16,hi:22},desert:{lo:19,hi:25},knast:{lo:26,hi:34}};

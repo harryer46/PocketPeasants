@@ -3,9 +3,8 @@ const MCOL={21:'#dcc690',22:'#7c4a22',23:'#7c4a22',20:'#6b6f7a',0:'#6cc44f',1:'#
 const BIO_C=(()=>{const acc={};for(let y=0;y<MH;y++)for(let x=0;x<MW;x++){const b=BKEYS[BIOME[y*MW+x]];if(!b)continue;const a=acc[b]||(acc[b]={x:0,y:0,n:0});a.x+=x;a.y+=y;a.n++}const o={};for(const k in acc)o[k]={x:acc[k].x/acc[k].n,y:acc[k].y/acc[k].n};return o})();
 function mapOpen(){return $('#mapov').classList.contains('on')}
 function openMap(){if(B)return;$('#mapov').classList.add('on');held.length=0;drawMap();renderMapLegend();renderFly()}
-// FLY: quick travel to town or a signpost
 // quick travel: every town you have visited (free), with FLY also every signpost
-function flySpots(){const out=TOWNS.filter(T=>T.id==='vil'||(RUN&&RUN.towns&&RUN.towns[T.id])).map(T=>({n:T.n,x:T.x,y:T.y}));if(!hasHM('fly'))return out;for(const sg of SIGNS){if(sg.kind==='town')continue;for(const[dx,dy]of[[0,1],[1,0],[-1,0],[0,-1]])if(walkable(sg.x+dx,sg.y+dy)){out.push({n:`Schild ${BNAME[sg.to]} (${BNAME[BIOME[sg.y*MW+sg.x]]||'Stadt'})`,x:sg.x+dx,y:sg.y+dy});break}}return out}
+function flySpots(){const out=TOWNS.filter(T=>T.id==='vil'||(RUN&&RUN.towns&&RUN.towns[T.id])).map(T=>({n:T.n,x:T.x,y:T.y}));return out}
 function renderFly(){let el=$('#flybar');if(!el){el=document.createElement('div');el.id='flybar';el.style.cssText='margin:8px 0;display:flex;flex-wrap:wrap;gap:6px;justify-content:center';const mb=$('#mapov .mapbox')||$('#mapov').firstElementChild;mb.insertBefore(el,mb.children[1]||null)}
   if(!RUN||RUN.phase==='arena'||RUN.phase==='lobby'||B){el.innerHTML='';return}
   el.innerHTML=`<span class="small" style="align-self:center">🕊 SCHNELLREISE nach:</span>`+flySpots().map((f,i)=>`<button class="btn ghost" data-fly="${i}" style="font-family:VT323,monospace;font-size:17px;padding:3px 8px">${esc(f.n)}</button>`).join('');

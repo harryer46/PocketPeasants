@@ -20,6 +20,7 @@ addEventListener('keydown',e=>{if(B&&(B.vs||B.wi)&&!e.repeat&&vsSkip()){e.preven
     if(k===K.dash){e.preventDefault();battleDash()}else if(k===K.sw)battleSwitch();else if(k===K.cap){if(!e.repeat)capPress()}else if(k===K.run)tryRun();
     return}
   if((e.key==='m'||e.key==='M')&&G){toggleMap();return}
+  if((e.key==='f'||e.key==='F')&&G&&!e.repeat&&!modalOpen()){e.preventDefault();toggleFly();return}
   if(e.key==='Escape'&&mapOpen()){closeMap();return}
   if((e.key==='t'||e.key==='T')&&G){e.preventDefault();switchTab('chat');$('#chatin').focus()}
 });
@@ -88,3 +89,5 @@ $('#rotok').onclick=()=>{checkOrient.dismissed=true;checkOrient()};
   fb.onclick=()=>{try{document.documentElement.requestFullscreen().then(()=>{fb.style.display='none';try{screen.orientation.lock('landscape').catch(()=>{})}catch(_){}}).catch(()=>toast('Vollbild ist hier nicht verfügbar.'))}catch(_){toast('Vollbild ist hier nicht verfügbar.')}}}}
 
 
+
+$('#flybtn').addEventListener('click',e=>{e.preventDefault();e.currentTarget.blur();toggleFly()});

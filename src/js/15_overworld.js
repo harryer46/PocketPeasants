@@ -1,12 +1,22 @@
 /* ===================== OVERWORLD ===================== */
 const STEP=0.16;
 function modalOpen(){return $('#modal').classList.contains('on')||$('#study').classList.contains('on')||$('#arena').classList.contains('on')||$('#mapov').classList.contains('on')||!!FX}
+// FLY (field skill from Axel): take off right on the map – over trees, water and cliffs, twice as fast,
+//   no encounters; areas whose teacher you have not passed stay closed in the air too; land only on walkable ground
+function flyable(x,y){if(x<2||y<2||x>=MW-2||y>=MH-2)return false;const b=BIOME[y*MW+x];return!(TOLL_LAW[b]&&!tollPaid(b)&&RUN&&RUN.phase==='train')}
+function canFly(){return hasHM('fly')&&!B&&RUN&&RUN.phase!=='arena'}
+function toggleFly(){if(!P.fly){if(!canFly())return;if(P.moving)return;P.fly=true;P.flyT=performance.now();held.length=0;pres({fl:1});toast('🕊 Abgehoben! Nochmal tippen (F) zum Landen.');flyBtn();return}
+  if(P.moving)return;const x=P.x,y=P.y;if(!walkable(x,y)||trainerAt(x,y)||LEGENDS.some(L=>L.x===x&&L.y===y)||tollAt(x,y)){toast('Hier kannst du nicht landen – such dir freien Boden.');return}
+  P.fly=false;P.flyT=performance.now();P.fol={x,y,tx:x,ty:y,fx:x,fy:y};trailReset(P,x,y);if(P.fols)for(const f of P.fols){f.fx=f.tx=x;f.fy=f.ty=y}pres({fl:0});save();flyBtn();onArrive()}
+function flyBtn(){const b=$('#flybtn');if(!b)return;const show=canFly()||P.fly;b.style.display=show?'':'none';b.classList.toggle('on',!!P.fly);b.textContent=P.fly?'🛬 LANDEN':'🕊 FLIEGEN'}
+function flyAlt(){const t=(performance.now()-(P.flyT||0))/350;return P.fly?Math.min(1,t):Math.max(0,1-t)}
 function updatePlayer(dt){
-  if(P.moving){P.mt+=dt/STEP;P.ph+=dt;
+  if(P.moving){P.mt+=dt/(P.fly?STEP*0.5:STEP);P.ph+=dt;
     if(P.mt>=1){P.moving=false;P.x=P.tx;P.y=P.ty;P.fx=P.x;P.fy=P.y;onArrive();if(B)return}
     else{P.fx=P.sx+(P.tx-P.sx)*P.mt;P.fy=P.sy+(P.ty-P.sy)*P.mt}}
   if(!P.moving&&!B&&!modalOpen()&&!P.lock){const d=heldDir();if(d){const turned=P.d!==d;P.d=d;const[dx,dy]=DIRS[d];const nx=P.x+dx,ny=P.y+dy;
-    if(walkable(nx,ny)&&!trainerAt(nx,ny)&&!LEGENDS.some(L=>L.x===nx&&L.y===ny)&&!tollBlock(nx,ny)){P.moving=true;P.mt=0;P.sx=P.x;P.sy=P.y;P.tx=nx;P.ty=ny;P.fol.tx=P.x;P.fol.ty=P.y;trailPush(P,P.x,P.y);pres({x:nx,y:ny,d})}else{if(trainerAt(nx,ny)||LEGENDS.some(L=>L.x===nx&&L.y===ny))bump(nx,ny);if(turned)pres({d})}}}
+    if(P.fly){if(flyable(nx,ny)){P.moving=true;P.mt=0;P.sx=P.x;P.sy=P.y;P.tx=nx;P.ty=ny;pres({x:nx,y:ny,d})}else if(turned)pres({d});else if(P.bumpCd<=0){P.bumpCd=1.2;const b=BIOME[ny*MW+nx];if(TOLL_LAW[b])toast('Dieses Gebiet ist noch gesperrt – erst am Prof. vorbei, dann darfst du es überfliegen.')}}
+    else if(walkable(nx,ny)&&!trainerAt(nx,ny)&&!LEGENDS.some(L=>L.x===nx&&L.y===ny)&&!tollBlock(nx,ny)){P.moving=true;P.mt=0;P.sx=P.x;P.sy=P.y;P.tx=nx;P.ty=ny;P.fol.tx=P.x;P.fol.ty=P.y;trailPush(P,P.x,P.y);pres({x:nx,y:ny,d})}else{if(trainerAt(nx,ny)||LEGENDS.some(L=>L.x===nx&&L.y===ny))bump(nx,ny);if(turned)pres({d})}}}
   P.bumpCd=Math.max(0,(P.bumpCd||0)-dt);
   approach(P.fol,dt);if(P.fols)for(const f of P.fols)approach(f,dt);
 }
@@ -32,9 +42,10 @@ function checkSight(){
     for(let k=1;k<=4;k++){const x=t.x+dx*k,y=t.y+dy*k;if(!walkable(x,y))break;if(x===P.x&&y===P.y){spotted(t);return true}}}
   return false;
 }
-function teleport(x,y){P.x=P.fx=x;P.y=P.fy=y;try{bakeNow()}catch(e){}P.moving=false;P.fol={x,y,tx:x,ty:y};trailReset(P,x,y);G.x=x;G.y=y;pres({x,y,d:P.d})}
+function teleport(x,y){if(P.fly){P.fly=false;P.flyT=0;pres({fl:0});flyBtn()}P.x=P.fx=x;P.y=P.fy=y;try{bakeNow()}catch(e){}P.moving=false;P.fol={x,y,tx:x,ty:y};trailReset(P,x,y);G.x=x;G.y=y;pres({x,y,d:P.d})}
 function onArrive(){
-  G.x=P.x;G.y=P.y;G.d=P.d;P.steps++;if(P.steps%8===0)save();updateHud();
+  if(!P.fly){G.x=P.x;G.y=P.y}G.d=P.d;P.steps++;if(P.steps%8===0)save();updateHud();
+  if(P.fly){if(BIOME[P.y*MW+P.x]===0&&RUN){const Tn=TOWNS.find(T=>Math.abs(T.x-P.x)<18&&Math.abs(T.y-P.y)<14);if(Tn&&Tn.id!=='vil'&&!(RUN.towns&&RUN.towns[Tn.id])){RUN.towns=RUN.towns||{};RUN.towns[Tn.id]=1;save();toast(`📍 ${Tn.n} entdeckt!`)}}return}
   const t=tget(P.x,P.y);
   if(t===22){if(RUN)openShop();else toast('Copshop — tritt einer Lobby bei oder starte das freie Spiel.')}
   if(t===23){if(RUN)openHfPol();else toast('HfPol — tritt einer Lobby bei oder starte das freie Spiel, um zu lernen.')}
@@ -67,7 +78,7 @@ function healQuiz(){RUN.kap=Math.max(RUN.kap,10);updateHud();const all=()=>RUN.t
 // respawn after a defeat: in front of the last PÄD you entered (else Villingen)
 function padSpawn(){const l=RUN&&RUN.lastPad;if(l&&walkable(l.x,l.y))return l;const p=PADS[0];return p?{x:p.x,y:p.y+1}:VSPAWN}
 function healAll(){if(!RUN)return;for(const m of RUN.team.concat(RUN.box))m.hp=stats(m).mhp;RUN.kap=Math.max(RUN.kap,10);save();renderTeam();updateHud()}
-function updateHud(){
+function updateHud(){try{flyBtn()}catch(e){}
   const z=zoneAt(P.x,P.y);$('#hzone').textContent=z?ZONES[z].n:'Stadt';
   $('#hkap').textContent=RUN?`$${money()} · ⛓ ${RUN.kap}`:'Kein Team';
   {const R=rosterIds();$('#sdex').textContent=`Dex ${R.filter(s=>G.dex[s]!==undefined).length}/${R.length}`}$('#stro').textContent=`Trophäen ${G.tro}`;
@@ -86,6 +97,11 @@ function bubble(c,x,y,txt){
   c.fillStyle='#14141f';c.fillRect(X-1,Y-1,w+2,h+2);c.fillStyle='#fff';c.fillRect(X,Y,w,h);c.fillRect(Math.round(x)-1,Y+h,3,2);
   c.fillStyle='#14141f';lines.forEach((l,i)=>c.fillText(l,X+3,Y+8+i*7-1));
 }
+// a flying player: drop shadow on the ground, the officer up in the air on a flapping pair of wings (drawn above trees)
+function drawFlyer(c,e,X,Y){const a=e.alt,h=Math.round(a*16),bob=Math.round(Math.sin(T*5)*1.5*a),flap=Math.floor(T*8)%2;
+  const sw=Math.round(12-a*4);c.fillStyle='rgba(0,0,0,'+(0.38-a*0.12).toFixed(2)+')';c.fillRect(X+8-sw/2,Y+13,sw,2);c.fillRect(X+8-sw/2+1,Y+12,sw-2,1);c.fillRect(X+8-sw/2+1,Y+15,sw-2,1);
+  const y0=Y-h+bob;c.fillStyle='#14141f';const wy=y0+(flap?5:3),wh=flap?3:5;c.fillRect(X-5,wy,7,wh);c.fillRect(X+14,wy,7,wh);c.fillStyle='#f4f4f8';c.fillRect(X-4,wy+1,5,wh-2);c.fillRect(X+15,wy+1,5,wh-2);c.fillStyle='#c8d0e0';c.fillRect(X-4,wy+wh-2,5,1);c.fillRect(X+15,wy+wh-2,5,1);
+  c.drawImage(charSprite(e.col,e.d,0,e.sx),X,y0)}
 function drawSignCaptions(c,camX,camY){for(const sg of SIGNS){const d=Math.hypot(sg.x-P.fx,sg.y-P.fy);if(d>3.2)continue;nameTag(c,sg.x*16-camX+8,sg.y*16-camY-1,signShort(sg),'#d9a466','')}}
 function drawWorld(){
   const cw=wcv.parentElement.clientWidth,ch=wcv.parentElement.clientHeight;const dpr=Math.min(3,devicePixelRatio||1);
@@ -119,20 +135,22 @@ function drawWorld(){
   c.textAlign='left';
   // entities
   const ents=[];
-  for(const o of OTH.values()){if(o.fx==null)continue;ents.push({fx:o.fx,fy:o.fy,col:o.c,sx:o.sx,d:o.d,ph:o.ph,mv:o.moving,name:o.n,bt:o.bt,bub:o.bub});if(o.lf)folEnts(o,o.lf,ents,o.fx,o.fy);else if(o.ld&&o.fol.fx!=null)ents.push({fx:o.fol.fx,fy:o.fol.fy,mon:o.ld})}
-  if(G){ents.push({fx:P.fx,fy:P.fy,col:G.color,sx:G.sex,d:P.d,ph:P.ph,mv:P.moving,name:G.name+' (du)',bt:B?(B.mode==='wild'?'wild':'duel'):null,bub:myBubble,me:1});if(RUN)folEnts(P,folInfo(),ents,P.fx,P.fy)}
+  for(const o of OTH.values()){if(o.fx==null)continue;ents.push({fx:o.fx,fy:o.fy,col:o.c,sx:o.sx,d:o.d,ph:o.ph,mv:o.moving,name:o.n,bt:o.bt,bub:o.bub,alt:o.fl?1:0});if(o.fl){}else if(o.lf)folEnts(o,o.lf,ents,o.fx,o.fy);else if(o.ld&&o.fol.fx!=null)ents.push({fx:o.fol.fx,fy:o.fol.fy,mon:o.ld})}
+  if(G){ents.push({fx:P.fx,fy:P.fy,col:G.color,sx:G.sex,d:P.d,ph:P.ph,mv:P.moving,name:G.name+' (du)',bt:B?(B.mode==='wild'?'wild':'duel'):null,bub:myBubble,me:1,alt:flyAlt()});if(RUN&&!P.fly&&flyAlt()===0)folEnts(P,folInfo(),ents,P.fx,P.fy)}
   for(const t of tollSpots()){const paid=tollPaid(t.b);let fx=t.x,fy=t.y;if(paid){for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]])if(walkable(t.x+dx,t.y+dy)&&BIOME[(t.y+dy)*MW+t.x+dx]===t.b&&!(dx===0&&dy===0)){const side=DIRS[t.d];if(side&&dx===side[0]&&dy===side[1])continue;fx=t.x+dx;fy=t.y+dy;break}}ents.push({fx,fy,col:t.c,sx:/Würde|Strafe/.test(t.n)?'f':'m',d:t.d,npc:t,name:t.n})}
   for(const t of TRAINERS)ents.push({fx:t.x,fy:t.y,col:t.c,sx:/^\S+in\s/.test(t.n)?'f':'m',d:t.d,ph:0,mv:false,name:t.n,npc:t,bt:null});
   for(const L of LEGENDS){const gone=(RUN&&RUN.leg&&RUN.leg[L.id])||!cfgOf().leg;if(!gone)ents.push({fx:L.x,fy:L.y,legend:L})}
   ents.sort((a,b)=>a.fy-b.fy);
   for(const e of ents){const X=Math.round(e.fx*16-camX),Y=Math.round(e.fy*16-camY);
+    if(e.alt>0)continue;
     if(e.legend){if(X<-40||X>LW+40||Y<-40||Y>LH+40)continue;const s=monSprite(legSid(e.legend),32);const bob=Math.round(Math.sin(T*2)*1.5);c.globalAlpha=RUN&&RUN.phase==='train'?1:0.45;c.drawImage(s,X-8,Y+15-27+bob,32,32);c.globalAlpha=1;
       c.fillStyle='#ffcb3d';for(let i=0;i<3;i++){const a=T*1.5+i*2.1;c.fillRect(Math.round(X+8+Math.cos(a)*12),Math.round(Y+4+Math.sin(a)*7),1,1)}continue}
     if(e.mon){const s=monSprite(e.mon,24);c.drawImage(s,X-4,Y+15-21,24,24)}
     else{const fr=e.mv?(Math.floor(e.ph/STEP*2)%2?1:2):0;if(tget(Math.round(e.fx),Math.round(e.fy))===3){const wb=Math.round(Math.sin(T*4)*1);c.drawImage(charSprite(e.col,e.d,fr,e.sx),0,0,16,13,X,Y+1+wb,16,13);c.fillStyle='#ffffffb0';c.fillRect(X+1,Y+13+wb,4,1);c.fillRect(X+11,Y+13+wb,4,1);c.fillStyle='#ffffff60';c.fillRect(X-1,Y+14,18,1)}else{const ti=e.npc&&trainerImg(e.npc,e.d);if(ti)c.drawImage(ti,Math.round(X+8-ti.naturalWidth/2),Y+15-ti.naturalHeight);else c.drawImage(charSprite(e.col,e.d,fr,e.sx),X,Y-4)}}
     {const tx=Math.round(e.fx),ty=Math.round(e.fy),tt=tget(tx,ty);if(ENC.has(tt))c.drawImage(TILE[tt][(tx*7+ty*3)%TILE[tt].length],0,8,16,8,X,Y+8,16,8)}}
   if(WORLD)drawWorldLayer(c,camX,camY,LW,LH,'c');
-  for(const e of ents){if(e.mon)continue;const X=e.fx*16-camX+8,Y=Math.round(e.fy*16-camY)-2;
+  for(const e of ents)if(e.alt>0)drawFlyer(c,e,Math.round(e.fx*16-camX),Math.round(e.fy*16-camY));
+  for(const e of ents){if(e.mon)continue;const X=e.fx*16-camX+8,Y=Math.round(e.fy*16-camY)-2-(e.alt>0?Math.round(e.alt*16):0);
     if(e.legend){nameTag(c,X,Y-14,'???','#ffcb3d','');continue}
     if(e.npc){const beaten=RUN&&RUN.beat&&RUN.beat[e.npc.id];nameTag(c,X,Y-4,e.name,e.col,'');if(e.npc.alert&&performance.now()-e.npc.alert<1000){c.fillStyle='#14141f';c.fillRect(Math.round(X)-3,Y-26,6,11);c.fillStyle='#ffcb3d';c.fillRect(Math.round(X)-2,Y-25,4,6);c.fillRect(Math.round(X)-2,Y-18,4,2)}else if(beaten){vtText(c,'✓',X,Y-15,'#3ddc6b',10,'center')}continue}
     nameTag(c,X,Y-4,e.name,e.col,e.bt==='duel'?'⚔':e.bt==='wild'?'!':'');if(e.bub&&e.bub.until>performance.now())bubble(c,X,Y-14,e.bub.t)}

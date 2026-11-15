@@ -30,7 +30,8 @@ function begin(){
   if(RUN&&!RUN.free&&RUN.phase==='train'&&Date.now()>=RUN.end){RUN.phase='arena_pending'}
   if(RUN&&!RUN.free&&RUN.phase==='arena'){RUN.res=RUN.res||[];if(RUN.st==='duel'){RUN.res.push([RUN.r,RUN.dopp||'?',0]);RUN.r++;RUN.st=RUN.r>cfgOf().rounds?'done':'wait'}if(RUN.st==='pick')RUN.st='wait'}
   // new world (map v2): old positions and toll passes no longer fit → back to Villingen
-  if(G.mapv!==2){G.mapv=2;G.x=VSPAWN.x;G.y=VSPAWN.y;for(const R of[G.run,G.freeRun])if(R){R.toll={};R.towns={vil:1};R.lastPad=null}}
+  if(G.mapv!==2&&G.mapv!==3){G.mapv=2;G.x=VSPAWN.x;G.y=VSPAWN.y;for(const R of[G.run,G.freeRun])if(R){R.toll={};R.towns={vil:1};R.lastPad=null}}
+  if(G.mapv!==3){G.mapv=3;G.x=VSPAWN.x;G.y=VSPAWN.y;for(const R of[G.run,G.freeRun])if(R)R.lastPad=null}
   P.x=P.fx=G.x;P.y=P.fy=G.y;P.d=G.d||'down';if(!walkable(P.x,P.y)){P.x=P.fx=VSPAWN.x;P.y=P.fy=VSPAWN.y}
   P.fol={x:P.x,y:P.y,tx:P.x,ty:P.y};
   renderTeam();updateHud();pushFull();sysChat(`Willkommen bei Pocket Peasants, ${G.name}! Dienstbeginn — schnapp sie dir alle!`);

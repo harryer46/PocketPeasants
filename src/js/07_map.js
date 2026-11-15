@@ -19,15 +19,16 @@ function vnoise(seed,cell){
     return(g(ix,iy)*(1-sx)+g(ix+1,iy)*sx)*(1-sy)+(g(ix,iy+1)*(1-sx)+g(ix+1,iy+1)*sx)*sy};
 }
 // town plans (centre tile); biome = the area around it
-const TOWN_DEF=[{id:'vil',n:'Villingen-Knastingen',x:150,y:88,b:1,center:1},{id:'lah',n:'Lahribar',x:57,y:27,b:6},{id:'unt',n:'Unterwertheim',x:244,y:33,b:7},
-  {id:'dam',n:'Damental',x:46,y:104,b:2},{id:'mos',n:'Mostbach',x:247,y:110,b:8},{id:'mar',n:'Marderach',x:141,y:155,b:3}];
+const TOWN_DEF=[{id:'vil',n:'Villingen-Knastingen',x:149,y:92,b:1,center:1},{id:'lah',n:'Lahribar',x:59,y:27,b:6},{id:'unt',n:'Unterwertheim',x:247,y:33,b:7},
+  {id:'dam',n:'Damental',x:46,y:108,b:2},{id:'mos',n:'Mostbach',x:251,y:111,b:8},{id:'mar',n:'Marderach',x:141,y:156,b:3}];
 const KNAST_C={x:262,y:13};
 (function gen(){
   const r=mulberry32(4242),n1=vnoise(11,18),n2=vnoise(22,9),n3=vnoise(33,5),wx=vnoise(44,26),wy=vnoise(55,26),n4=vnoise(66,13);
   const B=(x,y)=>BIOME[y*MW+x];
   // ---- biomes: warped Voronoi over hand-placed seeds (layout of the concept map)
   const SEEDS={1:[[150,70],[150,116],[118,98],[182,98],[132,50],[168,50],[150,135]],4:[[150,18],[115,22],[185,22],[98,38],[202,38]],6:[[45,22],[18,45],[74,44],[28,12],[60,8]],
-    2:[[28,95],[70,84],[42,124],[80,112],[15,120]],3:[[100,168],[150,172],[205,166],[30,160],[64,150],[250,172],[120,150],[175,150]],8:[[255,100],[287,130],[232,134],[287,88],[265,150]],7:[[250,25],[287,50],[226,56],[283,12],[218,12]]};
+    2:[[28,95],[70,84],[42,124],[80,112],[15,120]],3:[[100,168],[150,172],[205,166],[30,160],[64,150],[250,172],[120,150],[175,150]],8:[[255,100],[287,130],[232,134],[287,88],[265,150]],7:[[250,25],[287,50],[236,48],[283,12],[218,12]]};
+  SEEDS[1].push([205,78],[198,60]);
   const SL=[];for(const b in SEEDS)for(const[x,y]of SEEDS[b])SL.push([x,y,+b]);
   for(let y=0;y<MH;y++)for(let x=0;x<MW;x++){const X=x+(wx(x,y)-0.5)*30,Y=y+(wy(x,y)-0.5)*30;let bd=1e9,bb=1;for(const[sx,sy,b]of SL){const d=(X-sx)**2+(Y-sy)**2;if(d<bd){bd=d;bb=b}}BIOME[y*MW+x]=bb}
   // every training town sits well inside its own area
@@ -69,29 +70,27 @@ const KNAST_C={x:262,y:13};
   const pad=(x,y)=>{for(let X=x;X<x+6;X++){tset(X,y,8);tset(X,y+1,8);tset(X,y+2,6);tset(X,y+3,6)}tset(x+3,y+3,7);PADS.push({x:x+3,y:y+3,bx:x,by:y})};
   const bld=(id,x,y,w,dxo,door)=>{for(let Y=y;Y<y+4;Y++)for(let X=x;X<x+w;X++)tset(X,Y,21);tset(x+dxo,y+3,door);BLDG.push({id,x,y,w,h:4,dx:x+dxo,door,n:id==='shop'?'COPSHOP':'HfPol'})};
   for(const T of TOWN_DEF){
+    // compact towns like the originals: buildings shoulder to shoulder inside a tree ring
     if(T.center){const{x:cx,y:cy}=T;
-      for(let y=cy-24;y<=cy+24;y++)for(let x=cx-26;x<=cx+26;x++){const d=Math.hypot((x-cx)/22,(y-cy)/19);if(d<1){BIOME[y*MW+x]=0;tset(x,y,0);if(d>0.9&&!(Math.abs(x-cx)<=2||Math.abs(y-cy)<=1))tset(x,y,2);else if(r()<0.04)tset(x,y,9)}}
-      for(let a=0;a<6.3;a+=0.01){const x=Math.round(cx+Math.cos(a)*13),y=Math.round(cy+Math.sin(a)*11);tset(x,y,4)}
-      for(let x=cx-21;x<=cx+21;x++){tset(x,cy,4);tset(x,cy+1,4)}for(let y=cy-19;y<=cy+20;y++){tset(cx,y,4);tset(cx-1,y,4)}
-      // court (dome) in the middle, PÄD left, shop + HfPol below, sports field on the right
+      for(let y=cy-13;y<=cy+13;y++)for(let x=cx-17;x<=cx+17;x++){const d=Math.hypot((x-cx)/15.5,(y-cy)/12.5);if(d<1){BIOME[y*MW+x]=0;tset(x,y,d>0.86?2:0);if(d<=0.86&&r()<0.04)tset(x,y,9)}}
+      for(let x=cx-15;x<=cx+15;x++)if(tget(x,cy-1)!==2||Math.abs(x-cx)<14)tset(x,cy-1,4);
+      for(let y=cy-4;y<=cy+12;y++){tset(cx,y,4);tset(cx-1,y,4)}for(let x=cx-11;x<=cx+10;x++)tset(x,cy+6,4);
+      // court (dome) in the middle, PÄD left, sports field right, shop + HfPol below
       for(let x=cx-3;x<=cx+2;x++){for(let y=cy-9;y<=cy-7;y++)tset(x,y,10);tset(x,cy-6,11);tset(x,cy-5,11)}tset(cx-1,cy-5,12);tset(cx,cy-5,12);tset(cx-1,cy-4,4);tset(cx,cy-4,4);
       COURT={x:cx-1,y:cy-4};VSPAWN={x:cx,y:cy+3};
-      pad(cx-17,cy-5);for(let y=cy-1;y<=cy;y++)tset(cx-14,y,4);
-      bld('shop',cx-10,cy+4,5,2,22);tset(cx-8,cy+8,4);bld('hfpol',cx+4,cy+4,7,3,23);tset(cx+7,cy+8,4);
-      for(let y=cy-7;y<=cy-3;y++)for(let x=cx+8;x<=cx+15;x++)tset(x,y,(y===cy-7||y===cy-3||x===cx+8||x===cx+15)?5:0);
-      LABELS.push({x:cx-17,y:cy-5,w:6,t:'PÄD',kind:'pad'},{x:cx-3,y:cy-9,w:6,t:'GERICHT',kind:'court'});
+      pad(cx-11,cy-5);
+      for(let y=cy-7;y<=cy-3;y++)for(let x=cx+5;x<=cx+11;x++)tset(x,y,(y===cy-7||y===cy-3||x===cx+5||x===cx+11)?5:0);
+      bld('shop',cx-9,cy+2,5,2,22);bld('hfpol',cx+3,cy+2,7,3,23);
+      LABELS.push({x:cx-11,y:cy-5,w:6,t:'PÄD',kind:'pad'},{x:cx-3,y:cy-9,w:6,t:'GERICHT',kind:'court'});
       TOWNS.push({id:T.id,n:T.n,x:cx,y:cy+3,pad:PADS[PADS.length-1]});continue}
-    const{x:cx,y:cy}=T;fillRect(cx-15,cy-7,cx+14,cy+6,0,0);
-    for(let x=cx-15;x<=cx+14;x++){tset(x,cy-7,2);tset(x,cy+6,2)}for(let y=cy-7;y<=cy+6;y++){tset(cx-15,y,2);tset(cx+14,y,2)}
-    for(let x=cx-15;x<=cx+14;x++){tset(x,cy+2,4)}for(let y=cy-7;y<=cy+6;y++){tset(cx,y,4)}
-    if(T.b===6)for(let y=cy-6;y<=cy+5;y++)for(let x=cx-14;x<=cx+13;x++)if(MAP[y*MW+x]===0)MAP[y*MW+x]=28;
-    if(T.b===7)for(let y=cy-6;y<=cy+5;y++)for(let x=cx-14;x<=cx+13;x++)if(MAP[y*MW+x]===0)MAP[y*MW+x]=29;
-    pad(cx-13,cy-5);tset(cx-10,cy-1,4);tset(cx-10,cy,4);tset(cx-10,cy+1,4);
-    bld('shop',cx-5,cy-5,5,2,22);tset(cx-3,cy-1,4);tset(cx-3,cy,4);tset(cx-3,cy+1,4);
-    bld('hfpol',cx+3,cy-5,7,3,23);tset(cx+6,cy-1,4);tset(cx+6,cy,4);tset(cx+6,cy+1,4);
-    LABELS.push({x:cx-13,y:cy-5,w:6,t:'PÄD',kind:'pad'});
-    TOWNS.push({id:T.id,n:T.n,x:cx,y:cy+3,pad:PADS[PADS.length-1]});
-    if(T.id==='mar'){for(const px of[cx-8,cx-1,cx+7])for(let y=cy+6;y<=cy+18;y++){if(tget(px,y)===3||y>cy+6)tset(px,y,27);else tset(px,y,4)}}
+    const{x:cx,y:cy}=T,gr=T.b===6?28:T.b===7?29:0;fillRect(cx-9,cy-6,cx+9,cy+6,gr,0);
+    for(let x=cx-9;x<=cx+9;x++){tset(x,cy-6,2);tset(x,cy+6,2)}for(let y=cy-6;y<=cy+6;y++){tset(cx-9,y,2);tset(cx+9,y,2)}
+    for(let x=cx-9;x<=cx+9;x++)tset(x,cy-1,4);for(let x=cx-6;x<=cx+6;x++)tset(x,cy+4,4);for(let y=cy+4;y<=cy+6;y++)tset(cx,y,4);
+    for(let y=cy-1;y<=cy+4;y++){tset(cx-5,y,4);tset(cx+5,y,4)}
+    pad(cx-7,cy-5);bld('shop',cx+1,cy-5,5,2,22);bld('hfpol',cx-3,cy,7,3,23);
+    LABELS.push({x:cx-7,y:cy-5,w:6,t:'PÄD',kind:'pad'});
+    TOWNS.push({id:T.id,n:T.n,x:cx,y:cy+5,pad:PADS[PADS.length-1]});
+    if(T.id==='mar'){for(const px of[cx-6,cx,cx+6])for(let y=cy+6;y<=cy+16;y++){if(tget(px,y)===3||y>cy+7)tset(px,y,27);else tset(px,y,4)}}
   }
   // ---- roads (4-connected, organic wiggle); water → bridge
   const ROAD=new Set();
@@ -104,40 +103,27 @@ const KNAST_C={x:262,y:13};
     // staircase: horizontal – vertical – horizontal (or the other way round) with a random break point
     const f=0.3+rr()*0.4;if(rr()<0.5){const mx=Math.round(x+dx*f);leg(x,y,mx,y,w);leg(mx,y,mx,ty,w);leg(mx,ty,tx,ty,w)}else{const my=Math.round(y+dy*f);leg(x,y,x,my,w);leg(x,my,tx,my,w);leg(tx,my,tx,ty,w)}};
   const road=(pts,w)=>{for(let k=0;k+1<pts.length;k++){const[x,y]=pts[k],[tx,ty]=pts[k+1];lpath(x,y,tx,ty,w)}};
+  // main roads traced from the concept map (1 tile = 5.12 px of the reference), drawn 2 tiles wide
+  {const bin=atob(REF_ROADS);for(let i=0;i<MW*MH;i++)if(bin.charCodeAt(i>>3)>>(7-(i&7))&1){const x=i%MW,y=(i-x)/MW;rset(x,y);rset(x+1,y);rset(x,y+1)}}
+  // side paths the concept map only hints at: desert canyon, prison, snowfield, shrines
   const RD=[
-    // Villingen exits (south, west, east, north)
-    [[150,108],[150,122],[146,134],[141,146]],[[129,88],[116,90],[104,94],[92,98],[76,101],[62,104]],[[171,88],[184,92],[196,96],[210,102],[226,108],[233,110]],
-    [[150,67],[150,62],[160,54],[163,46],[156,36],[140,32],[120,30],[100,30],[84,28],[72,27]],[[163,46],[176,40],[196,38],[214,36],[230,34]],
-    // ring between the training towns
-    [[46,96],[44,84],[38,68],[44,52],[52,40],[57,34]],[[247,101],[250,86],[252,70],[248,54],[244,40]],
-    [[50,112],[56,126],[66,138],[82,146],[100,150],[118,154],[126,155]],[[240,118],[230,128],[216,138],[200,146],[184,152],[166,155],[156,155]],
-    [[244,26],[252,22],[262,24],[262,29]],
-    // inner loops like the concept map: north forest, east forest, Mostbach north, south-west, south-east, west river path
-    [[140,32],[128,40],[108,44],[96,52],[90,66],[84,80],[76,90],[70,100]],[[150,32],[150,22],[162,18],[178,22],[184,30],[176,40]],
-    [[205,40],[200,54],[196,66],[192,80],[186,92]],[[252,86],[236,82],[222,76],[212,66],[204,56]],
-    [[56,120],[62,132],[72,148],[86,150]],[[194,128],[202,138],[214,148],[228,150]],[[104,94],[100,110],[94,124],[92,138],[96,148]],
-    [[150,122],[166,126],[180,124],[194,128],[200,116],[196,100]],[[150,122],[134,126],[118,124],[104,128],[94,138]],
-    // side paths to shrines, beach, swamp, look-outs
-    [[150,22],[150,16]],[[258,33],[272,36],[281,36]],[[257,112],[270,124],[282,138]],[[62,104],[70,116],[70,130]],[[24,92],[24,60],[22,40],[22,25]],
-    [[156,158],[176,160],[196,160],[216,158],[232,154]],[[126,155],[110,160],[100,164]],[[56,130],[40,140],[30,150]],[[176,40],[190,24],[200,14]],
-    [[38,68],[24,70]],[[44,84],[24,92]],[[196,38],[206,26],[218,20],[232,22],[244,26]],[[266,110],[282,104],[288,94]]
+    [[247,39],[247,46]],[[247,27],[254,22],[262,24],[262,29]],[[238,33],[224,30],[210,32],[196,30]],
+    [[121,94],[108,94],[108,86]],[[247,57],[247,61],[226,62],[208,64]],[[134,91],[121,94]],[[164,91],[176,91],[176,97],[196,97]],[[176,91],[184,86],[196,86]],[[256,33],[272,36],[281,36]],
+    [[59,33],[59,40]],[[50,27],[38,30],[28,36],[22,40],[22,25]],[[68,27],[80,24],[92,20]],[[150,10],[150,16]],
+    [[262,116],[272,126],[282,138]],[[62,104],[70,116],[70,130]],[[22,40],[22,60],[24,92]]
   ];
-  for(const p of RD)road(p,p===RD[0]||p===RD[1]||p===RD[2]?2:1);
-  // dense local path network inside every area: nodes on a jittered grid, linked to their neighbours with 90° paths
-  //  (only inside one area – areas are still entered over the main roads with their teachers)
-  {const GS=14,nodes=[],gw=Math.ceil(MW/GS),gh=Math.ceil(MH/GS);
-   for(let gy=0;gy<gh;gy++)for(let gx=0;gx<gw;gx++){const x=Math.round(gx*GS+2+rr()*(GS-4)),y=Math.round(gy*GS+2+rr()*(GS-4));if(x<4||y<4||x>=MW-4||y>=MH-4){nodes.push(null);continue}
-     const i=y*MW+x,t=MAP[i],b=BIOME[i];nodes.push(!b||t===3||t===31||t===11||t===20||t===13||t===27||t===21||t===6||t===8||(b===3&&y>160)?null:{x,y,b})}
-   const water=(a,c)=>{let n=0;const cnt=(x,y)=>{if(MAP[y*MW+x]===3)n++};let x=a.x,y=a.y;while(x!==c.x){x+=Math.sign(c.x-x);cnt(x,y)}while(y!==c.y){y+=Math.sign(c.y-y);cnt(x,y)}return n};
-   for(let gy=0;gy<gh;gy++)for(let gx=0;gx<gw;gx++){const a=nodes[gy*gw+gx];if(!a)continue;
-     for(const[ox,oy]of[[1,0],[0,1]]){const c=gx+ox<gw&&gy+oy<gh?nodes[(gy+oy)*gw+gx+ox]:null;if(!c||c.b!==a.b)continue;if(rr()>(a.b===1||a.b===2||a.b===8?0.62:0.48))continue;if(water(a,c)>4)continue;
-       const mid=BIOME[Math.round((a.y+c.y)/2)*MW+Math.round((a.x+c.x)/2)];if(mid!==a.b)continue;lpath(a.x,a.y,c.x,c.y,1)}}
-   // hook every network piece onto the roads of its own area
-   const reach=()=>{const seen=new Uint8Array(MW*MH),q=[];for(const p of RD){const i=p[0][1]*MW+p[0][0];if(ROAD.has(i)){seen[i]=1;q.push(i)}}
-     while(q.length){const i=q.pop(),x=i%MW,y=(i-x)/MW;for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]]){const j=(y+dy)*MW+x+dx;if(seen[j]||!ROAD.has(j))continue;seen[j]=1;q.push(j)}}return seen};
-   for(let it=0;it<3;it++){const seen=reach();for(const a of nodes){if(!a||seen[a.y*MW+a.x]||!ROAD.has(a.y*MW+a.x))continue;let best=null,bd=1e9;
-       for(let dy=-26;dy<=26;dy++)for(let dx=-26;dx<=26;dx++){const x=a.x+dx,y=a.y+dy;if(x<3||y<3||x>=MW-3||y>=MH-3)continue;const j=y*MW+x;if(!seen[j]||BIOME[j]!==a.b)continue;const d=Math.abs(dx)+Math.abs(dy);if(d<bd){bd=d;best={x,y}}}
-       if(best&&water(a,best)<=4){lpath(a.x,a.y,best.x,best.y,1);seen[a.y*MW+a.x]=1}}}}
+  for(const p of RD)road(p,1);
+  road([[149,104],[149,119]],2);
+  // town paths belong to the network, then every loose piece is joined to its nearest neighbour piece (bridges over water)
+  for(let i=0;i<MW*MH;i++)if(MAP[i]===4&&BIOME[i]===0)ROAD.add(i);
+  {const comps=()=>{const id=new Int32Array(MW*MH).fill(-1),L=[];for(const s0 of ROAD){if(id[s0]>=0)continue;const c=L.length,q=[s0];id[s0]=c;const m=[];
+      while(q.length){const i=q.pop();m.push(i);const x=i%MW,y=(i-x)/MW;for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]]){const j=(y+dy)*MW+x+dx;if(id[j]<0&&ROAD.has(j)){id[j]=c;q.push(j)}}}L.push(m)}return{id,L}};
+   for(let it=0;it<60;it++){const{id,L}=comps();if(L.length<2)break;
+     // the smallest piece grows outwards (BFS) until it meets another piece; that link is drawn as a 90° path
+     let c=0;for(let k=1;k<L.length;k++)if(L[k].length<L[c].length)c=k;
+     const par=new Int32Array(MW*MH).fill(-1),q=[];for(const i of L[c]){par[i]=i;q.push(i)}let hit=-1;
+     for(let h=0;h<q.length&&hit<0;h++){const i=q[h],x=i%MW,y=(i-x)/MW;for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]]){const X=x+dx,Y=y+dy;if(X<2||Y<2||X>=MW-2||Y>=MH-2)continue;const j=Y*MW+X;if(par[j]>=0)continue;par[j]=i;if(id[j]>=0&&id[j]!==c){hit=j;break}q.push(j)}}
+     if(hit<0)break;let o=hit;while(par[o]!==o)o=par[o];const ox=o%MW,oy=(o-ox)/MW,hx=hit%MW,hy=(hit-hx)/MW;leg(ox,oy,hx,oy,1);leg(hx,oy,hx,hy,1)}}
   // ---- legendary shrines (+ clear around them)
   for(const L of LEGENDS){for(let dy=-2;dy<=2;dy++)for(let dx=-2;dx<=2;dx++){const t=tget(L.x+dx,L.y+dy);if(!WALK0.has(t)||t===27)tset(L.x+dx,L.y+dy,BASE_T[B(L.x+dx,L.y+dy)]||0)}for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++)tset(L.x+dx,L.y+dy,13)}
   // ---- dense forests like the concept map: everything away from the routes grows shut (trees, pines, palms, cliffs, peaks);
@@ -184,7 +170,7 @@ const KNAST_C={x:262,y:13};
       // standing beside a road, looking at it
       for(const[ddx,ddy,d]of[[1,0,'right'],[-1,0,'left'],[0,1,'down'],[0,-1,'up']]){const j=(Y+ddy)*MW+X+ddx;if(ROAD.has(j)&&BIOME[j]===b)return{x:X,y:Y,d}}}return null};
   const roadsIn=b=>[...ROAD].filter(i=>BIOME[i]===b);
-  const FIX={ben:[150,124,1],lina:[160,52,1],gwen:[118,90,1],rita:[78,101,2],hank:[120,30,4],sue:[176,159,3],axel:[262,124,8]};
+  const FIX={ben:[150,124,1],lina:[150,58,1],gwen:[118,90,1],rita:[78,101,2],hank:[120,30,4],sue:[176,159,3],axel:[262,124,8]};
   const used=[];const okSpot=(x,y)=>!used.some(([a,b])=>Math.abs(a-x)+Math.abs(b-y)<15)&&!GATES.some(g=>{const gx=g.i%MW,gy=(g.i-gx)/MW;return Math.abs(gx-x)+Math.abs(gy-y)<6})&&!TOWNS.some(t=>Math.abs(t.x-x)<18&&Math.abs(t.y-y)<12);
   for(const t of TRAINERS){const f=FIX[t.id];if(!f)continue;const s=near(f[0],f[1],f[2])||{x:f[0],y:f[1],d:t.d};Object.assign(t,s);used.push([s.x,s.y])}
   const RANKS=['Polizeimeisterin','Polizeimeister','Kommissar','Kommissarin','Polizeiobermeister','Oberkommissarin','Hauptkommissar','Anwärterin','Anwärter','Polizeihauptmeister','Kriminalkommissarin','Diensthundeführer','Verkehrspolizist','Bereitschaftspolizistin'];
