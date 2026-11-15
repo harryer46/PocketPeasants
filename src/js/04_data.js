@@ -252,3 +252,11 @@ const TRAINERS=[
 const ZIEL_T={electric:7.5,flying:7,water:6,fire:5.5,normal:5,grass:4.5,rock:3.5};
 function zielOf(m){if(!m||!SPECIES[m.s])return 5;let h=0;for(const ch of m.s)h=(h*31+ch.charCodeAt(0))>>>0;const base=(ZIEL_T[SPECIES[m.s].t]||5)+((h%5)-2)*0.6;return clamp(Math.round((base+(m.l||1)*0.04)*10)/10,1,10)}
 function zielStars(v){const n=Math.round(v/2);return'●'.repeat(n)+'○'.repeat(5-n)}
+
+// how a projectile looks/behaves. 'wave' = sound/water/shock wave: one arc that widens as it travels (hits a growing area).
+// Everything else is a look only; plain balls stay for basic normal attacks.
+const MOVE_VIS={growl:'wave',screech:'wave',surf:'wave',thunderwave:'wave',torrent:'wave',
+  drowsyspores:'spore',heartspore:'spore',sleeppowder:'spore',stringshot:'string',goldrush:'coin',featherdarts:'feather',featherdance:'feather',
+  paragraph:'para',leer:'glare',scaryface:'glare',staticnet:'net',gravel:'rock',rocktoss:'rock',galecutter:'blade',razorleaf:'leaf'};
+const TYPE_VIS={fire:'flame',water:'bubble',grass:'leaf',electric:'bolt',rock:'rock',flying:'blade',normal:'ball'};
+function visOf(mid){const mv=MOVES[mid];if(!mv)return'ball';return MOVE_VIS[mid]||TYPE_VIS[mv.t]||'ball'}
