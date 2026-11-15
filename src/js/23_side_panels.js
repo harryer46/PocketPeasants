@@ -46,9 +46,14 @@ function atHfPol(){return tget(P.x,P.y)===23}
 function openHfPol(){if(!RUN||B)return;if(RUN.phase==='arena'){toast('Während des Gerichtsturniers ist die HfPol geschlossen.');return}
   const now=Date.now();
   openModal(`<h3>🎓 HfPol — Hochschule für Polizei</h3><p>Villingen-Knastningen · Hörsaal. Wähle ein Monster für die Prüfung (5 Fragen, Multiple Choice). Richtige Antworten geben EP.</p>
-   <div style="display:flex;flex-direction:column;gap:6px;max-height:50vh;overflow:auto">${RUN.team.map((m,i)=>{const left=(m.stT||0)+STUDY_CD-now;return`<button class="btn ${left>0?'ghost':''}" data-hs="${i}" style="text-align:left;font-family:VT323,monospace;font-size:19px">📚 ${nameHtml(m.s)} · Lv ${m.l}${left>0?` · Lernpause ${Math.floor(Math.ceil(left/1000)/60)}:${String(Math.ceil(left/1000)%60).padStart(2,"0")}`:''}</button>`}).join('')}</div>
+   <div style="display:flex;flex-direction:column;gap:6px;max-height:50vh;overflow:auto">${RUN.team.map((m,i)=>{const left=(m.stT||0)+STUDY_CD-now;return`<div style="display:flex;gap:6px"><button class="btn ${left>0?'ghost':''}" data-hs="${i}" style="flex:1;text-align:left;font-family:VT323,monospace;font-size:19px">📚 ${nameHtml(m.s)} · Lv ${m.l}${left>0?` · Lernpause ${Math.floor(Math.ceil(left/1000)/60)}:${String(Math.ceil(left/1000)%60).padStart(2,"0")}`:''}</button><button class="btn ghost" data-cp="${i}" ${left>0||money()<CRIB_P?'disabled':''} title="Sofort die EP einer bestandenen Prüfung (5/5), danach Lernpause">📄 ABSCHREIBEN $${CRIB_P}</button></div>`}).join('')}</div>
    <div class="acts" style="margin-top:10px"><button class="btn ghost" id="mno">HÖRSAAL VERLASSEN</button></div>`);
-  document.querySelectorAll('[data-hs]').forEach(b=>b.onclick=()=>openStudy(RUN.team[+b.dataset.hs]));$('#mno').onclick=closeModal}
+  document.querySelectorAll('[data-hs]').forEach(b=>b.onclick=()=>openStudy(RUN.team[+b.dataset.hs]));document.querySelectorAll('[data-cp]').forEach(b=>b.onclick=()=>studyCrib(RUN.team[+b.dataset.cp]));$('#mno').onclick=closeModal}
+// Abschreiben: $100 → immediately the XP of a perfect exam (5/5), then the usual study break
+const CRIB_P=100;
+function studyCrib(m){if(!m||!atHfPol())return;if((m.stT||0)+STUDY_CD>Date.now()){toast('Lernpause — erst später wieder.');return}if(money()<CRIB_P){toast('Nicht genug Geld.');return}
+  RUN.money-=CRIB_P;const amt=Math.max(8,Math.round(xpNeed(m.l)*0.25/((RUN.cfg&&RUN.cfg.xp)||1)))*STUDY_N;m.stT=Date.now();const msgs=gainXp(m,amt);for(const t of msgs)sysChat(t);
+  toast(`📄 ${SPECIES[m.s].n} hat abgeschrieben: +${Math.round(amt*((RUN.cfg&&RUN.cfg.xp)||1))} EP.`);save();updateHud();renderTeam();pushMt();openHfPol()}
 function openStudy(m){
   if(!RUN||B||RUN.phase==='arena'){toast('Lernen geht nur außerhalb von Kämpfen und Gericht.');return}
   if(!atHfPol()){toast('Lernen geht nur in der HfPol (Hochschule für Polizei) — in der Stadt südlich der Hauptstraße, rechts (🎓 auf der Karte).');return}
