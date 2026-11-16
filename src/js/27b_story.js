@@ -8,6 +8,8 @@ MCOL[T_CAVE]='#1b1430';
 function caveTile(){TILE[T_CAVE]=[tileCanvas(x=>{x.fillStyle='#6b6f7a';x.fillRect(0,0,16,16);x.fillStyle='#8e929c';x.fillRect(0,0,16,3);x.fillRect(0,0,2,16);x.fillRect(14,0,2,16);
   x.fillStyle='#14141f';x.fillRect(2,3,12,13);x.fillStyle='#0a0a12';x.fillRect(3,4,10,12);x.fillStyle='#2a2a3a';x.fillRect(3,4,10,2);x.fillStyle='#b8bcc6';x.fillRect(1,1,3,1);x.fillRect(11,2,3,1)})]}
 caveTile();{const _bt=buildTiles;buildTiles=function(){_bt();caveTile()}}
+// the story (Karriereberater, PMLK, Beschlüsse, FEM dungeons, ranks) only exists in free play, not in lobby games
+function storyOn(){return!!(RUN&&RUN.free)}
 function storyOf(){if(!RUN)return null;RUN.story=RUN.story||{met:0,besch:{},cd:{}};RUN.story.besch=RUN.story.besch||{};RUN.story.cd=RUN.story.cd||{};return RUN.story}
 function hasBesch(law){const s=storyOf();return!!(s&&s.besch[law])}
 function femCaught(){return FEM.filter(s=>G&&G.dex&&G.dex[s])}
@@ -46,7 +48,7 @@ function bossFight(t){const strong=['boorberg','arenamon','zhang'].filter(s=>SPE
   const team=ids.map((s,q)=>[s,BOSS_LV[0]+q]);team[5][1]=BOSS_LV[1];
   const tr={id:'boss_berater',boss:1,fixed:true,x:t.x,y:t.y,n:t.n,c:t.c,d:t.d,team,reward:20,line:'Abschlussprüfung. Keine Gnade.',after:'Polizist auf Ewigkeit.'};if(RUN.beat)delete RUN.beat[tr.id];startTrainer(tr)}
 // ---- PPLK: theory (8 questions, 6 correct, 20 s each) then the exam fight ("die Klausur")
-function storyBump(t){if(!RUN||RUN.phase!=='train'){toast(`${t.n}: „Komm wieder, wenn dein Spiel begonnen hat!“`);return}const s=storyOf();
+function storyBump(t){if(!storyOn())return;if(!RUN||RUN.phase!=='train'){toast(`${t.n}: „Komm wieder, wenn dein Spiel begonnen hat!“`);return}const s=storyOf();
   if(t.story==='berater'){if(!s.met){storyIntro(t);return}if(femCaught().length>=4&&!(G&&G.ewig)){bossDialog(t);return}storyStatus();return}
   if(t.story==='pplk'){const dg=dungeonFor(t.law);
     if(hasBesch(t.law)){talk(t.n,`Bestanden ist bestanden. Dein Durchsuchungsbeschluss (${t.law}) für die ${dg?dg.n:'Dungeon'} ist gültig – ab ins Einsatzgebiet!`);return}
@@ -81,22 +83,22 @@ function pplkFight(t){const p=PPLK[t.town],pool=lawSpecies(t.law);const n=4;
   return _tw.apply(this,arguments)}}
 // ---- dungeon doors
 function caveDungeon(x,y){return DUNGEONS.find(d=>d.ex===x&&d.ey===y)||null}
-{const _tb=tollBlock;tollBlock=function(nx,ny){if(tget(nx,ny)===T_CAVE&&ny<MH){const dg=caveDungeon(nx,ny);if(dg&&RUN&&RUN.phase==='train'&&!hasBesch(dg.law)){if((P.bumpCd||0)<=0){P.bumpCd=1.5;
-      talk('Wachtmeister am Eingang',`Halt! Hier beginnt die ${dg.n}. Ohne Durchsuchungsbeschluss (${dg.law}) kommt hier keiner rein. Den gibt’s nach bestandener PMLK in ${townName(dg.town)}.`)}return true}}
+{const _tb=tollBlock;tollBlock=function(nx,ny){if(tget(nx,ny)===T_CAVE&&ny<MH){const dg=caveDungeon(nx,ny);if(dg&&RUN&&RUN.phase==='train'&&(!storyOn()||!hasBesch(dg.law))){if((P.bumpCd||0)<=0){P.bumpCd=1.5;
+      if(!storyOn())talk('Wachtmeister am Eingang','Gesperrt. Durchsuchungen gibt es nur in der Laufbahn im freien Spiel.');else talk('Wachtmeister am Eingang',`Halt! Hier beginnt die ${dg.n}. Ohne Durchsuchungsbeschluss (${dg.law}) kommt hier keiner rein. Den gibt’s nach bestandener PMLK in ${townName(dg.town)}.`)}return true}}
   return _tb(nx,ny)}}
 {const _oa=onArrive;onArrive=function(){_oa();if(P.fly||B)return;const t=tget(P.x,P.y);if(t!==T_CAVE||!RUN||RUN.phase!=='train')return;
-  if(P.y<MH){const dg=caveDungeon(P.x,P.y);if(!dg||!hasBesch(dg.law))return;P.lock=true;transition('fade',()=>{teleport(dg.sx,dg.sy);P.d='up';P.lock=false;toast(`🔦 ${dg.n} – Durchsuchung läuft!`)},300,350)}
+  if(P.y<MH){const dg=caveDungeon(P.x,P.y);if(!dg||!storyOn()||!hasBesch(dg.law))return;P.lock=true;transition('fade',()=>{teleport(dg.sx,dg.sy);P.d='up';P.lock=false;toast(`🔦 ${dg.n} – Durchsuchung läuft!`)},300,350)}
   else{const dg=dungeonAt(P.x,P.y);if(!dg)return;P.lock=true;transition('fade',()=>{teleport(dg.ex,dg.ey+1);P.d='down';P.lock=false;toast('☀ Zurück an der frischen Luft.')},300,350)}}}
 // ---- darkness inside the dungeons: a light circle around the player
 {const _dw=drawWorld;drawWorld=function(){_dw.apply(this,arguments);if(!P||P.fy<MH||typeof wc==='undefined')return;try{const dpr=Math.min(3,devicePixelRatio||1),K=Math.max(1,Math.round(SC*dpr));const c=wc;c.setTransform(K,0,0,K,0,0);
   let camX=Math.round(P.fx*16+8-LW/2),camY=Math.round(P.fy*16+8-LH/2);camX=clamp(camX,0,MW*16-LW);camY=clamp(camY,MH*16,MHT*16-LH);const px=P.fx*16+8-camX,py=P.fy*16+8-camY;
   const g=c.createRadialGradient(px,py,40,px,py,150);g.addColorStop(0,'rgba(8,6,18,0)');g.addColorStop(0.55,'rgba(8,6,18,0.45)');g.addColorStop(1,'rgba(8,6,18,0.85)');c.fillStyle=g;c.fillRect(0,0,LW,LH)}catch(e){}}}
 // ---- rank + story box in the side panel; a promotion is celebrated once
-{const _rt=renderTeam;renderTeam=function(){_rt.apply(this,arguments);try{if(!G||!RUN)return;const el=$('#pane-team'),st=el&&el.querySelector('.stats');if(!st)return;const s=storyOf(),rk=rankOf();
+{const _rt=renderTeam;renderTeam=function(){_rt.apply(this,arguments);try{if(!G||!RUN||!storyOn())return;const el=$('#pane-team'),st=el&&el.querySelector('.stats');if(!st)return;const s=storyOf(),rk=rankOf();
   const nb=DUNGEONS.filter(d=>hasBesch(d.law)).length,nf=femCaught().length,all=lawRoster(),got=all.filter(x=>G.dex[x]).length;
   const next=!s.met?'Sprich mit dem Karriereberater in Villingen.':nb<4&&nf<4?(()=>{const tw=(DUNGEONS.find(d=>!hasBesch(d.law))||DUNGEONS[0]).town;return`Nächstes Ziel: PMLK in ${esc(townName(tw))} (${routesTo(tw)}).`})():nf<4?'Durchsuche die Dungeons und fang die FEM-Monster!':!G.ewig?'Abschlussprüfung beim Karriereberater in Villingen!':got<all.length?'Bonus: Fang alle Monster der Gesetze!':'Du hast alles geschafft!';
   st.insertAdjacentHTML('beforeend',`<div class="stat" style="grid-column:1/-1;cursor:pointer" id="srank" title="Laufbahn anzeigen">Laufbahn<b style="font-size:16px">${rk.i} ${esc(rk.n)}</b><span class="small">📜 ${nb}/4 Beschlüsse · 🛡 ${nf}/4 FEM · 📖 ${got}/${all.length} · ${next}</span></div>`);
   $('#srank').onclick=()=>{if(s.met)storyStatus();else toast('Sprich zuerst mit dem Karriereberater in Villingen.')};
   G.rankSeen=G.rankSeen||0;if(rk.k>G.rankSeen&&!B&&!modalOpen()){G.rankSeen=rk.k;save();setTimeout(()=>openModal(`<h3>${rk.i} BEFÖRDERUNG!</h3><p>${rk.k===2?'Abschlussprüfung bestanden. Ab heute bist du <b>Polizist auf Ewigkeit</b>!':'Alle vier FEM-Monster gefangen – du bist jetzt <b>einsatzbereit</b>. Der Karriereberater in Villingen erwartet dich zur Abschlussprüfung!'}</p><div class="acts"><button class="btn" id="mno">JAWOHL!</button></div>`)||($('#mno').onclick=closeModal),300)}}catch(e){}}}
 // ---- a floating "!" above the advisor while he has something to say (first talk, final exam); red = final exam
-function storyMark(t){if(!t||!t.story||!RUN||RUN.phase!=='train')return 0;const s=storyOf();if(t.story==='berater'){if(!s.met)return 1;if(femCaught().length>=4&&!(G&&G.ewig))return 2}return 0}
+function storyMark(t){if(!t||!t.story||!storyOn()||!RUN||RUN.phase!=='train')return 0;const s=storyOf();if(t.story==='berater'){if(!s.met)return 1;if(femCaught().length>=4&&!(G&&G.ewig))return 2}return 0}

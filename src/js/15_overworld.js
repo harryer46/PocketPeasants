@@ -25,7 +25,7 @@ function updatePlayer(dt){
 }
 function approach(o,dt){if(o.fx==null){o.fx=o.x;o.fy=o.y}const dx=o.tx-o.fx,dy=o.ty-o.fy,dist=Math.hypot(dx,dy);if(dist>3){o.fx=o.tx;o.fy=o.ty;return}const sp=dt/STEP*1.05;if(dist<=sp){o.fx=o.tx;o.fy=o.ty}else{o.fx+=dx/dist*sp;o.fy+=dy/dist*sp}}
 function legendHere(x,y){if(!RUN||RUN.phase!=='train')return null;return LEGENDS.find(L=>L.x===x&&L.y===y&&!(RUN.leg&&RUN.leg[L.id]))||null}
-function trainerAt(x,y){return TRAINERS.find(t=>t.x===x&&t.y===y)||null}
+function trainerAt(x,y){return TRAINERS.find(t=>t.x===x&&t.y===y&&(!t.story||storyOn()))||null}
 function bump(nx,ny){
   if(P.bumpCd>0)return;P.bumpCd=0.5;
   const fo=fieldAt(nx,ny);if(fo){const k=fo.kind,h=HM[k];if(hasHM(k)&&!hmUser(k)){toast(`Für ${h.n} brauchst du ein ${hmNeed(k)} im Kader.`);return}if(hasHM(k)){FIELDGONE.add(fo.id);for(const f of FIELD)if(f.kind===k&&Math.abs(f.x-fo.x)+Math.abs(f.y-fo.y)<=1)FIELDGONE.add(f.id);toast(`${k==='cut'?'✂':'💪'} ${SPECIES[hmUser(k).s].n} setzt ${h.n} ein — ${k==='cut'?'die Bäume fallen!':'die Felsen rollen weg!'}`)}
@@ -183,7 +183,7 @@ function drawWorld(){
   for(const o of OTH.values()){if(o.fx==null)continue;ents.push({fx:o.fx,fy:o.fy,col:o.c,sx:o.sx,d:o.d,ph:o.ph,mv:o.moving,name:o.n,bt:o.bt,bub:o.bub,alt:o.fl?1:0,ride:o.rd||null});if(o.fl){}else if(o.lf)folEnts(o,o.lf,ents,o.fx,o.fy);else if(o.ld&&o.fol.fx!=null)ents.push({fx:o.fol.fx,fy:o.fol.fy,mon:o.ld})}
   if(G){ents.push({fx:P.fx,fy:P.fy,col:G.color,sx:G.sex,d:P.d,ph:P.ph,mv:P.moving,name:G.name+' (du)',bt:B?(B.mode==='wild'?'wild':'duel'):null,bub:myBubble,me:1,ride:rideSid(),alt:flyAlt(),hop:P.jump?Math.round(Math.sin(P.mt*Math.PI)*9):0});if(RUN&&!P.fly&&flyAlt()===0)folEnts(P,folInfo(),ents,P.fx,P.fy)}
   for(const t of tollSpots()){const fx=t.x,fy=t.y;ents.push({fx,fy,col:t.c,sx:/Würde|Strafe/.test(t.n)?'f':'m',d:t.d,npc:t,name:t.n})}
-  for(const t of TRAINERS)ents.push({fx:t.x,fy:t.y,col:t.c,sx:/^\S+in\s/.test(t.n)?'f':'m',d:t.d,ph:0,mv:false,name:t.n,npc:t,bt:null});
+  for(const t of TRAINERS)if(!t.story||storyOn())ents.push({fx:t.x,fy:t.y,col:t.c,sx:/^\S+in\s/.test(t.n)?'f':'m',d:t.d,ph:0,mv:false,name:t.n,npc:t,bt:null});
   for(const L of LEGENDS){const gone=(RUN&&RUN.leg&&RUN.leg[L.id])||!cfgOf().leg;if(!gone)ents.push({fx:L.x,fy:L.y,legend:L})}
   ents.sort((a,b)=>a.fy-b.fy);
   for(const e of ents){const X=Math.round(e.fx*16-camX);let Y=Math.round(e.fy*16-camY);
