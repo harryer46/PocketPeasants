@@ -1,18 +1,20 @@
 /* ===================== STORY WORLD =====================
    Underground dungeons for the four legendary FEM monsters (Schlagstock, Taser, Pfefferspray, Kelle) in the rows MH..MHT
-   below the overworld, cave entrances at their old shrines, PPLK examiners in the four training towns and the
+   below the overworld, cave entrances at their old shrines, PMLK examiners in the four training towns and the
    career advisor in Villingen. Everything here is deterministic, so every player gets the same world. */
 const T_CAVE=36;WALK0.add(T_CAVE);
 // law book → training town → dungeon (ordered by difficulty)
 const DUNGEONS=[
-  {id:'kelle',n:'Damentaler Wurzelhöhle',law:'GG',town:'dam',b:2,floor:14,enc:17,wall:2,lv:[15,19],leg:20},
-  {id:'pfefferspray',n:'Marderacher Brandungsgrotte',law:'StPO',town:'mar',b:3,floor:5,enc:18,wall:16,lv:[18,22],leg:23},
-  {id:'schlagstock',n:'Lahribarer Eisstollen',law:'PolG',town:'lah',b:6,floor:28,enc:24,wall:31,lv:[23,27],leg:28},
-  {id:'taser',n:'Mostbacher Dschungelbunker',law:'StGB',town:'unt',b:8,floor:30,enc:26,wall:2,lv:[28,32],leg:33}];
-const PPLK={dam:{law:'GG',n:'PPLK-Prüfer Menschenwürde',lv:14},mar:{law:'StPO',n:'PPLK-Prüferin Beweiskette',lv:17},lah:{law:'PolG',n:'PPLK-Prüfer Generalklausel',lv:22},unt:{law:'StGB',n:'PPLK-Prüferin Tatbestand',lv:27}};
-const MOST={x:251,y:111,r:26,lv:[34,42]};   // Mostbach: Einsatzzentrum with the strongest monsters
+  {id:'pfefferspray',n:'Marderacher Brandungsgrotte',law:'StPO',town:'mar',b:3,floor:5,enc:18,wall:16,lv:[17,22],leg:25},
+  {id:'kelle',n:'Damentaler Wurzelhöhle',law:'GG',town:'dam',b:2,floor:14,enc:17,wall:2,lv:[31,36],leg:39},
+  {id:'schlagstock',n:'Lahribarer Eisstollen',law:'PolG',town:'lah',b:6,floor:28,enc:24,wall:31,lv:[47,52],leg:55},
+  {id:'taser',n:'Mostbacher Dschungelbunker',law:'StGB',town:'unt',b:8,floor:30,enc:26,wall:2,lv:[69,75],leg:78}];
+// the order the towns are meant to be visited in (levels rise along the numbered routes in between)
+const PPLK={mar:{law:'StPO',n:'PMLK-Prüferin Beweiskette',lv:14},dam:{law:'GG',n:'PMLK-Prüfer Menschenwürde',lv:28},lah:{law:'PolG',n:'PMLK-Prüfer Generalklausel',lv:43},unt:{law:'StGB',n:'PMLK-Prüferin Tatbestand',lv:66}};
+const MOST={x:251,y:111,r:26,lv:[80,88]};   // Mostbach: Einsatzzentrum with the strongest monsters
+const BOSS_LV=[95,100];                     // the career advisor's final exam
 function dungeonAt(x,y){if(y<MH)return null;return DUNGEONS.find(d=>x>=d.x0&&x<d.x0+d.w&&y>=d.y0&&y<d.y0+d.h)||null}
-function storyLv(x,y){const dg=dungeonAt(x,y);if(dg)return dg.lv[0]+((x*7+y*13)%(dg.lv[1]-dg.lv[0]+1));
+function storyLv(x,y){const dg=dungeonAt(x,y);if(dg)return dg.lv[0]+((x*7+y*13)%(dg.lv[1]-dg.lv[0]+1));if(y<MH&&BIOME[y*MW+x]===5)return KNAST_LV[0]+((x*7+y*13)%(KNAST_LV[1]-KNAST_LV[0]+1));
   const d=Math.hypot(x-MOST.x,y-MOST.y);if(d<MOST.r&&y<MH)return Math.round(MOST.lv[1]-(MOST.lv[1]-MOST.lv[0])*d/MOST.r);return 0}
 (function genStory(){
   const near=(cx,cy,r0,r1,ok)=>{for(let r=r0;r<=r1;r++)for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++){if(Math.max(Math.abs(dx),Math.abs(dy))!==r)continue;const x=cx+dx,y=cy+dy;if(ok(x,y))return{x,y}}return null};

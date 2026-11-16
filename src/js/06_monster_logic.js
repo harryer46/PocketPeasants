@@ -22,7 +22,7 @@ setInterval(()=>{try{learnTick()}catch(e){console.error(e)}},400);
 function gainXp(m,amt){
   amt=Math.round(amt*((RUN&&RUN.cfg&&RUN.cfg.xp)||1));
   const out=[`${SPECIES[m.s].n} erhält ${amt} EP!`];m.xp+=amt;
-  while(m.xp>=xpNeed(m.l)&&m.l<60){
+  while(m.xp>=xpNeed(m.l)&&m.l<100){
     m.xp-=xpNeed(m.l);const o=stats(m).mhp;m.l++;const n=stats(m).mhp;m.hp=Math.min(n,m.hp+n-o);out.push(`${SPECIES[m.s].n} erreicht Lv ${m.l}!`);
     const sp=SPECIES[m.s];
     if(sp.evo&&m.l>=sp.evo[0]){const from=sp.n,o2=stats(m).mhp;m.s=sp.evo[1];m.hp+=stats(m).mhp-o2;out.push(`${from} hat sich zu ${SPECIES[m.s].n} entwickelt!`);G.dex[m.s]=1}

@@ -227,13 +227,14 @@ function distC(x,y){return Math.hypot(x-CX,y-CY)}
 // level range per area; inside an area the level rises with the distance from Villingen (d0/d1 are measured when the map is built)
 const ZLV={north:{lo:1,hi:7},east:{lo:6,hi:12},south:{lo:8,hi:14},west:{lo:10,hi:16},snow:{lo:13,hi:19},jungle:{lo:16,hi:22},desert:{lo:19,hi:25},knast:{lo:26,hi:34}};
 const BIO_MIN={};for(const k in ZLV)BIO_MIN[k]=ZLV[k].lo;
-function baseLvAt(x,y){{const sl=storyLv(x,y);if(sl)return sl}const z=zoneAt(x,y),L=ZLV[z];if(!L)return 1;const t=L.d1>L.d0?clamp((distC(x,y)-L.d0)/(L.d1-L.d0),0,1):0.5;return L.lo+(z==='north'?Math.pow(t,1.5):t)*(L.hi-L.lo)}
-const KNAST_LV=[26,34];
-function lvAt(x,y){{const sl=storyLv(x,y);if(sl)return clamp(Math.round(sl+Math.random()*3-1.5),1,50)}if(zoneAt(x,y)==='knast')return KNAST_LV[0]+Math.floor(Math.random()*(KNAST_LV[1]-KNAST_LV[0]+1));return clamp(Math.max(BIO_MIN[zoneAt(x,y)]||1,Math.round(baseLvAt(x,y)+Math.random()*1.4-0.7)),1,40)}
+// levels follow the numbered routes (07c_routes.js): wild = route range, trainers 3 levels above, dungeons/Mostbach/Knast from the story
+function baseLvAt(x,y){const sl=storyLv(x,y);if(sl)return sl;return routeLo(x,y)}
+const KNAST_LV=[88,95];
+function lvAt(x,y){const sl=storyLv(x,y);if(sl)return clamp(Math.round(sl+Math.random()*4-2),1,100);return clamp(routeLo(x,y)+Math.floor(Math.random()*5),1,100)}
 // trainers are always 3–6 levels above the wild monsters around them
-function trainerTeam(t){if(t.fixed)return t.team;const z=zoneAt(t.x,t.y),w=z==='knast'?Math.round((KNAST_LV[0]+KNAST_LV[1])/2):Math.max(BIO_MIN[z]||1,Math.round(baseLvAt(t.x,t.y))),h=hashStr(String(t.id||t.n||''));const pool=altOn()?poolOf(zoneAt(t.x,t.y)||'north'):null;
+function trainerTeam(t){if(t.fixed)return t.team;const z=zoneAt(t.x,t.y),w=Math.round(baseLvAt(t.x,t.y)),h=hashStr(String(t.id||t.n||''));const pool=altOn()?poolOf(zoneAt(t.x,t.y)||'north'):null;
   const ty=pool?trainerType(t):null;let cand=pool;if(ty){cand=pool.filter(s=>SPECIES[s].t===ty);if(cand.length<2){const extra=[...new Set(Object.values(ALT_POOLS).flat())].filter(s=>SPECIES[s]&&SPECIES[s].t===ty&&!['legendary','unique'].includes(RAR[s])&&!cand.includes(s));cand=cand.concat(extra.slice(0,3))}if(!cand.length)cand=pool}
-  return t.team.map(([s,l],i)=>[cand?cand[(i+(h>>>7))%cand.length]:s,clamp(w+3+((h>>>(i*3))%4),1,50)])}
+  return t.team.map(([s,l],i)=>[cand?cand[(i+(h>>>7))%cand.length]:s,clamp(w+3+((h>>>(i*3))%5),1,100)])}
 // every trainer specialises in one type (picked from the types living around them, so the team stays fitting for the area)
 function trainerType(t){if(t.fixed)return null;const z=zoneAt(t.x,t.y)||'north',pool=poolOf(z)||[];const ts=[...new Set(pool.map(s=>SPECIES[s]&&SPECIES[s].t).filter(Boolean))].sort();if(!ts.length)return null;return ts[hashStr('ty:'+String(t.id||t.n||''))%ts.length]}
 function pickWild(pool,boost){boost=boost||1;const w=s=>rarOf(s).w*(RAR[s]==='rare'?boost:1);const tot=pool.reduce((a,s)=>a+w(s),0);let r=Math.random()*tot;for(const s of pool){r-=w(s);if(r<=0)return s}return pool[0]}

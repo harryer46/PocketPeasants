@@ -19,18 +19,24 @@ function walkable(x,y){const t=tget(x,y);return(WALK.has(t)||(t===3&&canHM('swim
 (function placeSigns(){const D4=[[1,0],[-1,0],[0,1],[0,-1]];setTimeout(()=>{const sb=$('#signbox');if(sb)sb.onclick=()=>sb.classList.remove('on')},0);
   const ARW=['→','↘','↓','↙','←','↖','↑','↗'],dirTo=(fx,fy,tx,ty)=>ARW[(Math.round(Math.atan2(ty-fy,tx-fx)/(Math.PI/4))+8)%8];
   const free=(x,y)=>{const i=y*MW+x,t=MAP[i];return x>2&&y>2&&x<MW-3&&y<MH-3&&WALK0.has(t)&&t!==4&&t!==27&&!ENC.has(t)&&t!==13&&!SIGNSET.has(i)&&!TRAINERS.some(q=>Math.abs(q.x-x)+Math.abs(q.y-y)<2)&&!GATES.some(g=>g.i===i)};
-  const put=(cx,cy,o,side)=>{for(let rr=1;rr<5;rr++)for(let dy=-rr;dy<=rr;dy++)for(let dx=-rr;dx<=rr;dx++){if(Math.max(Math.abs(dx),Math.abs(dy))!==rr)continue;const x=cx+dx,y=cy+dy;if(!free(x,y))continue;if(side!=null&&BIOME[y*MW+x]!==side)continue;
+  const put=(cx,cy,o,side,loose)=>{for(let rr=1;rr<5;rr++)for(let dy=-rr;dy<=rr;dy++)for(let dx=-rr;dx<=rr;dx++){if(Math.max(Math.abs(dx),Math.abs(dy))!==rr)continue;const x=cx+dx,y=cy+dy;if(!free(x,y))continue;if(side!=null&&BIOME[y*MW+x]!==side)continue;
       // only beside a road, never inside a 1-wide corridor
-      if(!D4.some(([a,b])=>tget(x+a,y+b)===4||tget(x+a,y+b)===27))continue;const open=D4.filter(([a,b])=>WALK0.has(tget(x+a,y+b))).length;if(open<3)continue;
+      if(!loose&&!D4.some(([a,b])=>tget(x+a,y+b)===4||tget(x+a,y+b)===27))continue;const open=D4.filter(([a,b])=>WALK0.has(tget(x+a,y+b))).length;if(open<3)continue;
       SIGNSET.add(y*MW+x);SIGNS.push(Object.assign({x,y},o));return true}return false};
   for(const T of TOWNS)put(T.x+2,T.y+1,{kind:'town',town:T.id,n:T.n});
   for(const g of GATES){if(g.b>8)continue;const gx=g.i%MW,gy=(g.i-gx)/MW;if(g.b===5){put(gx,gy+3,{kind:'knast',to:5,lv:[ZLV.knast.lo,ZLV.knast.hi],arrow:'↑'});continue}
     // the side the visitor comes from
     let side=null,sx=gx,sy=gy;for(const[dx,dy]of D4){const j=(gy+dy)*MW+gx+dx;if((MAP[j]===4||MAP[j]===27)&&BIOME[j]!==g.b){side=BIOME[j];sx=gx+dx*3;sy=gy+dy*3;break}}
-    const z=BKEYS[g.b],L=ZLV[z]||{lo:1,hi:1};put(sx,sy,{kind:'pass',to:g.b,lv:[L.lo,L.hi],arrow:dirTo(sx,sy,gx,gy)},side)}
+    const rr=routeAt(gx,gy)||1;put(sx,sy,{kind:'pass',to:g.b,lv:routeRange(rr),route:rr,arrow:dirTo(sx,sy,gx,gy)},side)}
+  // numbered route signs: at the start of every route along the main way between the towns
+  const tname=c=>c.id?(TOWNS.find(t=>t.id===c.id)||{}).n:'Felsenhöhen';
+  for(const S of ROUTE_STRETCH){const len=S.path.length;for(let r=S.r0+1;r<=S.r1;r++){let n0=Math.floor((r-1-S.r0)/(S.r1-S.r0)*len),n=-1;
+      for(let q=0;q<len;q++){const m=n0+q;if(m>=len)break;const i=S.path[m];if(ROUTE_OF[i]===r&&BIOME[i]!==0&&S.bio.has(BIOME[i])){n=m;break}if(q>70)break}
+      if(n<0)continue;const i=S.path[n],x=i%MW,y=(i-x)/MW;if(SIGNS.some(g=>g.kind==='route'&&g.r===r&&Math.abs(g.x-x)+Math.abs(g.y-y)<14))continue;
+      const j=S.path[Math.min(len-1,n+8)],tx=j%MW,ty=(j-tx)/MW,o={kind:'route',r,lv:routeRange(r),arrow:dirTo(x,y,tx,ty),to:tname(S.to)};put(x,y,o,null)||put(x,y,Object.assign({},o),null,true)}}
 })();
-function signShort(sg){return sg.kind==='town'?sg.n:`${sg.arrow||''} ${BNAME[sg.to]} · Lv ${sg.lv[0]}–${sg.lv[1]}`}
-function signText(sg){if(sg.kind==='knast')return`<b>⛓ KNAST ⛓</b> · Lv ${sg.lv[0]}–${sg.lv[1]}<br>Justizvollzugsanstalt im Unterwertheimer Krater.<br>Hier sitzen nur StGB-Täter — und sie wollen raus! Nur für erfahrene Beamte.`;
+function signShort(sg){if(sg.kind==='route')return`ROUTE ${sg.r} · Lv ${sg.lv[0]}–${sg.lv[1]}`;return sg.kind==='town'?sg.n:`${sg.arrow||''} ${BNAME[sg.to]} · Lv ${sg.lv[0]}–${sg.lv[1]}`}
+function signText(sg){if(sg.kind==='route')return`<b>🪧 ROUTE ${sg.r}</b> · wilde Monster Lv ${sg.lv[0]}–${sg.lv[1]} · Trainer ab Lv ${sg.lv[0]+3}<br>${sg.arrow||''} Richtung ${esc(sg.to||'')}${sg.r>=ROUTE_N?'':''}`;if(sg.kind==='knast')return`<b>⛓ KNAST ⛓</b> · Lv ${sg.lv[0]}–${sg.lv[1]}<br>Justizvollzugsanstalt im Unterwertheimer Krater.<br>Hier sitzen nur StGB-Täter — und sie wollen raus! Nur für erfahrene Beamte.`;
   if(sg.kind==='town'){const T=TOWNS.find(t=>t.id===sg.town);return`<b>${esc((sg.n||'').toUpperCase())}</b><br>${sg.town==='vil'?'Polizeischule — ⚖ Gericht (Lobby-Turnier) · ':'Ausbildungsstätte — '}⚕ PÄD (heilen, Wiedereinstieg nach Niederlage) · 🛒 Copshop · 🎓 HfPol (Study)<br>🕊 Besuchte Städte erreichst du jederzeit per Schnellreise über die Weltkarte (M).`}
   const z=BKEYS[sg.to],pool=z?poolOf(z):[],mons=pool.map(s=>G&&G.dex&&G.dex[s]!==undefined?SPECIES[s].n:'???').join(', ');
   return`<b>${sg.arrow||''} ${BNAME[sg.to].toUpperCase()}</b> · empfohlen Lv ${sg.lv[0]}–${sg.lv[1]}<br>${TOLL_LAW&&TOLL_LAW[sg.to]?`Der Weg wird von einem Prof. bewacht (${TOLL_LAW[sg.to]}): Klausur, Bestechung oder Kampf.<br>`:''}Hier gesichtet: ${esc(mons)}`}

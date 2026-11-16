@@ -153,11 +153,14 @@ function lobbyLine(m){return m.waiting?'wartet in der Lobby':`noch ${fmt(m.end-D
 let LOBBY_MIN=true;
 function startFree(){
   if(G.freeRun){RUN=G.freeRun;RUN.beat=RUN.beat||{};RUN.leg=RUN.leg||{};afterRunChange();toast('Willkommen zurück! Das freie Spiel geht weiter.');return}
-  {const sp_=ALT_BASES.filter(x=>RAR[x]!=='rare'),sid=sp_[Math.floor(Math.random()*sp_.length)];RUN={id:'f'+Math.random().toString(36).slice(2,10),free:true,end:0,phase:'train',team:[newMon(sid,START_LV)],box:[],kap:10,money:100,items:{},r:1,st:'free',res:[],beat:{},leg:{},cfg:Object.assign({},DEF_CFG,{alt:SET.alt==='0'?0:1})};G.dex[sid]=1;G.freeRun=RUN;afterRunChange();teleport(VSPAWN.x,VSPAWN.y);sysChat('Freies Spiel gestartet — dein Team wird gespeichert. Erstelle oder betrete jederzeit eine Lobby.');toast(`Dein zufälliges Start-Monster: ${SPECIES[sid].n}!`);setTimeout(()=>{if(!B&&!$('#modal').classList.contains('on'))dexReveal(sid,RUN.team[0],'★ DEIN START-MONSTER ★')},700)}
+  // same starter choice as in a lobby (no paragraph monsters)
+  const go=sid=>{RUN={id:'f'+Math.random().toString(36).slice(2,10),free:true,end:0,phase:'train',team:[newMon(sid,START_LV)],box:[],kap:10,money:100,items:{},r:1,st:'free',res:[],beat:{},leg:{},cfg:Object.assign({},DEF_CFG,{alt:SET.alt==='0'?0:1})};G.dex[sid]=1;G.freeRun=RUN;afterRunChange();teleport(VSPAWN.x,VSPAWN.y);sysChat('Freies Spiel gestartet — dein Team wird gespeichert. Erstelle oder betrete jederzeit eine Lobby.');toast(`Dein Start-Monster: ${SPECIES[sid].n}!`)};
+  if(window.AUTO_STARTER){const st=startersNow({alt:SET.alt==='0'?0:1});const sid=st[Math.floor(Math.random()*st.length)];go(sid);return}
+  pickStarter(go,{alt:SET.alt==='0'?0:1})
 }
 // free play: throw away the free-play team and start over with a new random monster (dex and trophies stay)
 function restartFree(){if(!RUN||!RUN.free||B)return;
-  openModal(`<h3>🎲 NEU ANFANGEN?</h3><p>Dein Team, die Box, Geld, Items, besiegte Cops und Feldfähigkeiten aus dem freien Spiel werden zurückgesetzt. Du bekommst ein neues zufälliges Start-Monster.<br><span class="small">Dex und Trophäen bleiben erhalten.</span></p><div class="acts"><button class="btn ghost" id="mno">ABBRECHEN</button><button class="btn red" id="myes">NEU ANFANGEN</button></div>`);
+  openModal(`<h3>🎲 NEU ANFANGEN?</h3><p>Dein Team, die Box, Geld, Items, besiegte Cops und Feldfähigkeiten aus dem freien Spiel werden zurückgesetzt. Du wählst ein neues Start-Monster.<br><span class="small">Dex und Trophäen bleiben erhalten.</span></p><div class="acts"><button class="btn ghost" id="mno">ABBRECHEN</button><button class="btn red" id="myes">NEU ANFANGEN</button></div>`);
   $('#mno').onclick=closeModal;$('#myes').onclick=()=>{closeModal();G.freeRun=null;RUN=null;G.run=null;FIELDGONE.clear();startFree()}}
 function afterRunChange(){save();LOBBY_MIN=true;$('#lobby').dataset.h='';renderLobby();renderTeam();updateHud();pushMt();lastPlr='';renderPlayers()}
 function renderLobby(){
