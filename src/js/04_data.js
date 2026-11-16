@@ -6,17 +6,17 @@ function eff(a,d){const r=EFF[a];return r&&r[d]!==undefined?r[d]:1}
 const MOVES={
  bump:{n:'Bump',t:'normal',p:40,k:'melee'},scratch:{n:'Claw Swipe',t:'normal',p:40,k:'melee'},quickjab:{n:'Quick Jab',t:'normal',p:30,k:'melee',cd:0.45},
  whirl:{n:'Whirl Strike',t:'normal',p:65,k:'melee',fx:'conf'},headrush:{n:'Head Rush',t:'normal',p:80,k:'melee',fx:'knock'},powernap:{n:'Power Nap',t:'normal',p:0,k:'self',fx:'heal'},
- sparkshot:{n:'Spark Shot',t:'fire',p:40,k:'shot'},emberrain:{n:'Ember Drizzle',t:'fire',p:45,k:'spread',fx:'burn'},cinderbite:{n:'Cinder Bite',t:'fire',p:65,k:'melee',fx:'burn'},
+ sparkshot:{n:'Spark Shot',t:'fire',p:40,k:'shot'},emberrain:{n:'Ember Drizzle',t:'fire',p:45,k:'arc',n3:1,fx:'burn'},cinderbite:{n:'Cinder Bite',t:'fire',p:65,k:'melee',fx:'burn'},
  scorchline:{n:'Scorch Line',t:'fire',p:60,k:'breath',fx:'burn'},cindershell:{n:'Cinder Shell',t:'fire',p:0,k:'self',fx:'shield'},firestorm:{n:'Firestorm',t:'fire',p:90,k:'spread'},kilnburst:{n:'Kiln Burst',t:'fire',p:105,k:'big',fx:'burn'},
- splash:{n:'Splash Shot',t:'water',p:40,k:'shot'},foamvolley:{n:'Foam Volley',t:'water',p:45,k:'multi'},waveslam:{n:'Wave Slam',t:'water',p:65,k:'melee',fx:'knock'},
- undertow:{n:'Undertow',t:'water',p:60,k:'shot',fx:'slow'},mistveil:{n:'Mist Veil',t:'water',p:0,k:'self',fx:'shield'},torrent:{n:'Riptide Rush',t:'water',p:90,k:'spread'},geyser:{n:'Geyser Pillar',t:'water',p:105,k:'air',fx:'knock'},
+ splash:{n:'Splash Shot',t:'water',p:40,k:'shot'},foamvolley:{n:'Foam Volley',t:'water',p:45,k:'rapid',rn:5},waveslam:{n:'Wave Slam',t:'water',p:65,k:'melee',fx:'knock'},
+ undertow:{n:'Undertow',t:'water',p:60,k:'vortex',fx:'slow'},mistveil:{n:'Mist Veil',t:'water',p:0,k:'self',fx:'shield'},torrent:{n:'Riptide Rush',t:'water',p:90,k:'spread'},geyser:{n:'Geyser Pillar',t:'water',p:105,k:'air',fx:'knock'},
  leaftoss:{n:'Leaf Toss',t:'grass',p:40,k:'shot'},sapdrain:{n:'Sap Siphon',t:'grass',p:50,k:'shot',fx:'drain'},vinelash:{n:'Vine Lash',t:'grass',p:65,k:'melee',fx:'slow'},
- drowsyspores:{n:'Drowsy Spores',t:'grass',p:30,k:'shot',fx:'sleep'},bloomheal:{n:'Bloom Mend',t:'grass',p:0,k:'self',fx:'heal'},thornrain:{n:'Thorn Rain',t:'grass',p:90,k:'spread'},brambleburst:{n:'Bramble Burst',t:'grass',p:105,k:'big',fx:'slow'},
+ drowsyspores:{n:'Drowsy Spores',t:'grass',p:30,k:'shot',fx:'sleep'},bloomheal:{n:'Bloom Mend',t:'grass',p:0,k:'self',fx:'heal'},thornrain:{n:'Thorn Rain',t:'grass',p:90,k:'rain'},brambleburst:{n:'Bramble Burst',t:'grass',p:105,k:'big',fx:'slow'},
  zap:{n:'Static Zap',t:'electric',p:40,k:'shot'},sparkchain:{n:'Spark Chain',t:'electric',p:50,k:'multi'},jolt:{n:'Jolt Jab',t:'electric',p:55,k:'melee',fx:'stun'},
  staticnet:{n:'Static Net',t:'electric',p:35,k:'shot',fx:'stun'},boltstrike:{n:'Volt Lance',t:'electric',p:75,k:'beam'},stormcrack:{n:'Storm Crack',t:'electric',p:105,k:'air',fx:'stun'},
- rocktoss:{n:'Rock Toss',t:'rock',p:50,k:'shot'},gravel:{n:'Gravel Spray',t:'rock',p:55,k:'spread'},stoneskin:{n:'Stone Skin',t:'rock',p:0,k:'self',fx:'shield'},
+ rocktoss:{n:'Rock Toss',t:'rock',p:50,k:'arc'},gravel:{n:'Gravel Spray',t:'rock',p:55,k:'spread'},stoneskin:{n:'Stone Skin',t:'rock',p:0,k:'self',fx:'shield'},
  quakestomp:{n:'Quake Stomp',t:'rock',p:70,k:'melee',fx:'slow'},boulder:{n:'Boulder Hurl',t:'rock',p:80,k:'lob',fx:'knock'},meteor:{n:'Meteor Drop',t:'rock',p:110,k:'air',fx:'knock'},
- gust:{n:'Breeze Blast',t:'flying',p:40,k:'shot'},featherdarts:{n:'Feather Darts',t:'flying',p:45,k:'multi'},galecutter:{n:'Gale Cutter',t:'flying',p:60,k:'shot',fx:'knock'},
+ gust:{n:'Breeze Blast',t:'flying',p:40,k:'shot'},featherdarts:{n:'Feather Darts',t:'flying',p:45,k:'rapid',rn:6},galecutter:{n:'Gale Cutter',t:'flying',p:60,k:'shot',fx:'knock'},
  updraft:{n:'Updraft',t:'flying',p:0,k:'self',fx:'haste'},divebomb:{n:'Dive Bomb',t:'flying',p:70,k:'melee'},skyslam:{n:'Sky Slam',t:'flying',p:90,k:'melee',fx:'knock'}
 };
 const FX_TXT={buff:'stärkt dich',debuff:'schwächt das Ziel',selfbuff:'kann dich stärken',sleep:'schläfert ein',conf:'verwirrt',burn:'verbrennt',slow:'verlangsamt',stun:'betäubt',drain:'heilt dich',heal:'heilt 30%',shield:'halbiert Schaden',haste:'beschleunigt',knock:'Rückstoß'};
@@ -45,7 +45,7 @@ const RAR_INIT={};
 // ===== alternative monster set (from the player's own artwork, pixelated in-game to our 24px style) =====
 //@inc js/data/alt_img.js
 // extra moves for the alternative set
-Object.assign(MOVES,{bottletoss:{n:'Bottle Toss',t:'normal',p:45,k:'lob',fx:'conf'},canewhack:{n:'Cane Whack',t:'normal',p:60,k:'melee',fx:'slow'},flexpunch:{n:'Flex Punch',t:'normal',p:75,k:'melee',fx:'knock'},painkiller:{n:'Painkiller',t:'normal',p:0,k:'self',fx:'heal'},dawncrow:{n:'Dawn Crow',t:'normal',p:0,k:'self',fx:'haste'},goldrush:{n:'Gold Rush',t:'normal',p:50,k:'multi'},heartspore:{n:'Heart Spores',t:'grass',p:35,k:'shot',fx:'sleep'},noodlelash:{n:'Noodle Lash',t:'grass',p:70,k:'melee',fx:'slow'},watercannon:{n:'Water Cannon',t:'water',p:110,k:'beam',fx:'knock'},paragraph:{n:'Paragraph Slam',t:'electric',p:75,k:'shot',fx:'conf'}});
+Object.assign(MOVES,{bottletoss:{n:'Bottle Toss',t:'normal',p:45,k:'lob',fx:'conf'},canewhack:{n:'Cane Whack',t:'normal',p:60,k:'melee',fx:'slow'},flexpunch:{n:'Flex Punch',t:'normal',p:75,k:'melee',fx:'knock'},painkiller:{n:'Painkiller',t:'normal',p:0,k:'self',fx:'heal'},dawncrow:{n:'Dawn Crow',t:'normal',p:0,k:'self',fx:'haste'},goldrush:{n:'Gold Rush',t:'normal',p:50,k:'rapid',rn:6},heartspore:{n:'Heart Spores',t:'grass',p:35,k:'shot',fx:'sleep'},noodlelash:{n:'Noodle Lash',t:'grass',p:70,k:'melee',fx:'slow'},watercannon:{n:'Water Cannon',t:'water',p:110,k:'beam',fx:'knock'},paragraph:{n:'Paragraph Slam',t:'electric',p:75,k:'shot',fx:'conf'}});
 Object.assign(LS,{
  owl:[[1,'bump'],[1,'gust'],[4,'featherdarts'],[7,'galecutter'],[9,'updraft'],[12,'divebomb'],[16,'skyslam'],[20,'whirl']],
  rooster:[[1,'scratch'],[1,'sparkshot'],[3,'emberrain'],[6,'dawncrow'],[8,'cinderbite'],[11,'scorchline'],[14,'divebomb'],[17,'firestorm'],[21,'kilnburst']],
@@ -84,14 +84,15 @@ Object.assign(MOVES,{
  flamethrower:{n:'Flammenwurf',t:'fire',p:90,k:'breath',fx:'burn'},fireblast:{n:'Feuersturm',t:'fire',p:110,k:'air',fx:'burn'},sunnyday:{n:'Sonnentag',t:'fire',p:0,k:'self',fx:'buff',bs:{a:1,s:1}},
  hydropump:{n:'Hydropumpe',t:'water',p:110,k:'beam',fx:'knock'},surf:{n:'Surfer',t:'water',p:90,k:'spread'},bubblebeam:{n:'Blubbstrahl',t:'water',p:65,k:'beam',fx:'debuff',bs:{s:-1},stc:0.4},
  aurorabeam:{n:'Aurorastrahl',t:'water',p:65,k:'beam',fx:'debuff',bs:{a:-1},stc:0.4},withdraw:{n:'Panzerschutz',t:'water',p:0,k:'self',fx:'buff',bs:{d:1}},
- razorleaf:{n:'Rasierblatt',t:'grass',p:55,k:'multi'},solarbeam:{n:'Solarstrahl',t:'grass',p:120,k:'beam',cd:5},gigadrain:{n:'Gigasauger',t:'grass',p:60,k:'shot',fx:'drain'},
+ razorleaf:{n:'Rasierblatt',t:'grass',p:55,k:'rapid',rn:8},solarbeam:{n:'Solarstrahl',t:'grass',p:120,k:'beam',cd:5},gigadrain:{n:'Gigasauger',t:'grass',p:60,k:'shot',fx:'drain'},
  sleeppowder:{n:'Schlafpuder',t:'grass',p:10,k:'spread',fx:'sleep'},growth:{n:'Wachstum',t:'grass',p:0,k:'self',fx:'buff',bs:{a:1}},stringshot:{n:'Fadenschuss',t:'grass',p:10,k:'spread',fx:'debuff',bs:{s:-2}},
  thunderbolt:{n:'Donnerblitz',t:'electric',p:90,k:'beam',fx:'stun'},thunder:{n:'Donner',t:'electric',p:110,k:'air',fx:'stun'},thunderwave:{n:'Donnerwelle',t:'electric',p:10,k:'shot',fx:'stun'},
  charge:{n:'Ladevorgang',t:'electric',p:0,k:'self',fx:'buff',bs:{a:1,d:1}},
- rockslide:{n:'Steinhagel',t:'rock',p:75,k:'air',fx:'stun'},earthquake:{n:'Erdbeben',t:'rock',p:100,k:'big',fx:'knock'},irontail:{n:'Eisenschweif',t:'rock',p:100,k:'melee',fx:'debuff',bs:{d:-1},stc:0.3},
+ rockslide:{n:'Steinhagel',t:'rock',p:75,k:'rain',fx:'stun'},earthquake:{n:'Erdbeben',t:'rock',p:100,k:'big',fx:'knock'},irontail:{n:'Eisenschweif',t:'rock',p:100,k:'melee',fx:'debuff',bs:{d:-1},stc:0.3},
  metalclaw:{n:'Metallklaue',t:'rock',p:50,k:'melee',fx:'selfbuff',bs:{a:1},stc:0.3},crunch:{n:'Knirscher',t:'rock',p:80,k:'melee',fx:'debuff',bs:{d:-1},stc:0.3},defcurl:{n:'Einigler',t:'rock',p:0,k:'self',fx:'buff',bs:{d:2}},
  ancientpower:{n:'Antik-Kraft',t:'rock',p:60,k:'lob',fx:'selfbuff',bs:{a:1,d:1,s:1},stc:0.2},
  wingattack:{n:'Flügelschlag',t:'flying',p:60,k:'melee'},drillpeck:{n:'Bohrschnabel',t:'flying',p:80,k:'melee'},aeroblast:{n:'Luftstoß',t:'flying',p:100,k:'beam'},
+ ember:{n:'Glut',t:'fire',p:40,k:'arc',fx:'burn'},fly:{n:'Fliegen',t:'flying',p:90,k:'fly'},dive:{n:'Taucher',t:'water',p:80,k:'dive'},
  agility:{n:'Agilität',t:'flying',p:0,k:'self',fx:'buff',bs:{s:2}},steelwing:{n:'Stahlflügel',t:'flying',p:70,k:'melee',fx:'selfbuff',bs:{d:1},stc:0.3},featherdance:{n:'Federtanz',t:'flying',p:10,k:'spread',fx:'debuff',bs:{a:-2}}
 });
 const STAT_DE={a:'Angriff',d:'Verteidigung',s:'Initiative'};
@@ -172,10 +173,10 @@ altMon("gewahrsamhirsch",Object.assign({"n": "Gewahrsamhirsch", "law": "§ 163c 
 // paragraph as name suffix: "Owigon §26", "Würdeadler Art.1", "Langfinger §242"
 for(const k in SPECIES){const sp=SPECIES[k];if(!sp.law)continue;const m=sp.law.match(/^(§|Art\.)\s*(\d+[a-z]?)(?:\s+([A-Za-zÄÖÜäöü]+))?/);if(m){sp.sfx=(m[1]==='§'?'§':'Art.')+m[2]+(m[3]?' '+m[3]:'');sp.base=sp.n;sp.n+=' '+sp.sfx}}
 // every learnset gets classics of its type (plus a buff/debuff), so wild monsters and trainers use them too
-{const ADD={normal:[[5,'growl'],[9,'leer'],[19,'bodyslam'],[24,'swordsdance'],[30,'hyperbeam']],fire:[[5,'growl'],[12,'scaryface'],[19,'flamethrower'],[23,'sunnyday'],[28,'fireblast']],
-  water:[[5,'withdraw'],[12,'bubblebeam'],[18,'aurorabeam'],[22,'surf'],[28,'hydropump']],grass:[[5,'growth'],[9,'stringshot'],[13,'razorleaf'],[18,'sleeppowder'],[22,'gigadrain'],[28,'solarbeam']],
+{const ADD={normal:[[5,'growl'],[9,'leer'],[19,'bodyslam'],[24,'swordsdance'],[30,'hyperbeam']],fire:[[3,'ember'],[5,'growl'],[12,'scaryface'],[19,'flamethrower'],[23,'sunnyday'],[28,'fireblast']],
+  water:[[5,'withdraw'],[12,'dive'],[12,'bubblebeam'],[18,'aurorabeam'],[22,'surf'],[28,'hydropump']],grass:[[5,'growth'],[9,'stringshot'],[13,'razorleaf'],[18,'sleeppowder'],[22,'gigadrain'],[28,'solarbeam']],
   electric:[[5,'thunderwave'],[9,'charge'],[13,'confuseray'],[20,'thunderbolt'],[28,'thunder']],rock:[[5,'defcurl'],[9,'metalclaw'],[14,'rockslide'],[19,'crunch'],[23,'irontail'],[28,'earthquake']],
-  flying:[[5,'featherdance'],[9,'wingattack'],[14,'agility'],[18,'steelwing'],[22,'drillpeck'],[28,'aeroblast']]};
+  flying:[[5,'featherdance'],[12,'fly'],[9,'wingattack'],[14,'agility'],[18,'steelwing'],[22,'drillpeck'],[28,'aeroblast']]};
  const done=new Set();for(const sid in SPECIES){const sp=SPECIES[sid],ls=sp.ls;if(!Array.isArray(ls)||done.has(ls))continue;done.add(ls);
   for(const e of ADD[sp.t]||[])if(!ls.some(x=>x[1]===e[1]))ls.push(e);ls.sort((a,b)=>a[0]-b[0])}}
 // name as HTML with the paragraph in bold
@@ -231,7 +232,10 @@ const KNAST_LV=[26,34];
 function lvAt(x,y){if(zoneAt(x,y)==='knast')return KNAST_LV[0]+Math.floor(Math.random()*(KNAST_LV[1]-KNAST_LV[0]+1));return clamp(Math.max(BIO_MIN[zoneAt(x,y)]||1,Math.round(baseLvAt(x,y)+Math.random()*1.4-0.7)),1,40)}
 // trainers are always 3–6 levels above the wild monsters around them
 function trainerTeam(t){if(t.fixed)return t.team;const z=zoneAt(t.x,t.y),w=z==='knast'?Math.round((KNAST_LV[0]+KNAST_LV[1])/2):Math.max(BIO_MIN[z]||1,Math.round(baseLvAt(t.x,t.y))),h=hashStr(String(t.id||t.n||''));const pool=altOn()?poolOf(zoneAt(t.x,t.y)||'north'):null;
-  return t.team.map(([s,l],i)=>[pool?pool[(i+t.id.length)%pool.length]:s,clamp(w+3+((h>>>(i*3))%4),1,40)])}
+  const ty=pool?trainerType(t):null;let cand=pool;if(ty){cand=pool.filter(s=>SPECIES[s].t===ty);if(cand.length<2){const extra=[...new Set(Object.values(ALT_POOLS).flat())].filter(s=>SPECIES[s]&&SPECIES[s].t===ty&&!['legendary','unique'].includes(RAR[s])&&!cand.includes(s));cand=cand.concat(extra.slice(0,3))}if(!cand.length)cand=pool}
+  return t.team.map(([s,l],i)=>[cand?cand[(i+(h>>>7))%cand.length]:s,clamp(w+3+((h>>>(i*3))%4),1,40)])}
+// every trainer specialises in one type (picked from the types living around them, so the team stays fitting for the area)
+function trainerType(t){if(t.fixed)return null;const z=zoneAt(t.x,t.y)||'north',pool=poolOf(z)||[];const ts=[...new Set(pool.map(s=>SPECIES[s]&&SPECIES[s].t).filter(Boolean))].sort();if(!ts.length)return null;return ts[hashStr('ty:'+String(t.id||t.n||''))%ts.length]}
 function pickWild(pool,boost){boost=boost||1;const w=s=>rarOf(s).w*(RAR[s]==='rare'?boost:1);const tot=pool.reduce((a,s)=>a+w(s),0);let r=Math.random()*tot;for(const s of pool){r-=w(s);if(r<=0)return s}return pool[0]}
 // legendary shrines (one encounter per player per match)
 const LEGENDS=[{id:'thunderroc',x:150,y:14,l:20,zone:'west'},{id:'solarion',x:283,y:36,l:24,zone:'desert'},{id:'abyssfin',x:98,y:179,l:18,zone:'south'},{id:'schlagstock',x:22,y:24,l:22,zone:'snow'},{id:'taser',x:283,y:140,l:23,zone:'jungle'},{id:'pfefferspray',x:20,y:181,l:20,zone:'south'},{id:'kelle',x:70,y:131,l:16,zone:'east'}];
