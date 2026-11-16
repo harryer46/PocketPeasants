@@ -21,7 +21,7 @@ const TYPE_SPD={flying:1.1,electric:1.08,fire:1.04,normal:1,water:0.97,grass:0.9
 function fspeed(F){return Math.min(120,48+act(F).spd*1.15)*0.96*(TYPE_SPD[SPECIES[act(F).s].t]||1)*Math.sqrt(stageMul(stgOf(F).s))*(F.ctrl==='ai'?0.82:1)*(F.st&&F.st.slow>0?0.55:1)*(F.st&&F.st.haste>0?1.35:1)*(F.st&&F.st.dive>0?1.25:1)}
 function shotParams(mid){const r=shotParams0(mid);if(!r.mel&&!r.self&&r.sp&&r.k!=='vortex')r.sp*=1.2;return r}
 function shotParams0(mid){const mv=MOVES[mid]||MOVES.bump;const k=mv.k||(mv.t==='normal'?'melee':'shot');
-  if(k==='melee')return{mel:1,sp:270,life:0.17,r:10,p:Math.round(mv.p*1.35),n:1};  // melee hits harder
+  if(k==='melee'){const cb=mv.combo||1;return{mel:1,sp:270,life:0.17,r:10,p:cb>1?Math.max(4,Math.round(mv.p*1.35*1.2/cb)):Math.round(mv.p*1.35),n:1,combo:cb}}  // melee hits harder
   if(mid==='surf')return{sp:84,life:2.5,r:10,p:Math.round(mv.p*0.85),n:1,wave:1};
   if(MOVE_VIS[mid]==='wave'&&(k==='spread'||k==='shot'))return{sp:100,life:1.8,r:6,p:Math.round(mv.p*0.85),n:1,wave:1};
   if(k==='rapid'){const n=clamp(mv.rn||6,5,10);return{rapid:n,int:0.085,sp:215,life:1.8,r:2.5,p:Math.max(3,Math.round(mv.p*0.8/n)),n:1}}
@@ -45,7 +45,7 @@ function cdOf(mid){const mv=MOVES[mid]||MOVES.bump;if(mv.fx==='heal')return 3*(m
 const AP_MAX=100,AP_REGEN=8,TB_AP_REGEN=30;
 // healing costs all AP and has a long cooldown; every other move costs half of its former AP price
 function apCost(mid){const mv=MOVES[mid]||MOVES.bump;if(mv.k==='rapid')return Math.min(AP_MAX,Math.max(42,Math.round((mv.p||30)*0.75)));if(mv.k==='multi')return Math.min(AP_MAX,Math.max(32,Math.round((mv.p||30)*0.55)));if(mv.fx==='heal'&&mv.k==='self')return 50;if(mv.fx==='buff')return 50;if(mv.k==='self')return 35;if(mv.fx==='debuff'&&(mv.p||0)<=10)return 25;return Math.min(AP_MAX,Math.round(Math.max(18,(mv.p||30)*0.8*(mv.k==='melee'?0.8:1))*0.8*0.5))}
-function moveDesc(mid){const mv=MOVES[mid];const k={melee:'Nahkampf',shot:'Fernkampf',spread:'Fächer',multi:'Salve',big:'schwer',self:'selbst',beam:'Strahl',breath:'Atem',air:'Luftschlag',lob:'Hochwurf',arc:'Bogenwurf',rapid:'Schnellfeuer',rain:'Hagel',fly:'Flug-Angriff',dive:'Tauchangriff',vortex:'Sog'}[mv.k]||'Fernkampf';return`${TYPES[mv.t].n} · ${k}${mv.p?' · '+mv.p:''}${mv.fx?' · '+(mv.bs?(mv.fx==='debuff'?'Ziel: ':mv.fx==='selfbuff'?'evtl. ':'')+bsText(mv)+(mv.stc&&mv.stc<1?` (${Math.round(mv.stc*100)} %)`:''):FX_TXT[mv.fx]):''} · ${apCost(mid)} AP`}
+function moveDesc(mid){const mv=MOVES[mid];const k={melee:'Nahkampf',shot:'Fernkampf',spread:'Fächer',multi:'Salve',big:'schwer',self:'selbst',beam:'Strahl',breath:'Atem',air:'Luftschlag',lob:'Hochwurf',arc:'Bogenwurf',rapid:'Schnellfeuer',rain:'Hagel',fly:'Flug-Angriff',dive:'Tauchangriff',vortex:'Sog'}[mv.k]||'Fernkampf';return`${TYPES[mv.t].n} · ${k}${mv.combo>1?' ×'+mv.combo:''}${mv.p?' · '+mv.p:''}${mv.fx?' · '+(mv.bs?(mv.fx==='debuff'?'Ziel: ':mv.fx==='selfbuff'?'evtl. ':'')+bsText(mv)+(mv.stc&&mv.stc<1?` (${Math.round(mv.stc*100)} %)`:''):FX_TXT[mv.fx]):''} · ${apCost(mid)} AP`}
 function calcDmg(att,def,mid,p){const mv=MOVES[mid]||MOVES.bump;const e=eff(mv.t,SPECIES[def.s].t);let d=((2*att.l/5+2)*p*att.atk/Math.max(1,def.def))/50+2*Math.min(1,p/30);d*=(mv.t===SPECIES[att.s].t?1.5:1)*e*(0.85+Math.random()*0.15)*0.55;return{d:e===0?0:Math.max(1,Math.round(d)),e}}
 function say(t){if(!B)return;if(/erreicht Lv/.test(t))B.lvlFx=performance.now();if(/entwickelt!/.test(t))B.evoFx=performance.now();B.log.push({t,at:performance.now()});if(B.log.length>3)B.log.shift()}
 // destructible obstacles: rocks take many hits, plants few (fire burns plants fast). Same layout for both duel players.
@@ -100,14 +100,14 @@ function obsSprite(kind,v,stage){const k=kind+v+stage;if(OBSPR[k])return OBSPR[k
   x.putImageData(id,0,0);OBSPR[k]=c;return c}
 function drawSpecial(c,s,col,now){const P=(x,y,w,h,cl)=>{c.fillStyle=cl;c.fillRect(Math.round(x),Math.round(y),w,h)};
   if(s.k==='vortex'){drawOrbit(c,s,col,now,s.r+8);drawOrbit(c,s,'#ffffff',now+400,s.r+3);P(s.x-4,s.y-4,8,8,'#14141f');P(s.x-3,s.y-3,6,6,col);P(s.x-1,s.y-1,2,2,'#ffffff');return}
-  if(s.k==='fly'){const k=clamp(s.age/s.life,0,1),bl=Math.floor(now/90)%2;c.strokeStyle=bl?'#ff4d4d':'#ffffff';c.lineWidth=1;c.beginPath();c.ellipse(Math.round(s.x),Math.round(s.y),s.r*(1.25-k*0.25),s.r*0.45*(1.25-k*0.25),0,0,7);c.stroke();
-    if(k>0.3){c.fillStyle='#00000040';const r=4+k*10;c.beginPath();c.ellipse(Math.round(s.x),Math.round(s.y),r,r*0.45,0,0,7);c.fill()}return}
+  if(s.k==='fly'){const k=clamp(s.age/s.life,0,1),bl=Math.floor(now/90)%2;c.strokeStyle=bl?'#ff4d4d':'#ffffff';c.lineWidth=1;pxEl(c,Math.round(s.x),Math.round(s.y),s.r*(1.25-k*0.25),s.r*0.45*(1.25-k*0.25),0);
+    if(k>0.3){c.fillStyle='#00000040';const r=4+k*10;pxEl(c,Math.round(s.x),Math.round(s.y),r,r*0.45,1)}return}
   if(s.k==='lob'){const k=lobU(s.age/s.life),h=Math.sin(k*Math.PI)*(s.h||54),x0=s.x0??s.x,y0=s.y0??s.y,tx=x0+s.vx*s.life,ty=y0+s.vy*s.life+12;
-    c.strokeStyle=col+'90';c.lineWidth=1;c.beginPath();c.ellipse(Math.round(tx),Math.round(ty),s.r*(0.5+k*0.5),s.r*0.4*(0.5+k*0.5),0,0,7);c.stroke();
+    c.strokeStyle=col+'90';c.lineWidth=1;pxEl(c,Math.round(tx),Math.round(ty),s.r*(0.5+k*0.5),s.r*0.4*(0.5+k*0.5),0);
     P(s.x-4,s.y+11,8,2,'#00000050');const Y=s.y-h;if(drawVis(c,Object.assign({},s,{y:Y,vy:s.vy-h}),col,now))return;P(s.x-5,Y-5,10,10,'#14141f');P(s.x-4,Y-4,8,8,col);P(s.x-4,Y-4,3,3,'#ffffffb0');return}
-  if(s.k==='air'){const k=clamp(s.age/s.life,0,1),bl=Math.floor(now/90)%2;c.strokeStyle=bl?'#ff4d4d':'#ffffff';c.lineWidth=1;c.beginPath();c.ellipse(Math.round(s.x),Math.round(s.y),s.r*(1.25-k*0.25),s.r*0.45*(1.25-k*0.25),0,0,7);c.stroke();
+  if(s.k==='air'){const k=clamp(s.age/s.life,0,1),bl=Math.floor(now/90)%2;c.strokeStyle=bl?'#ff4d4d':'#ffffff';c.lineWidth=1;pxEl(c,Math.round(s.x),Math.round(s.y),s.r*(1.25-k*0.25),s.r*0.45*(1.25-k*0.25),0);
     P(s.x-1,s.y-6,2,12,bl?'#ff4d4d':'#ffffff');P(s.x-6,s.y-1,12,2,bl?'#ff4d4d':'#ffffff');
-    {const r=3+k*8;c.fillStyle='#00000040';c.beginPath();c.ellipse(Math.round(s.x),Math.round(s.y),r,r*0.45,0,0,7);c.fill()}
+    {const r=3+k*8;c.fillStyle='#00000040';pxEl(c,Math.round(s.x),Math.round(s.y),r,r*0.45,1)}
     if(k>0.72){const q=(k-0.72)/0.28,Y=s.y-150*(1-q);c.globalAlpha=0.5;P(s.x-2,Y-40,4,40,col);c.globalAlpha=1;if(!drawVis(c,Object.assign({},s,{y:Y-6,vx:0,vy:1}),col,now)){P(s.x-6,Y-12,12,12,'#14141f');P(s.x-5,Y-11,10,10,col);P(s.x-5,Y-11,3,3,'#ffffffc0')}}return}
   const L=Math.hypot(s.vx,s.vy)||1,ux=s.vx/L,uy=s.vy/L;
   if(s.k==='beam'){if(!s.fired){const k=s.age/0.3;c.globalAlpha=0.35+0.4*Math.abs(Math.sin(now/40));for(let d=0;d<250;d+=6)P(s.x+ux*d-1,s.y+uy*d-1,2,2,col);c.globalAlpha=1;P(s.x-3-k*3,s.y-3-k*3,6+k*6,6+k*6,'#ffffff');return}
@@ -115,7 +115,7 @@ function drawSpecial(c,s,col,now){const P=(x,y,w,h,cl)=>{c.fillStyle=cl;c.fillRe
     c.strokeStyle=col;c.lineWidth=w+2;c.stroke();c.strokeStyle='#ffffff';c.lineWidth=Math.max(1,w-2);c.stroke();c.restore();return}
   if(s.k==='breath'){c.globalAlpha=0.25;c.fillStyle=col;c.beginPath();const a=Math.atan2(uy,ux);c.moveTo(s.x,s.y);c.arc(s.x,s.y,82,a-0.5,a+0.5);c.closePath();c.fill();c.globalAlpha=1}}
 function drawObs(c,o,now){const st=o.hp<o.max*0.34?2:o.hp<o.max*0.7?1:0;const s=obsSprite(o.kind,o.v,st);let sx=0;if(o.hitT&&now-o.hitT<160)sx=Math.round(Math.sin(now/18)*2);
-  c.fillStyle='rgba(10,20,8,0.28)';c.beginPath();c.ellipse(o.x,o.y+2,o.r+2,4,0,0,7);c.fill();c.drawImage(s,Math.round(o.x-16+sx),Math.round(o.y-26),32,32);
+  c.fillStyle='rgba(10,20,8,0.28)';pxEl(c,o.x,o.y+2,o.r+2,4,1);c.drawImage(s,Math.round(o.x-16+sx),Math.round(o.y-26),32,32);
   if(!o.ind&&(o.mat||o.kind)!=='plant'&&o.hp<o.max){c.fillStyle='#14141f';c.fillRect(Math.round(o.x-11),Math.round(o.y-30),22,4);c.fillStyle='#c9c9c9';c.fillRect(Math.round(o.x-10),Math.round(o.y-29),Math.round(20*o.hp/o.max),2)}}
 function newBattle(o){try{if(typing())document.activeElement.blur()}catch(e){}
   B=Object.assign({shots:[],parts:[],nums:[],log:[],state:'fight',ptr:null,capCd:0,sid:0,vshots:[]},o);held.length=0;
@@ -150,6 +150,7 @@ function fire(F,i,remote){
   if(F.st.conf>0&&!B.tb){const w=(Math.random()-0.5)*1.4,c=Math.cos(w),sn=Math.sin(w);[dx,dy]=[dx*c-dy*sn,dx*sn+dy*c]}
   if(!B.tb&&mvv.k!=='melee'){const w=(Math.random()-0.5)*2*aimSpread(F),c=Math.cos(w),sn=Math.sin(w);[dx,dy]=[dx*c-dy*sn,dx*sn+dy*c]}F.face=dx<0?-1:1;
   const sp=shotParams(mid);
+  if(sp.combo>1&&!B.tb){F.rq={mid,left:sp.combo-1,t:0.17,int:0.17,mel:1}}
   if(sp.rapid){F.rq={mid,left:sp.rapid,t:0,int:sp.int};return}
   if(sp.dive){F.st.dive=sp.dive;F.inv=Math.max(F.inv,sp.dive+0.05);F.diveMid=mid;burst(F.x,F.y-6,'#8fc8f0',14);return}
   if(sp.nm){const D=Math.max(30,Math.hypot(T.x-F.x,T.y-F.y));let sx=F.x+dx*8,sy=F.y-10+dy*6,vx=dx*sp.sp,vy=dy*sp.sp;
@@ -930,7 +931,7 @@ function drawBattle(){
     if(mon.hp<=0&&F.ctrl!=='remote'){const fk=1-clamp(F.faint/0.9,0,1);yoff=fk*fk*36;clipY=Y+2}else if(mon.hp<=0)yoff=36;
     if(B.evoFx&&now-B.evoFx<1800&&F===B.me)white=Math.max(white,Math.abs(Math.sin((now-B.evoFx)/90))*0.9);
     const az=flyZ(F,now),dv=stOn(F,'dive');
-    if(dv){const t2=now/1000;c.strokeStyle='#bfe2ff';c.lineWidth=1;for(let q=0;q<2;q++){const rr=7+((t2*14+q*7)%14);c.globalAlpha=1-rr/22;c.beginPath();c.ellipse(X,Y,rr,rr*0.4,0,0,7);c.stroke()}c.globalAlpha=1;c.fillStyle='#3d8bf260';c.beginPath();c.ellipse(X,Y,11,4,0,0,7);c.fill();continue}
+    if(dv){const t2=now/1000;c.strokeStyle='#bfe2ff';c.lineWidth=1;for(let q=0;q<2;q++){const rr=7+((t2*14+q*7)%14);c.globalAlpha=1-rr/22;pxEl(c,X,Y,rr,rr*0.4,0)}c.globalAlpha=1;c.fillStyle='#3d8bf260';pxEl(c,X,Y,11,4,1);continue}
     if(az>150)continue;
     c.fillStyle='#00000040';{const ss=sc*(1-az/240);c.fillRect(X-12*ss,Y-2,24*ss,4);c.fillRect(X-9*ss,Y-3,18*ss,6)}Y-=Math.round(az);
     let alpha=1;if(F.flash>0)alpha=Math.floor(F.flash*30)%2?0.3:1;else if(F.inv>0&&F.dashT>0)alpha=0.5;
@@ -975,7 +976,7 @@ function drawBattle(){
   if(B.mode==='duel'&&B.oppPanic&&B.foe){const X=Math.round(B.foe.x)+16,Y=Math.round(B.foe.y)-44+Math.round(Math.sin(now/260)*2);c.save();c.fillStyle='#f6f1e1';c.strokeStyle='#14141f';c.lineWidth=2;c.beginPath();c.arc(X,Y,13,0,7);c.fill();c.stroke();c.font='18px serif';c.textAlign='center';c.textBaseline='middle';c.fillText('👨‍🎓',X,Y);c.restore();if(!B.pmSaid){B.pmSaid=1;say(`${B.oppName||'Der Gegner'} ist gerade im Notfallmodus 🎓`)}}else if(B)B.pmSaid=0;
   // status rings, aim helper and pointer live in the battlefield
   for(const F of[B.me,B.foe]){if(!F||!F.st)continue;const X=Math.round(F.x),Y=Math.round(F.y);const shown=F.ctrl==='remote'?(F.stShow||[]):Object.keys(F.st).filter(k=>F.st[k]>0);
-    if(shown.includes('shield')){c.strokeStyle='#9fd2ffaa';c.lineWidth=1;c.beginPath();c.ellipse(X,Y-16,20,22,0,0,7);c.stroke()}
+    if(shown.includes('shield')){c.strokeStyle='#9fd2ffaa';c.lineWidth=1;pxEl(c,X,Y-16,20,22,0)}
     if(shown.includes('stun')){c.fillStyle='#ffe14d';for(let i=0;i<3;i++){const a=now/150+i*2.1;c.fillRect(Math.round(X+Math.cos(a)*10),Math.round(Y-40+Math.sin(a)*3),2,2)}}
     if(shown.includes('sleep')||shown.includes('conf')){c.save();c.translate(X,Y-44);c.scale(2,2);if(shown.includes('sleep'))drawZzz(c,0,40,now);if(shown.includes('conf'))drawConf(c,0,38+(shown.includes('sleep')?-4:0),now);c.restore()}}
   if(B.aim&&B.foe){const a=aimAngle(now),F=B.me;c.fillStyle='#ffffff';for(let i=1;i<9;i++){const d=i*9;if(i%2)c.fillRect(Math.round(F.x+Math.cos(a)*d)-1,Math.round(F.y-14+Math.sin(a)*d)-1,2,2)}
@@ -1050,7 +1051,7 @@ function drawVS(c,now){const V=B.vs,e=now-V.t0;if(e>V.dur){B.vs=null;return}
 
 // ===== ground hazards: attacks that miss leave something behind (water → puddle, slippery; fire → flames, burn;
 //       rock → light rubble obstacle; grass → roots, slow; electric → sparks, short stun). They fade after a few seconds and hit both sides.
-const HAZ_KIND={water:{k:'puddle',r:16,ms:7000},fire:{k:'fire',r:13,ms:15000},grass:{k:'roots',r:15,ms:6000},electric:{k:'spark',r:12,ms:4000}};
+const HAZ_KIND={water:{k:'puddle',r:16,ms:7000},fire:{k:'fire',r:13,ms:7000},grass:{k:'roots',r:15,ms:6000},electric:{k:'spark',r:12,ms:4000}};
 function leaveHazard(s,x,y){if(!B||B.tb||B.state!=='fight')return;const mv=MOVES[s.mid];if(!mv||(mv.p||0)<=0)return;const now=performance.now();x=clamp(x,24,AW-24);y=clamp(y,24,AH-16);
   if(mv.t==='rock'){if([B.me,B.foe].some(F=>F&&Math.hypot(F.x-x,(F.y-y)*1.3)<16))return;B.obs=B.obs||[];if(B.obs.filter(o=>o.tmp&&!o.dead).length>=6)return;
     B.obs.push({id:'h'+now,kind:'rock',mat:'rock',ind:0,x:Math.round(x),y:Math.round(y),r:8,hp:18,max:18,v:Math.floor(Math.random()*3),tmp:now+15000});burst(x,y-6,'#a07848',10);return}
@@ -1068,10 +1069,10 @@ function hazardTick(dt){if(!B)return;aiAimTick(dt);kindsTick(dt);const now=perfo
       else if(h.k==='roots')F.st.slow=Math.max(F.st.slow,0.4);
       else if(h.k==='spark'&&Math.random()<dt*0.9&&F.st.stun<=0)F.st.stun=0.35}}}
 function drawHazards(c,now){if(!B||!B.haz)return;for(const h of B.haz){const life=(h.until-now)/(h.until-h.t0),a=Math.min(1,life*4,(now-h.t0)/200),X=Math.round(h.x),Y=Math.round(h.y),r=mulberry32(h.seed);c.save();c.globalAlpha=a;
-  if(h.k==='puddle'){c.fillStyle='#1f5fa0';c.beginPath();c.ellipse(X,Y,h.r,h.r*0.55,0,0,7);c.fill();c.fillStyle='#3d8bf2';c.beginPath();c.ellipse(X,Y,h.r-2,h.r*0.55-2,0,0,7);c.fill();c.fillStyle='#8fc8f0';c.fillRect(X-6,Y-3,5,1);c.fillRect(X+2,Y+1,3,1)}
-  else if(h.k==='fire'){c.fillStyle='#3a1a0a80';c.beginPath();c.ellipse(X,Y,h.r,h.r*0.5,0,0,7);c.fill();for(let i=0;i<6;i++){const fx=X+Math.round((r()-0.5)*h.r*1.6),fy=Y+Math.round((r()-0.5)*h.r*0.7),fl=(Math.floor(now/90)+i)%3,hh=4+fl*2;c.fillStyle='#ef4444';c.fillRect(fx-2,fy-hh,4,hh);c.fillStyle='#ffcb3d';c.fillRect(fx-1,fy-hh+2,2,hh-2)}}
-  else if(h.k==='roots'){c.fillStyle='#3a2a10b0';c.beginPath();c.ellipse(X,Y,h.r,h.r*0.5,0,0,7);c.fill();c.fillStyle='#8a5a28';for(let i=0;i<7;i++){const a2=r()*6.28,L=5+r()*8;for(let t=0;t<L;t+=1.5)c.fillRect(Math.round(X+Math.cos(a2)*t),Math.round(Y+Math.sin(a2)*t*0.5),2,1)}c.fillStyle='#3ddc6b';for(let i=0;i<4;i++)c.fillRect(X+Math.round((r()-0.5)*h.r*1.4),Y+Math.round((r()-0.5)*h.r*0.6),2,2)}
-  else if(h.k==='spark'){c.fillStyle='#d9a90b70';c.beginPath();c.ellipse(X,Y,h.r,h.r*0.5,0,0,7);c.fill();if(Math.floor(now/70)%3){c.fillStyle='#ffe36b';for(let i=0;i<5;i++){const sx=X+Math.round((r()-0.5)*h.r*1.6),sy=Y+Math.round((r()-0.5)*h.r*0.7);c.fillRect(sx,sy,3,1);c.fillRect(sx+2,sy+1,1,2)}}}
+  if(h.k==='puddle'){c.fillStyle='#1f5fa0';pxEl(c,X,Y,h.r,h.r*0.55,1);c.fillStyle='#3d8bf2';pxEl(c,X,Y,h.r-2,h.r*0.55-2,1);c.fillStyle='#8fc8f0';c.fillRect(X-6,Y-3,5,1);c.fillRect(X+2,Y+1,3,1)}
+  else if(h.k==='fire'){c.fillStyle='#3a1a0a80';pxEl(c,X,Y,h.r,h.r*0.5,1);for(let i=0;i<6;i++){const fx=X+Math.round((r()-0.5)*h.r*1.6),fy=Y+Math.round((r()-0.5)*h.r*0.7),fl=(Math.floor(now/90)+i)%3,hh=4+fl*2;c.fillStyle='#ef4444';c.fillRect(fx-2,fy-hh,4,hh);c.fillStyle='#ffcb3d';c.fillRect(fx-1,fy-hh+2,2,hh-2)}}
+  else if(h.k==='roots'){c.fillStyle='#3a2a10b0';pxEl(c,X,Y,h.r,h.r*0.5,1);c.fillStyle='#8a5a28';for(let i=0;i<7;i++){const a2=r()*6.28,L=5+r()*8;for(let t=0;t<L;t+=1.5)c.fillRect(Math.round(X+Math.cos(a2)*t),Math.round(Y+Math.sin(a2)*t*0.5),2,1)}c.fillStyle='#3ddc6b';for(let i=0;i<4;i++)c.fillRect(X+Math.round((r()-0.5)*h.r*1.4),Y+Math.round((r()-0.5)*h.r*0.6),2,2)}
+  else if(h.k==='spark'){c.fillStyle='#d9a90b70';pxEl(c,X,Y,h.r,h.r*0.5,1);if(Math.floor(now/70)%3){c.fillStyle='#ffe36b';for(let i=0;i<5;i++){const sx=X+Math.round((r()-0.5)*h.r*1.6),sy=Y+Math.round((r()-0.5)*h.r*0.7);c.fillRect(sx,sy,3,1);c.fillRect(sx+2,sy+1,1,2)}}}
   c.restore()}}
 
 

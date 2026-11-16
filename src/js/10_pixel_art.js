@@ -330,3 +330,9 @@ let PADSPR0=null;function padSpriteOld(){if(PADSPR0)return PADSPR0;const c=mk(96
   F('#3a2210',50,49,12,15);F('#7c4a22',51,50,10,14);F('#9a5d2c',51,50,1,14);F('#ffd23f',59,57,1,1);
   F('#14141f',42,8,12,8);F('#2f6fd0',43,9,10,6);F('#8fc8ff',44,10,3,2);F('#ffffff',46,10,4,1);
   return PADSPR0=c}
+// pixel-art ellipse: hard 1px cells, no antialiasing (fill=1 filled, 0 = outline in strokeStyle)
+function pxEl(c,cx,cy,rx,ry,fill){cx=Math.round(cx);cy=Math.round(cy);rx=Math.max(1,rx);ry=Math.max(1,ry);const X=Math.ceil(rx),Y=Math.ceil(ry);
+  const ins=(x,y)=>{const a=(x+0.5)/rx,b=(y+0.5)/ry;return a*a+b*b<=1};const pc=c.fillStyle;if(!fill)c.fillStyle=c.strokeStyle;
+  for(let y=-Y;y<Y;y++){if(fill){let w=0;while(w<X&&ins(w,y))w++;if(w)c.fillRect(cx-w,cy+y,w*2,1);continue}
+    for(let x=-X;x<X;x++)if(ins(x,y)&&(!ins(x+1,y)||!ins(x-1,y)||!ins(x,y+1)||!ins(x,y-1)))c.fillRect(cx+x,cy+y,1,1)}
+  c.fillStyle=pc}

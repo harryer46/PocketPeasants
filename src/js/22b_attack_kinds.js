@@ -15,7 +15,7 @@ function curDir(F){const T=F===B.me?B.foe:B.me;let dx=T?T.x-F.x:1,dy=T?T.y-F.y:0
 // rapid fire: 5–10 projectiles one after another, each aimed at the moment it leaves
 function rapidShot(F,mid){const bt=act(F),sp=shotParams(mid);let[dx,dy]=curDir(F);const j=(Math.random()-0.5)*0.14,c=Math.cos(j),s=Math.sin(j);[dx,dy]=[dx*c-dy*s,dx*s+dy*c];
   if(F.st.conf>0){const w=(Math.random()-0.5)*1.2;[dx,dy]=[dx*Math.cos(w)-dy*Math.sin(w),dx*Math.sin(w)+dy*Math.cos(w)]}F.face=dx<0?-1:1;F.atkT=performance.now();
-  const sh={id:shotId(F),side:F.side,att:Object.assign({},bt),mid,x:F.x+dx*8,y:F.y-10+dy*6,vx:dx*sp.sp,vy:dy*sp.sp,age:0,life:sp.life,r:sp.r,p:sp.p,am:stageMul(stgOf(F).a)};B.shots.push(sh);pubShot(F,sh)}
+  const sh={id:shotId(F),side:F.side,att:Object.assign({},bt),mid,x:F.x+dx*8,y:F.y-10+dy*6,vx:dx*sp.sp,vy:dy*sp.sp,age:0,life:sp.life,r:sp.r,p:sp.p,mel:sp.mel,am:stageMul(stgOf(F).a)};if(sp.mel){sh.x=F.x+dx*8;sh.y=F.y-10+dy*6}B.shots.push(sh);pubShot(F,sh)}
 function rapidTick(dt){for(const F of[B.me,B.foe]){if(!F||!F.rq)continue;const q=F.rq;if(B.state!=='fight'||F.faint>0||F.out||F.st.stun>0||F.st.sleep>0||act(F).hp<=0){F.rq=null;continue}
   q.t-=dt;while(q.t<=0&&q.left>0){q.t+=q.int;q.left--;rapidShot(F,q.mid)}if(q.left<=0)F.rq=null}}
 // dive: under water for a moment (untouchable, a bit faster), then bursts up with a splash around itself
@@ -42,7 +42,7 @@ function arenaEvTick(dt){if(B.mode==='duel'||B.tb||B.state!=='fight')return;cons
 function tideDepth(e,now){const k=(now-e.t0)/e.dur;return Math.max(0,Math.sin(Math.min(1,k)*Math.PI))*70}
 function inTide(e,x,y,dep){return e.bot?y>AY1+6-dep:y<AY0-6+dep}
 function drawArenaEv(c,now,top){if(!B||!B.ev)return;for(const e of B.ev){if(e.done)continue;const k=(now-e.t0)/e.dur;
-  if(e.k==='fall'){const X=Math.round(e.x),Y=Math.round(e.y);if(!top){const r=6+k*10;c.fillStyle='#00000050';c.beginPath();c.ellipse(X,Y,r,r*0.45,0,0,7);c.fill();if(k>0.5&&Math.floor(now/120)%2){c.strokeStyle='#ffffff90';c.lineWidth=1;c.beginPath();c.ellipse(X,Y,r+3,r*0.45+2,0,0,7);c.stroke()}continue}
+  if(e.k==='fall'){const X=Math.round(e.x),Y=Math.round(e.y);if(!top){const r=6+k*10;c.fillStyle='#00000050';pxEl(c,X,Y,r,r*0.45,1);if(k>0.5&&Math.floor(now/120)%2){c.strokeStyle='#ffffff90';c.lineWidth=1;pxEl(c,X,Y,r+3,r*0.45+2,0)}continue}
     if(k<0.55)continue;const q=(k-0.55)/0.45,ry=Y-8-220*(1-q)*(1-q);const P=(x,y,w,h,cl)=>{c.fillStyle=cl;c.fillRect(Math.round(x),Math.round(y),w,h)};
     P(X-7,ry-6,14,12,'#14141f');P(X-6,ry-7,12,14,'#14141f');P(X-6,ry-5,12,10,'#8e8e98');P(X-5,ry-6,10,12,'#8e8e98');P(X-4,ry-5,4,3,'#c8c8d0');P(X+1,ry+1,4,3,'#5a5a64');continue}
   if(e.k==='tide'&&!top){const dep=tideDepth(e,now);if(dep<1)continue;c.save();c.beginPath();c.ellipse(ACX,ACY,ARX+22,ARY+28,0,0,7);c.clip();
@@ -59,5 +59,12 @@ function regrowTick(){if(!B.obs||B.mode==='duel')return;const now=performance.no
 {const _dob=drawObs;drawObs=function(c,o,now){if(o.growT&&now-o.growT<700){const k=Math.max(0.05,(now-o.growT)/700);c.save();c.translate(o.x,o.y);c.scale(k,k);c.translate(-o.x,-o.y);_dob(c,o,now);c.restore();return}_dob(c,o,now)}}
 // one tick for all of the above; the opponent only starts shooting 0.5 s after the fight begins
 function kindsTick(dt){if(!B)return;const now=performance.now();if(B.state==='fight'&&B.prevSt!=='fight')B.fightT=now;B.prevSt=B.state;if(B.tb)return;
-  rapidTick(dt);diveTick();regrowTick();arenaEvTick(dt)}
+  rapidTick(dt);douseTick();diveTick();regrowTick();arenaEvTick(dt)}
 function aiMayFire(){return!B.fightT||performance.now()-B.fightT>500}
+
+// water puts out fire: water shots (waves, jets, splashes after landing) and puddles extinguish fire hazards with a steam puff
+function douseTick(){if(!B||!B.haz||!B.haz.some(h=>h.k==='fire'))return;const wet=[];
+  for(const s of B.shots||[]){const mv=MOVES[s.mid];if(!mv||mv.t!=='water')continue;if((s.k==='lob'||s.k==='air')&&s.age<s.life*0.85)continue;wet.push([s.x,s.y+(s.k==='lob'||s.k==='air'?0:10),s.wave?16:Math.max(6,s.r)])}
+  for(const h of B.haz)if(h.k==='puddle')wet.push([h.x,h.y,h.r-4]);if(!wet.length)return;
+  B.haz=B.haz.filter(h=>{if(h.k!=='fire')return true;for(const[x,y,r]of wet)if(Math.hypot(h.x-x,(h.y-y)*1.3)<h.r+r){steamPuff(h.x,h.y);return false}return true})}
+function steamPuff(x,y){burst(x,y-4,'#e8eef4',12);burst(x,y-8,'#b8c4cc',6)}
