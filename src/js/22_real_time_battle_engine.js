@@ -40,11 +40,11 @@ function shotParams0(mid){const mv=MOVES[mid]||MOVES.bump;const k=mv.k||(mv.t===
   if(k==='air')return{k,nm:1,sp:0,life:0.95,r:22,p:mv.p,n:1};
   if(k==='lob')return{k,nm:1,sp:520,h:54,life:1.15,r:18,p:mv.p,n:1};
   return{sp:178-mv.p,life:2.4,r:3+mv.p/25,p:mv.p,n:1}}
-function cdOf(mid){const mv=MOVES[mid]||MOVES.bump;if(mv.fx==='heal'&&mv.k==='self')return 16;const base=mv.cd||(mv.k==='self'?7:mv.k==='big'?2.6:0.45+mv.p/62);return mv.k==='melee'||mv.k==='self'?base:base*1.2}
+function cdOf(mid){const mv=MOVES[mid]||MOVES.bump;if(mv.k==='rapid')return Math.max(3.2,(0.45+mv.p/62)*2.6);if(mv.fx==='heal'&&mv.k==='self')return 16;const base=mv.cd||(mv.k==='self'?7:mv.k==='big'?2.6:0.45+mv.p/62);return mv.k==='melee'||mv.k==='self'?base:base*1.2}
 // AP: one pool per fighter for every attack. Strong moves cost more, weak ones little; AP refill over time (real-time) or per turn (turn-based)
 const AP_MAX=100,AP_REGEN=8,TB_AP_REGEN=30;
 // healing costs all AP and has a long cooldown; every other move costs half of its former AP price
-function apCost(mid){const mv=MOVES[mid]||MOVES.bump;if(mv.k==='multi'||mv.k==='rapid')return Math.min(AP_MAX,Math.max(32,Math.round((mv.p||30)*0.55)));if(mv.fx==='heal'&&mv.k==='self')return AP_MAX;if(mv.fx==='buff')return 50;if(mv.k==='self')return 35;if(mv.fx==='debuff'&&(mv.p||0)<=10)return 25;return Math.min(AP_MAX,Math.round(Math.max(18,(mv.p||30)*0.8*(mv.k==='melee'?0.8:1))*0.8*0.5))}
+function apCost(mid){const mv=MOVES[mid]||MOVES.bump;if(mv.k==='rapid')return Math.min(AP_MAX,Math.max(42,Math.round((mv.p||30)*0.75)));if(mv.k==='multi')return Math.min(AP_MAX,Math.max(32,Math.round((mv.p||30)*0.55)));if(mv.fx==='heal'&&mv.k==='self')return AP_MAX;if(mv.fx==='buff')return 50;if(mv.k==='self')return 35;if(mv.fx==='debuff'&&(mv.p||0)<=10)return 25;return Math.min(AP_MAX,Math.round(Math.max(18,(mv.p||30)*0.8*(mv.k==='melee'?0.8:1))*0.8*0.5))}
 function moveDesc(mid){const mv=MOVES[mid];const k={melee:'Nahkampf',shot:'Fernkampf',spread:'Fächer',multi:'Salve',big:'schwer',self:'selbst',beam:'Strahl',breath:'Atem',air:'Luftschlag',lob:'Hochwurf',arc:'Bogenwurf',rapid:'Schnellfeuer',rain:'Hagel',fly:'Flug-Angriff',dive:'Tauchangriff',vortex:'Sog'}[mv.k]||'Fernkampf';return`${TYPES[mv.t].n} · ${k}${mv.p?' · '+mv.p:''}${mv.fx?' · '+(mv.bs?(mv.fx==='debuff'?'Ziel: ':mv.fx==='selfbuff'?'evtl. ':'')+bsText(mv)+(mv.stc&&mv.stc<1?` (${Math.round(mv.stc*100)} %)`:''):FX_TXT[mv.fx]):''} · ${apCost(mid)} AP`}
 function calcDmg(att,def,mid,p){const mv=MOVES[mid]||MOVES.bump;const e=eff(mv.t,SPECIES[def.s].t);let d=((2*att.l/5+2)*p*att.atk/Math.max(1,def.def))/50+2*Math.min(1,p/30);d*=(mv.t===SPECIES[att.s].t?1.5:1)*e*(0.85+Math.random()*0.15)*0.55;return{d:e===0?0:Math.max(1,Math.round(d)),e}}
 function say(t){if(!B)return;if(/erreicht Lv/.test(t))B.lvlFx=performance.now();if(/entwickelt!/.test(t))B.evoFx=performance.now();B.log.push({t,at:performance.now()});if(B.log.length>3)B.log.shift()}
@@ -147,7 +147,8 @@ function fire(F,i,remote){
   let dx=T.x-F.x,dy=T.y-F.y;const L=Math.hypot(dx,dy)||1;dx/=L;dy/=L;
   if(F.ctrl==='ai'&&!B.tb&&F.aimAng!=null&&isFinite(F.aimAng)){dx=Math.cos(F.aimAng);dy=Math.sin(F.aimAng)}
   if(F===B.me&&!B.tb){const a=myAim();dx=a.x;dy=a.y;try{navigator.vibrate&&navigator.vibrate(8)}catch(e){}}
-  if(F.st.conf>0&&!B.tb){const w=(Math.random()-0.5)*1.4,c=Math.cos(w),sn=Math.sin(w);[dx,dy]=[dx*c-dy*sn,dx*sn+dy*c]}F.face=dx<0?-1:1;
+  if(F.st.conf>0&&!B.tb){const w=(Math.random()-0.5)*1.4,c=Math.cos(w),sn=Math.sin(w);[dx,dy]=[dx*c-dy*sn,dx*sn+dy*c]}
+  if(!B.tb&&mvv.k!=='melee'){const w=(Math.random()-0.5)*2*aimSpread(F),c=Math.cos(w),sn=Math.sin(w);[dx,dy]=[dx*c-dy*sn,dx*sn+dy*c]}F.face=dx<0?-1:1;
   const sp=shotParams(mid);
   if(sp.rapid){F.rq={mid,left:sp.rapid,t:0,int:sp.int};return}
   if(sp.dive){F.st.dive=sp.dive;F.inv=Math.max(F.inv,sp.dive+0.05);F.diveMid=mid;burst(F.x,F.y-6,'#8fc8f0',14);return}
@@ -193,7 +194,7 @@ function selfMove(F,mv){const m=act(F);F.castT=performance.now();
 function dealDamage(T,d,col,text){const def=act(T);if(def.hp<=0)return;def.hp=Math.max(0,def.hp-d);
   if(def.hp<=0&&!T.team.some(m=>m.hp>0)){B.slowUntil=performance.now()+700;B.shakeUntil=performance.now()+350}
   B.nums.push({x:T.x+(Math.random()*8-4),y:T.y-34,t:text||'-'+d,c:col||'#ffffff',at:performance.now()});
-  if(def.hp<=0){T.faint=0.9;T.st={burn:0,slow:0,stun:0,sleep:0,conf:0,shield:0,haste:0};say(`${SPECIES[def.s].n} ist besiegt!`);if(B.mode==='wild'&&T===B.foe)wildWin();else if(B.mode==='trainer'&&T===B.foe)trainerKO(def)}
+  if(def.hp<=0){T.faint=0.9;T.st={burn:0,slow:0,stun:0,sleep:0,conf:0,shield:0,haste:0,fly:0,dive:0};if(!(B.legend&&T===B.foe&&typeof FEM!=='undefined'&&FEM.includes(B.legend)))say(`${SPECIES[def.s].n} ist besiegt!`);if(B.mode==='wild'&&T===B.foe)wildWin();else if(B.mode==='trainer'&&T===B.foe)trainerKO(def)}
   if(B.mode==='duel'&&T===B.me)publishDuel(true)}
 function hitLocal(T,s){
   const def=act(T);const r=calcDmg(s.att,def,s.mid,s.p);let d=r.d;if(d>0)d=Math.max(1,Math.round(d*(s.am||1)/stageMul(stgOf(T).d)));if(T.st.shield>0&&d>0)d=Math.max(1,Math.round(d*0.5));
@@ -273,6 +274,7 @@ function controlMe(dt){
 function move(F,dx,dy,dt){if(F.st&&F.st.fly>0)return;
   // slight inertia: velocity eases toward the input instead of jumping (dash stays instant)
   // (post-dash freeze removed in v0.70)
+  if(dx||dy||F.dashT>0)F.mvT=performance.now();
   if(F.dashT>0){F.x+=F.ddx*265*dt;F.y+=F.ddy*265*dt;F.vx=F.ddx*fspeed(F);F.vy=F.ddy*fspeed(F)}else{const sp=fspeed(F),k=Math.min(1,dt*((F.slip||0)>0?1.2:7.5));F.vx=(F.vx||0)+(dx*sp-(F.vx||0))*k;F.vy=(F.vy||0)+(dy*sp-(F.vy||0))*k;F.x+=F.vx*dt;F.y+=F.vy*dt}
   obsPush(F);arenaClamp(F);
   const T=F===B.me?B.foe:B.me;if(T)F.face=T.x<F.x?-1:1;
@@ -292,6 +294,7 @@ function aiUpdate(F,dt){
   move(F,F.mvx,F.mvy,dt);
 }
 function bUpdate(dt){
+  if(B.frozen)return;
   const now=performance.now();if(B.slowUntil&&now<B.slowUntil)dt*=0.3;
   for(const F of[B.me,B.foe]){if(!F)continue;F.cd=F.cd.map(v=>Math.max(0,v-dt));F.dashT=Math.max(0,F.dashT-dt);F.dashCd=Math.max(0,F.dashCd-dt);F.pdz=Math.max(0,(F.pdz||0)-dt);F.hitstun=Math.max(0,(F.hitstun||0)-dt);F.inv=Math.max(0,F.inv-dt);F.swCd=Math.max(0,F.swCd-dt);F.flash=Math.max(0,F.flash-dt)}
   B.capCd=Math.max(0,B.capCd-dt);
@@ -321,7 +324,7 @@ function bUpdate(dt){
     if(F.team.some((m,i)=>i!==F.a&&m.hp>0)){startBreak(F);return}
     if(F.ctrl==='remote')continue;F.faint-=dt;if(F.faint<=0)F.out=true}
   // shots
-  for(const s of B.shots){if(s.nm){specialShot(s,dt);continue}s.age+=dt;s.x+=s.vx*dt;s.y+=s.vy*dt;if(s.wave){const sf=s.mid==='surf';s.r=Math.min(sf?82:46,(sf?10:6)+s.age*(sf?52:34));if(sf&&Math.random()<dt*2.2)leaveHazard(s,s.x,s.y+8)}if(s.age>s.life||outArena(s.x,s.y+10)){s.dead=1;if(s.cap)say('Verfehlt!');else if(!s.mel&&!outArena(s.x,s.y+10))leaveHazard(s,s.x,s.y+8);continue}
+  for(const s of B.shots){if(s.nm){specialShot(s,dt);continue}s.age+=dt;homeShot(s,dt);s.x+=s.vx*dt;s.y+=s.vy*dt;if(s.wave){const sf=s.mid==='surf';s.r=Math.min(sf?82:46,(sf?10:6)+s.age*(sf?52:34));if(sf&&Math.random()<dt*2.2)leaveHazard(s,s.x,s.y+8)}if(s.age>s.life||outArena(s.x,s.y+10)){s.dead=1;if(s.cap)say('Verfehlt!');else if(!s.mel&&!outArena(s.x,s.y+10))leaveHazard(s,s.x,s.y+8);continue}
     if(!s.cap&&s.mid!=='surf'&&shotVsObs(s))continue;
     const T=s.side===B.me.side?B.foe:B.me;if(!T||T.out||T.faint>0)continue;
     if(Math.hypot(s.x-T.x,s.y-(T.y-12))<s.r+11){
@@ -487,11 +490,11 @@ function tryRun(){if(!B||B.mode!=='wild'||CQ)return;
   if(B.state!=='fight')return;
   if(!atEdge(B.me)){say('Lauf an den Rand der Arena, um zu fliehen!');return}
   // the fight keeps running while the question is answered (small panel at the bottom, arena stays visible)
-  const myB=B;fleeQuiz(ok=>{if(B!==myB||B.state!=='fight')return;if(ok){B.state='flee';B.fleeT=performance.now();B.me.face=-1;B.shots=[];say('Erfolgreich geflohen!')}else say('Flucht gescheitert!')})}
+  const myB=B;fleeQuiz(ok=>{if(B===myB)B.frozen=false;if(B!==myB||B.state!=='fight')return;if(ok){B.state='flee';B.fleeT=performance.now();B.me.face=-1;B.shots=[];say('Erfolgreich geflohen!')}else say('Flucht gescheitert!')})}
 // flee question: about your own active monster (its paragraph)
 function fleeQuiz(cb){const it=fleeItem(act(B.me).s),order=shuffleArr([0,1,2,3]);
-  CQ={it,order,end:performance.now()+3000,T:3000,done:false,cb,okMsg:'✓ Richtig — die Flucht gelingt!'};held.length=0;aimHeld.length=0;
-  $('#cqbox').innerHTML=`<div class="sdlg"><span class="slaw">🏃 FLUCHT — 3 SEKUNDEN</span><br>${esc(it.q[0])}<div class="cqt"><i id="cqbar"></i></div><div class="small" id="cqtime" style="text-align:right">3 s</div><div id="cqexp"></div></div>
+  CQ={it,order,end:performance.now()+5000,T:5000,flee:1,done:false,cb,okMsg:'✓ Richtig — die Flucht gelingt!'};held.length=0;aimHeld.length=0;
+  $('#cqbox').innerHTML=`<div class="sdlg"><span class="slaw">🏃 FLUCHT — 5 SEKUNDEN</span><br>${esc(it.q[0])}<div class="cqt"><i id="cqbar"></i></div><div class="small" id="cqtime" style="text-align:right">5 s</div><div id="cqexp"></div></div>
     <div class="sans">${order.map((k,j)=>`<button class="sa" data-ck="${k}"><span class="sk">${j+1}</span>${esc(it.q[1][k])}</button>`).join('')}</div><div class="sacts" id="cqact"></div>`;
   $('#cquiz').classList.toggle('lite',!B.tb);$('#cquiz').classList.add('on');document.querySelectorAll('[data-ck]').forEach(b=>b.onclick=()=>cqAnswer(+b.dataset.ck));cqTick()}
 function fleeUpdate(dt){const F=B.me;F.y+=150*dt;if(Math.random()<0.5)B.parts.push({x:F.x,y:F.y-8,vx:(Math.random()-.5)*20,vy:-20-Math.random()*15,life:0.4,age:0,c:'#e8dcc0'});
@@ -536,6 +539,7 @@ function trainerKO(def){const idx=B.me.a;syncBack();const m=RUN.team[idx];if(m){
 async function trainerWin(){B.state='over';finale(true);const t=B.trainer;RUN.beat[t.id]=1;if(t.toll){RUN.toll=RUN.toll||{};RUN.toll[t.toll]=1;setTimeout(()=>sysChat(`${t.n}: „Respekt. Du darfst passieren!“`),2600)}RUN.kap+=t.reward;{const k=HM_FROM[t.id];if(k&&!hasHM(k)){RUN.hm=RUN.hm||{};RUN.hm[k]=1;say(`Du hast die VM ${HM[k].i} ${HM[k].n} bekommen! Einsetzbar mit einem ${hmNeed(k)} im Kader.`);sysChat(`${t.n} hat dir ${HM[k].n} beigebracht: ${HM[k].d}`)}}earn(t.reward*40,'von '+t.n);{const tm=tmRandom(mulberry32((Date.now()^hashStr(t.id))>>>0),vmTier(t));if(tm){tmGive(tm);say(`Belohnung: 💿 TM ${MOVES[tm].n} (${TYPES[MOVES[tm].t].n})!`)}}syncBack();say(`Du hast ${t.n} besiegt!`);say(`Belohnung: ${t.reward} Handschellen.`);sysChat(`Du hast ${t.n} besiegt und ${t.reward} Handschellen bekommen.`);updateHud();const myB=B;await sleep(2400);if(B===myB)endWild()}
 function syncBack(){if(B&&(B.mode==='wild'||B.mode==='trainer'))B.me.team.forEach((b,i)=>{if(RUN.team[i])RUN.team[i].hp=b.hp})}
 async function wildWin(){
+  if(B.legend&&typeof FEM!=='undefined'&&FEM.includes(B.legend)){B.state='over';finale(false);syncBack();const n=SPECIES[B.legend].n;say(`${n} ist geflohen!`);setTimeout(()=>sysChat(`${n} lässt sich nicht besiegen – fang es, bevor seine KP auf 0 sinken!`),900);const myB=B;setTimeout(()=>{if(B===myB)endWild(`${n} ist geflohen – versuch es nochmal!`)},2600);return}
   B.state='over';finale(true);const idx=B.me.a;syncBack();const m=RUN.team[idx];earn(B.legend?150:6+B.wild.l*3,'Preisgeld');if(B.legend){RUN.leg[B.legend]=1;say(`${SPECIES[B.legend].n} verschwindet im Licht…`)}
   const msgs=m?gainXp(m,xpGain(B.wild.s,B.wild.l)):[];if(m)Object.assign(B.me.team[idx],battler(m));
   const myB=B;for(const t of msgs){say(t);await sleep(1000);if(B!==myB)return}await sleep(700);if(B===myB)endWild();
@@ -592,7 +596,7 @@ function catchQuiz(sid,cb){
 function cqTick(){if(!CQ||CQ.done)return;const now=performance.now();if(PANIC){CQ.end+=50;setTimeout(cqTick,50);return}
   const left=Math.max(0,CQ.end-now),bar=$('#cqbar');if(bar){bar.style.width=(left/((CQ.T||15000)/100))+'%';bar.style.background=left<(CQ.T||15000)/3?'#ef4444':'#ffcb3d'}const tt=$('#cqtime');if(tt)tt.textContent=Math.ceil(left/1000)+' s';
   if(left<=0){cqAnswer(-1);return}setTimeout(cqTick,50)}
-function cqAnswer(k){if(!CQ||CQ.done)return;CQ.done=true;const ok=k===0,it=CQ.it;
+function cqAnswer(k){if(!CQ||CQ.done)return;CQ.done=true;const ok=k===0,it=CQ.it;if(ok&&CQ.flee&&B)B.frozen=true;
   document.querySelectorAll('[data-ck]').forEach(b=>{const kk=+b.dataset.ck;b.disabled=true;b.classList.add(kk===0?'ok':kk===k?'bad':'dim')});
   $('#cqexp').innerHTML=`<div class="sexp ${ok?'ok':'bad'}">${ok?(CQ.okMsg||'✓ Richtig — Festnahme!'):k<0?'⏱ Zeit abgelaufen!':'✗ Falsch.'} ${esc(it.q[2])}</div>`;
   const cb=CQ.cb,fast=!!CQ.T;setTimeout(()=>{$('#cquiz').classList.remove('on','lite');CQ=null;cb(ok)},ok?(fast?900:1400):(fast?1800:2600))}
@@ -1089,3 +1093,10 @@ function drawVis(c,s,col,now){const v=s.wave?'wave':visOf(s.mid);if(v==='ball')r
   if(v==='glare'){for(let i=0;i<5;i++){const[x,y]=R(-i*4,0);c.globalAlpha=1-i*0.18;P(x-1,y-1,3,3,'#c8c8d0')}c.globalAlpha=1;P(X-3,Y-1,6,2,'#ffffff');P(X-1,Y-3,2,6,'#ffffff');return true}
   if(v==='net'){for(let i=-2;i<=2;i++)for(let j=-2;j<=2;j++)if((i+j)%2===0){const x=X+i*3,y=Y+j*3;P(x,y,2,2,Math.random()<0.3?'#ffffff':'#ffe36b')}return true}
   return false}
+
+// accuracy: standing still makes shots precise, moving spreads them (up to ±13°); 0.7 s of standing = full precision
+function aimSpread(F){const m=clamp(1-(performance.now()-(F.mvT||0))/700,0,1);return 0.015+0.21*m}
+// simple projectiles curve slightly toward the target (only when it is roughly in front)
+function homeShot(s,dt){if(s.wave||s.mel||s.cap||s.dead||s.age<0.08)return;const mv=MOVES[s.mid];if(!mv||mv.k!=='shot')return;const T=s.side===B.me.side?B.foe:B.me;if(!T||T.out||T.faint>0)return;
+  const a=Math.atan2(s.vy,s.vx),b=Math.atan2(T.y-12-s.y,T.x-s.x);let d=b-a;while(d>Math.PI)d-=2*Math.PI;while(d<-Math.PI)d+=2*Math.PI;if(Math.abs(d)>0.9)return;
+  const t=clamp(d,-1.1*dt,1.1*dt),sp=Math.hypot(s.vx,s.vy),na=a+t;s.vx=Math.cos(na)*sp;s.vy=Math.sin(na)*sp}
