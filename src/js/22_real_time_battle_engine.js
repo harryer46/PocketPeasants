@@ -150,7 +150,7 @@ function fire(F,i,remote){
   if(F.st.conf>0&&!B.tb){const w=(Math.random()-0.5)*1.4,c=Math.cos(w),sn=Math.sin(w);[dx,dy]=[dx*c-dy*sn,dx*sn+dy*c]}
   if(!B.tb&&mvv.k!=='melee'){const w=(Math.random()-0.5)*2*aimSpread(F),c=Math.cos(w),sn=Math.sin(w);[dx,dy]=[dx*c-dy*sn,dx*sn+dy*c]}F.face=dx<0?-1:1;
   const sp=shotParams(mid);
-  if(sp.combo>1&&!B.tb){F.rq={mid,left:sp.combo-1,t:0.17,int:0.17,mel:1}}
+  if(sp.combo>1&&!B.tb){const ci=MOVES[mid].ci||0.17;F.rq={mid,left:sp.combo-1,t:ci,int:ci,mel:1}}
   if(sp.rapid){F.rq={mid,left:sp.rapid,t:0,int:sp.int};return}
   if(sp.dive){F.st.dive=sp.dive;F.inv=Math.max(F.inv,sp.dive+0.05);F.diveMid=mid;burst(F.x,F.y-6,'#8fc8f0',14);return}
   if(sp.nm){const D=Math.max(30,Math.hypot(T.x-F.x,T.y-F.y));let sx=F.x+dx*8,sy=F.y-10+dy*6,vx=dx*sp.sp,vy=dy*sp.sp;
@@ -200,7 +200,7 @@ function dealDamage(T,d,col,text){const def=act(T);if(def.hp<=0)return;def.hp=Ma
 function hitLocal(T,s){
   const def=act(T);const r=calcDmg(s.att,def,s.mid,s.p);let d=r.d;if(d>0)d=Math.max(1,Math.round(d*(s.am||1)/stageMul(stgOf(T).d)));if(T.st.shield>0&&d>0)d=Math.max(1,Math.round(d*0.5));
   const mv=MOVES[s.mid]||MOVES.bump;
-  T.flash=0.25;T.hurtT=performance.now();T.hitstun=0.14;T.inv=Math.max(T.inv,0.12);const L=Math.hypot(s.vx,s.vy)||1,kb=mv.fx==='knock'?16:5;T.x+=s.vx/L*kb;T.y+=s.vy/L*kb*0.8;arenaClamp(T);
+  T.flash=0.25;T.hurtT=performance.now();T.hitstun=0.14;T.inv=Math.max(T.inv,mv.combo?0.06:0.12);const L=Math.hypot(s.vx,s.vy)||1,kb=mv.fx==='knock'?16:mv.combo?2:5;T.x+=s.vx/L*kb;T.y+=s.vy/L*kb*0.8;arenaClamp(T);
   if(r.e>1)say('Sehr effektiv!');else if(r.e===0)say('Das hatte keine Wirkung…');
   if(d>0&&mv.fx==='burn'&&Math.random()<0.35&&SPECIES[def.s].t!=='fire'){T.st.burn=3;say(`${SPECIES[def.s].n} wurde verbrannt!`)}
   if(d>0&&mv.fx==='slow'){T.st.slow=2.2}

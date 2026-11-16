@@ -78,7 +78,7 @@ altMon('boorberg',{n:'Boorberg',t:'electric',c:['#6a2a5a','#f6e2b4','#1a0812'],b
 Object.assign(MOVES,{
  tackle:{n:'Tackle',t:'normal',p:40,k:'melee'},bodyslam:{n:'Bodyslam',t:'normal',p:85,k:'melee',fx:'stun'},hyperbeam:{n:'Hyperstrahl',t:'normal',p:150,k:'beam',cd:6},
  swordsdance:{n:'Schwerttanz',t:'normal',p:0,k:'self',fx:'buff',bs:{a:2}},harden:{n:'Härtner',t:'normal',p:0,k:'self',fx:'buff',bs:{d:1}},
- growl:{n:'Heuler',t:'normal',p:10,k:'spread',fx:'debuff',bs:{a:-1}},leer:{n:'Silberblick',t:'normal',p:10,k:'shot',fx:'debuff',bs:{d:-1}},
+ growl:{n:'Heuler',t:'normal',p:10,k:'spread',fx:'debuff',bs:{a:-1}},leer:{n:'Silberblick',t:'normal',p:10,k:'beam',fx:'debuff',bs:{d:-1}},furyswipes:{n:'Kratzfurie',t:'normal',p:55,k:'melee',combo:5,ci:0.12},
  screech:{n:'Kreideschrei',t:'normal',p:10,k:'spread',fx:'debuff',bs:{d:-2}},scaryface:{n:'Grimasse',t:'normal',p:10,k:'shot',fx:'debuff',bs:{s:-2}},
  recover:{n:'Genesung',t:'normal',p:0,k:'self',fx:'heal'},confuseray:{n:'Konfustrahl',t:'electric',p:15,k:'beam',fx:'conf'},
  flamethrower:{n:'Flammenwurf',t:'fire',p:90,k:'breath',fx:'burn'},fireblast:{n:'Feuersturm',t:'fire',p:110,k:'air',fx:'burn'},sunnyday:{n:'Sonnentag',t:'fire',p:0,k:'self',fx:'buff',bs:{a:1,s:1}},
@@ -173,7 +173,7 @@ altMon("gewahrsamhirsch",Object.assign({"n": "Gewahrsamhirsch", "law": "§ 163c 
 // paragraph as name suffix: "Owigon §26", "Würdeadler Art.1", "Langfinger §242"
 for(const k in SPECIES){const sp=SPECIES[k];if(!sp.law)continue;const m=sp.law.match(/^(§|Art\.)\s*(\d+[a-z]?)(?:\s+([A-Za-zÄÖÜäöü]+))?/);if(m){sp.sfx=(m[1]==='§'?'§':'Art.')+m[2]+(m[3]?' '+m[3]:'');sp.base=sp.n;sp.n+=' '+sp.sfx}}
 // every learnset gets classics of its type (plus a buff/debuff), so wild monsters and trainers use them too
-{const ADD={normal:[[5,'growl'],[9,'leer'],[19,'bodyslam'],[24,'swordsdance'],[30,'hyperbeam']],fire:[[3,'ember'],[5,'growl'],[12,'scaryface'],[19,'flamethrower'],[23,'sunnyday'],[28,'fireblast']],
+{const ADD={normal:[[5,'growl'],[9,'leer'],[11,'furyswipes'],[19,'bodyslam'],[24,'swordsdance'],[30,'hyperbeam']],fire:[[3,'ember'],[5,'growl'],[12,'scaryface'],[19,'flamethrower'],[23,'sunnyday'],[28,'fireblast']],
   water:[[5,'withdraw'],[12,'dive'],[12,'bubblebeam'],[18,'aurorabeam'],[22,'surf'],[28,'hydropump']],grass:[[5,'growth'],[9,'stringshot'],[13,'razorleaf'],[18,'sleeppowder'],[22,'gigadrain'],[28,'solarbeam']],
   electric:[[5,'thunderwave'],[9,'charge'],[13,'confuseray'],[20,'thunderbolt'],[28,'thunder']],rock:[[5,'defcurl'],[9,'metalclaw'],[14,'rockslide'],[19,'crunch'],[23,'irontail'],[28,'earthquake']],
   flying:[[5,'featherdance'],[12,'fly'],[9,'wingattack'],[14,'agility'],[18,'steelwing'],[22,'drillpeck'],[28,'aeroblast']]};
