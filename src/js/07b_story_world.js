@@ -16,6 +16,11 @@ const BOSS_LV=[95,100];                     // the career advisor's final exam
 function dungeonAt(x,y){if(y<MH)return null;return DUNGEONS.find(d=>x>=d.x0&&x<d.x0+d.w&&y>=d.y0&&y<d.y0+d.h)||null}
 function storyLv(x,y){const dg=dungeonAt(x,y);if(dg)return dg.lv[0]+((x*7+y*13)%(dg.lv[1]-dg.lv[0]+1));if(y<MH&&BIOME[y*MW+x]===5)return KNAST_LV[0]+((x*7+y*13)%(KNAST_LV[1]-KNAST_LV[0]+1));
   const d=Math.hypot(x-MOST.x,y-MOST.y);if(d<MOST.r&&y<MH)return Math.round(MOST.lv[1]-(MOST.lv[1]-MOST.lv[0])*d/MOST.r);return 0}
+// unfinished bridges (a pier that stops in the middle of a river) are completed straight across to the other bank
+(function finishBridges(){const add=[];for(let y=1;y<MH-1;y++)for(let x=1;x<MW-1;x++){if(tget(x,y)!==27)continue;
+  for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]]){if(tget(x+dx,y+dy)!==3||tget(x-dx,y-dy)===3)continue;const run=[];let X=x+dx,Y=y+dy;while(tget(X,Y)===3&&run.length<26){run.push([X,Y]);X+=dx;Y+=dy}
+    const t=tget(X,Y);if(run.length&&run.length<26&&(WALK0.has(t)&&t!==3))add.push(...run)}}
+  for(const[x,y]of add)tset(x,y,27)})();
 (function genStory(){
   const near=(cx,cy,r0,r1,ok)=>{for(let r=r0;r<=r1;r++)for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++){if(Math.max(Math.abs(dx),Math.abs(dy))!==r)continue;const x=cx+dx,y=cy+dy;if(ok(x,y))return{x,y}}return null};
   const used=new Set();
