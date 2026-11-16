@@ -167,7 +167,7 @@ function renderLobby(){
   const el=$('#lobby');
   if(G&&RUN&&!RUN.free&&RUN.phase==='lobby'){const parts=participants(),host=isHost();const h=`<h3>LOBBY${RUN.cfg.name?': '+esc(RUN.cfg.name.toUpperCase()):''}</h3><p>${parts.length} Spieler warten: ${esc(parts.map(p=>p.n+(p.peer===hostPeer()?' ★':'')).join(', '))}<br><span class="small">${esc(cfgSummary(RUN.cfg))} · ${RUN.cfg.dur} Min. Training</span></p><div class="lrow">${host?'<button class="btn green" id="lgo" style="flex:1">▶ SPIEL STARTEN</button>':'<span style="flex:1" class="small">Warte auf den Start durch den Host (★)…</span>'}<button class="btn ghost" id="lleave">VERLASSEN</button></div>`;
     if(el.dataset.h!==h){el.dataset.h=h;el.innerHTML=h;const g=$('#lgo');if(g)g.onclick=hostStart;$('#lleave').onclick=leaveRun}el.classList.add('on');return}
-  if(!G||(RUN&&!RUN.free)){el.classList.remove('on');return}
+  if(!G||!RUN||RUN.free||(RUN&&!RUN.free)){el.classList.remove('on');if(G&&!RUN&&typeof switchTab==='function'&&curTab!=='lobby'&&!renderLobby.once){renderLobby.once=1;switchTab('lobby')}return}
   const ms=runningMatches();let h;
   if(RUN&&RUN.free){
     if(LOBBY_MIN){h=`<div class="lrow"><span style="flex:1;font-family:'Press Start 2P',monospace;font-size:8px;color:var(--accent)">FREIES SPIEL${ms.length?` · <span style="color:var(--green)">${ms.length} LOBBY${ms.length>1?'S':''} OFFEN</span>`:''}</span><button class="btn ghost" id="lmax">LOBBYS ▲</button></div>`;

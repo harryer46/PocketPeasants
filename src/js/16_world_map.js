@@ -23,8 +23,8 @@ function drawMap(){
   c.textAlign='center';const F=Math.max(10,ts*5);
   for(const[k,p]of Object.entries(BIO_C)){if(!ZONES[k])continue;const L=ZLV[k];c.font=`${Math.max(7,Math.round(ts*3.2))}px "Press Start 2P",monospace`;const t=ZONES[k].n.toUpperCase();c.fillStyle='#000000a0';c.fillText(t,p.x*ts+1,p.y*ts+1);c.fillStyle='#ffffff';c.fillText(t,p.x*ts,p.y*ts);
   }
-  // route numbers with their level range (levels belong to the routes, not to the areas)
-  {c.font=`${Math.max(8,Math.round(ts*3.6))}px VT323,monospace`;for(let n=1;n<=ROUTE_N;n++){const R=ROUTES[n];if(!R||R.pix.length<6)continue;const i=R.pix[R.pix.length>>1],x=i%MW,y=(i-x)/MW,t=`R${n} ${R.lv[0]}–${R.lv[1]}`;
+  // route names only (the level ranges are on the signs)
+  {c.font=`${Math.max(8,Math.round(ts*3.6))}px VT323,monospace`;for(let n=1;n<=ROUTE_N;n++){const R=ROUTES[n];if(!R||R.pix.length<6)continue;const i=R.pix[R.pix.length>>1],x=i%MW,y=(i-x)/MW,t=`Route ${n}`;
     const w=c.measureText(t).width+4;c.fillStyle='#14141fd0';c.fillRect(x*ts-w/2,y*ts-ts*2.4,w,ts*3.2);c.fillStyle='#ffcb3d';c.fillText(t,x*ts,y*ts)}}
   const mark=(x,y,txt,col,f)=>{c.font=`${f||F}px VT323,monospace`;c.fillStyle='#000';c.fillText(txt,(x+.5)*ts+1,(y+.5)*ts+(f||F)/3+1);c.fillStyle=col;c.fillText(txt,(x+.5)*ts,(y+.5)*ts+(f||F)/3)};
   for(const T of TOWNS){const vis=T.id==='vil'||(RUN&&RUN.towns&&RUN.towns[T.id]);c.fillStyle='#000';c.fillRect((T.x-6)*ts-1,(T.y-7)*ts-1,12*ts+2,8*ts+2);c.fillStyle=vis?'#ffcb3d':'#dcc690';c.fillRect((T.x-6)*ts,(T.y-7)*ts,12*ts,8*ts);

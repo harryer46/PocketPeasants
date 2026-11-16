@@ -31,10 +31,12 @@ function openSettings(){
   h+=`<div class="lbl2">SPIELSTAND</div><div class="seg"><button class="btn" id="ssave">💾 JETZT SPEICHERN</button><button class="btn ghost" id="sexp">⬇ EXPORTIEREN</button><button class="btn ghost" id="simp">⬆ IMPORTIEREN</button></div><div class="small" style="margin:2px 0 6px">Export = Sicherungsdatei zum Aufheben oder für ein anderes Gerät.</div>`;
   h+=`<div class="lbl2">FEHLERSUCHE</div><div class="seg"><button class="btn" id="slog">🧾 PROTOKOLL HERUNTERLADEN</button></div>`;
   h+=`<div class="lbl2">CHANGELOG</div><div id="clog" style="text-align:left;max-height:170px;overflow-y:auto;background:#0b0d16;border:2px solid #000;padding:6px 8px;font-size:16px;line-height:1.1">${CHANGELOG.map(([v,d,t])=>`<div style="margin-bottom:6px"><b style="color:var(--accent)">v${v}</b> <span class="small">${d.split('-').reverse().join('.')}</span><br>${esc(t)}</div>`).join('')}</div>`;
+  if(isMob())h+=`<div class="lbl2">NOTFALL</div><div class="seg"><button class="btn red" id="spanic">🚨 PANIK-MODUS</button></div><div class="small" style="margin:2px 0 6px">Zeigt sofort einen Gesetzestext und pausiert das Spiel. Doppeltippen beendet ihn wieder.</div>`;
   h+=`<div class="acts" style="margin-top:12px"><button class="btn ghost" id="sreset">ZURÜCKSETZEN</button><button class="btn" id="sdone">FERTIG</button></div>`;
   openModal(h);if(typeof bindNetSettings==='function')bindNetSettings();
   document.querySelectorAll('#mbox [data-g]').forEach(b=>b.onclick=()=>{SET[b.dataset.g]=b.dataset.v;saveSet();if(b.dataset.g==='alt'&&RUN&&RUN.free){RUN.cfg=Object.assign({},RUN.cfg,{alt:+b.dataset.v});save();renderTeam();toast(+b.dataset.v?'Alternative Monster im freien Spiel!':'Klassische Monster im freien Spiel.')}applyControls();openSettings()});
   document.querySelectorAll('#mbox [data-key]').forEach(b=>b.onclick=()=>{capturing=b.dataset.key;openSettings()});
+  {const pb=$('#spanic');if(pb)pb.onclick=()=>{closeModal();panicOn()}}
   {const lb=$('#slog');if(lb)lb.onclick=downloadLog;$('#ssave').onclick=manualSave;$('#sexp').onclick=exportSave;$('#simp').onclick=importSave}
   $('#sreset').onclick=()=>{SET={ctrl:'auto',dp:'m',side:'right',keys:{...DEF_KEYS}};capturing=null;saveSet();applyControls();openSettings()};
   $('#sdone').onclick=()=>{capturing=null;closeModal()};

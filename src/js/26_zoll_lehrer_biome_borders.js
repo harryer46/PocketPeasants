@@ -29,27 +29,40 @@ function tollSpots(){if(TOLLS)return TOLLS;TOLLS=[];
   // face the side the visitor comes from: the neighbour that is closest to town by walking distance
   const dist=new Int32Array(MW*MH).fill(-1),q=[VSPAWN.y*MW+VSPAWN.x];dist[q[0]]=0;for(let h=0;h<q.length;h++){const i=q[h],x=i%MW,y=(i-x)/MW;for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]]){const nx=x+dx,ny=y+dy,j=ny*MW+nx;if(nx<0||ny<0||nx>=MW||ny>=MH||dist[j]>=0||!WALK0.has(MAP[j]))continue;dist[j]=dist[i]+1;q.push(j)}}
   for(const g of GATES){if(g.i==null)continue;const x=g.i%MW,y=(g.i-x)/MW;let d='down',bd=1e9;for(const[dx,dy,dn]of[[1,0,'right'],[-1,0,'left'],[0,1,'down'],[0,-1,'up']]){const j=(y+dy)*MW+x+dx;if(dist[j]>=0&&dist[j]<bd){bd=dist[j];d=dn}}
-    const law=TOLL_LAW[g.b],names=PROF_NAMES[law]||[TOLL_NAME[g.b]],k=TOLLS.filter(t=>TOLL_LAW[t.b]===law).length;TOLLS.push({b:g.b,x,y,id:'toll'+g.b+'_'+TOLLS.length,pn:names[k%names.length],n:names[k%names.length]+' ('+law+')',c:['#7a5a3a','#5a3a7a','#3a5a7a','#7a3a4a'][k%4],d})}
+    // the professor waits beside the way and looks across it (like a trainer): whoever walks through the gate is seen
+    const ok=(cx,cy)=>{const t=MAP[cy*MW+cx];return cx>0&&cy>0&&cx<MW-1&&cy<MH-1&&WALK0.has(t)&&!ENC.has(t)&&!LEDGE_DIR[t]&&![3,7,12,13,22,23,27,36].includes(t)&&!TRAINERS.some(q=>q.x===cx&&q.y===cy)&&!TOLLS.some(q=>q.x===cx&&q.y===cy)&&!(typeof SIGNSET!=='undefined'&&SIGNSET.has(cy*MW+cx))};
+    let best=null;for(let cy=y-4;cy<=y+4;cy++)for(let cx=x-4;cx<=x+4;cx++){if((cx===x&&cy===y)||!ok(cx,cy))continue;
+      for(const[dx,dy,dn]of[[1,0,'right'],[-1,0,'left'],[0,1,'down'],[0,-1,'up']])for(let k=1;k<=5;k++){const X=cx+dx*k,Y=cy+dy*k;if(!WALK0.has(MAP[Y*MW+X]))break;if(X===x&&Y===y){const road=MAP[cy*MW+cx]===4?4:0,near=(dist[cy*MW+cx]>=0&&dist[cy*MW+cx]<=dist[g.i])?0:2,sc=k+road+near;if(!best||sc<best.sc)best={x:cx,y:cy,d:dn,sc};break}}}
+    const px=best?best.x:x,py=best?best.y:y,pd=best?best.d:d;
+    const law=TOLL_LAW[g.b],names=PROF_NAMES[law]||[TOLL_NAME[g.b]],k=TOLLS.filter(t=>TOLL_LAW[t.b]===law).length;TOLLS.push({b:g.b,x:px,y:py,gx:x,gy:y,id:'toll'+g.b+'_'+TOLLS.length,pn:names[k%names.length],n:names[k%names.length]+' ('+law+')',c:['#7a5a3a','#5a3a7a','#3a5a7a','#7a3a4a'][k%4],d:pd})}
   return TOLLS}
 function tollPaid(b){return!!(RUN&&RUN.toll&&RUN.toll[b])}
 function tollAt(x,y){return tollSpots().find(t=>t.x===x&&t.y===y)}
 let TOLL_BUSY=0;
 function tollBlock(nx,ny){if(!RUN||RUN.phase==='arena'||RUN.phase==='lobby')return false;
-  const g=tollSpots().find(t=>t.x===nx&&t.y===ny);let b=g?g.b:null;
-  // entering an area by another way (field-skill shortcuts) also needs that area's teacher
-  if(!b){const nb=BIOME[ny*MW+nx];if(nb>=2&&BIOME[P.y*MW+P.x]!==nb&&TOLL_LAW[nb])b=nb}
-  if(!b||tollPaid(b))return false;
+  // the professor only blocks his own tile; he is triggered by line of sight (tollSight), like a trainer
+  const g=tollSpots().find(t=>t.x===nx&&t.y===ny);if(!g)return false;const b=g.b;
+  if(tollPaid(b))return true;
   if(performance.now()-TOLL_BUSY>800&&!modalOpen()&&!CQ){TOLL_BUSY=performance.now();TOLL_WHO=g?g.pn:(tollSpots().find(t=>t.b===b)||{}).pn;tollDialog(b)}return true}
+// line of sight: an unpaid professor sees 5 tiles ahead; he calls you over to the Zwischenprüfung
+function tollSight(){if(!RUN||RUN.phase!=='train'||P.lock||B||CQ||modalOpen())return false;const now=performance.now();
+  for(const t of tollSpots()){if(tollPaid(t.b)||(t.cool||0)>now)continue;const[dx,dy]=DIRS[t.d];
+    for(let k=1;k<=5;k++){const x=t.x+dx*k,y=t.y+dy*k;if(!walkable(x,y)&&!(x===P.x&&y===P.y))break;if(x===P.x&&y===P.y){tollSpotted(t);return true}}}return false}
+function tollSpotted(t){P.lock=true;held.length=0;t.alert=performance.now();TOLL_WHO=t.pn;
+  setTimeout(()=>talk(t.n,`Halt! Wer in ${TOLL_AREA[t.b]||'dieses Gebiet'} will, legt bei mir erst die Zwischenprüfung im ${TOLL_LAW[t.b]} ab.`,()=>{P.lock=false;if(!B&&RUN&&RUN.phase==='train')tollDialog(t.b)}),700)}
+// "ZURÜCK": one step back the way you came, and the professor looks away for a moment
+function tollStepBack(b){const t=tollSpots().find(q=>q.b===b);if(t)t.cool=performance.now()+2500;const back={up:[0,1],down:[0,-1],left:[1,0],right:[-1,0]}[P.d]||[0,1];
+  const x=P.x+back[0],y=P.y+back[1];if(walkable(x,y))teleport(x,y)}
 let TOLL_WHO=null;function tollName(b){return TOLL_WHO||TOLL_NAME[b]}
 function tollDialog(b){const law=TOLL_LAW[b],nm=tollName(b);
   const money=RUN.money||0;
   openModal(`<h3>🎓 ${esc(nm)} — ${esc(law)}</h3><p>„Halt! Wer in ${esc(TOLL_AREA[b]||'dieses Gebiet')} will, kommt an mir nicht so einfach vorbei. Wie hätten wir’s denn gern?“</p>
    <div style="display:flex;flex-direction:column;gap:6px;text-align:left">
-    <button class="btn" id="tex">📝 KLAUSUR <span class="small">— 3 Fragen zum ${esc(law)}, alle richtig = frei</span></button>
+    <button class="btn" id="tex">📝 ZWISCHENPRÜFUNG <span class="small">— 3 Fragen zum ${esc(law)}, alle richtig = frei</span></button>
     <button class="btn ${money>=TOLL_FEE?'':'ghost'}" id="tpay" ${money>=TOLL_FEE?'':'disabled'}>💰 BESTECHEN <span class="small">— ${TOLL_FEE} $${money>=TOLL_FEE?'':' (du hast '+money+' $)'}</span></button>
     <button class="btn red" id="tfight">⚔ KÄMPFEN <span class="small">— gegen starke ${esc(law)}-Paragrafen</span></button></div>
    <div class="acts"><button class="btn ghost" id="mno">ZURÜCK</button></div>`);
-  $('#mno').onclick=closeModal;$('#tex').onclick=()=>{closeModal();tollQuiz(b)};
+  $('#mno').onclick=()=>{closeModal();tollStepBack(b)};$('#tex').onclick=()=>{closeModal();tollQuiz(b)};
   $('#tpay').onclick=()=>{if((RUN.money||0)<TOLL_FEE)return;RUN.money-=TOLL_FEE;updateHud();closeModal();tollPass(b,`${TOLL_FEE} $ — ich habe nichts gesehen`)};
   $('#tfight').onclick=()=>{closeModal();tollFight(b)}}
 function tollQuiz(b){const law=TOLL_LAW[b],pool=shuffleArr(lawQuestions(law)).slice(0,3);let i=0;

@@ -54,6 +54,7 @@ function checkSight(){
   if(!RUN||RUN.phase!=='train')return false;
   for(const t of TRAINERS){if(RUN.beat&&RUN.beat[t.id]||t.story)continue;const[dx,dy]=DIRS[t.d];
     for(let k=1;k<=4;k++){const x=t.x+dx*k,y=t.y+dy*k;if(!walkable(x,y))break;if(x===P.x&&y===P.y){spotted(t);return true}}}
+  if(typeof tollSight==='function'&&tollSight())return true;
   return false;
 }
 function teleport(x,y){if(P.fly){P.fly=false;P.flyT=0;pres({fl:0});flyBtn()}P.x=P.fx=x;P.y=P.fy=y;try{bakeNow()}catch(e){}P.moving=false;P.fol={x,y,tx:x,ty:y};trailReset(P,x,y);G.x=x;G.y=y;pres({x,y,d:P.d})}
@@ -73,7 +74,8 @@ function onArrive(){
 }
 // PÄD (Polizeiärztlicher Dienst): overview of all your monsters (picture + KP); pick one → a question; every correct answer heals it by 25 %
 const PAD_QT=15000;  // every question has a timer
-function healQuiz(){RUN.kap=Math.max(RUN.kap,10);updateHud();const all=()=>RUN.team.concat(RUN.box),full=()=>all().every(m=>m.hp>=stats(m).mhp);
+function healQuiz(){RUN.kap=Math.max(RUN.kap,10);updateHud();for(const m of RUN.box||[])m.hp=stats(m).mhp;  // boxed monsters rest at the PÄD; only the squad is shown
+  const all=()=>RUN.team,full=()=>all().every(m=>m.hp>=stats(m).mhp);
   if(full()){toast('PÄD: Dein Team ist gesund. Handschellen aufgefüllt.');save();return}
   const keys=Object.keys(QZ).filter(k=>SPECIES[k]&&QZ[k].length);let n=0,cur=null;const seen=new Set();
   // questions are about the monster being healed (its own paragraph); monsters without one get random ones
@@ -110,7 +112,7 @@ function healQuiz(){RUN.kap=Math.max(RUN.kap,10);updateHud();const all=()=>RUN.t
     document.querySelectorAll('[data-ck]').forEach(bt=>{const kk=+bt.dataset.ck;bt.disabled=true;bt.classList.add(kk===0?'ok':kk===k?'bad':'dim')});
     {const mx=stats(tm).mhp;if(ok)tm.hp=mx}if(!ok)healQuiz.pen=Date.now()+5000;
     const tmFull=tm.hp>=stats(tm).mhp,done=full();renderTeam();
-    $('#cqexp').innerHTML=`<div class="sexp ${ok?'ok':'bad'}">${ok?(done?'✓ Richtig — dein Team ist wieder fit!':tmFull?`✓ Richtig — ${esc(SPECIES[tm.s].n)} ist wieder fit!`:`✓ Richtig — ${esc(SPECIES[tm.s].n)} ist wieder fit!`):(k<0?'⏱ Zeit abgelaufen':'✗ Falsch')+` — keine Heilung, 5 Strafsekunden.`} ${esc(it.q[2])}</div>`;
+    $('#cqexp').innerHTML=`<div class="sexp ${ok?'ok':'bad'}">${ok?'✓ Richtig.':(k<0?'⏱ Zeit abgelaufen.':'✗ Falsch.')} ${esc(it.q[2])}</div>`;
     $('#cqact').innerHTML=done?`<button class="btn" id="cqstop">WEITER</button>`:tmFull?`<button class="btn" id="cqback">ÜBERSICHT</button><button class="btn ghost" id="cqstop">GEHEN</button>`:`<button class="btn" id="cqnext">NÄCHSTE FRAGE</button><button class="btn ghost" id="cqback">ÜBERSICHT</button><button class="btn ghost" id="cqstop">GEHEN</button>`;
     if(done){const hb=$('#cqheal');if(hb)hb.remove()}
     const nx=$('#cqnext');if(nx)nx.onclick=ask;penBtns();const bk=$('#cqback');if(bk)bk.onclick=overview;$('#cqstop').onclick=stop};
@@ -179,7 +181,7 @@ function drawWorld(){
   const ents=[];
   for(const o of OTH.values()){if(o.fx==null)continue;ents.push({fx:o.fx,fy:o.fy,col:o.c,sx:o.sx,d:o.d,ph:o.ph,mv:o.moving,name:o.n,bt:o.bt,bub:o.bub,alt:o.fl?1:0,ride:o.rd||null});if(o.fl){}else if(o.lf)folEnts(o,o.lf,ents,o.fx,o.fy);else if(o.ld&&o.fol.fx!=null)ents.push({fx:o.fol.fx,fy:o.fol.fy,mon:o.ld})}
   if(G){ents.push({fx:P.fx,fy:P.fy,col:G.color,sx:G.sex,d:P.d,ph:P.ph,mv:P.moving,name:G.name+' (du)',bt:B?(B.mode==='wild'?'wild':'duel'):null,bub:myBubble,me:1,ride:rideSid(),alt:flyAlt(),hop:P.jump?Math.round(Math.sin(P.mt*Math.PI)*9):0});if(RUN&&!P.fly&&flyAlt()===0)folEnts(P,folInfo(),ents,P.fx,P.fy)}
-  for(const t of tollSpots()){const paid=tollPaid(t.b);let fx=t.x,fy=t.y;if(paid){for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]])if(walkable(t.x+dx,t.y+dy)&&BIOME[(t.y+dy)*MW+t.x+dx]===t.b&&!(dx===0&&dy===0)){const side=DIRS[t.d];if(side&&dx===side[0]&&dy===side[1])continue;fx=t.x+dx;fy=t.y+dy;break}}ents.push({fx,fy,col:t.c,sx:/Würde|Strafe/.test(t.n)?'f':'m',d:t.d,npc:t,name:t.n})}
+  for(const t of tollSpots()){const fx=t.x,fy=t.y;ents.push({fx,fy,col:t.c,sx:/Würde|Strafe/.test(t.n)?'f':'m',d:t.d,npc:t,name:t.n})}
   for(const t of TRAINERS)ents.push({fx:t.x,fy:t.y,col:t.c,sx:/^\S+in\s/.test(t.n)?'f':'m',d:t.d,ph:0,mv:false,name:t.n,npc:t,bt:null});
   for(const L of LEGENDS){const gone=(RUN&&RUN.leg&&RUN.leg[L.id])||!cfgOf().leg;if(!gone)ents.push({fx:L.x,fy:L.y,legend:L})}
   ents.sort((a,b)=>a.fy-b.fy);

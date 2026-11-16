@@ -22,6 +22,8 @@ function panicOn(){if(PANIC)return;const N=NORMS[Math.floor(Math.random()*NORMS.
   let el=$('#panic');if(!el){el=document.createElement('div');el.id='panic';document.body.appendChild(el)}
   const sh=N[0].match(/\(([^)]+)\)$/),abbr=sh?sh[1]:'';
   el.innerHTML=`<div class="pdoc"><div class="phead">${esc(N[0])}</div><h1>${esc(N[1])}</h1>${N[3]?`<div class="psub">${esc(N[3])}</div>`:''}${N[2].map(t=>`<p>${esc(t)}</p>`).join('')}<div class="pfoot">${esc(abbr)} · ${esc(N[1].split(' ').slice(0,2).join(' '))}</div></div>`;
+  // on phones: double tap on the page ends the emergency mode again
+  el.ondblclick=()=>panicOff();el.ontouchend=()=>{const n=performance.now();if(n-(el.lastTap||0)<400){el.lastTap=0;panicOff()}else el.lastTap=n};
   el.style.display='block';document.title=N[1].split(' ').slice(0,2).join(' ')+' '+abbr;
   try{if(document.activeElement)document.activeElement.blur()}catch(e){}try{if(B&&B.mode==='duel')publishDuel(true)}catch(e){}}
 function panicOff(){if(!PANIC)return;const pause=performance.now()-PANIC.t0+(B&&B.mode!=='duel'?3000:0);if(B&&B.mode!=='duel')B.resumeEnd=performance.now()+3000;if(CQ)CQ.end+=3000;document.title=PANIC.title;PANIC=null;const el=$('#panic');if(el)el.style.display='none';try{if(B&&B.mode==='duel')publishDuel(true)}catch(e){}

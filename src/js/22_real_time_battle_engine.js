@@ -21,7 +21,7 @@ const TYPE_SPD={flying:1.1,electric:1.08,fire:1.04,normal:1,water:0.97,grass:0.9
 function fspeed(F){return Math.min(120,48+act(F).spd*1.15)*0.96*(TYPE_SPD[SPECIES[act(F).s].t]||1)*Math.sqrt(stageMul(stgOf(F).s))*(F.ctrl==='ai'?0.82:1)*(F.st&&F.st.slow>0?0.55:1)*(F.st&&F.st.haste>0?1.35:1)*(F.st&&F.st.dive>0?1.25:1)}
 function shotParams(mid){const r=shotParams0(mid);if(!r.mel&&!r.self&&r.sp&&r.k!=='vortex')r.sp*=1.2;return r}
 function shotParams0(mid){const mv=MOVES[mid]||MOVES.bump;const k=mv.k||(mv.t==='normal'?'melee':'shot');
-  if(k==='melee')return{mel:1,sp:270,life:0.17,r:10,p:mv.p,n:1};
+  if(k==='melee')return{mel:1,sp:270,life:0.17,r:10,p:Math.round(mv.p*1.35),n:1};  // melee hits harder
   if(mid==='surf')return{sp:84,life:2.5,r:10,p:Math.round(mv.p*0.85),n:1,wave:1};
   if(MOVE_VIS[mid]==='wave'&&(k==='spread'||k==='shot'))return{sp:100,life:1.8,r:6,p:Math.round(mv.p*0.85),n:1,wave:1};
   if(k==='rapid'){const n=clamp(mv.rn||6,5,10);return{rapid:n,int:0.085,sp:215,life:1.8,r:2.5,p:Math.max(3,Math.round(mv.p*0.8/n)),n:1}}
@@ -40,11 +40,11 @@ function shotParams0(mid){const mv=MOVES[mid]||MOVES.bump;const k=mv.k||(mv.t===
   if(k==='air')return{k,nm:1,sp:0,life:0.95,r:22,p:mv.p,n:1};
   if(k==='lob')return{k,nm:1,sp:520,h:54,life:1.15,r:18,p:mv.p,n:1};
   return{sp:178-mv.p,life:2.4,r:3+mv.p/25,p:mv.p,n:1}}
-function cdOf(mid){const mv=MOVES[mid]||MOVES.bump;if(mv.k==='rapid')return Math.max(3.2,(0.45+mv.p/62)*2.6);if(mv.fx==='heal'&&mv.k==='self')return 16;const base=mv.cd||(mv.k==='self'?7:mv.k==='big'?2.6:0.45+mv.p/62);return mv.k==='melee'||mv.k==='self'?base:base*1.2}
+function cdOf(mid){const mv=MOVES[mid]||MOVES.bump;if(mv.fx==='heal')return 3*(mv.k==='self'?16:(mv.cd||0.45+mv.p/62)*1.2);if(MOVES[mid]&&mv.t==='rock'&&(mv.k==='arc'||mv.k==='lob'))return Math.max(2.4,(0.45+mv.p/62)*1.2*2.2);if(mv.k==='rapid')return Math.max(3.2,(0.45+mv.p/62)*2.6);if(mv.fx==='heal'&&mv.k==='self')return 16;const base=mv.cd||(mv.k==='self'?7:mv.k==='big'?2.6:0.45+mv.p/62);return mv.k==='melee'||mv.k==='self'?base:base*1.2}
 // AP: one pool per fighter for every attack. Strong moves cost more, weak ones little; AP refill over time (real-time) or per turn (turn-based)
 const AP_MAX=100,AP_REGEN=8,TB_AP_REGEN=30;
 // healing costs all AP and has a long cooldown; every other move costs half of its former AP price
-function apCost(mid){const mv=MOVES[mid]||MOVES.bump;if(mv.k==='rapid')return Math.min(AP_MAX,Math.max(42,Math.round((mv.p||30)*0.75)));if(mv.k==='multi')return Math.min(AP_MAX,Math.max(32,Math.round((mv.p||30)*0.55)));if(mv.fx==='heal'&&mv.k==='self')return AP_MAX;if(mv.fx==='buff')return 50;if(mv.k==='self')return 35;if(mv.fx==='debuff'&&(mv.p||0)<=10)return 25;return Math.min(AP_MAX,Math.round(Math.max(18,(mv.p||30)*0.8*(mv.k==='melee'?0.8:1))*0.8*0.5))}
+function apCost(mid){const mv=MOVES[mid]||MOVES.bump;if(mv.k==='rapid')return Math.min(AP_MAX,Math.max(42,Math.round((mv.p||30)*0.75)));if(mv.k==='multi')return Math.min(AP_MAX,Math.max(32,Math.round((mv.p||30)*0.55)));if(mv.fx==='heal'&&mv.k==='self')return 50;if(mv.fx==='buff')return 50;if(mv.k==='self')return 35;if(mv.fx==='debuff'&&(mv.p||0)<=10)return 25;return Math.min(AP_MAX,Math.round(Math.max(18,(mv.p||30)*0.8*(mv.k==='melee'?0.8:1))*0.8*0.5))}
 function moveDesc(mid){const mv=MOVES[mid];const k={melee:'Nahkampf',shot:'Fernkampf',spread:'Fächer',multi:'Salve',big:'schwer',self:'selbst',beam:'Strahl',breath:'Atem',air:'Luftschlag',lob:'Hochwurf',arc:'Bogenwurf',rapid:'Schnellfeuer',rain:'Hagel',fly:'Flug-Angriff',dive:'Tauchangriff',vortex:'Sog'}[mv.k]||'Fernkampf';return`${TYPES[mv.t].n} · ${k}${mv.p?' · '+mv.p:''}${mv.fx?' · '+(mv.bs?(mv.fx==='debuff'?'Ziel: ':mv.fx==='selfbuff'?'evtl. ':'')+bsText(mv)+(mv.stc&&mv.stc<1?` (${Math.round(mv.stc*100)} %)`:''):FX_TXT[mv.fx]):''} · ${apCost(mid)} AP`}
 function calcDmg(att,def,mid,p){const mv=MOVES[mid]||MOVES.bump;const e=eff(mv.t,SPECIES[def.s].t);let d=((2*att.l/5+2)*p*att.atk/Math.max(1,def.def))/50+2*Math.min(1,p/30);d*=(mv.t===SPECIES[att.s].t?1.5:1)*e*(0.85+Math.random()*0.15)*0.55;return{d:e===0?0:Math.max(1,Math.round(d)),e}}
 function say(t){if(!B)return;if(/erreicht Lv/.test(t))B.lvlFx=performance.now();if(/entwickelt!/.test(t))B.evoFx=performance.now();B.log.push({t,at:performance.now()});if(B.log.length>3)B.log.shift()}
@@ -598,7 +598,7 @@ function cqTick(){if(!CQ||CQ.done)return;const now=performance.now();if(PANIC){C
   if(left<=0){cqAnswer(-1);return}setTimeout(cqTick,50)}
 function cqAnswer(k){if(!CQ||CQ.done)return;CQ.done=true;const ok=k===0,it=CQ.it;if(ok&&CQ.flee&&B)B.frozen=true;
   document.querySelectorAll('[data-ck]').forEach(b=>{const kk=+b.dataset.ck;b.disabled=true;b.classList.add(kk===0?'ok':kk===k?'bad':'dim')});
-  $('#cqexp').innerHTML=`<div class="sexp ${ok?'ok':'bad'}">${ok?(CQ.okMsg||'✓ Richtig — Festnahme!'):k<0?'⏱ Zeit abgelaufen!':'✗ Falsch.'} ${esc(it.q[2])}</div>`;
+  $('#cqexp').innerHTML=`<div class="sexp ${ok?'ok':'bad'}">${ok?'✓ Richtig.':k<0?'⏱ Zeit abgelaufen.':'✗ Falsch.'} ${esc(it.q[2])}</div>`;
   const cb=CQ.cb,fast=!!CQ.T;setTimeout(()=>{$('#cquiz').classList.remove('on','lite');CQ=null;cb(ok)},ok?(fast?900:1400):(fast?1800:2600))}
 function endWild(msg){if(!B)return;syncBack();if(msg)toast(msg);closeBattle();save();pushMt()}
 
