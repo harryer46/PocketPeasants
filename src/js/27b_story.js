@@ -14,7 +14,7 @@ function femCaught(){return FEM.filter(s=>G&&G.dex&&G.dex[s])}
 function lawRoster(){return rosterIds().filter(s=>SPECIES[s]&&(SPECIES[s].law||FEM.includes(s)))}
 function rankOf(){if(G&&G.ewig)return{k:2,n:'Polizist auf Ewigkeit',i:'👑'};if(femCaught().length>=4)return{k:1,n:'Einsatzbereit – Anwärter auf Gnade',i:'🛡'};return{k:0,n:'Anwärter auf Gnade',i:'🎓'}}
 function dungeonFor(law){return DUNGEONS.find(d=>d.law===law)}
-function routesTo(id){const k=ROUTE_STRETCH.findIndex(x=>x.to.id===id);if(k<0)return'';let a=k;while(a>0&&!ROUTE_STRETCH[a].from.id)a--;return`Route ${ROUTE_STRETCH[a].r0+1}–${ROUTE_STRETCH[k].r1}`}
+function routesTo(id){const ch=['vil','mar','dam','lah','fel','unt','mos'],k=ch.indexOf(id);const rs=k>0?routeWay(ch[k-1],id):[];return rs.length?'Route '+rs.join(' → '):''}
 function townName(id){const T=TOWNS.find(t=>t.id===id);return T?T.n:id}
 // ---- career advisor
 const BERATER_TXT=[
@@ -24,7 +24,7 @@ const BERATER_TXT=[
   'Und ohne Ausrüstung bist du nicht einsatzbereit. Zuerst brauchst du die vier legendären FEM-Monster: Schlagstock, Taser, Pfefferspray und Kelle.',
   'Die stecken in Dungeons überall auf der Karte. Reinkommen? Nur mit Durchsuchungsbeschluss – § 105 StPO lässt grüßen!',
   'Die Beschlüsse gibt es an den Ausbildungsstandorten: Besteh dort die PMLK – die Praktische Monster Leistungskontrolle – und besiege die Klausur.',
-  'Dein erster Weg: Route 1 bis 3 nach Süden, nach Marderach zur ersten PMLK (StPO). Die Routenschilder zeigen dir, wie stark die wilden Monster dort sind.',
+  `Dein erster Weg: ${routesTo('mar')||'nach Süden'} – nach Marderach zur ersten PMLK (StPO). Die Routenschilder zeigen dir, wie stark die wilden Monster dort sind.`,
   'Danach geht es weiter: Marderach prüft die StPO, dann Damental das GG, Lahribar das PolG und Unterwertheim das StGB. Folg den Routenschildern – Route 1 beginnt hier.',
   'Mostbach ist das Einsatzzentrum. Da laufen die ganz harten Brocken rum – geh erst hin, wenn du stark genug bist.',
   'Und wenn du alle vier FEM-Monster hast, kommst du zu mir: Dann nehme ich dir die Abschlussprüfung ab. Mein Team ist Level 100. Viel Erfolg!'];

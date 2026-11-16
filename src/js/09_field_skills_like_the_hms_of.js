@@ -28,15 +28,18 @@ function walkable(x,y){const t=tget(x,y);return(WALK.has(t)||(t===3&&canHM('swim
     // the side the visitor comes from
     let side=null,sx=gx,sy=gy;for(const[dx,dy]of D4){const j=(gy+dy)*MW+gx+dx;if((MAP[j]===4||MAP[j]===27)&&BIOME[j]!==g.b){side=BIOME[j];sx=gx+dx*3;sy=gy+dy*3;break}}
     const rr=routeAt(gx,gy)||1;put(sx,sy,{kind:'pass',to:g.b,lv:routeRange(rr),route:rr,arrow:dirTo(sx,sy,gx,gy)},side)}
-  // numbered route signs: at the start of every route along the main way between the towns
-  const tname=c=>c.id?(TOWNS.find(t=>t.id===c.id)||{}).n:'Felsenhöhen';
-  for(const S of ROUTE_STRETCH){const len=S.path.length;for(let r=S.r0+1;r<=S.r1;r++){let n0=Math.floor((r-1-S.r0)/(S.r1-S.r0)*len),n=-1;
-      for(let q=0;q<len;q++){const m=n0+q;if(m>=len)break;const i=S.path[m];if(ROUTE_OF[i]===r&&BIOME[i]!==0&&S.bio.has(BIOME[i])){n=m;break}if(q>70)break}
-      if(n<0)continue;const i=S.path[n],x=i%MW,y=(i-x)/MW;if(SIGNS.some(g=>g.kind==='route'&&g.r===r&&Math.abs(g.x-x)+Math.abs(g.y-y)<14))continue;
-      const j=S.path[Math.min(len-1,n+8)],tx=j%MW,ty=(j-tx)/MW,o={kind:'route',r,lv:routeRange(r),arrow:dirTo(x,y,tx,ty),to:tname(S.to)};put(x,y,o,null)||put(x,y,Object.assign({},o),null,true)}}
+  // route signs: at every town exit, where a route changes along the way, and one sign at every crossing
+  const nodeName=n=>!n?'':n.town?n.n:n.n||'Kreuzung',pt=i=>[i%MW,(i-i%MW)/MW];
+  const sign=(i,toI,R,to)=>{const[x,y]=pt(i),[tx,ty]=pt(toI);const o={kind:'route',r:R.n,lv:R.lv,arrow:dirTo(x,y,tx,ty),to};put(x,y,o,null)||put(x,y,Object.assign({},o),null,true)};
+  for(let n=1;n<=ROUTE_N;n++){const R=ROUTES[n],L=R.pix.length;if(L<2)continue;const E=R.edge;
+    if(!R.a||R.a.town||R.a.n&&!R.a.cross){if(R.a&&R.a.town)sign(R.pix[Math.min(2,L-1)],R.pix[Math.min(L-1,8)],R,nodeName(E.B))}
+    if(!R.a)sign(R.pix[0],R.pix[Math.min(L-1,6)],R,nodeName(E.B));
+    if(R.b&&R.b.town)sign(R.pix[Math.max(0,L-3)],R.pix[Math.max(0,L-9)],R,nodeName(E.A))}
+  for(const N of ROUTE_NODES){if(!N.cross)continue;const meet=[];for(let n=1;n<=ROUTE_N;n++){const R=ROUTES[n];if(R.a===N)meet.push({r:n,lv:R.lv,i:R.pix[Math.min(4,R.pix.length-1)]});else if(R.b===N)meet.push({r:n,lv:R.lv,i:R.pix[Math.max(0,R.pix.length-5)]})}
+    if(meet.length<2)continue;put(N.x,N.y,{kind:'cross',n:N.n||'',routes:meet.map(m=>{const[x,y]=pt(m.i);return{r:m.r,lv:m.lv,arrow:dirTo(N.x,N.y,x,y)}}).sort((a,b)=>a.r-b.r)},null)||put(N.x,N.y,{kind:'cross',n:N.n||'',routes:meet.map(m=>{const[x,y]=pt(m.i);return{r:m.r,lv:m.lv,arrow:dirTo(N.x,N.y,x,y)}}).sort((a,b)=>a.r-b.r)},null,true)}
 })();
-function signShort(sg){if(sg.kind==='route')return`ROUTE ${sg.r} · Lv ${sg.lv[0]}–${sg.lv[1]}`;return sg.kind==='town'?sg.n:`${sg.arrow||''} ${BNAME[sg.to]} · Lv ${sg.lv[0]}–${sg.lv[1]}`}
-function signText(sg){if(sg.kind==='route')return`<b>🪧 ROUTE ${sg.r}</b> · wilde Monster Lv ${sg.lv[0]}–${sg.lv[1]} · Trainer ab Lv ${sg.lv[0]+3}<br>${sg.arrow||''} Richtung ${esc(sg.to||'')}${sg.r>=ROUTE_N?'':''}`;if(sg.kind==='knast')return`<b>⛓ KNAST ⛓</b> · Lv ${sg.lv[0]}–${sg.lv[1]}<br>Justizvollzugsanstalt im Unterwertheimer Krater.<br>Hier sitzen nur StGB-Täter — und sie wollen raus! Nur für erfahrene Beamte.`;
+function signShort(sg){if(sg.kind==='cross')return'KREUZUNG · '+sg.routes.map(r=>`${r.arrow} R${r.r}`).join(' ');if(sg.kind==='route')return`ROUTE ${sg.r} · Lv ${sg.lv[0]}–${sg.lv[1]}`;return sg.kind==='town'?sg.n:`${sg.arrow||''} ${BNAME[sg.to]} · Lv ${sg.lv[0]}–${sg.lv[1]}`}
+function signText(sg){if(sg.kind==='cross')return`<b>🪧 KREUZUNG${sg.n?' · '+esc(sg.n):''}</b><br>`+sg.routes.map(r=>`${r.arrow} <b>Route ${r.r}</b> · Lv ${r.lv[0]}–${r.lv[1]}`).join('<br>');if(sg.kind==='route')return`<b>🪧 ROUTE ${sg.r}</b> · wilde Monster Lv ${sg.lv[0]}–${sg.lv[1]} · Trainer ab Lv ${sg.lv[0]+3}<br>${sg.arrow||''} Richtung ${esc(sg.to||'')}${sg.r>=ROUTE_N?'':''}`;if(sg.kind==='knast')return`<b>⛓ KNAST ⛓</b> · Lv ${sg.lv[0]}–${sg.lv[1]}<br>Justizvollzugsanstalt im Unterwertheimer Krater.<br>Hier sitzen nur StGB-Täter — und sie wollen raus! Nur für erfahrene Beamte.`;
   if(sg.kind==='town'){const T=TOWNS.find(t=>t.id===sg.town);return`<b>${esc((sg.n||'').toUpperCase())}</b><br>${sg.town==='vil'?'Polizeischule — ⚖ Gericht (Lobby-Turnier) · ':'Ausbildungsstätte — '}⚕ PÄD (heilen, Wiedereinstieg nach Niederlage) · 🛒 Copshop · 🎓 HfPol (Study)<br>🕊 Besuchte Städte erreichst du jederzeit per Schnellreise über die Weltkarte (M).`}
   const z=BKEYS[sg.to],pool=z?poolOf(z):[],mons=pool.map(s=>G&&G.dex&&G.dex[s]!==undefined?SPECIES[s].n:'???').join(', ');
   return`<b>${sg.arrow||''} ${BNAME[sg.to].toUpperCase()}</b> · empfohlen Lv ${sg.lv[0]}–${sg.lv[1]}<br>${TOLL_LAW&&TOLL_LAW[sg.to]?`Der Weg wird von einem Prof. bewacht (${TOLL_LAW[sg.to]}): Klausur, Bestechung oder Kampf.<br>`:''}Hier gesichtet: ${esc(mons)}`}
