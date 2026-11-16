@@ -27,12 +27,12 @@ function drawMap(){
   for(const T of TOWNS){const vis=T.id==='vil'||(RUN&&RUN.towns&&RUN.towns[T.id]);c.fillStyle='#000';c.fillRect((T.x-6)*ts-1,(T.y-7)*ts-1,12*ts+2,8*ts+2);c.fillStyle=vis?'#ffcb3d':'#dcc690';c.fillRect((T.x-6)*ts,(T.y-7)*ts,12*ts,8*ts);
     c.font=`${Math.max(9,Math.round(ts*4))}px VT323,monospace`;c.fillStyle='#000';c.fillText(T.n,T.x*ts+1,(T.y-9)*ts+1);c.fillStyle='#ffffff';c.fillText(T.n,T.x*ts,(T.y-9)*ts)}
   mark(KNAST_C.x,KNAST_C.y,'⛓','#ffffff');
-  for(const L of LEGENDS){const gone=RUN&&RUN.leg&&RUN.leg[L.id];mark(L.x,L.y,'★',gone?'#8a8ea6':'#ffcb3d')}
+  for(const L of LEGENDS){const gone=RUN&&RUN.leg&&RUN.leg[L.id];mark(L.ex??L.x,L.ey??L.y,'★',gone?'#8a8ea6':'#ffcb3d')}
   const dot=(x,y,col,s)=>{s=s||Math.max(2,ts*1.6);c.fillStyle='#000';c.fillRect(x*ts-s/2-1,y*ts-s/2-1,s+2,s+2);c.fillStyle=col;c.fillRect(x*ts-s/2,y*ts-s/2,s,s)};
   for(const t of tollSpots())dot(t.x+.5,t.y+.5,tollPaid(t.b)?'#3ddc6b':'#c27bff');
-  for(const t of TRAINERS){const beat=RUN&&RUN.beat&&RUN.beat[t.id];dot(t.x+.5,t.y+.5,beat?'#8a8ea6':t.c,Math.max(2,ts*1.2))}
+  for(const t of TRAINERS){if(t.y>=MH)continue;const beat=RUN&&RUN.beat&&RUN.beat[t.id];dot(t.x+.5,t.y+.5,beat?'#8a8ea6':t.c,Math.max(2,ts*1.2))}
   for(const o of OTH.values()){if(o.fx==null)continue;dot(o.fx+.5,o.fy+.5,o.c||'#888',Math.max(3,ts*2.4))}
-  const blink=Math.floor(performance.now()/350)%2;dot(P.fx+.5,P.fy+.5,blink?'#ffffff':G.color,Math.max(4,ts*3));
+  const blink=Math.floor(performance.now()/350)%2;{const dg=P.fy>=MH?dungeonAt(P.x,P.y):null;dot((dg?dg.ex:P.fx)+.5,(dg?dg.ey:P.fy)+.5,blink?'#ffffff':G.color,Math.max(4,ts*3))}
   c.textAlign='left';
 }
 function renderMapLegend(){

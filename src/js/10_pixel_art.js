@@ -198,9 +198,9 @@ const PAL={
 const RGB={};for(const k in PAL)RGB[k]=PAL[k].map(hex2rgb);
 // the world is baked lazily in chunks of 32×32 tiles (ground + tree-canopy layer) around the player, kept in a small LRU cache
 let WORLD=null,CANOPY=null,BAKE=null,BAKE_FAIL=false;const CS=32,CHUNKS=new Map(),CH_MAX=18;let BN=null;
-function bakeNoise(){if(BN)return BN;const W=MW*16,H=MH*16;BN={nL:noise2(101,46,W,H),nS:noise2(202,13,W,H),nD:noise2(303,22,W,H),jx:noise2(404,9,W,H),jy:noise2(505,9,W,H),nW:noise2(606,30,W,H)};return BN}
+function bakeNoise(){if(BN)return BN;const W=MW*16,H=MHT*16;BN={nL:noise2(101,46,W,H),nS:noise2(202,13,W,H),nD:noise2(303,22,W,H),jx:noise2(404,9,W,H),jy:noise2(505,9,W,H),nW:noise2(606,30,W,H)};return BN}
 function chunkKey(cx,cy){return cx+','+cy}
-function neededChunks(){const px=Math.floor((P.fx||VSPAWN.x)/CS),py=Math.floor((P.fy||VSPAWN.y)/CS),out=[];for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const cx=px+dx,cy=py+dy;if(cx<0||cy<0||cx*CS>=MW||cy*CS>=MH)continue;out.push([cx,cy,Math.abs(dx)+Math.abs(dy)])}return out.sort((a,b)=>a[2]-b[2])}
+function neededChunks(){const px=Math.floor((P.fx||VSPAWN.x)/CS),py=Math.floor((P.fy||VSPAWN.y)/CS),out=[];for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const cx=px+dx,cy=py+dy;if(cx<0||cy<0||cx*CS>=MW||cy*CS>=MHT)continue;out.push([cx,cy,Math.abs(dx)+Math.abs(dy)])}return out.sort((a,b)=>a[2]-b[2])}
 function bakeTick(budget){if(BAKE_FAIL)return;try{const t0=performance.now();const urgent=neededChunks().some(c=>c[2]<=1&&!CHUNKS.has(chunkKey(c[0],c[1])));budget=budget||(urgent?28:8);
   while(performance.now()-t0<budget){if(!BAKE){const nx=neededChunks().find(([cx,cy])=>!CHUNKS.has(chunkKey(cx,cy)));if(!nx)break;BAKE={k:chunkKey(nx[0],nx[1]),it:bakeChunkGen(nx[0],nx[1])}}
     const r=BAKE.it.next();if(r.done){CHUNKS.set(BAKE.k,Object.assign(r.value,{t:performance.now()}));BAKE=null;
@@ -214,9 +214,9 @@ function bakeWorld(){WORLD=true}
 function bakeNow(){const t0=performance.now();while(performance.now()-t0<1600&&neededChunks().some(c=>c[2]<=1&&!CHUNKS.has(chunkKey(c[0],c[1]))))bakeTick(60)}
 // draw the visible part of the baked world (layer 'g' = ground, 'c' = canopy); unbaked chunks fall back to flat colours
 function drawWorldLayer(c,camX,camY,LW,LH,layer){const x0=Math.floor(Math.max(0,camX)/(CS*16)),y0=Math.floor(Math.max(0,camY)/(CS*16)),x1=Math.floor((camX+LW)/(CS*16)),y1=Math.floor((camY+LH)/(CS*16));
-  for(let cy=y0;cy<=y1;cy++)for(let cx=x0;cx<=x1;cx++){if(cx*CS>=MW||cy*CS>=MH)continue;const ch=CHUNKS.get(chunkKey(cx,cy));const X=cx*CS*16-camX,Y=cy*CS*16-camY;
+  for(let cy=y0;cy<=y1;cy++)for(let cx=x0;cx<=x1;cx++){if(cx*CS>=MW||cy*CS>=MHT)continue;const ch=CHUNKS.get(chunkKey(cx,cy));const X=cx*CS*16-camX,Y=cy*CS*16-camY;
     if(ch&&ch.g){ch.t=performance.now();c.drawImage(layer==='g'?ch.g:ch.c,X,Y);continue}
-    if(layer!=='g')continue;const tx0=Math.max(cx*CS,Math.floor(camX/16)),ty0=Math.max(cy*CS,Math.floor(camY/16)),tx1=Math.min(cx*CS+CS-1,Math.floor((camX+LW)/16),MW-1),ty1=Math.min(cy*CS+CS-1,Math.floor((camY+LH)/16),MH-1);
+    if(layer!=='g')continue;const tx0=Math.max(cx*CS,Math.floor(camX/16)),ty0=Math.max(cy*CS,Math.floor(camY/16)),tx1=Math.min(cx*CS+CS-1,Math.floor((camX+LW)/16),MW-1),ty1=Math.min(cy*CS+CS-1,Math.floor((camY+LH)/16),MHT-1);
     for(let y=ty0;y<=ty1;y++)for(let x=tx0;x<=tx1;x++){c.fillStyle=MCOL[tget(x,y)]||'#000';c.fillRect(x*16-camX,y*16-camY,16,16)}}}
 function townArea(x,y){let best=1,bd=1e9;for(const T of TOWN_DEF){const d=Math.abs(T.x-x)+Math.abs(T.y-y);if(d<bd){bd=d;best=T.b}}return best}
 const GROUND_PAL=b=>b===2?RGB.forest:b===3?RGB.shore:b===4?RGB.hills:b===6?RGB.snow:b===7?RGB.desert:b===8?RGB.jungle:RGB.meadow;
@@ -224,12 +224,12 @@ function* bakeChunkGen(cx,cy){
   const X0=cx*CS,Y0=cy*CS,S=CS*16,PX0=X0*16,PY0=Y0*16,g=mk(S,S),gc=g.getContext('2d'),id=gc.createImageData(S,S),d=id.data,{nL,nS,nD,jx,jy,nW}=bakeNoise();
   const T=(x,y)=>tget(Math.floor(x/16),Math.floor(y/16));
   const JX=new Float32Array((S>>1)+1),JY=new Float32Array((S>>1)+1);
-  const SW=Math.min(S,MW*16-PX0),SH=Math.min(S,MH*16-PY0);
+  const SW=Math.min(S,MW*16-PX0),SH=Math.min(S,MHT*16-PY0);
   for(let ly=0;ly<SH;ly++){if((ly&7)===0)yield;const py=PY0+ly;if(!(ly&1))for(let k=0;k<=S>>1;k++){JX[k]=(jx(PX0+k*2,py)-0.5)*7;JY[k]=(jy(PX0+k*2,py)-0.5)*7}
     for(let lx=0;lx<SW;lx++){const px=PX0+lx;
     const ox=JX[lx>>1],oy=JY[lx>>1];let t=T(px+ox,py+oy);const t0=T(px,py);
-    if(t0===6||t0===7||t0===8||t0===10||t0===11||t0===12||t0===20||t0>=21&&t0<=23||t0===27||t0===13)t=t0;
-    const tx=clamp(Math.floor((px+ox)/16),0,MW-1),ty=clamp(Math.floor((py+oy)/16),0,MH-1),b=BIOME[ty*MW+tx];
+    if(t0===6||t0===7||t0===8||t0===10||t0===11||t0===12||t0===20||t0>=21&&t0<=23||t0===27||t0===13||t0===36)t=t0;
+    const tx=clamp(Math.floor((px+ox)/16),0,MW-1),ty=clamp(Math.floor((py+oy)/16),0,MHT-1),b=BIOME[ty*MW+tx];
     const dth=BAYER[(py&3)*4+(px&3)]*0.22;let v=nL(px,py)*0.62+nS(px,py)*0.38+dth;let pal;const o=(ly*S+lx)*4;
     if(t===3||t===27){pal=RGB.water;v=nW(px,py+((px*7)%3))*0.7+0.15+dth;
       const nearLand=[[-2,0],[2,0],[0,-2],[0,2]].some(([a,c2])=>{const q=T(px+a+ox*0.3,py+c2+oy*0.3);return q!==3&&q!==27});if(nearLand){d[o]=200;d[o+1]=232;d[o+2]=245;d[o+3]=255;continue}}
@@ -245,7 +245,7 @@ function* bakeChunkGen(cx,cy){
   gc.save();gc.translate(-PX0,-PY0);
   const inC=(x,y)=>x>=X0&&y>=Y0&&x<X0+CS&&y<Y0+CS;
   // building tiles (PÄD walls/roof are covered by its sprite)
-  for(let y=Y0;y<Y0+CS;y++)for(let x=X0;x<X0+CS;x++){const t=tget(x,y);if([10,11,12,20,27].includes(t)){const arr=TILE[t];gc.drawImage(arr[(t===20?(x+y)%arr.length:0)],x*16,y*16)}}
+  for(let y=Y0;y<Y0+CS;y++)for(let x=X0;x<X0+CS;x++){const t=tget(x,y);if([10,11,12,20,27,36].includes(t)){const arr=TILE[t];gc.drawImage(arr[(t===20?(x+y)%arr.length:0)],x*16,y*16)}}
   for(const p of PADS){if(p.bx+6<X0||p.bx>X0+CS||p.by+4<Y0||p.by>Y0+CS)continue;gc.fillStyle='rgba(20,30,10,0.28)';gc.fillRect(p.bx*16,(p.by+4)*16,96,4);gc.drawImage(p.old?padSpriteOld():dienstSprite(),p.bx*16,p.by*16)}
   for(const Bd of BLDG){if(Bd.x+Bd.w<X0||Bd.x>X0+CS||Bd.y+Bd.h<Y0||Bd.y>Y0+CS)continue;gc.fillStyle='rgba(20,30,10,0.28)';gc.fillRect(Bd.x*16,(Bd.y+Bd.h)*16,Bd.w*16,4);gc.drawImage(Bd.id==='shop'?(Bd.old?shopSpriteOld():shopSprite()):(Bd.old?hfpolSpriteOld():hfpolSprite()),Bd.x*16,Bd.y*16)}
   for(let y=Y0;y<Y0+CS;y++)for(let x=X0;x<X0+CS;x++){const t=tget(x,y);if(t===13)gc.drawImage(TILE[13][0],x*16,y*16)}
@@ -278,7 +278,7 @@ function* bakeChunkGen(cx,cy){
   const cv=mk(S,S),cc=cv.getContext('2d');
   for(let y=Y0;y<Y0+CS;y++)for(let x=X0;x<X0+CS;x++){if(tget(x,y)!==2)continue;const b=BIOME[y*MW+x],X=(x-X0)*16,Y=(y-Y0)*16;gc.fillStyle='rgba(10,25,8,0.32)';gc.beginPath();gc.ellipse(X+10,Y+14,10,5,0,0,7);gc.fill();
     if(b===7)continue;gc.fillStyle='#3e2814';gc.fillRect(X+6,Y+8,4,8);gc.fillStyle=b===8?'#8a6a3a':'#6b4423';gc.fillRect(X+7,Y+8,2,7);gc.fillStyle='#8a5a30';gc.fillRect(X+7,Y+9,1,4)}
-  const trees=[];for(let y=Y0-2;y<Y0+CS+2;y++)for(let x=X0-2;x<X0+CS+2;x++)if(tget(x,y)===2&&x>=0&&y>=0&&x<MW&&y<MH)trees.push([x,y]);
+  const trees=[];for(let y=Y0-2;y<Y0+CS+2;y++)for(let x=X0-2;x<X0+CS+2;x++)if(tget(x,y)===2&&x>=0&&y>=0&&x<MW&&y<MHT)trees.push([x,y]);
   for(const[x,y]of trees.sort((a,b)=>a[1]-b[1])){const b=BIOME[y*MW+x]||townArea(x,y),X=(x-X0)*16+8,Y=(y-Y0)*16+3,v=th(x,y)%5;
     const kind=b===6?'pine':b===7?'cactus':(b===8||(b===3&&tget(x,y+1)!==2))?'palm':b===2?'forest':'leaf';cc.drawImage(propSprite(kind+v),X-24,Y-24)}
   return{g,c:cv};

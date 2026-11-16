@@ -4,7 +4,7 @@ function modalOpen(){return !!TALK||$('#modal').classList.contains('on')||$('#st
 // FLY (field skill from Axel): take off right on the map – over trees, water and cliffs, twice as fast,
 //   no encounters; areas whose teacher you have not passed stay closed in the air too; land only on walkable ground
 function flyable(x,y){if(x<2||y<2||x>=MW-2||y>=MH-2)return false;const b=BIOME[y*MW+x];return!(TOLL_LAW[b]&&!tollPaid(b)&&RUN&&RUN.phase==='train')}
-function canFly(){return canHM('fly')&&!B&&RUN&&RUN.phase!=='arena'}
+function canFly(){return canHM('fly')&&!B&&RUN&&RUN.phase!=='arena'&&P.y<MH}
 function toggleFly(){if(!P.fly){if(hasHM('fly')&&!hmUser('fly')){toast(`Zum FLIEGEN brauchst du ein ${hmNeed('fly')} im Kader.`);return}if(!canFly())return;if(P.moving)return;P.fly=true;P.flyT=performance.now();held.length=0;pres({fl:1});rideSync();toast(`🕊 ${SPECIES[hmUser('fly').s].n} trägt dich in die Luft! Landen über Team → Feldfähigkeiten oder Taste F.`);flyBtn();return}
   if(P.moving)return;const x=P.x,y=P.y;if(!walkable(x,y)||trainerAt(x,y)||LEGENDS.some(L=>L.x===x&&L.y===y)||tollAt(x,y)){toast('Hier kannst du nicht landen – such dir freien Boden.');return}
   P.fly=false;P.flyT=performance.now();rideSync();P.fol={x,y,tx:x,ty:y,fx:x,fy:y};trailReset(P,x,y);if(P.fols)for(const f of P.fols){f.fx=f.tx=x;f.fy=f.ty=y}pres({fl:0});save();flyBtn();onArrive()}
@@ -34,6 +34,7 @@ function bump(nx,ny){
   if(tget(nx,ny)===3&&!hasHM('swim')){toast(`Das Wasser ist tief… ${TRAINERS.find(t=>t.id==='sue').n} bringt dir SURFER bei.`);return}
   const sg=SIGNS.find(s=>s.x===nx&&s.y===ny);if(sg){if(!$('#signbox').classList.contains('on'))showSign(sg);return}
   const t=trainerAt(nx,ny);
+  if(t&&t.story){storyBump(t);return}
   if(t){if(!RUN||RUN.phase!=='train')toast(`${t.n}: „Komm wieder, wenn dein Spiel begonnen hat!“`);else if(RUN.beat&&RUN.beat[t.id])talk(t.n,t.after);else spotted(t);return}
   const L=LEGENDS.find(L=>L.x===nx&&L.y===ny);
   if(L&&!cfgOf().leg){toast('Der Schrein bleibt in diesem Spiel still.');return}
@@ -51,7 +52,7 @@ function talkTap(){if(!TALK)return;if(TALK.n<TALK.full.length){TALK.n=TALK.full.
 function endTalk(silent){const T_=TALK;if(!T_)return;TALK=null;clearInterval(T_.t);clearTimeout(T_.auto);T_.ov.remove();held.length=0;if(!silent&&T_.cb)T_.cb()}
 function checkSight(){
   if(!RUN||RUN.phase!=='train')return false;
-  for(const t of TRAINERS){if(RUN.beat&&RUN.beat[t.id])continue;const[dx,dy]=DIRS[t.d];
+  for(const t of TRAINERS){if(RUN.beat&&RUN.beat[t.id]||t.story)continue;const[dx,dy]=DIRS[t.d];
     for(let k=1;k<=4;k++){const x=t.x+dx*k,y=t.y+dy*k;if(!walkable(x,y))break;if(x===P.x&&y===P.y){spotted(t);return true}}}
   return false;
 }
@@ -152,11 +153,11 @@ function drawWorld(){
   const K=Math.max(1,Math.round(SC*dpr));LW=Math.ceil(W/K);LH=Math.ceil(H/K);
   const c=wc;c.setTransform(K,0,0,K,0,0);c.imageSmoothingEnabled=false;
   let camX=Math.round(P.fx*16+8-LW/2),camY=Math.round(P.fy*16+8-LH/2);
-  camX=clamp(camX,0,MW*16-LW);camY=clamp(camY,0,MH*16-LH);
+  camX=clamp(camX,0,MW*16-LW);camY=P.fy>=MH?clamp(camY,MH*16,MHT*16-LH):clamp(camY,0,MH*16-LH);
   c.fillStyle='#1d6428';c.fillRect(0,0,LW,LH);
   const x0=Math.floor(camX/16),y0=Math.floor(camY/16),x1=x0+Math.ceil(LW/16)+1,y1=y0+Math.ceil(LH/16)+1;const wf=Math.floor(T*1.6)%2;
   if(!WORLD&&!BAKE_FAIL){bakeTick();c.fillStyle='#10121c';c.fillRect(0,0,LW,LH);c.font='8px "Press Start 2P",monospace';c.fillStyle='#ffcb3d';c.textAlign='center';c.fillText('WELT WIRD GELADEN…',LW/2,LH/2);c.fillStyle='#9aa1bd';c.fillText('v'+VERSION,LW/2,LH/2+14);c.textAlign='left';return}
-  if(BAKE_FAIL){for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){if(x<0||y<0||x>=MW||y>=MH)continue;c.fillStyle=MCOL[tget(x,y)]||'#000';c.fillRect(x*16-camX,y*16-camY,16,16)}}
+  if(BAKE_FAIL){for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){if(x<0||y<0||x>=MW||y>=MHT)continue;c.fillStyle=MCOL[tget(x,y)]||'#000';c.fillRect(x*16-camX,y*16-camY,16,16)}}
   if(WORLD)drawWorldLayer(c,camX,camY,LW,LH,'g');
   // animated water sparkle
   for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){if(tget(x,y)!==3)continue;const h=th(x,y);const ph=(T*1.3+(h%100)/100)%1;if(ph<0.5){const X=x*16-camX+(h%11)+2,Y=y*16-camY+((h>>4)%11)+2;c.fillStyle=ph<0.25?'#d8f0ff':'#8fc8f0';c.fillRect(X,Y,ph<0.25?3:2,1)}}

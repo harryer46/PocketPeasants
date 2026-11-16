@@ -33,7 +33,7 @@ function onRoomPeers(ch){
 const GONE=new Map();
 function syncOther(p){
   const pr=p.presence||{};if(typeof pr.x!=='number'||typeof pr.y!=='number')return;
-  let o=OTH.get(p.peer);const tx=clamp(Math.round(pr.x),0,MW-1),ty=clamp(Math.round(pr.y),0,MH-1);const name=cleanName(pr.n);
+  let o=OTH.get(p.peer);const tx=clamp(Math.round(pr.x),0,MW-1),ty=clamp(Math.round(pr.y),0,MHT-1);const name=cleanName(pr.n);
   if(!o){o={fx:tx,fy:ty,tx,ty,ph:0,moving:false,chatI:pr.chat&&pr.chat.i,n:name,fol:{x:tx,y:ty,tx,ty},seenMt:null};OTH.set(p.peer,o);const g=GONE.get(p.peer);if(g){clearTimeout(g.tm);GONE.delete(p.peer);plog('[peer] kurz getrennt, wieder da',p.peer,name,Math.round((Date.now()-g.t)/1000)+'s')}else{plog('[peer] neu',p.peer,name,'v'+(pr.v||'?'));sysChat(`${name} ist der Welt beigetreten.`)}}
   if(tx!==o.tx||ty!==o.ty){o.fol.tx=o.tx;o.fol.ty=o.ty;if(Math.abs(tx-o.tx)+Math.abs(ty-o.ty)>3)trailReset(o,tx,ty);else trailPush(o,o.tx,o.ty)}
   o.lf=Array.isArray(pr.lf)?pr.lf.filter(x=>typeof x==='string'&&SPECIES[x]).slice(0,4):null;

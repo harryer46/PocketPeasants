@@ -35,5 +35,5 @@ function signText(sg){if(sg.kind==='knast')return`<b>⛓ KNAST ⛓</b> · Lv ${s
   const z=BKEYS[sg.to],pool=z?poolOf(z):[],mons=pool.map(s=>G&&G.dex&&G.dex[s]!==undefined?SPECIES[s].n:'???').join(', ');
   return`<b>${sg.arrow||''} ${BNAME[sg.to].toUpperCase()}</b> · empfohlen Lv ${sg.lv[0]}–${sg.lv[1]}<br>${TOLL_LAW&&TOLL_LAW[sg.to]?`Der Weg wird von einem Prof. bewacht (${TOLL_LAW[sg.to]}): Klausur, Bestechung oder Kampf.<br>`:''}Hier gesichtet: ${esc(mons)}`}
 function showSign(sg){const el=$('#signbox');el.innerHTML=signText(sg);el.classList.add('on');clearTimeout(showSign.t);showSign.t=setTimeout(()=>el.classList.remove('on'),6000)}
-function zoneAt(x,y){if(x<0||y<0||x>=MW||y>=MH)return null;return BKEYS[BIOME[y*MW+x]]}
+function zoneAt(x,y){if(x<0||y<0||x>=MW||y>=MHT)return null;return BKEYS[BIOME[y*MW+x]]}
 
