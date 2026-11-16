@@ -161,12 +161,12 @@ function fire(F,i,remote){
     else if(sp.k==='lob'){const angs=sp.n===3?[-sp.ang,0,sp.ang]:[0];for(const a of angs){const c=Math.cos(a),s2=Math.sin(a),ex=dx*c-dy*s2,ey=dx*s2+dy*c,tx=F.x+ex*D,ty=F.y+ey*D;sx=F.x;sy=F.y-12;pts.push([sx,sy,(tx-sx)/sp.life,(ty-12-sy)/sp.life,sp.life])}}
     if(!pts.length)pts.push([sx,sy,vx,vy,sp.life]);
     for(const[px,py,pvx,pvy,pl]of pts){const sh={id:F.side+(++B.sid)+'_'+Math.floor(Math.random()*1e6),side:F.side,att:Object.assign({},bt),mid,x:px,y:py,vx:pvx,vy:pvy,age:0,life:pl,r:sp.r,p:sp.p,k:sp.k,h:sp.h,nm:1,am};
-      B.shots.push(sh);if(B.mode==='duel'&&F===B.me)B.mySh.push([sh.id,F.a,mid,Math.round(px),Math.round(py),Math.round(pvx),Math.round(pvy)])}
+      B.shots.push(sh);if(B.mode==='duel'&&F===B.me)B.mySh.push([sh.id,F.a,mid,Math.round(px),Math.round(py),Math.round(pvx),Math.round(pvy),Math.round(performance.now())])}
     if(B.mode==='duel'&&F===B.me){B.mySh=B.mySh.slice(-9);publishDuel(true)}return}
   const angs=sp.n===3?[-sp.ang,0,sp.ang]:[0];
   for(const a of angs){const c=Math.cos(a),s=Math.sin(a);const vx=(dx*c-dy*s)*sp.sp,vy=(dx*s+dy*c)*sp.sp;
     const sh={id:F.side+(++B.sid)+'_'+Math.floor(Math.random()*1e6),side:F.side,att:Object.assign({},bt),mid,x:F.x+dx*8,y:F.y-10+dy*6,vx,vy,age:0,life:sp.life,r:sp.r,p:sp.p,mel:sp.mel,wave:sp.wave,am};
-    B.shots.push(sh);if(B.mode==='duel'&&F===B.me)B.mySh.push([sh.id,F.a,mid,Math.round(sh.x),Math.round(sh.y),Math.round(vx),Math.round(vy)])}
+    B.shots.push(sh);if(B.mode==='duel'&&F===B.me)B.mySh.push([sh.id,F.a,mid,Math.round(sh.x),Math.round(sh.y),Math.round(vx),Math.round(vy),Math.round(performance.now())])}
   if(B.mode==='duel'&&F===B.me){B.mySh=B.mySh.slice(-9);publishDuel(true)}
 }
 function startBreak(F){const now=performance.now();const alive=F.team.filter((m,i)=>i!==F.a&&m.hp>0).length;
@@ -294,7 +294,7 @@ function aiUpdate(F,dt){
   if(F.dashCd<=0&&(F.ap??AP_MAX)>=DASH_AP)for(const s of B.shots)if(s.side!==F.side&&!s.cap&&Math.hypot(s.x-F.x,s.y-F.y+10)<30&&Math.random()<0.06){F.ap=(F.ap??AP_MAX)-DASH_AP;F.noRegen=3;F.dashT=0.14;F.dashCd=1.6;F.inv=0.24;F.pdz=0.14+0.5;F.ddx=-s.vy/(Math.hypot(s.vx,s.vy)||1);F.ddy=s.vx/(Math.hypot(s.vx,s.vy)||1);break}
   move(F,F.mvx,F.mvy,dt);
 }
-function bUpdate(dt){
+function bUpdate(dt){if(dt>0)B.fps=B.fps?B.fps*0.95+(1/dt)*0.05:1/dt;
   if(B.frozen)return;
   const now=performance.now();if(B.slowUntil&&now<B.slowUntil)dt*=0.3;
   for(const F of[B.me,B.foe]){if(!F)continue;F.cd=F.cd.map(v=>Math.max(0,v-dt));F.dashT=Math.max(0,F.dashT-dt);F.dashCd=Math.max(0,F.dashCd-dt);F.pdz=Math.max(0,(F.pdz||0)-dt);F.hitstun=Math.max(0,(F.hitstun||0)-dt);F.inv=Math.max(0,F.inv-dt);F.swCd=Math.max(0,F.swCd-dt);F.flash=Math.max(0,F.flash-dt)}
@@ -628,14 +628,16 @@ function startDuel(opp,id,spar){
 }
 function publishDuel(force){const now=performance.now();if(!force&&now-B.pubT<60)return;B.pubT=now;const F=B.me;
   if(B.tb){const ta={};for(let t=B.turn-2;t<=B.turn;t++)if(B.tbActs['t'+t])ta['t'+t]=B.tbActs['t'+t];B.q=(B.q||0)+1;pres({du:{id:B.id,opp:B.opp,team:B.raw,tb:1,ta,q:B.q,pm:PANIC?1:0}});return}
-  B.q=(B.q||0)+1;pres({du:{id:B.id,opp:B.opp,q:B.q,team:B.raw,a:F.a,x:Math.round(fx_(F.x)),y:Math.round(fy_(F.y)),hp:F.team.map(m=>m.hp),ob:B.obGone||[],sh:flipOn()?B.mySh.map(e=>[e[0],e[1],e[2],2*ACX-e[3],2*ACY-e[4],-e[5],-e[6]]):B.mySh,fx:Object.keys(F.st).filter(k=>F.st[k]>0),sg:[F.stg.a|0,F.stg.d|0,F.stg.s|0],pm:PANIC?1:0}})}
+  const shm=e=>flipOn()?[e[0],e[1],e[2],2*ACX-e[3],2*ACY-e[4],-e[5],-e[6],e[7]]:e;
+  if(ROOM&&ROOM.fast){B.fsS=B.fsS||new Set();const nw=B.mySh.filter(e=>!B.fsS.has(e[0]));if(nw.length){nw.forEach(e=>B.fsS.add(e[0]));try{ROOM.fast({fs:{id:B.id,t:Math.round(now),sh:nw.map(shm)}},B.opp)}catch(e){}}}
+  B.q=(B.q||0)+1;pres({du:{id:B.id,opp:B.opp,q:B.q,t:Math.round(now),team:B.raw,a:F.a,x:Math.round(fx_(F.x)),y:Math.round(fy_(F.y)),hp:F.team.map(m=>m.hp),ob:B.obGone||[],sh:B.mySh.map(shm),fx:Object.keys(F.st).filter(k=>F.st[k]>0),sg:[F.stg.a|0,F.stg.d|0,F.stg.s|0],pm:PANIC?1:0}})}
 function duelSync(dt){
   const op=findPeer(B.opp);const du=op&&op.presence.du;
   if(B.state==='over')return;const now=performance.now();
   // the opponent already booked this round against me (e.g. my phone was asleep) → take the mirrored result so both sides agree
   if(!B.spar&&RUN&&op&&op.presence.mt&&op.presence.mt.id===RUN.id){const x=cleanRes(op.presence.mt.res).find(e=>e[0]===RUN.r&&e[1]===(MYPEER||'me'));
     if(x){duelResult(x[2]===1?false:x[2]===0?true:null,x[2]===1?`${B.oppName} hat den Sieg zugesprochen bekommen, während du weg warst.`:`${B.oppName} hat die Runde aufgegeben.`);return}}
-  if(du&&du.id===B.id){if(du.q!==B.lq){B.lq=du.q;B.lqT=now}
+  if(du&&du.id===B.id){if(du.q!==B.lq){B.lq=du.q;B.lqT=now;netSample(du,now)}
     const idle=now-(B.lqT||now);
     if(!B.tb&&(B.state==='fight'||B.state==='count')&&idle>12000&&!document.hidden){duelResult(true,`${B.oppName} reagiert nicht mehr.`);return}
     if(B.tb){const key=B.state+B.turn;if(B.tbK!==key){B.tbK=key;B.tbT=now;B.tbWarn=0}const el=now-B.tbT;
@@ -647,17 +649,37 @@ function duelSync(dt){
   if(B.tb){tbDuelSync(du);return}
   if(!B.foe){let ot=sanitizeTeam(du.team);if(!ot)return;if(!B.spar)ot=ot.slice(0,cfgOf().team);const left=B.me.side==='L';B.foe=mkFighter(left?'R':'L',ot,left?XR:XL,'remote');if(Number.isFinite(+du.x)&&Number.isFinite(+du.y)&&+du.x){B.foe.x=fx_(+du.x);B.foe.y=fy_(+du.y)}arenaClamp(B.foe);
     if(Array.isArray(du.sh))du.sh.forEach(e=>Array.isArray(e)&&B.seen.add(String(e[0])));{const n_=performance.now(),vx=vsStart(n_);B.state='count';B.cntEnd=n_+3000+vx;B.foe.spawnT=n_+vx}say(`${B.oppName} betritt den Gerichtssaal!`);return}
-  const F=B.foe;const P_={x:+du.x?fx_(+du.x):F.x,y:+du.y?fy_(+du.y):F.y};arenaClamp(P_);const k=Math.min(1,dt*14);F.x+=(P_.x-F.x)*k;F.y+=(P_.y-F.y)*k;F.face=B.me.x<F.x?-1:1;
+  const F=B.foe;const P_=netPos(now)||{x:+du.x?fx_(+du.x):F.x,y:+du.y?fy_(+du.y):F.y,old:1};arenaClamp(P_);if(P_.snap){F.x=P_.x;F.y=P_.y}else{const k=Math.min(1,dt*(P_.old?14:28));F.x+=(P_.x-F.x)*k;F.y+=(P_.y-F.y)*k}F.face=B.me.x<F.x?-1:1;netFast(F);
   if(Array.isArray(du.ob)&&B.obs)for(const id of du.ob){const o=B.obs.find(o=>o.id===+id);if(o&&!o.dead)breakObs(o)}
   const a=Math.floor(+du.a);if(a>=0&&a<F.team.length&&a!==F.a){F.a=a;say(`${B.oppName} schickt ${SPECIES[act(F).s].n} in den Kampf!`)}
   if(Array.isArray(du.hp))F.team.forEach((m,i)=>{const v=clamp(Math.floor(+du.hp[i]),0,m.mhp);if(Number.isFinite(v)&&v<m.hp){F.hurtT=performance.now();B.nums.push({x:F.x,y:F.y-34,t:'-'+(m.hp-v),c:'#fff',at:performance.now()});F.flash=0.25;if(v===0)say(`${SPECIES[m.s].n} ist besiegt!`)}if(Number.isFinite(v))m.hp=v});
   if(Array.isArray(du.sg))F.stg={a:clamp(du.sg[0]|0,-4,4),d:clamp(du.sg[1]|0,-4,4),s:clamp(du.sg[2]|0,-4,4)};
   F.stShow=Array.isArray(du.fx)?du.fx.filter(k=>typeof k==='string'&&k in F.st):[];
   F.out=F.team.every(m=>m.hp<=0);F.faint=act(F).hp<=0?1:0;
-  if(Array.isArray(du.sh))for(const e of du.sh){if(!Array.isArray(e))continue;const id=String(e[0]).slice(0,40);if(B.seen.has(id))continue;B.seen.add(id);if(B.state!=='fight')continue;
-    const ai=clamp(Math.floor(+e[1]),0,F.team.length-1),mid=MOVES[e[2]]?e[2]:'bump';const sp=shotParams(mid);let vx=+e[5]||0,vy=+e[6]||0;const L=Math.hypot(vx,vy)||1;if(L>sp.sp*1.05){vx=vx/L*sp.sp;vy=vy/L*sp.sp}
-    B.shots.push({id,side:F.side,att:F.team[ai],mid,x:clamp(fx_(+e[3]||0),0,AW),y:clamp(fy_(+e[4]||0),0,AH),vx:flipOn()?-vx:vx,vy:flipOn()?-vy:vy,age:0,life:sp.life,r:sp.r,p:sp.p,mel:sp.mel,wave:sp.wave,k:sp.k,h:sp.h,nm:sp.nm,am:stageMul(stgOf(F).a)})}
+  if(Array.isArray(du.sh))remoteShots(F,du.sh)
 }
+// ---- netcode: clock offset, snapshot interpolation of the opponent, lag-compensated shots, measurement overlay
+function netSample(du,now){const t=+du.t;if(!Number.isFinite(t)||!Number.isFinite(+du.x))return;const smp=now-t;B.off=B.off==null||smp<B.off?smp:B.off+(smp-B.off)*0.02;
+  B.snaps=B.snaps||[];const L=B.snaps[B.snaps.length-1];if(L&&t<=L.st)return;if(L){const iv=Math.min(t-L.st,300);B.pint=B.pint==null?iv:B.pint*0.85+iv*0.15;B.pjit=B.pjit==null?0:B.pjit*0.85+Math.abs(iv-B.pint)*0.15}
+  const p={x:fx_(+du.x),y:fy_(+du.y)};arenaClamp(p);B.snaps.push({st:t,x:p.x,y:p.y,jump:!!(L&&Math.hypot(p.x-L.x,p.y-L.y)>70)});if(B.snaps.length>12)B.snaps.shift()}
+function netDelay(){return clamp((B.pint||66)*1.1+(B.pjit||0)*1.5+10,60,170)}
+function netPos(now){const S=B.snaps;if(!S||!S.length||B.off==null)return null;const rt=now-B.off-netDelay();
+  for(let i=S.length-1;i>0;i--){const a=S[i-1],b=S[i];if(rt>=a.st){if(rt>b.st)break;if(b.jump)return{x:a.x,y:a.y};const u=(rt-a.st)/Math.max(1,b.st-a.st);return{x:a.x+(b.x-a.x)*u,y:a.y+(b.y-a.y)*u}}}
+  const b=S[S.length-1],a=S[S.length-2];if(rt<S[0].st)return{x:S[0].x,y:S[0].y};
+  if(!a||b.jump)return{x:b.x,y:b.y,snap:b.jump&&!b.used&&(b.used=1)};const ex=Math.min(150,rt-b.st)/Math.max(1,b.st-a.st);return{x:b.x+(b.x-a.x)*ex,y:b.y+(b.y-a.y)*ex}}
+function remoteShots(F,list){for(const e of list){if(!Array.isArray(e))continue;const id=String(e[0]).slice(0,40);if(B.seen.has(id))continue;B.seen.add(id);if(B.state!=='fight')continue;
+    const ai=clamp(Math.floor(+e[1]),0,F.team.length-1),mid=MOVES[e[2]]?e[2]:'bump';const sp=shotParams(mid);let vx=+e[5]||0,vy=+e[6]||0;const L=Math.hypot(vx,vy)||1;if(L>sp.sp*1.05){vx=vx/L*sp.sp;vy=vy/L*sp.sp}
+    const s={id,side:F.side,att:F.team[ai],mid,x:clamp(fx_(+e[3]||0),0,AW),y:clamp(fy_(+e[4]||0),0,AH),vx:flipOn()?-vx:vx,vy:flipOn()?-vy:vy,age:0,life:sp.life,r:sp.r,p:sp.p,mel:sp.mel,wave:sp.wave,k:sp.k,h:sp.h,nm:sp.nm,am:stageMul(stgOf(F).a)};
+    // lag compensation: the shot already flew for (transfer time) on the sender's side → fast-forward it
+    const st=+e[7];if(Number.isFinite(st)&&B.off!=null&&!s.mel){const ow=(pingOf(B.opp)||80)/2,el=clamp((performance.now()-B.off-st+ow)/1000,0,Math.min(0.25,s.life*0.5));
+      if(!s.k){s.x+=s.vx*el;s.y+=s.vy*el;s.age=el}else if(s.k==='lob'){s.x0=s.x;s.y0=s.y;s.age=el}else if(s.k==='air')s.age=el}
+    B.shots.push(s)}}
+function onFastMsg(d,peer){if(!B||B.mode!=='duel'||!d||!d.fs||d.fs.id!==B.id||(B.opp&&peer&&peer!==B.opp))return;(B.fq=B.fq||[]).push(d.fs);if(B.fq.length>20)B.fq.shift()}
+function netFast(F){if(ROOM&&ROOM.onFast&&!ROOM._fh){ROOM._fh=1;ROOM.onFast(onFastMsg)}if(!B.fq||!B.fq.length)return;const q=B.fq;B.fq=[];const now=performance.now();
+  for(const m of q){const t=+m.t;if(Number.isFinite(t)){const smp=now-t;if(B.off==null||smp<B.off)B.off=smp}if(Array.isArray(m.sh))remoteShots(F,m.sh.slice(0,12))}}
+function drawNetInfo(c,K){if(!B||B.mode!=='duel'||B.tb||!B.foe)return;const p=pingOf(B.opp);c.setTransform(K,0,0,K,0,0);
+  const fq=B.fps?Math.round(B.fps):0,col=(p||0)>250||fq&&fq<40?'#ff8a8a':(p||0)>120||fq&&fq<55?'#ffcb3d':'#bfe2ff';
+  vtText(c,`Ping ${p!=null?p+' ms':'–'} · Paket ${B.pint?Math.round(B.pint)+'±'+Math.round(B.pjit||0)+' ms':'–'} · ${fq||'–'} FPS`,6,AH-6,col,10)}
 function duelResult(win,why){
   if(!B||B.state==='over')return;B.state='over';finale(win);say(win===true?'GEWONNEN!':win===false?'VERLOREN…':'UNENTSCHIEDEN!');if(why)say(why);
   if(B.mode==='duel')publishDuel(true);
@@ -1008,6 +1030,7 @@ function drawBattle(){
   if(B.wi)drawWildIntro(c,now);
   if(B.resumeEnd&&now<B.resumeEnd){const n=Math.ceil((B.resumeEnd-now)/1000);c.fillStyle='#0b0d1690';c.fillRect(0,0,UW,UH);pxText(c,String(n),UW/2,UH/2+10,'#ffcb3d',24,'center');vtText(c,'Gleich geht es weiter…',UW/2,UH/2+26,'#ffffff',10,'center')}
   if(B.fin)drawFinale(c,now);
+  drawNetInfo(c,K);
 }
 
 

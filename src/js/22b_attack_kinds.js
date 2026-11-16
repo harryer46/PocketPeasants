@@ -9,7 +9,7 @@ function airBusy(F){return!!(F&&F.st&&(F.st.fly>0||F.st.dive>0))}
 // height of a flying attacker: rises out of the screen, hangs, dives onto the target spot
 function flyZ(F,now){if(!F||!F.flyT0)return 0;const k=(now-F.flyT0)/(F.flyDur*1000);if(k<0||k>=1)return 0;return k<0.3?Math.pow(k/0.3,0.7)*170:k<0.78?170:170*Math.pow(1-(k-0.78)/0.22,1.6)}
 function shotId(F){return F.side+(++B.sid)+'_'+Math.floor(Math.random()*1e6)}
-function pubShot(F,sh){if(B.mode==='duel'&&F===B.me){B.mySh.push([sh.id,F.a,sh.mid,Math.round(sh.x),Math.round(sh.y),Math.round(sh.vx),Math.round(sh.vy)]);B.mySh=B.mySh.slice(-9);publishDuel(true)}}
+function pubShot(F,sh){if(B.mode==='duel'&&F===B.me){B.mySh.push([sh.id,F.a,sh.mid,Math.round(sh.x),Math.round(sh.y),Math.round(sh.vx),Math.round(sh.vy),Math.round(performance.now())]);B.mySh=B.mySh.slice(-9);publishDuel(true)}}
 function curDir(F){const T=F===B.me?B.foe:B.me;let dx=T?T.x-F.x:1,dy=T?T.y-F.y:0;const L=Math.hypot(dx,dy)||1;dx/=L;dy/=L;
   if(F.ctrl==='ai'&&F.aimAng!=null&&isFinite(F.aimAng)){dx=Math.cos(F.aimAng);dy=Math.sin(F.aimAng)}if(F===B.me){const a=myAim();dx=a.x;dy=a.y}return[dx,dy]}
 // rapid fire: 5–10 projectiles one after another, each aimed at the moment it leaves
