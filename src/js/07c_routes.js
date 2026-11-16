@@ -58,7 +58,15 @@ function buildRouteNet(){
     if(goal<0)return null;const out=[];for(let i=goal;i>=0;i=from[i])out.push(i);return out.reverse()};
   // town pairs, nearest first; a pair is skipped when its way leads through a third town
   const pairs=[];for(let a=0;a<STOPS.length;a++)for(let b=a+1;b<STOPS.length;b++)pairs.push([a,b,Math.hypot(STOPS[a].x-STOPS[b].x,STOPS[a].y-STOPS[b].y)]);pairs.sort((u,v)=>u[2]-v[2]);
-  for(const[a,b]of pairs){const pa=path(STOPS[a],b);if(!pa)continue;if(pa.some(i=>TOWN_OF[i]>=0&&TOWN_OF[i]!==a&&TOWN_OF[i]!==b))continue;const ra=SR[STOPS[a].id]??0,rb=SR[STOPS[b].id]??0;pa.forEach((i,k)=>{if(TOWN_OF[i]>=0)return;P[i]=1;PP[i]=Math.min(PP[i],ra+(rb-ra)*k/Math.max(1,pa.length-1))})}
+  for(const[a,b]of pairs){const pa=path(STOPS[a],b);if(!pa)continue;if(pa.some(i=>TOWN_OF[i]>=0&&TOWN_OF[i]!==a&&TOWN_OF[i]!==b))continue;const ra=SR[STOPS[a].id]??0,rb=SR[STOPS[b].id]??0;pa.forEach((i,k)=>{if(TOWN_OF[i]>=0)return;P[i]=1;PP[i]=Math.min(PP[i],ra+(rb-ra)*k/Math.max(1,pa.length-1),BIOME[i]===1?2.5:99)})}  // Villinger Land stays the beginner area
+  // side roads: every road that is not part of a town-to-town way becomes its own branch route
+  //   (traced from its far end back to the network; difficulty grows slowly with the distance from the junction)
+  for(let it=0;it<250;it++){const D=new Int32Array(NN).fill(-1),from=new Int32Array(NN).fill(-1),q=new Int32Array(NN);let h=0,n=0;
+    for(let i=0;i<NN;i++)if(P[i]||TOWN_OF[i]>=0){D[i]=0;q[n++]=i}
+    while(h<n){const i=q[h++],x=i%MW;for(const j of[x>0?i-1:-1,x<MW-1?i+1:-1,i-MW,i+MW]){if(j<0||j>=NN||D[j]>=0||!pass(j))continue;D[j]=D[i]+1;from[j]=i;q[n++]=j}}
+    let far=-1,fd=7;for(let i=0;i<NN;i++)if((MAP[i]===4||MAP[i]===27)&&TOWN_OF[i]<0&&D[i]>fd){fd=D[i];far=i}
+    if(far<0)break;const br=[];for(let i=far;i>=0&&D[i]>0;i=from[i])br.push(i);const join=from[br[br.length-1]];const base=join<0?0:PP[join]<99?PP[join]:TOWN_OF[join]>=0?(SR[STOPS[TOWN_OF[join]].id]??0):0;
+    br.reverse().forEach((i,k)=>{P[i]=1;PP[i]=Math.min(PP[i],base+(k+1)*0.03,BIOME[i]===1?2.5:99)})}
   // nodes: towns and crossings
   const nb=i=>{const x=i%MW,o=[];for(const j of[x>0?i-1:-1,x<MW-1?i+1:-1,i-MW,i+MW])if(j>=0&&j<NN&&(P[j]||TOWN_OF[j]>=0))o.push(j);return o};
   const node=new Int32Array(NN).fill(-1),nodes=STOPS.map(T=>T.pseudo?{cross:1,n:T.n,x:T.x,y:T.y}:{town:T.id,n:T.n,x:T.x,y:T.y});

@@ -24,14 +24,14 @@ function shotParams0(mid){const mv=MOVES[mid]||MOVES.bump;const k=mv.k||(mv.t===
   if(k==='melee')return{mel:1,sp:270,life:0.17,r:10,p:mv.p,n:1};
   if(mid==='surf')return{sp:84,life:2.5,r:10,p:Math.round(mv.p*0.85),n:1,wave:1};
   if(MOVE_VIS[mid]==='wave'&&(k==='spread'||k==='shot'))return{sp:100,life:1.8,r:6,p:Math.round(mv.p*0.85),n:1,wave:1};
-  if(k==='rapid'){const n=clamp(mv.rn||6,5,10);return{rapid:n,int:0.085,sp:215,life:1.8,r:2.5,p:Math.max(6,Math.round(mv.p*1.6/n)),n:1}}
+  if(k==='rapid'){const n=clamp(mv.rn||6,5,10);return{rapid:n,int:0.085,sp:215,life:1.8,r:2.5,p:Math.max(3,Math.round(mv.p*0.8/n)),n:1}}
   if(k==='arc')return{k:'lob',nm:1,h:30,life:0.85,r:12,p:mv.n3?Math.round(mv.p*0.5):mv.p,n:mv.n3?3:1,ang:0.24};
   if(k==='rain')return{k:'air',nm:1,sp:0,life:0.9,r:12,p:Math.round(mv.p*0.36),n:1,rain:5};
   if(k==='fly')return{k:'fly',nm:1,sp:0,life:1.25,r:20,p:mv.p,n:1};
   if(k==='dive')return{k:'air',nm:1,sp:0,life:0.06,r:30,p:mv.p,n:1,dive:1.1};
   if(k==='vortex')return{k:'vortex',nm:1,sp:74,life:2.6,r:7,p:mv.p,n:1};
   if(k==='spread')return{sp:125,life:2.4,r:4,p:Math.round(mv.p*0.42),n:3,ang:0.24};
-  if(k==='multi')return{sp:200,life:2,r:2.5,p:Math.round(mv.p*0.4),n:3,ang:0.07};
+  if(k==='multi')return{sp:200,life:2,r:2.5,p:Math.max(4,Math.round(mv.p*0.22)),n:3,ang:0.07};
   if(k==='big')return{sp:92,life:3,r:7,p:mv.p,n:1};
   if(k==='self')return{self:1,p:0,n:0};
   // special mechanics: beam (charged line), breath (short cone, several ticks), air (strike from above at the target spot), lob (high throw over obstacles)
@@ -44,9 +44,9 @@ function cdOf(mid){const mv=MOVES[mid]||MOVES.bump;if(mv.fx==='heal'&&mv.k==='se
 // AP: one pool per fighter for every attack. Strong moves cost more, weak ones little; AP refill over time (real-time) or per turn (turn-based)
 const AP_MAX=100,AP_REGEN=8,TB_AP_REGEN=30;
 // healing costs all AP and has a long cooldown; every other move costs half of its former AP price
-function apCost(mid){const mv=MOVES[mid]||MOVES.bump;if(mv.fx==='heal'&&mv.k==='self')return AP_MAX;if(mv.fx==='buff')return 50;if(mv.k==='self')return 35;if(mv.fx==='debuff'&&(mv.p||0)<=10)return 25;return Math.min(AP_MAX,Math.round(Math.max(18,(mv.p||30)*0.8*(mv.k==='melee'?0.8:1))*0.8*0.5))}
+function apCost(mid){const mv=MOVES[mid]||MOVES.bump;if(mv.k==='multi'||mv.k==='rapid')return Math.min(AP_MAX,Math.max(32,Math.round((mv.p||30)*0.55)));if(mv.fx==='heal'&&mv.k==='self')return AP_MAX;if(mv.fx==='buff')return 50;if(mv.k==='self')return 35;if(mv.fx==='debuff'&&(mv.p||0)<=10)return 25;return Math.min(AP_MAX,Math.round(Math.max(18,(mv.p||30)*0.8*(mv.k==='melee'?0.8:1))*0.8*0.5))}
 function moveDesc(mid){const mv=MOVES[mid];const k={melee:'Nahkampf',shot:'Fernkampf',spread:'Fächer',multi:'Salve',big:'schwer',self:'selbst',beam:'Strahl',breath:'Atem',air:'Luftschlag',lob:'Hochwurf',arc:'Bogenwurf',rapid:'Schnellfeuer',rain:'Hagel',fly:'Flug-Angriff',dive:'Tauchangriff',vortex:'Sog'}[mv.k]||'Fernkampf';return`${TYPES[mv.t].n} · ${k}${mv.p?' · '+mv.p:''}${mv.fx?' · '+(mv.bs?(mv.fx==='debuff'?'Ziel: ':mv.fx==='selfbuff'?'evtl. ':'')+bsText(mv)+(mv.stc&&mv.stc<1?` (${Math.round(mv.stc*100)} %)`:''):FX_TXT[mv.fx]):''} · ${apCost(mid)} AP`}
-function calcDmg(att,def,mid,p){const mv=MOVES[mid]||MOVES.bump;const e=eff(mv.t,SPECIES[def.s].t);let d=((2*att.l/5+2)*p*att.atk/Math.max(1,def.def))/50+2;d*=(mv.t===SPECIES[att.s].t?1.5:1)*e*(0.85+Math.random()*0.15)*0.55;return{d:e===0?0:Math.max(1,Math.round(d)),e}}
+function calcDmg(att,def,mid,p){const mv=MOVES[mid]||MOVES.bump;const e=eff(mv.t,SPECIES[def.s].t);let d=((2*att.l/5+2)*p*att.atk/Math.max(1,def.def))/50+2*Math.min(1,p/30);d*=(mv.t===SPECIES[att.s].t?1.5:1)*e*(0.85+Math.random()*0.15)*0.55;return{d:e===0?0:Math.max(1,Math.round(d)),e}}
 function say(t){if(!B)return;if(/erreicht Lv/.test(t))B.lvlFx=performance.now();if(/entwickelt!/.test(t))B.evoFx=performance.now();B.log.push({t,at:performance.now()});if(B.log.length>3)B.log.shift()}
 // destructible obstacles: rocks take many hits, plants few (fire burns plants fast). Same layout for both duel players.
 // destructible obstacles, themed per location. mat decides what hurts it: plants & wood burn, rock resists fire but cracks under rock/water

@@ -92,7 +92,7 @@ function healQuiz(){RUN.kap=Math.max(RUN.kap,10);updateHud();const all=()=>RUN.t
   // penalty after a wrong answer: the next question only comes after 5 s
   const penBtns=()=>{const l=Math.max(0,(healQuiz.pen||0)-Date.now());const b=$('#cqnext');if(b){b.disabled=l>0;b.textContent=l>0?`⏳ ${Math.ceil(l/1000)} s`:'NÄCHSTE FRAGE'}document.querySelectorAll('[data-pm]').forEach(c=>{c.style.filter=l>0?'grayscale(1)':''});const t=$('#cqpen');if(t)t.textContent=l>0?`⏳ Strafzeit: noch ${Math.ceil(l/1000)} s`:'';if(l>0)setTimeout(penBtns,200)};
   const overview=()=>{clearInterval(healQuiz.tm);CQ=null;CQ_PICK=null;cur=null;
-    $('#cqbox').innerHTML=`<div class="sdlg" style="margin-bottom:8px"><span class="slaw">⚕ PÄD · Polizeiärztlicher Dienst</span><br><span class="small">Wähle ein Monster: Fragen zu seinem Paragraphen. Richtig = +33 % KP, falsch = +5 % KP und 5 Strafsekunden. Oder 💊 unter dem Bild: sofort voll heilen für $100.</span></div>
+    $('#cqbox').innerHTML=`<div class="sdlg" style="margin-bottom:8px"><span class="slaw">⚕ PÄD · Polizeiärztlicher Dienst</span><br><span class="small">Wähle ein Monster: Fragen zu seinem Paragraphen. Richtig = voll geheilt, falsch = keine Heilung und 5 Strafsekunden. Oder 💊 unter dem Bild: sofort voll heilen für $100.</span></div>
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px">${all().map((m,i)=>`<div>${card(m,i)}</div>`).join('')}</div>
       <div class="small" id="cqpen" style="text-align:center;color:#ffcb3d;min-height:14px"></div><div class="sacts" style="margin-top:8px"><button class="btn ghost" id="cqstop">GEHEN</button></div>`;
     $('#cquiz').classList.add('on');document.querySelectorAll('[data-pm]').forEach(b=>b.onclick=()=>{if((healQuiz.pen||0)>Date.now())return;const m=all()[+b.dataset.pm];if(!m||m.hp>=stats(m).mhp)return;cur=m;ask()});penBtns();
@@ -108,9 +108,9 @@ function healQuiz(){RUN.kap=Math.max(RUN.kap,10);updateHud();const all=()=>RUN.t
   const stop=()=>{clearInterval(healQuiz.tm);$('#cquiz').classList.remove('on');CQ=null;CQ_PICK=null;save();renderTeam();updateHud()};
   const pick=k=>{if(!CQ||CQ.done)return;CQ.done=true;clearInterval(healQuiz.tm);const ok=k===0,it=CQ.it,tm=cur;
     document.querySelectorAll('[data-ck]').forEach(bt=>{const kk=+bt.dataset.ck;bt.disabled=true;bt.classList.add(kk===0?'ok':kk===k?'bad':'dim')});
-    {const mx=stats(tm).mhp;tm.hp=Math.min(mx,tm.hp+(ok?Math.ceil(mx*0.33):Math.max(1,Math.round(mx*0.05))))}if(!ok)healQuiz.pen=Date.now()+5000;
+    {const mx=stats(tm).mhp;if(ok)tm.hp=mx}if(!ok)healQuiz.pen=Date.now()+5000;
     const tmFull=tm.hp>=stats(tm).mhp,done=full();renderTeam();
-    $('#cqexp').innerHTML=`<div class="sexp ${ok?'ok':'bad'}">${ok?(done?'✓ Richtig — dein Team ist wieder fit!':tmFull?`✓ Richtig — ${esc(SPECIES[tm.s].n)} ist wieder fit!`:`✓ Richtig — +33 % KP für ${esc(SPECIES[tm.s].n)}.`):(k<0?'⏱ Zeit abgelaufen':'✗ Falsch')+` — nur +5 % KP, 5 Strafsekunden.`} ${esc(it.q[2])}</div>`;
+    $('#cqexp').innerHTML=`<div class="sexp ${ok?'ok':'bad'}">${ok?(done?'✓ Richtig — dein Team ist wieder fit!':tmFull?`✓ Richtig — ${esc(SPECIES[tm.s].n)} ist wieder fit!`:`✓ Richtig — ${esc(SPECIES[tm.s].n)} ist wieder fit!`):(k<0?'⏱ Zeit abgelaufen':'✗ Falsch')+` — keine Heilung, 5 Strafsekunden.`} ${esc(it.q[2])}</div>`;
     $('#cqact').innerHTML=done?`<button class="btn" id="cqstop">WEITER</button>`:tmFull?`<button class="btn" id="cqback">ÜBERSICHT</button><button class="btn ghost" id="cqstop">GEHEN</button>`:`<button class="btn" id="cqnext">NÄCHSTE FRAGE</button><button class="btn ghost" id="cqback">ÜBERSICHT</button><button class="btn ghost" id="cqstop">GEHEN</button>`;
     if(done){const hb=$('#cqheal');if(hb)hb.remove()}
     const nx=$('#cqnext');if(nx)nx.onclick=ask;penBtns();const bk=$('#cqback');if(bk)bk.onclick=overview;$('#cqstop').onclick=stop};

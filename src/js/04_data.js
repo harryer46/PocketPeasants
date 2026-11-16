@@ -206,7 +206,7 @@ const BASES=Object.keys(SPECIES).filter(s=>!EVOT.has(s)&&RAR[s]!=='unique'&&RAR[
 const ALT_BASES=[...ALT_IDS].filter(s=>RAR[s]!=='unique'&&RAR[s]!=='legendary'&&!EVOT.has(s));
 // which monster set is active: lobby parameter, or the setting for free play (default: alternative set)
 function altOn(){return true}
-function startersNow(c){return altOn(c)?ALT_STARTERS:STARTERS}
+function startersNow(c){return(altOn(c)?ALT_STARTERS:STARTERS).slice(0,3)}  // three to choose from
 function basesNow(){return altOn()?ALT_BASES:BASES}
 function poolOf(zk){return altOn()?ALT_POOLS[zk]:ZONES[zk].pool}
 function legSid(L){return altOn()?ALT_LEG[L.id]:L.id}

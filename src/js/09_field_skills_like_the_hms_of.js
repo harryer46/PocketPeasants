@@ -35,6 +35,12 @@ function walkable(x,y){const t=tget(x,y);return(WALK.has(t)||(t===3&&canHM('swim
     if(!R.a||R.a.town||R.a.n&&!R.a.cross){if(R.a&&R.a.town)sign(R.pix[Math.min(2,L-1)],R.pix[Math.min(L-1,8)],R,nodeName(E.B))}
     if(!R.a)sign(R.pix[0],R.pix[Math.min(L-1,6)],R,nodeName(E.B));
     if(R.b&&R.b.town)sign(R.pix[Math.max(0,L-3)],R.pix[Math.max(0,L-9)],R,nodeName(E.A))}
+  // every road leaving a town gets a route sign right at the exit
+  for(const T of TOWNS){const ex=[];for(let y=T.y-26;y<=T.y+26;y++)for(let x=T.x-36;x<=T.x+36;x++){const t=tget(x,y);if((t!==4&&t!==27)||BIOME[y*MW+x]===0||y>=MH)continue;
+      if(!D4.some(([a,b])=>BIOME[(y+b)*MW+x+a]===0&&Math.abs(x+a-T.x)<36&&Math.abs(y+b-T.y)<26))continue;if(ex.some(e=>Math.abs(e.x-x)+Math.abs(e.y-y)<6))continue;ex.push({x,y})}
+    for(const e of ex){const r=routeAt(e.x,e.y);if(!r||SIGNS.some(g=>(g.kind==='route'||g.kind==='cross')&&Math.abs(g.x-e.x)+Math.abs(g.y-e.y)<8))continue;const R=ROUTES[r];
+      const tgt=R.pix[R.pix.length-1],tx=tgt%MW,ty=(tgt-tx)/MW,o={kind:'route',r,lv:R.lv,arrow:dirTo(e.x,e.y,e.x+(e.x-T.x),e.y+(e.y-T.y)),to:nodeName(R.edge&&(R.edge.A&&R.edge.A.town===T.id?R.edge.B:R.edge.A))};
+      put(e.x,e.y,o,null)||put(e.x,e.y,Object.assign({},o),null,true)}}
   for(const N of ROUTE_NODES){if(!N.cross)continue;const meet=[];for(let n=1;n<=ROUTE_N;n++){const R=ROUTES[n];if(R.a===N)meet.push({r:n,lv:R.lv,i:R.pix[Math.min(4,R.pix.length-1)]});else if(R.b===N)meet.push({r:n,lv:R.lv,i:R.pix[Math.max(0,R.pix.length-5)]})}
     if(meet.length<2)continue;put(N.x,N.y,{kind:'cross',n:N.n||'',routes:meet.map(m=>{const[x,y]=pt(m.i);return{r:m.r,lv:m.lv,arrow:dirTo(N.x,N.y,x,y)}}).sort((a,b)=>a.r-b.r)},null)||put(N.x,N.y,{kind:'cross',n:N.n||'',routes:meet.map(m=>{const[x,y]=pt(m.i);return{r:m.r,lv:m.lv,arrow:dirTo(N.x,N.y,x,y)}}).sort((a,b)=>a.r-b.r)},null,true)}
 })();
