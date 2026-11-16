@@ -159,9 +159,12 @@ function startFree(){
   pickStarter(go,{alt:SET.alt==='0'?0:1})
 }
 // free play: throw away the free-play team and start over with a new random monster (dex and trophies stay)
+// full reset: team, box, money, items, story (Beschlüsse, rank, final exam), Monster-Dex, seen moves, trophies – only name and look stay
+function fullReset(){const keep={mapv:G.mapv,name:G.name,color:G.color,sex:G.sex};if(RUN&&!RUN.free&&typeof leaveRun==='function'){try{leaveRun(true)}catch(e){}}
+  G=Object.assign(keep,{dex:{},tro:0,x:VSPAWN.x,y:VSPAWN.y,d:'down',run:null,freeRun:null,mvSeen:{}});RUN=null;FIELDGONE.clear();try{teleport(VSPAWN.x,VSPAWN.y)}catch(e){}save();renderTeam();updateHud();startFree()}
 function restartFree(){if(!RUN||!RUN.free||B)return;
-  openModal(`<h3>🎲 NEU ANFANGEN?</h3><p>Dein Team, die Box, Geld, Items, besiegte Cops und Feldfähigkeiten aus dem freien Spiel werden zurückgesetzt. Du wählst ein neues Start-Monster.<br><span class="small">Dex und Trophäen bleiben erhalten.</span></p><div class="acts"><button class="btn ghost" id="mno">ABBRECHEN</button><button class="btn red" id="myes">NEU ANFANGEN</button></div>`);
-  $('#mno').onclick=closeModal;$('#myes').onclick=()=>{closeModal();G.freeRun=null;RUN=null;G.run=null;FIELDGONE.clear();startFree()}}
+  openModal(`<h3>🎲 NEU ANFANGEN?</h3><p>Dein Team, die Box, Geld, Items, besiegte Cops und Feldfähigkeiten aus dem freien Spiel werden zurückgesetzt. Auch Story-Fortschritt (Beschlüsse, Laufbahn, Abschlussprüfung), Monster-Dex und Trophäen werden gelöscht. Du wählst ein neues Start-Monster.<br><span class="small">Nur dein Name und Aussehen bleiben.</span></p><div class="acts"><button class="btn ghost" id="mno">ABBRECHEN</button><button class="btn red" id="myes">NEU ANFANGEN</button></div>`);
+  $('#mno').onclick=closeModal;$('#myes').onclick=()=>{closeModal();fullReset()}}
 function afterRunChange(){save();LOBBY_MIN=true;$('#lobby').dataset.h='';renderLobby();renderTeam();updateHud();pushMt();lastPlr='';renderPlayers()}
 function renderLobby(){
   const el=$('#lobby');

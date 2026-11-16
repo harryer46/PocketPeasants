@@ -38,7 +38,8 @@ function openSettings(){
   document.querySelectorAll('#mbox [data-key]').forEach(b=>b.onclick=()=>{capturing=b.dataset.key;openSettings()});
   {const pb=$('#spanic');if(pb)pb.onclick=()=>{closeModal();panicOn()}}
   {const lb=$('#slog');if(lb)lb.onclick=downloadLog;$('#ssave').onclick=manualSave;$('#sexp').onclick=exportSave;$('#simp').onclick=importSave}
-  $('#sreset').onclick=()=>{SET={ctrl:'auto',dp:'m',side:'right',keys:{...DEF_KEYS}};capturing=null;saveSet();applyControls();openSettings()};
+  $('#sreset').onclick=()=>{if(B){toast('Nicht während eines Kampfes.');return}openModal(`<h3>⟲ ALLES ZURÜCKSETZEN?</h3><p>Spielstand, Team, Box, Geld, Items, Story-Fortschritt (Beschlüsse, Laufbahn, Abschlussprüfung), Monster-Dex, Trophäen und Einstellungen werden gelöscht.<br><span class="small">Nur dein Name und Aussehen bleiben. Das lässt sich nicht rückgängig machen – vorher ggf. exportieren.</span></p><div class="acts"><button class="btn ghost" id="mno">ABBRECHEN</button><button class="btn red" id="myes">ALLES ZURÜCKSETZEN</button></div>`);
+    $('#mno').onclick=closeModal;$('#myes').onclick=()=>{closeModal();SET={ctrl:'auto',dp:'m',side:'right',keys:{...DEF_KEYS}};capturing=null;saveSet();applyControls();if(G)fullReset();toast('Alles zurückgesetzt.')}};
   $('#sdone').onclick=()=>{capturing=null;closeModal()};
 }
 function captureKey(e){
