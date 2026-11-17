@@ -82,7 +82,7 @@ function sideOpen(){const sd=$('#side');return isMob()?sd.classList.contains('op
 function setSide(on){const sd=$('#side');if(isMob())sd.classList.toggle('open',on);else{sd.classList.toggle('shut',!on);setTimeout(()=>dispatchEvent(new Event('resize')),0)}
   document.querySelectorAll('#topbar button[data-t]').forEach(b=>b.classList.toggle('act',on&&b.dataset.t===curTab))}
 document.querySelectorAll('#topbar button[data-t]').forEach(b=>b.onclick=()=>{const t=b.dataset.t;if(t===curTab&&sideOpen()){setSide(false);return}switchTab(t);setSide(true)});
-$('#tupd').onclick=()=>{try{sessionStorage.setItem('pp_upd','1')}catch(e){}location.reload()};
+$('#tupd').onclick=()=>showNewCl();
 // fullscreen on/off, always in the menu bar (hidden where the browser has no fullscreen, e.g. iPhone Safari)
 {const fb=$('#hfs'),de=document.documentElement,can=document.fullscreenEnabled||document.webkitFullscreenEnabled;
  const isFs=()=>!!(document.fullscreenElement||document.webkitFullscreenElement),upd=()=>{fb.textContent=isFs()?'⛶ ✕':'⛶';fb.title=isFs()?'Vollbild beenden':'Vollbild'};
