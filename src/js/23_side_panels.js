@@ -82,10 +82,10 @@ function renderStudy(){if(!ST)return;const m=ST.m,sp=SPECIES[m.s],st=stats(m);co
     <div class="spanel"><div class="snm"><span>Prüfer: ${nameHtml(ex)}</span></div><div class="shearts">${ST.qs.map((_,i)=>`<b class="${i<ST.i?(ST.res&&ST.res[i]?'hit':'miss'):''}">⚖</b>`).join('')}</div><div class="ssm">Frage ${Math.min(ST.i+1,ST.qs.length)}/${ST.qs.length} · richtig ${ST.ok}</div></div></div>
     <canvas id="stcv" width="360" height="150"></canvas>`;
   if(ST.state==='done'){
-    h+=`<div class="sdlg"><b>${ST.ok===ST.qs.length?'Bestanden mit Auszeichnung!':ST.ok>0?'Prüfung beendet.':'Durchgefallen…'}</b><br>${ST.ok}/${ST.qs.length} richtig · +${ST.xp} EP für ${nameHtml(m.s)}${(ST.msgs||[]).filter(t=>!/erhält/.test(t)).map(t=>'<br>'+esc(t)).join('')}</div>
+    h+=`<div class="sdlg"><b>${ST.ok===ST.qs.length?'Bestanden mit Auszeichnung!':ST.ok>0?'Prüfung beendet.':'Durchgefallen…'}</b><br>${ST.ok}/${ST.qs.length} richtig · +${ST.xp} EP für ${nameHtml(m.s)}${ST.bonus?`<br>🏅 Prämie für alles richtig: +${Math.round(ST.bonus*((RUN.cfg&&RUN.cfg.xp)||1))} EP extra und $${STUDY_BONUS_$}`:''}${(ST.msgs||[]).filter(t=>!/erhält/.test(t)).map(t=>'<br>'+esc(t)).join('')}</div>
       <div class="sacts"><button class="btn" id="sclose">SCHLIESSEN</button></div>`;
   }else{
-    const q=cur.q;if(!cur.order)cur.order=shuffleArr([0,1,2,3]);const LB=`<button class="rbtn" id="slearn" title="Ohne Frage: +10 % EP-Fortschritt, danach 1 s warten"><div class="cdr"></div><span><b>📖</b>+10 %</span></button>`;
+    const q=cur.q;if(!cur.order)cur.order=shuffleArr([0,1,2,3]);const LB=`<button class="rbtn" id="slearn" title="Ohne Frage: +7,5 % EP-Fortschritt, danach 1 s warten"><div class="cdr"></div><span><b>📖</b>+7,5 %</span></button>`;
     h+=`<div class="sdlg"><span class="slaw">${esc(SPECIES[cur.src].law||'')}</span><br>${esc(q[0])}${ST.state==='ask'?`<div class="cqt"><i id="sqbar"></i></div>`:''}${ST.state==='shown'?`<div class="sexp ${cur.right?'ok':'bad'}">${qFb(cur.right,cur.pick<0?-1:1,q)}</div>`:''}</div>
       <div class="qrow"><div class="sans">${cur.order.map((k,j)=>`<button class="sa ${ST.state==='shown'?(k===0?'ok':(cur.pick===k?'bad':'dim')):''}" data-k="${k}" ${ST.state==='shown'?'disabled':''}><span class="sk">${'ABCD'[j]}</span>${esc(q[1][k])}</button>`).join('')}</div></div>
       ${ST.state==='shown'?`<div class="sacts">${LB}<button class="btn" id="snext">${ST.i+1<ST.qs.length?'WEITER ▶':'ERGEBNIS ▶'}</button></div>`:`<div class="sacts">${LB}<button class="btn ghost" id="squit">AUFGEBEN</button></div>`}`}
@@ -97,18 +97,22 @@ function renderStudy(){if(!ST)return;const m=ST.m,sp=SPECIES[m.s],st=stats(m);co
   const lb=$('#slearn');if(lb){lb.onclick=studyLearn;studyLearnBtn()}
   if(n)studyPen()
 }
-// LERNEN: +10 % of the way to the next level without a question, then 1 s cooldown
+// LERNEN: +7.5 % of the way to the next level without a question, then 1 s cooldown
 function studyPen(){const n=$('#snext');if(!n||!ST)return;const l=Math.max(0,(ST.pen||0)-Date.now());n.disabled=l>0;n.textContent=l>0?`⏳ ${Math.ceil(l/1000)} s`:(ST.i+1<ST.qs.length?'WEITER ▶':'ERGEBNIS ▶');if(l>0)setTimeout(studyPen,200)}
-function studyLearn(){if(!ST||ST.state==='done'||(ST.lcd||0)>Date.now())return;const m=ST.m;const amt=Math.max(1,Math.round(xpNeed(m.l)*0.1/((RUN.cfg&&RUN.cfg.xp)||1)));
+function studyLearn(){if(!ST||ST.state==='done'||(ST.lcd||0)>Date.now())return;const m=ST.m;const amt=Math.max(1,Math.round(xpNeed(m.l)*0.075/((RUN.cfg&&RUN.cfg.xp)||1)));
   const msgs=gainXp(m,amt);for(const t of msgs)sysChat(t);ST.lcd=Date.now()+1000;save();renderTeam();pushMt();renderStudy()}
-function studyLearnBtn(){const lb=$('#slearn');if(!lb||!ST)return;const l=Math.max(0,(ST.lcd||0)-Date.now());rbtnSet(lb,l,1000,'📖','+10 %');if(l>0)setTimeout(studyLearnBtn,100)}
+function studyLearnBtn(){const lb=$('#slearn');if(!lb||!ST)return;const l=Math.max(0,(ST.lcd||0)-Date.now());rbtnSet(lb,l,1000,'📖','+7,5 %');if(l>0)setTimeout(studyLearnBtn,100)}
 // round quick-action button with a radial cooldown (like the touch attack buttons)
 function rbtnSet(b,left,total,icon,lbl){b.disabled=left>0;b.querySelector('.cdr').style.setProperty('--cd',(left/total)+'turn');b.querySelector('span').innerHTML=`<b>${icon}</b>${left>0?Math.ceil(left/1000)+' s':lbl}`}
 function studyAnswer(k){if(!ST||ST.state!=='ask')return;const cur=ST.qs[ST.i];cur.pick=k;cur.right=k===0;ST.res=ST.res||[];ST.res[ST.i]=cur.right;
   if(cur.right){ST.ok++;const amt=Math.max(8,Math.round(xpNeed(ST.m.l)*0.25/((RUN.cfg&&RUN.cfg.xp)||1)));ST.pend=(ST.pend||0)+amt;ST.fx={k:'hit',t:performance.now()}}
   else{ST.fx={k:'miss',t:performance.now()};ST.pend=(ST.pend||0)+Math.max(1,Math.round(xpNeed(ST.m.l)*0.05/((RUN.cfg&&RUN.cfg.xp)||1)));ST.pen=Date.now()+5000}
   ST.state='shown';renderStudy()}
-function studyFinish(){const m=ST.m;m.stT=Date.now();if(ST.pend){const before=m.xp+xpNeed(m.l)*0;ST.msgs=gainXp(m,ST.pend);ST.xp=Math.round(ST.pend*((RUN.cfg&&RUN.cfg.xp)||1));for(const t of ST.msgs)sysChat(t);save();renderTeam();pushMt()}}
+// all questions of a full exam right → bonus: +50 % EP on top and $50
+const STUDY_BONUS=0.5,STUDY_BONUS_$=50;
+function studyFinish(){const m=ST.m;m.stT=Date.now();ST.ok=ST.ok??(ST.res||[]).filter(Boolean).length;ST.bonus=0;
+  if(ST.qs.length>=STUDY_N&&ST.ok===ST.qs.length&&ST.pend){ST.bonus=Math.max(1,Math.round(ST.pend*STUDY_BONUS));ST.pend+=ST.bonus;earn(STUDY_BONUS_$,'Prüfungsprämie')}
+  if(ST.pend){const before=m.xp+xpNeed(m.l)*0;ST.msgs=gainXp(m,ST.pend);ST.xp=Math.round(ST.pend*((RUN.cfg&&RUN.cfg.xp)||1));for(const t of ST.msgs)sysChat(t);save();renderTeam();pushMt()}}
 function closeStudy(){$('#study').classList.remove('on');ST=null;if(atHfPol())openHfPol()}
 const STUDY_QT=15000;  // every question has a timer
 function studyLoop(){if(!ST)return;const _n=Date.now();if(PANIC&&ST.lastN){const d=_n-ST.lastN;if(ST.qEnd)ST.qEnd+=d;if(ST.pen)ST.pen+=d;if(ST.lcd)ST.lcd+=d}ST.lastN=_n;if(ST.state==='ask'){if(ST.qi!==ST.i){ST.qi=ST.i;ST.qEnd=Date.now()+STUDY_QT}const l=Math.max(0,ST.qEnd-Date.now()),b=$('#sqbar');if(b)b.style.width=(l/STUDY_QT*100)+'%';if(l<=0)studyAnswer(-1)}const cv=$('#stcv');if(cv){const c=cv.getContext('2d');c.imageSmoothingEnabled=false;const W=360,H=150,now=performance.now(),t=now/1000;
