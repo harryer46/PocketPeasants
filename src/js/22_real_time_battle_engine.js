@@ -1026,7 +1026,7 @@ function drawBattle(){
   if(B.tb&&B.state==='tbWait'){c.fillStyle='#0b0d16c8';c.fillRect(UW/2-55,46,110,11);vtText(c,'warte auf den Gegner…',UW/2,55,'#ffffff',10,'center')}
   if(B.me.spawnT!==Infinity)hudPanel(c,4,4,B.me,false,'');
   const stTag={sleep:['SLF','#c4b5fd'],conf:['VRW','#f472b6'],burn:['BRN','#ff8a3d'],slow:['SLW','#6db6f0'],stun:['STN','#ffe14d'],shield:['SHD','#9fd2ff'],haste:['HST','#3ddc6b']};
-  const tags=(F,x,right)=>{const g=stgOf(F);const ks=(F.ctrl==='remote'?(F.stShow||[]):Object.keys(F.st).filter(k=>F.st[k]>0)).filter(k=>stTag[k]);for(const q of['a','d','s'])if(g[q]){const t=q.toUpperCase().replace('S','I')+(g[q]>0?'+':'')+g[q];stTag[t]=[t,g[q]>0?'#3ddc6b':'#ef6f6f'];ks.push(t)}ks.forEach((k,i)=>{const[t,col]=stTag[k];const X=right?x-24-i*24:x+i*24;c.fillStyle='#14141f';c.fillRect(X,40,22,9);vtText(c,t,X+11,47,col,9,'center')})};
+  const tags=(F,x,right)=>{const g=stgOf(F);const ks=(F.ctrl==='remote'?(F.stShow||[]):Object.keys(F.st).filter(k=>F.st[k]>0)).filter(k=>stTag[k]);for(const q of['a','d','s'])if(g[q]){const t=q.toUpperCase().replace('S','G')+(g[q]>0?'+':'')+g[q];stTag[t]=[t,g[q]>0?'#3ddc6b':'#ef6f6f'];ks.push(t)}ks.forEach((k,i)=>{const[t,col]=stTag[k];const X=right?x-24-i*24:x+i*24;c.fillStyle='#14141f';c.fillRect(X,40,22,9);vtText(c,t,X+11,47,col,9,'center')})};
   tags(B.me,4,false);if(B.foe)tags(B.foe,UW-4-62,true);
   if(B.foe)hudPanel(c,UW-4,4,B.foe,true,B.legend?'★':'');
   if(B.foe&&B.mode==='wild'){const rc=rarOf(act(B.foe).s);if(RAR[act(B.foe).s]!=='common'){c.fillStyle='#14141f';c.fillRect(UW-116,40,58,9);vtText(c,rc.n.toUpperCase(),UW-113,47,rc.c,9)}}
