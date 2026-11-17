@@ -176,7 +176,7 @@ function drawWorld(){
   c.textBaseline='alphabetic';
   for(const L of LABELS){const X=L.x*16-camX,Y=L.y*16-camY;if(X<-120||Y<-80||X>LW+40||Y>LH+40)continue;if(L.kind==='pad'){c.font='8px VT323,monospace';c.textAlign='center';const pd=PADS.find(p=>p.bx===L.x&&p.by===L.y);if(pd&&pd.old){c.fillStyle='#14141f';c.fillText('PÄD',X+48,Y+28);c.fillStyle='#ffffff';c.fillText('PÄD',X+48,Y+27)}else{c.fillStyle='#ffffff';c.fillText('PÄD',X+56,Y+36.5)}}
     else{c.font='7px "Press Start 2P",monospace';c.textAlign='center';c.fillStyle='#14141f';c.fillText(L.t,X+L.w*8+1,Y+13);c.fillStyle='#ffcb3d';c.fillText(L.t,X+L.w*8,Y+12)}}
-  for(const Bd of BLDG){const X=Bd.x*16-camX,Y=Bd.y*16-camY;if(X<-120||Y<-80||X>LW+40||Y>LH+40)continue;c.font='10px VT323,monospace';c.textAlign='center';c.fillStyle='#ffffff';if(Bd.old){c.font='8px VT323,monospace';c.fillText(Bd.id==='shop'?'COPSHOP':'HfPol',X+Bd.w*8,Bd.id==='shop'?Y+20:Y+40)}else c.fillText(Bd.n,X+Bd.w*8,Y+(Bd.id==='shop'?43:45.5))}
+  for(const Bd of BLDG){const X=Bd.x*16-camX,Y=Bd.y*16-camY;if(X<-120||Y<-80||X>LW+40||Y>LH+40)continue;c.font='10px VT323,monospace';c.textAlign='center';c.fillStyle='#ffffff';if(Bd.old){c.font='8px VT323,monospace';c.fillText(Bd.id==='shop'?'COPSHOP':Bd.n,X+Bd.w*8,Bd.id==='shop'?Y+20:Y+40)}else c.fillText(Bd.n,X+Bd.w*8,Y+(Bd.id==='shop'?43:45.5))}
   c.textAlign='left';
   // entities
   const ents=[];
