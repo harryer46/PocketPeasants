@@ -155,7 +155,7 @@ function startFree(){
   try{setSide(false)}catch(e){}
   if(G.freeRun){RUN=G.freeRun;RUN.beat=RUN.beat||{};RUN.leg=RUN.leg||{};afterRunChange();toast('Willkommen zurück! Das freie Spiel geht weiter.');return}
   // same starter choice as in a lobby (no paragraph monsters)
-  const go=sid=>{RUN={id:'f'+Math.random().toString(36).slice(2,10),free:true,end:0,phase:'train',team:[newMon(sid,START_LV)],box:[],kap:10,money:100,items:{},r:1,st:'free',res:[],beat:{},leg:{},cfg:Object.assign({},DEF_CFG,{alt:SET.alt==='0'?0:1})};G.dex[sid]=1;G.freeRun=RUN;afterRunChange();teleport(VSPAWN.x,VSPAWN.y);sysChat('Freies Spiel gestartet — dein Team wird gespeichert. Erstelle oder betrete jederzeit eine Lobby.');toast(`Dein Start-Monster: ${SPECIES[sid].n}!`)};
+  const go=sid=>{RUN={id:'f'+Math.random().toString(36).slice(2,10),free:true,end:0,phase:'train',team:[newMon(sid,START_LV)],box:[],kap:10,money:100,items:{},r:1,st:'free',res:[],beat:{},leg:{},cfg:Object.assign({},DEF_CFG,{alt:SET.alt==='0'?0:1})};G.dex[sid]=1;if(G.pendBox&&G.pendBox.length){RUN.box.push(...G.pendBox);for(const m of G.pendBox)G.dex[m.s]=1;G.pendBox=null}G.freeRun=RUN;afterRunChange();teleport(VSPAWN.x,VSPAWN.y);sysChat('Freies Spiel gestartet — dein Team wird gespeichert. Erstelle oder betrete jederzeit eine Lobby.');toast(`Dein Start-Monster: ${SPECIES[sid].n}!`)};
   if(window.AUTO_STARTER){const st=startersNow({alt:SET.alt==='0'?0:1});const sid=st[Math.floor(Math.random()*st.length)];go(sid);return}
   pickStarter(go,{alt:SET.alt==='0'?0:1})
 }
@@ -249,11 +249,24 @@ function hardExit(){
   closeModal();closeMap();$('#arena').classList.remove('on');$('#abox').dataset.h='';held.length=0;
 }
 function leaveRun(){
-  hardExit();RUN=G.freeRun||null;if(RUN){RUN.beat=RUN.beat||{};RUN.leg=RUN.leg||{}}
+  const old=RUN;hardExit();RUN=G.freeRun||null;if(RUN){RUN.beat=RUN.beat||{};RUN.leg=RUN.leg||{}}
   P.d='down';teleport(VSPAWN.x,VSPAWN.y);save();pres({mt:mtInfo(),ld:leadInfo(),lf:folInfo()});afterRunChange();
   switchTab('lobby');setSide(true);
   if(RUN)toast('Zurück am Start — freies Spiel. Tritt jederzeit einer Lobby bei oder erstelle eine.');else startFree();
+  if(old&&!old.free&&old.phase&&old.phase!=='lobby')setTimeout(()=>offerTransfer(old),RUN?300:900);
 }
+// after a lobby match: take monsters from the lobby team/box over into the box of the free play
+function offerTransfer(old){const mons=(old.team||[]).concat(old.box||[]).filter(m=>m&&SPECIES[m.s]);if(!mons.length)return;
+  const pick=new Set();
+  const draw=()=>{openModal(`<h3>MONSTER MITNEHMEN?</h3><p>Das Lobby-Spiel ist vorbei. Welche Monster sollen in die Box deines freien Spiels?</p>
+    <div style="display:flex;flex-direction:column;gap:5px;max-height:48vh;overflow:auto">${mons.map((m,i)=>`<button class="btn ${pick.has(i)?'green':'ghost'}" data-tf="${i}" style="text-align:left">${pick.has(i)?'☑':'☐'} ${nameHtml(m.s)} · Lv ${m.l}</button>`).join('')}</div>
+    <div class="acts"><button class="btn ghost" id="mno">NICHTS MITNEHMEN</button><button class="btn ghost" id="tfall">ALLE</button><button class="btn" id="myes" ${pick.size?'':'disabled'}>${pick.size} IN DIE BOX</button></div>`);
+    document.querySelectorAll('[data-tf]').forEach(b=>b.onclick=()=>{const i=+b.dataset.tf;pick.has(i)?pick.delete(i):pick.add(i);draw()});
+    $('#tfall').onclick=()=>{mons.forEach((m,i)=>pick.add(i));draw()};$('#mno').onclick=closeModal;
+    $('#myes').onclick=()=>{const got=[...pick].map(i=>{const m=JSON.parse(JSON.stringify(mons[i]));m.hp=stats(m).mhp;delete m.st;return m});closeModal();
+      if(G.freeRun){G.freeRun.box=(G.freeRun.box||[]).concat(got);for(const m of got)G.dex[m.s]=1}else G.pendBox=(G.pendBox||[]).concat(got);
+      save();try{renderTeam()}catch(e){}toast(`📦 ${got.length} Monster in die Box des freien Spiels übernommen${G.freeRun?'':' (nach der Starterwahl)'}.`)}};
+  draw()}
 // host: send everyone in this lobby back to the start (lobby phase, fresh starter, no timer)
 function resetRun(n){
   hardExit();const c=RUN.cfg,sid=RUN.starter||(RUN.team[0]&&RUN.team[0].s)||startersNow()[0];
