@@ -69,6 +69,9 @@ altMon('gianlueckmon',{n:'Gian-Lückmon',t:'grass',c:['#4f9a35','#f5c6c9','#142a
 altMon('ibumon',{n:'Ibumon',t:'normal',c:['#d9d6d2','#ffffff','#141414'],b:[62,66,52,48],xp:72,ls:LS.ibu,an:'flex'},'uncommon');
 altMon('arenamon',{n:'Arenamon',t:'grass',c:['#e8b62a','#fff3c8','#2a1a05'],b:[100,104,96,90],xp:220,sc:1.2,ls:[[1,'leaftoss'],[1,'noodlelash'],[1,'bloomheal'],[1,'brambleburst']],an:'squirm'},'legendary');
 altMon('zhang',{n:'Unmittelbarer Zhang',t:'water',faceR:1,c:['#3a7ed8','#c8d4e6','#0b1020'],b:[98,108,100,82],xp:220,sc:1.2,ls:[[1,'splash'],[1,'undertow'],[1,'mistveil'],[1,'watercannon']],an:'tank'},'legendary');
+// starter form of the legendary: same look, starter strength; evolves at Lv 14 like the other starters
+altMon('zhangs',{n:'Unmittelbarer Zhang',t:'water',img:'zhang',faceR:1,c:['#3a7ed8','#c8d4e6','#0b1020'],b:[54,50,54,56],xp:62,ls:LS.waterSt,an:'tank',evo:[14,'zhangsx']},'unique');
+altMon('zhangsx',{n:'Mega Unmittelbarer Zhang',t:'water',img:'zhang',mega:1,faceR:1,c:['#3a7ed8','#c8d4e6','#0b1020'],b:[80,74,80,84],xp:150,sc:1.2,ls:LS.waterSt,an:'tank'},'unique');
 altMon('schlagstock',{n:'Schlagstock',t:'rock',c:['#3a3a42','#e8e8ee','#0a0a0e'],b:[98,118,96,86],xp:220,sc:1.15,ls:[[1,'headrush'],[1,'quakestomp'],[1,'flexpunch'],[1,'meteor']],an:'flex'},'legendary');
 altMon('taser',{n:'Taser',t:'electric',c:['#f2c21a','#3cb4ff','#14141a'],b:[88,112,84,110],xp:220,sc:1.15,ls:[[1,'zap'],[1,'jolt'],[1,'staticnet'],[1,'stormcrack']],an:'rock'},'legendary');
 altMon('pfefferspray',{n:'Pfefferspray',t:'fire',c:['#22232a','#d8262a','#f2b21a'],b:[92,114,90,98],xp:220,sc:1.15,ls:[[1,'sparkshot'],[1,'emberrain'],[1,'scorchline'],[1,'firestorm']],an:'flex'},'legendary');
@@ -181,8 +184,8 @@ for(const k in SPECIES){const sp=SPECIES[k];if(!sp.law)continue;const m=sp.law.m
   for(const e of ADD[sp.t]||[])if(!ls.some(x=>x[1]===e[1]))ls.push(e);ls.sort((a,b)=>a[0]-b[0])}}
 // name as HTML with the paragraph in bold
 function nameHtml(sid){const sp=SPECIES[sid];if(!sp)return'';return sp.sfx?esc(sp.base)+' <b class="psfx">'+esc(sp.sfx)+'</b>':esc(sp.n)}
-const ALT_IDS=new Set(['schlagstock','taser','pfefferspray','kelle','harrymon','harrymonx','goeggeli','goeggelix','pfisterio','pfisteriox','zenerentner','steini','aaronia','gianlueckmon','ibumon','owigon','ausweisadler','platzfuchs','sperrschild','drohnix','zellbaer','filzhund','kistenwasch','wohnkroete','sichereule','beschlagigel','erkennungsleon','fragfuchs','einwilligfee','bodycamar','wuerdeadler','freiheitsmarder','gleichlinge','glaubine','meinungseule','demofuchs','posttaube','heimkroete','rechtsritter','bundesadler','langfinger','schwindelfuchs','pruegelklops','schlaegerkopf','promillo','bleifuss','poebelblase','geruechtling','faelschling','sprayzi','probenwolf','fotodachs','asservadler','richtereule','ermittlerhund','spuerhund','handschuhwasch','lupenkauz','stoerkeiler','fesselstachler','protokollfuchs','vernehmpapagei','verbotsnatter','identiluchs','gewahrsamhirsch','arenamon','zhang','boorberg']);
-const ALT_STARTERS=['harrymon','goeggeli','pfisterio','zenerentner','aaronia','ibumon'];
+const ALT_IDS=new Set(['schlagstock','taser','pfefferspray','kelle','harrymon','harrymonx','goeggeli','goeggelix','pfisterio','pfisteriox','zhangs','zhangsx','zenerentner','steini','aaronia','gianlueckmon','ibumon','owigon','ausweisadler','platzfuchs','sperrschild','drohnix','zellbaer','filzhund','kistenwasch','wohnkroete','sichereule','beschlagigel','erkennungsleon','fragfuchs','einwilligfee','bodycamar','wuerdeadler','freiheitsmarder','gleichlinge','glaubine','meinungseule','demofuchs','posttaube','heimkroete','rechtsritter','bundesadler','langfinger','schwindelfuchs','pruegelklops','schlaegerkopf','promillo','bleifuss','poebelblase','geruechtling','faelschling','sprayzi','probenwolf','fotodachs','asservadler','richtereule','ermittlerhund','spuerhund','handschuhwasch','lupenkauz','stoerkeiler','fesselstachler','protokollfuchs','vernehmpapagei','verbotsnatter','identiluchs','gewahrsamhirsch','arenamon','zhang','boorberg']);
+const ALT_STARTERS=['harrymon','goeggeli','zhangs','zenerentner','aaronia','ibumon'];
 // monsters per area (new world): law areas — PolG in the forest and at the coast, traffic & petty crime in the highlands, GG in the snow, StPO in the jungle, StGB in the desert & prison
 const ALT_POOLS={north:['zenerentner','aaronia','ibumon','owigon','filzhund','langfinger','poebelblase','fragfuchs','gleichlinge','meinungseule','posttaube'],
  east:['aaronia','ibumon','platzfuchs','kistenwasch','sichereule','wohnkroete','filzhund','fragfuchs','ausweisadler','beschlagigel','freiheitsmarder'],
@@ -199,7 +202,7 @@ for(const k in ALT_IMG){const im=new Image();im.onload=()=>{const drop=o=>{for(c
 const RARITY={common:{n:'Häufig',c:'#9aa0b4',w:60,cm:1,xm:1},uncommon:{n:'Ungewöhnlich',c:'#3ddc6b',w:28,cm:.85,xm:1.1},rare:{n:'Selten',c:'#4aa3ff',w:9,cm:.6,xm:1.35},legendary:{n:'Legendär',c:'#ffcb3d',w:0,cm:.3,xm:2},unique:{n:'Einzigartig',c:'#c27bff',w:0,cm:1,xm:1}};
 const RAR=RAR_INIT;
 function rarOf(s){return RARITY[RAR[s]||'common']}
-const STARTERS=['harrymon','goeggeli','pfisterio'];
+const STARTERS=['harrymon','goeggeli','zhangs'];
 const START_LV=2;
 const EVOT=new Set(Object.values(SPECIES).filter(s=>s.evo).map(s=>s.evo[1]));
 const BASES=Object.keys(SPECIES).filter(s=>!EVOT.has(s)&&RAR[s]!=='unique'&&RAR[s]!=='legendary'&&!ALT_IDS.has(s));
@@ -252,7 +255,7 @@ const TRAINERS=[
 ];
 
 
-// Zielsicher (real-time aiming skill, 1–10): replaces accuracy. High = the aim sits on the target with a slight lead,
+// Präzision (real-time aiming skill, 1–10): replaces accuracy. High = the aim sits on the target with a slight lead,
 // low = the monster's aim drags sluggishly behind. Set by type, a fixed per-species offset and a little by level.
 const ZIEL_T={electric:7.5,flying:7,water:6,fire:5.5,normal:5,grass:4.5,rock:3.5};
 function zielOf(m){if(!m||!SPECIES[m.s])return 5;let h=0;for(const ch of m.s)h=(h*31+ch.charCodeAt(0))>>>0;const base=(ZIEL_T[SPECIES[m.s].t]||5)+((h%5)-2)*0.6;return clamp(Math.round((base+(m.l||1)*0.04)*10)/10,1,10)}
