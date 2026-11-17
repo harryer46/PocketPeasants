@@ -103,7 +103,7 @@ function studyAnswer(k){if(!ST||ST.state!=='ask')return;const cur=ST.qs[ST.i];cu
 function studyFinish(){const m=ST.m;m.stT=Date.now();if(ST.pend){const before=m.xp+xpNeed(m.l)*0;ST.msgs=gainXp(m,ST.pend);ST.xp=Math.round(ST.pend*((RUN.cfg&&RUN.cfg.xp)||1));for(const t of ST.msgs)sysChat(t);save();renderTeam();pushMt()}}
 function closeStudy(){$('#study').classList.remove('on');ST=null;if(atHfPol())openHfPol()}
 const STUDY_QT=15000;  // every question has a timer
-function studyLoop(){if(!ST)return;if(ST.state==='ask'){if(ST.qi!==ST.i){ST.qi=ST.i;ST.qEnd=Date.now()+STUDY_QT}const l=Math.max(0,ST.qEnd-Date.now()),b=$('#sqbar');if(b)b.style.width=(l/STUDY_QT*100)+'%';if(l<=0)studyAnswer(-1)}const cv=$('#stcv');if(cv){const c=cv.getContext('2d');c.imageSmoothingEnabled=false;const W=360,H=150,now=performance.now(),t=now/1000;
+function studyLoop(){if(!ST)return;const _n=Date.now();if(PANIC&&ST.lastN){const d=_n-ST.lastN;if(ST.qEnd)ST.qEnd+=d;if(ST.pen)ST.pen+=d;if(ST.lcd)ST.lcd+=d}ST.lastN=_n;if(ST.state==='ask'){if(ST.qi!==ST.i){ST.qi=ST.i;ST.qEnd=Date.now()+STUDY_QT}const l=Math.max(0,ST.qEnd-Date.now()),b=$('#sqbar');if(b)b.style.width=(l/STUDY_QT*100)+'%';if(l<=0)studyAnswer(-1)}const cv=$('#stcv');if(cv){const c=cv.getContext('2d');c.imageSmoothingEnabled=false;const W=360,H=150,now=performance.now(),t=now/1000;
     c.fillStyle='#3d7a34';c.fillRect(0,0,W,H);c.fillStyle='#4f9441';c.beginPath();c.ellipse(90,120,80,20,0,0,7);c.fill();c.beginPath();c.ellipse(270,62,70,16,0,0,7);c.fill();
     c.fillStyle='#5aa24b';for(let i=0;i<40;i++){c.fillRect((i*53)%W,(i*29)%H,2,2)}
     const fx=ST.fx,fk=fx?(now-fx.t)/500:9;

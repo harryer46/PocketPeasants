@@ -3,11 +3,13 @@ const DIRS={up:[0,-1],down:[0,1],left:[-1,0],right:[1,0]};
 const KEYMAP={ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right',w:'up',s:'down',a:'left',d:'right',W:'up',S:'down',A:'left',D:'right'};
 const held=[],aimHeld=[];
 function typing(){const a=document.activeElement;return a&&(a.tagName==='INPUT'||a.tagName==='TEXTAREA'||a.tagName==='SELECT')}
-addEventListener('keydown',e=>{if(B&&(B.vs||B.wi)&&!e.repeat&&vsSkip()){e.preventDefault();return}
+addEventListener('keydown',e=>{
+  // emergency mode first: Enter always toggles it and never also skips/confirms whatever is open underneath
+  if(PANIC){e.preventDefault();e.stopImmediatePropagation();if(e.key==='Enter'&&!e.repeat)panicOff();return}
+  if(e.key==='Enter'&&!typing()&&!capturing&&G){e.preventDefault();e.stopImmediatePropagation();if(!e.repeat)panicOn();return}
+  if(B&&(B.vs||B.wi)&&!e.repeat&&vsSkip()){e.preventDefault();return}
   if(TALK){if(!e.repeat){e.preventDefault();talkTap()}return}
   if(capturing){captureKey(e);return}
-  if(PANIC){e.preventDefault();if(e.key==='Enter'&&!e.repeat)panicOff();return}
-  if(e.key==='Enter'&&!typing()&&!e.repeat&&G){e.preventDefault();panicOn();return}
   if(typing()){if(e.key==='Escape')document.activeElement.blur();return}
   // slot-machine reel open: A/D (and ←/→) spin it instead of moving
   if(B&&!B.tb&&!CQ&&pickMode()&&!(pickMode()==='lead'&&B.leadPicked)&&!$('#modal').classList.contains('on')){const kk=e.key.toLowerCase();if(kk==='a'||e.key==='ArrowLeft'){e.preventDefault();reelSpin(-1);return}if(kk==='d'||e.key==='ArrowRight'){e.preventDefault();reelSpin(1);return}}
@@ -25,11 +27,11 @@ addEventListener('keydown',e=>{if(B&&(B.vs||B.wi)&&!e.repeat&&vsSkip()){e.preven
   if(e.key==='Escape'&&mapOpen()){closeMap();return}
   if(mapOpen()&&(e.key==='+'||e.key==='='||e.key==='-'||e.key==='_')){e.preventDefault();mapZoom(e.key==='+'||e.key==='='?1:-1);return}
   if((e.key==='t'||e.key==='T')&&G){e.preventDefault();switchTab('chat');$('#chatin').focus()}
-});
+},true);
 addEventListener('keyup',e=>{const d=KEYMAP[e.key];if(d){const i=held.indexOf(d);if(i>=0)held.splice(i,1);const j=aimHeld.indexOf(d);if(j>=0)aimHeld.splice(j,1)}if(B&&B.aim&&normKey(e.key)===SET.keys.cap)capRelease()});
 addEventListener('blur',()=>{held.length=0;aimHeld.length=0});
 // intro screens: a tap anywhere on the screen skips (not only on the battle picture)
-addEventListener('pointerdown',e=>{if(B&&(B.vs||B.wi)&&vsSkip()){e.preventDefault();e.stopPropagation()}},true);
+addEventListener('pointerdown',e=>{if(!PANIC&&B&&(B.vs||B.wi)&&vsSkip()){e.preventDefault();e.stopPropagation()}},true);
 ['#stage','#battle'].forEach(sel=>{const el=$(sel);if(el)el.addEventListener('pointerdown',e=>{if(typing()&&!e.target.closest('input,select,textarea'))document.activeElement.blur()})});
 document.querySelectorAll('#dpad button').forEach(b=>{const d=b.dataset.d;
   b.addEventListener('pointerdown',e=>{e.preventDefault();if(!held.includes(d))held.push(d)});

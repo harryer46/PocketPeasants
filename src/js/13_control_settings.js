@@ -36,7 +36,7 @@ function openSettings(){
   openModal(h);if(typeof bindNetSettings==='function')bindNetSettings();
   document.querySelectorAll('#mbox [data-g]').forEach(b=>b.onclick=()=>{SET[b.dataset.g]=b.dataset.v;saveSet();if(b.dataset.g==='alt'&&RUN&&RUN.free){RUN.cfg=Object.assign({},RUN.cfg,{alt:+b.dataset.v});save();renderTeam();toast(+b.dataset.v?'Alternative Monster im freien Spiel!':'Klassische Monster im freien Spiel.')}applyControls();openSettings()});
   document.querySelectorAll('#mbox [data-key]').forEach(b=>b.onclick=()=>{capturing=b.dataset.key;openSettings()});
-  {const pb=$('#spanic');if(pb)pb.onclick=()=>{closeModal();panicOn()}}
+  {const pb=$('#spanic');if(pb)pb.onclick=()=>panicOn()}
   {const lb=$('#slog');if(lb)lb.onclick=downloadLog;$('#ssave').onclick=manualSave;$('#sexp').onclick=exportSave;$('#simp').onclick=importSave}
   $('#sreset').onclick=()=>{if(B){toast('Nicht während eines Kampfes.');return}openModal(`<h3>⟲ ALLES ZURÜCKSETZEN?</h3><p>Spielstand, Team, Box, Geld, Items, Story-Fortschritt (Beschlüsse, Laufbahn, Abschlussprüfung), Monster-Dex, Trophäen und Einstellungen werden gelöscht.<br><span class="small">Nur dein Name und Aussehen bleiben. Das lässt sich nicht rückgängig machen – vorher ggf. exportieren.</span></p><div class="acts"><button class="btn ghost" id="mno">ABBRECHEN</button><button class="btn red" id="myes">ALLES ZURÜCKSETZEN</button></div>`);
     $('#mno').onclick=closeModal;$('#myes').onclick=()=>{closeModal();SET={ctrl:'auto',dp:'m',side:'right',keys:{...DEF_KEYS}};capturing=null;saveSet();applyControls();if(G)fullReset();toast('Alles zurückgesetzt.')}};

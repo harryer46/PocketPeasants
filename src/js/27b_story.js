@@ -60,11 +60,11 @@ function storyBump(t){if(!storyOn())return;if(!RUN||RUN.phase!=='train'){toast(`
     $('#mno').onclick=closeModal;$('#myes').onclick=()=>{closeModal();fw?pplkTheory(t):pplkFight(t)}}}
 let PQ=null;
 function pplkTheory(t){const pool=shuffleArr(lawQuestions(t.law)).slice(0,PPLK_N);if(!pool.length){pplkPass(t);return}let i=0,right=0;held.length=0;
-  const ask=()=>{const it=pool[i],order=shuffleArr([0,1,2,3]);CQ={it,order,end:Infinity,done:false,cb:null};const qEnd=Date.now()+PPLK_QT,myQ=CQ;
+  const ask=()=>{const it=pool[i],order=shuffleArr([0,1,2,3]);CQ={it,order,end:Infinity,done:false,cb:null};let qEnd=Date.now()+PPLK_QT;const myQ=CQ;
     $('#cqbox').innerHTML=`<div class="sdlg"><span class="slaw">📝 PMLK ${esc(t.law)} · Frage ${i+1}/${pool.length} · ${right} richtig${it.src?' · '+esc(SPECIES[it.src].law||''):''}</span><br>${esc(it.q[0])}<div class="cqt"><i id="cqbar"></i></div><div class="small" id="cqtime" style="text-align:right">${PPLK_QT/1000} s</div><div id="cqexp"></div></div>
       <div class="sans">${order.map((k,j)=>`<button class="sa" data-ck="${k}"><span class="sk">${j+1}</span>${esc(it.q[1][k])}</button>`).join('')}</div><div class="sacts" id="cqact"></div>`;
     $('#cquiz').classList.remove('lite');$('#cquiz').classList.add('on');document.querySelectorAll('[data-ck]').forEach(bt=>bt.onclick=()=>pick(+bt.dataset.ck));
-    clearInterval(PQ);PQ=setInterval(()=>{if(CQ!==myQ||myQ.done){clearInterval(PQ);return}if(typeof PANIC!=='undefined'&&PANIC)return;const l=Math.max(0,qEnd-Date.now()),bar=$('#cqbar');
+    clearInterval(PQ);PQ=setInterval(()=>{if(CQ!==myQ||myQ.done){clearInterval(PQ);return}if(PANIC){qEnd+=100;return}const l=Math.max(0,qEnd-Date.now()),bar=$('#cqbar');
       if(bar){bar.style.width=(l/PPLK_QT*100)+'%';bar.style.background=l<PPLK_QT/3?'#ef4444':'#ffcb3d'}const tt=$('#cqtime');if(tt)tt.textContent=Math.ceil(l/1000)+' s';if(l<=0)pick(-1)},100)};
   const pick=k=>{if(!CQ||CQ.done)return;CQ.done=true;clearInterval(PQ);const ok=k===0,it=CQ.it;if(ok)right++;
     document.querySelectorAll('[data-ck]').forEach(bt=>{const kk=+bt.dataset.ck;bt.disabled=true;bt.classList.add(kk===0?'ok':kk===k?'bad':'dim')});

@@ -83,7 +83,7 @@ function sleepGame(){if(!B||B.tb||$('#sleepfall'))return;const myB=B,F=B.me;cons
       if(ok){F.st.sleep=0;say(`${SPECIES[act(F).s].n} ist aufgewacht! (${a.head} – ${a.title})`);burst(F.x,F.y-14,'#ffe066',14);el.classList.add('ok')}
       else{F.st.sleep=Math.min(8,F.st.sleep+0.5);el.classList.add('bad');say(`Falsch – ${a.head} ist nicht „${t}“.`)}setTimeout(()=>el.remove(),350)};
     ov.appendChild(el);items.push(it)};
-  const tick=()=>{const now=performance.now(),dt=Math.min(0.1,(now-last)/1000);last=now;
+  const tick=()=>{const now=performance.now(),dt=Math.min(0.1,(now-last)/1000);last=now;if(PANIC&&B===myB){requestAnimationFrame(tick);return}
     if(B!==myB||!B||B.state==='over'||F.st.sleep<=0||F.out||F.faint>0){ov.remove();return}
     const cv=$('#bcv'),r=cv.getBoundingClientRect();const w=Math.max(130,r.width*0.34);ov.style.left=(r.right-w)+'px';ov.style.top=r.top+'px';ov.style.width=w+'px';ov.style.height=r.height+'px';
     spawnT-=dt;if(spawnT<=0){spawn();spawnT=0.5}
