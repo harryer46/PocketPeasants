@@ -23,6 +23,7 @@ addEventListener('keydown',e=>{if(B&&(B.vs||B.wi)&&!e.repeat&&vsSkip()){e.preven
   if((e.key==='m'||e.key==='M')&&G){toggleMap();return}
   if((e.key==='f'||e.key==='F')&&G&&!e.repeat&&!modalOpen()){e.preventDefault();toggleFly();return}
   if(e.key==='Escape'&&mapOpen()){closeMap();return}
+  if(mapOpen()&&(e.key==='+'||e.key==='='||e.key==='-'||e.key==='_')){e.preventDefault();mapZoom(e.key==='+'||e.key==='='?1:-1);return}
   if((e.key==='t'||e.key==='T')&&G){e.preventDefault();switchTab('chat');$('#chatin').focus()}
 });
 addEventListener('keyup',e=>{const d=KEYMAP[e.key];if(d){const i=held.indexOf(d);if(i>=0)held.splice(i,1);const j=aimHeld.indexOf(d);if(j>=0)aimHeld.splice(j,1)}if(B&&B.aim&&normKey(e.key)===SET.keys.cap)capRelease()});
