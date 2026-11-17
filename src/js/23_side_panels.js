@@ -34,7 +34,7 @@ const QZ={};
 const VAULT_BOOK={StGB:[],StPO:[],PolG:[],GG:[]},VAULT_N={};
 (function(){const key=s=>{const L=(SPECIES[s]&&SPECIES[s].law)||'',m=L.match(/^(?:§|Art\.)\s*(\d+[a-z]?)\s+([A-Za-zÄÖÜäöü]+)/);return m?m[1]+' '+m[2]:null};
   const byKey={};for(const s of Object.keys(SPECIES)){const k=key(s);if(k&&ALT_IDS.has(s)&&RAR[s]!=='legendary')(byKey[k]=byKey[k]||[]).push(s)}
-  for(const[b,r,q,ok,wr,ex]of VAULT_QZ){const A=VAULT_A[b],item=[q,[A[ok]],wr.map(i=>A[i]),ex];const sp=[...new Set(r.flatMap(k=>byKey[k]||[]))];
+  for(const[b,r,q,ok,wr,ex]of VAULT_QZ){const A=VAULT_A[b],item=[q,(Array.isArray(ok)?ok:[ok]).map(i=>A[i]),wr.map(i=>A[i]),ex];const sp=[...new Set(r.flatMap(k=>byKey[k]||[]))];
     if(sp.length){for(const s of sp){(QZ[s]=QZ[s]||[]).push(item);VAULT_N[s]=(VAULT_N[s]||0)+1}}else VAULT_BOOK[b].push(item)}})();
 //@inc js/data/dex_text.js
 
