@@ -104,3 +104,15 @@ function routeWay(fromId,toId){const N=ROUTE_NODES,st=N.findIndex(n=>n.town===fr
   while(true){let u=-1;for(let i=0;i<N.length;i++)if(!done.has(i)&&D[i]<1e9&&(u<0||D[i]<D[u]))u=i;if(u<0||u===go)break;done.add(u);
     for(const e of ROUTE_EDGES){if(!e.A||!e.B)continue;const a=N.indexOf(e.A),b=N.indexOf(e.B);let v=-1,rs=null;if(a===u){v=b;rs=e.routes}else if(b===u){v=a;rs=e.routes.slice().reverse()}if(v<0)continue;const d=D[u]+e.pix.length;if(d<D[v]){D[v]=d;prev[v]={u,rs}}}}
   const out=[];for(let v=go;prev[v];v=prev[v].u)out.unshift(...prev[v].rs);return out}
+// ---- no trainer may block a way: a trainer standing on a cut tile (its walkable neighbours are only connected through it)
+// is moved to the nearest free spot beside the way that does not cut, facing the way again
+(function fixTrainerCuts(){const solid=new Set(TRAINERS.map(t=>t.y*MW+t.x));const W=(x,y)=>x>0&&y>0&&x<MW-1&&y<MAP.length/MW-1&&(WALK0.has(tget(x,y))||tget(x,y)===3)&&!solid.has(y*MW+x);
+  const D4=[[1,0,'right'],[-1,0,'left'],[0,1,'down'],[0,-1,'up']];
+  const cuts=(cx,cy)=>{const nb=D4.map(([a,b])=>[cx+a,cy+b]).filter(([a,b])=>W(a,b));if(nb.length<=1)return false;const R=12,seen=new Set([nb[0][0]+','+nb[0][1]]),q=[nb[0]];
+    while(q.length){const[a,b]=q.pop();for(const[dx,dy]of D4){const X=a+dx,Y=b+dy,k=X+','+Y;if(seen.has(k)||(X===cx&&Y===cy)||Math.abs(X-cx)>R||Math.abs(Y-cy)>R||!W(X,Y))continue;seen.add(k);q.push([X,Y])}}
+    return!nb.every(([a,b])=>seen.has(a+','+b))};
+  for(const t of TRAINERS){if(!cuts(t.x,t.y))continue;solid.delete(t.y*MW+t.x);let best=null;
+    for(let rr=1;rr<=5&&!best;rr++)for(let dy=-rr;dy<=rr&&!best;dy++)for(let dx=-rr;dx<=rr&&!best;dx++){if(Math.max(Math.abs(dx),Math.abs(dy))!==rr)continue;const x=t.x+dx,y=t.y+dy;
+      if(!W(x,y)||ENC.has(tget(x,y))||(typeof ROAD!=='undefined'&&ROAD.has&&ROAD.has(y*MW+x))||tget(x,y)===3)continue;solid.add(y*MW+x);const bad=cuts(x,y);solid.delete(y*MW+x);if(bad)continue;
+      const f=D4.find(([a,b])=>{const tt=tget(x+a,y+b);return tt===4||tt===27})||D4.find(([a,b])=>W(x+a,y+b));if(f)best={x,y,d:f[2]}}
+    if(best)Object.assign(t,best);solid.add(t.y*MW+t.x)}})();
