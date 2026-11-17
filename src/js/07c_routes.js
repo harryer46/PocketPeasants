@@ -11,7 +11,7 @@ function routeRange(k){const R=ROUTES[k];return R?R.lv:[1,5]}
 const ROUTE_OF=new Uint8Array(MW*MH);   // route number of every overworld tile (nearest road), 0 = none
 const ROUTE_STRETCH=[];                  // per stretch: path tiles, first/last route
 (function buildRoutes(){
-  const pass=i=>{const t=MAP[i];return WALK0.has(t)||t===3||t===27||(LEDGE_DIR&&LEDGE_DIR[t])};
+  const pass=i=>{const t=MAP[i];return WALK0.has(t)||t===3||t===37||t===27||(LEDGE_DIR&&LEDGE_DIR[t])};
   const bfs=(sx,sy)=>{const D=new Int32Array(MW*MH).fill(-1),q=new Int32Array(MW*MH);let h=0,n=0;const s0=sy*MW+sx;D[s0]=0;q[n++]=s0;
     while(h<n){const i=q[h++],x=i%MW,y=(i-x)/MW,d=D[i]+1;if(x>0&&D[i-1]<0&&pass(i-1)){D[i-1]=d;q[n++]=i-1}if(x<MW-1&&D[i+1]<0&&pass(i+1)){D[i+1]=d;q[n++]=i+1}
       if(y>0&&D[i-MW]<0&&pass(i-MW)){D[i-MW]=d;q[n++]=i-MW}if(y<MH-1&&D[i+MW]<0&&pass(i+MW)){D[i+MW]=d;q[n++]=i+MW}}return D};
@@ -44,7 +44,7 @@ function routeLo(x,y){return routeRange(routeAt(x,y))[0]}
    routes (≈ every 26 tiles or when the difficulty rises by a level band). Routes are numbered by difficulty;
    the level range follows the progress along the town chain (route 1: Lv 1–5, …). Every tile belongs to its nearest route. */
 function buildRouteNet(){
-  const NN=MW*MH,pass=i=>{const t=MAP[i];return WALK0.has(t)||t===3||t===27||!!LEDGE_DIR[t]};
+  const NN=MW*MH,pass=i=>{const t=MAP[i];return WALK0.has(t)||t===3||t===37||t===27||!!LEDGE_DIR[t]};
   const P=new Uint8Array(NN);
   // the Felsenhöhen pass counts like a town here, so the northern way Lahribar ↔ Unterwertheim becomes routes too
   const STOPS=[...TOWNS,{id:'fel',n:'Felsenhöhen',x:135,y:26,pseudo:1}],SR={vil:0,mar:3,dam:9,lah:15,fel:19,unt:24,mos:31};const PP=new Float32Array(NN).fill(99);
@@ -116,3 +116,14 @@ function routeWay(fromId,toId){const N=ROUTE_NODES,st=N.findIndex(n=>n.town===fr
       if(!W(x,y)||ENC.has(tget(x,y))||(typeof ROAD!=='undefined'&&ROAD.has&&ROAD.has(y*MW+x))||tget(x,y)===3)continue;solid.add(y*MW+x);const bad=cuts(x,y);solid.delete(y*MW+x);if(bad)continue;
       const f=D4.find(([a,b])=>{const tt=tget(x+a,y+b);return tt===4||tt===27})||D4.find(([a,b])=>W(x+a,y+b));if(f)best={x,y,d:f[2]}}
     if(best)Object.assign(t,best);solid.add(t.y*MW+t.x)}})();
+
+// ---- waterfalls: on straight north–south river stretches (1–3 wide, banks on both sides) three rows become a fall.
+// Like a long step: surfing you slide down; up only with WHIRLPOOL
+(function placeWaterfalls(){const W=(x,y)=>tget(x,y)===3;let n=0;
+  for(let y=6;y<MH-10&&n<9;y++)for(let x=3;x<MW-3&&n<9;x++){if(!W(x,y)||W(x-1,y))continue;let x1=x;while(W(x1+1,y))x1++;const w=x1-x+1;if(w>4){x=x1;continue}
+    let ok=true;for(let yy=y;yy<=y+3&&ok;yy++){if(tget(x-1,yy)===3||tget(x1+1,yy)===3||tget(x-1,yy)===27||tget(x1+1,yy)===27)ok=false;for(let xx=x;xx<=x1;xx++)if(!W(xx,yy))ok=false}
+    for(let xx=x;xx<=x1&&ok;xx++)if(!W(xx,y-1)||!W(xx,y+4))ok=false;
+    if(ok&&WFALLS.some(f=>Math.abs(f.x-x)+Math.abs(f.y-y)<22))ok=false;
+    if(ok)for(let yy=y-4;yy<=y+8&&ok;yy++)for(let xx=x-3;xx<=x1+3;xx++)if(tget(xx,yy)===27)ok=false;
+    if(!ok){x=x1;continue}
+    for(let yy=y+1;yy<=y+3;yy++)for(let xx=x;xx<=x1;xx++)MAP[yy*MW+xx]=T_WF;WFALLS.push({x,y:y+1,w,h:3});n++;x=x1}})();

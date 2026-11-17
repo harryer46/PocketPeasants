@@ -9,7 +9,7 @@ const MOVES={
  sparkshot:{n:'Spark Shot',t:'fire',p:40,k:'shot'},emberrain:{n:'Ember Drizzle',t:'fire',p:45,k:'arc',n3:1,fx:'burn'},cinderbite:{n:'Cinder Bite',t:'fire',p:65,k:'melee',fx:'burn'},
  scorchline:{n:'Scorch Line',t:'fire',p:60,k:'breath',fx:'burn'},cindershell:{n:'Cinder Shell',t:'fire',p:0,k:'self',fx:'shield'},firestorm:{n:'Firestorm',t:'fire',p:90,k:'spread'},kilnburst:{n:'Kiln Burst',t:'fire',p:105,k:'big',fx:'burn'},
  splash:{n:'Splash Shot',t:'water',p:40,k:'shot'},foamvolley:{n:'Foam Volley',t:'water',p:45,k:'rapid',rn:5},waveslam:{n:'Wave Slam',t:'water',p:65,k:'melee',fx:'knock'},
- undertow:{n:'Undertow',t:'water',p:60,k:'vortex',fx:'slow'},mistveil:{n:'Mist Veil',t:'water',p:0,k:'self',fx:'shield'},torrent:{n:'Riptide Rush',t:'water',p:90,k:'spread'},geyser:{n:'Geyser Pillar',t:'water',p:105,k:'air',fx:'knock'},
+ undertow:{n:'Undertow',t:'water',p:60,k:'vortex',fx:'slow'},whirlpool:{n:'Whirlpool',t:'water',p:55,k:'vortex',fx:'slow'},mistveil:{n:'Mist Veil',t:'water',p:0,k:'self',fx:'shield'},torrent:{n:'Riptide Rush',t:'water',p:90,k:'spread'},geyser:{n:'Geyser Pillar',t:'water',p:105,k:'air',fx:'knock'},
  leaftoss:{n:'Leaf Toss',t:'grass',p:40,k:'shot'},sapdrain:{n:'Sap Siphon',t:'grass',p:50,k:'shot',fx:'drain'},vinelash:{n:'Vine Lash',t:'grass',p:65,k:'melee',fx:'slow'},
  drowsyspores:{n:'Drowsy Spores',t:'grass',p:30,k:'shot',fx:'sleep'},bloomheal:{n:'Bloom Mend',t:'grass',p:0,k:'self',fx:'heal'},thornrain:{n:'Thorn Rain',t:'grass',p:90,k:'rain'},brambleburst:{n:'Bramble Burst',t:'grass',p:105,k:'big',fx:'slow'},
  zap:{n:'Static Zap',t:'electric',p:40,k:'shot'},sparkchain:{n:'Spark Chain',t:'electric',p:50,k:'multi'},jolt:{n:'Jolt Jab',t:'electric',p:55,k:'melee',fx:'stun'},
@@ -275,6 +275,10 @@ function visOf(mid){const mv=MOVES[mid];if(!mv)return'ball';return MOVE_VIS[mid]
 // the length of an answer must not give it away: at least one (usually more) of the three wrong answers is about as long or longer
 // quiz feedback: right → short; wrong / too slow → name the right answer + the explanation (max. 2 sentences)
 function qFb(ok,k,q){const ex=esc((q&&q[2])||'');if(ok)return'✓ Richtig. '+ex;const c=q&&q[1]&&q[1][0];return(k<0?'⏱ Zeit abgelaufen':'✗ Falsch')+(c?` – richtig ist „${esc(c)}“.`:'.')+' '+ex}
+// a question for a monster: its own paragraph's questions, mixed with the general ones of its law book (vault)
+function qzPick(sid,avoid){const own=QZ[sid]||[],L=(SPECIES[sid]&&SPECIES[sid].law)||'',bm=L.match(/^(?:§|Art\.)\s*\d+[a-z]?\s+([A-Za-zÄÖÜäöü]+)/),bk=(bm&&typeof VAULT_BOOK!=='undefined'&&VAULT_BOOK[bm[1]])||[];
+  const pool=bk.length&&(!own.length||Math.random()<0.35)?bk:own;if(!pool.length)return null;let q=null;for(let t=0;t<25;t++){q=pool[Math.floor(Math.random()*pool.length)];if(!avoid||!avoid.has(q[0]))break}return q}
+function qzHas(sid){return!!qzPick(sid)}
 function qReal(q){if(!q||q.length<4)return q;const mx=Math.max(...q[2].map(w=>w.length)),okC=q[1].filter(c=>c.length*0.9<=mx),cs=okC.length?okC:[q[1].slice().sort((a,b)=>a.length-b.length)[0]];
   const c=cs[Math.floor(Math.random()*cs.length)],L=c.length,ws=shuffleArr(q[2].slice());
   const th=ws.some(w=>w.length>L)?L+1:L*0.9,lng=ws.filter(w=>w.length>=th),sh=ws.filter(w=>w.length<th).sort((a,b)=>Math.abs(a.length-L)-Math.abs(b.length-L));

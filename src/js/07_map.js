@@ -10,7 +10,7 @@ const MW=300,MH=200,DH=64,MHT=MH+DH,MAP=new Uint8Array(MW*MHT);MAP.fill(31,MW*MH
 const BKEYS=[null,'north','east','south','west','knast','snow','desert','jungle'];
 const WALK0=new Set([0,1,4,5,7,9,12,13,14,15,17,18,19,20,22,23,24,25,26,27,28,29,30]);
 const ENC=new Set([1,17,18,19,24,25,26]);const BASE_T=[0,0,14,0,15,20,28,29,30],ENC_T=[0,1,17,18,19,20,24,25,26];
-const BLDG=[],PADS=[],LABELS=[],TOWNS=[],LEDGES=[];const LEDGE_DIR={32:'down',33:'up',34:'left',35:'right'};let VSPAWN={x:150,y:91},COURT={x:149,y:85};
+const T_WF=37,WFALLS=[];const BLDG=[],PADS=[],LABELS=[],TOWNS=[],LEDGES=[];const LEDGE_DIR={32:'down',33:'up',34:'left',35:'right'};let VSPAWN={x:150,y:91},COURT={x:149,y:85};
 function tget(x,y){return(x<0||y<0||x>=MW||y>=MHT)?31:MAP[y*MW+x]}
 function tset(x,y,v){if(x>=0&&y>=0&&x<MW&&y<MHT)MAP[y*MW+x]=v}
 function vnoise(seed,cell){

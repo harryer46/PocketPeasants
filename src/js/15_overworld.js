@@ -9,23 +9,38 @@ function toggleFly(){if(!P.fly){if(hasHM('fly')&&!hmUser('fly')){toast(`Zum FLIE
   if(P.moving)return;const x=P.x,y=P.y;if(!walkable(x,y)||trainerAt(x,y)||LEGENDS.some(L=>L.x===x&&L.y===y)||tollAt(x,y)){toast('Hier kannst du nicht landen – such dir freien Boden.');return}
   P.fly=false;P.flyT=performance.now();rideSync();P.fol={x,y,tx:x,ty:y,fx:x,fy:y};trailReset(P,x,y);if(P.fols)for(const f of P.fols){f.fx=f.tx=x;f.fy=f.ty=y}pres({fl:0});save();flyBtn();onArrive()}
 function flyBtn(){const b=document.querySelector('[data-hmuse="fly"]');if(b)b.textContent=P.fly?'🛬 LANDEN':HM.fly.i+' '+HM.fly.n}
-function rideSid(){try{if(P.fly){const u=hmUser('fly');return u?u.s:null}if(tget(P.x,P.y)===3){const u=hmUser('swim');return u?u.s:null}}catch(e){}return null}
+function rideSid(){try{if(P.fly){const u=hmUser('fly');return u?u.s:null}if(P.surf){const u=hmUser('swim');return u?u.s:null}}catch(e){}return null}
 function rideSync(){const r=rideSid();if(r!==P.rdS){P.rdS=r;pres({rd:r})}}
 function flyAlt(){const t=(performance.now()-(P.flyT||0))/350;return P.fly?Math.min(1,t):Math.max(0,1-t)}
 function updatePlayer(dt){
-  if(P.moving){P.mt+=dt/(P.fly?STEP*0.5:P.jump?STEP*2.2:STEP);P.ph+=dt;
-    if(P.mt>=1){P.moving=false;P.jump=false;P.x=P.tx;P.y=P.ty;P.fx=P.x;P.fy=P.y;onArrive();if(B)return}
+  if(P.moving){P.mt+=dt/(P.fly?STEP*0.5:P.wf?STEP*3.2:P.jump?STEP*2.2:STEP);P.ph+=dt;
+    if(P.mt>=1){P.moving=false;P.jump=false;P.wf=false;P.x=P.tx;P.y=P.ty;P.fx=P.x;P.fy=P.y;onArrive();if(B)return}
     else{P.fx=P.sx+(P.tx-P.sx)*P.mt;P.fy=P.sy+(P.ty-P.sy)*P.mt}}
   if(!P.moving&&!B&&!modalOpen()&&!P.lock){const d=heldDir();if(d){const turned=P.d!==d;P.d=d;const[dx,dy]=DIRS[d];const nx=P.x+dx,ny=P.y+dy;
     if(P.fly){if(flyable(nx,ny)){P.moving=true;P.mt=0;P.sx=P.x;P.sy=P.y;P.tx=nx;P.ty=ny;pres({x:nx,y:ny,d})}else if(turned)pres({d});else if(P.bumpCd<=0){P.bumpCd=1.2;const b=BIOME[ny*MW+nx];if(TOLL_LAW[b])toast('Dieses Gebiet ist noch gesperrt – erst am Prof. vorbei, dann darfst du es überfliegen.')}}
     else if(LEDGE_DIR[tget(nx,ny)]){const jx=nx+dx,jy=ny+dy;if(LEDGE_DIR[tget(nx,ny)]===d&&walkable(jx,jy)&&!trainerAt(jx,jy)&&!LEGENDS.some(L=>L.x===jx&&L.y===jy)){P.moving=true;P.jump=true;P.mt=0;P.sx=P.x;P.sy=P.y;P.tx=jx;P.ty=jy;P.fol.tx=P.x;P.fol.ty=P.y;trailPush(P,P.x,P.y);trailPush(P,nx,ny);pres({x:jx,y:jy,d})}else if(turned)pres({d})}
-    else if(walkable(nx,ny)&&!trainerAt(nx,ny)&&!LEGENDS.some(L=>L.x===nx&&L.y===ny)&&!tollBlock(nx,ny)){P.moving=true;P.mt=0;P.sx=P.x;P.sy=P.y;P.tx=nx;P.ty=ny;P.fol.tx=P.x;P.fol.ty=P.y;trailPush(P,P.x,P.y);pres({x:nx,y:ny,d})}else{if(trainerAt(nx,ny)||LEGENDS.some(L=>L.x===nx&&L.y===ny))bump(nx,ny);if(turned)pres({d})}}}
+    else if(tget(nx,ny)===T_WF||(d==='up'&&tget(nx,ny)===3&&tget(P.x,P.y)===T_WF)){wfMove(d,dx,dy,nx,ny,turned)}
+    else if(walkable(nx,ny)&&!trainerAt(nx,ny)&&!LEGENDS.some(L=>L.x===nx&&L.y===ny)&&!tollBlock(nx,ny)){P.moving=true;P.mt=0;P.sx=P.x;P.sy=P.y;P.tx=nx;P.ty=ny;P.fol.tx=P.x;P.fol.ty=P.y;trailPush(P,P.x,P.y);pres({x:nx,y:ny,d})}else{if(trainerAt(nx,ny)||LEGENDS.some(L=>L.x===nx&&L.y===ny))bump(nx,ny);else if(tget(nx,ny)===3&&!P.surf)surfAsk();if(turned)pres({d})}}}
   P.bumpCd=Math.max(0,(P.bumpCd||0)-dt);
   approach(P.fol,dt);if(P.fols)for(const f of P.fols)approach(f,dt);
 }
 function approach(o,dt){if(o.fx==null){o.fx=o.x;o.fy=o.y}const dx=o.tx-o.fx,dy=o.ty-o.fy,dist=Math.hypot(dx,dy);if(dist>3){o.fx=o.tx;o.fy=o.ty;return}const sp=dt/STEP*1.05;if(dist<=sp){o.fx=o.tx;o.fy=o.ty}else{o.fx+=dx/dist*sp;o.fy+=dy/dist*sp}}
 function legendHere(x,y){if(!RUN||RUN.phase!=='train')return null;return LEGENDS.find(L=>L.x===x&&L.y===y&&!(RUN.leg&&RUN.leg[L.id]))||null}
 function trainerAt(x,y){return TRAINERS.find(t=>t.x===x&&t.y===y&&(!t.story||storyOn()))||null}
+// SURFER: walking towards deep water asks first; leaving the water ends it
+function surfAsk(){if(P.bumpCd>0||modalOpen())return;P.bumpCd=0.8;
+  if(!hasHM('swim')){toast(`Das Wasser ist tief… ${TRAINERS.find(t=>t.id==='sue').n} hat die Surf-Lizenz.`);return}
+  if(!hmUser('swim')){toast(`Zum SURFEN brauchst du ein ${hmNeed('swim')} im Kader.`);return}
+  const u=hmUser('swim');openModal(`<h3>🌊 SURFER?</h3><p>Das Wasser ist tief. Soll ${esc(SPECIES[u.s].n)} dich tragen?</p><div class="acts"><button class="btn ghost" id="mno">NEIN</button><button class="btn" id="myes">SURFEN</button></div>`);
+  $('#mno').onclick=closeModal;$('#myes').onclick=()=>{closeModal();P.surf=true;held.length=0;toast(`🌊 ${SPECIES[u.s].n} setzt SURFER ein!`)}}
+// waterfalls: like a long step – surfing down slides over the whole fall, going up needs WHIRLPOOL
+function wfMove(d,dx,dy,nx,ny,turned){const top=tget(P.x,P.y)===3&&tget(nx,ny)===T_WF;
+  if(!P.surf){if(P.bumpCd<=0){P.bumpCd=1;toast('Ein Wasserfall! Nur surfend erreichbar.')}return}
+  if(d==='down'&&top||d==='down'&&tget(P.x,P.y)===T_WF){let y=ny;while(tget(nx,y)===T_WF)y++;if(tget(nx,y)!==3)return;P.moving=true;P.jump=true;P.wf=true;P.mt=0;P.sx=P.x;P.sy=P.y;P.tx=nx;P.ty=y;P.fol.tx=P.x;P.fol.ty=P.y;trailPush(P,P.x,P.y);pres({x:nx,y,d});return}
+  if(d==='up'){if(!canWhirl()){if(P.bumpCd<=0){P.bumpCd=1.2;toast(hasHM('swim')?`Der Wasserfall ist zu steil. Mit WHIRLPOOL (${hmNeed('whirl')}) kommst du hoch.`:'Der Wasserfall ist zu steil.')}return}
+    let y=ny;while(tget(nx,y)===T_WF)y--;if(tget(nx,y)!==3)return;const u=hmUser('whirl');if(P.bumpCd<=0){P.bumpCd=1;toast(`🌀 ${SPECIES[u.s].n} setzt WHIRLPOOL ein!`)}
+    P.moving=true;P.jump=true;P.wf=true;P.mt=0;P.sx=P.x;P.sy=P.y;P.tx=nx;P.ty=y;P.fol.tx=P.x;P.fol.ty=P.y;trailPush(P,P.x,P.y);pres({x:nx,y,d});return}
+  if(turned)pres({d})}
 function bump(nx,ny){
   if(P.bumpCd>0)return;P.bumpCd=0.5;
   const fo=fieldAt(nx,ny);if(fo){const k=fo.kind,h=HM[k];if(hasHM(k)&&!hmUser(k)){toast(`Für ${h.n} brauchst du ein ${hmNeed(k)} im Kader.`);return}if(hasHM(k)){FIELDGONE.add(fo.id);for(const f of FIELD)if(f.kind===k&&Math.abs(f.x-fo.x)+Math.abs(f.y-fo.y)<=1)FIELDGONE.add(f.id);toast(`${k==='cut'?'✂':'💪'} ${SPECIES[hmUser(k).s].n} setzt ${h.n} ein — ${k==='cut'?'die Bäume fallen!':'die Felsen rollen weg!'}`)}
@@ -57,8 +72,8 @@ function checkSight(){
   if(typeof tollSight==='function'&&tollSight())return true;
   return false;
 }
-function teleport(x,y){if(P.fly){P.fly=false;P.flyT=0;pres({fl:0});flyBtn()}P.x=P.fx=x;P.y=P.fy=y;try{bakeNow()}catch(e){}P.moving=false;P.fol={x,y,tx:x,ty:y};trailReset(P,x,y);G.x=x;G.y=y;pres({x,y,d:P.d})}
-function onArrive(){
+function teleport(x,y){P.surf=false;if(P.fly){P.fly=false;P.flyT=0;pres({fl:0});flyBtn()}P.x=P.fx=x;P.y=P.fy=y;try{bakeNow()}catch(e){}P.moving=false;P.fol={x,y,tx:x,ty:y};trailReset(P,x,y);G.x=x;G.y=y;pres({x,y,d:P.d})}
+function onArrive(){if(P.surf&&tget(P.x,P.y)!==3&&tget(P.x,P.y)!==T_WF){P.surf=false}
   rideSync();
   if(!P.fly){G.x=P.x;G.y=P.y}G.d=P.d;P.steps++;if(P.steps%8===0)save();updateHud();
   if(P.fly){if(BIOME[P.y*MW+P.x]===0&&RUN){const Tn=TOWNS.find(T=>Math.abs(T.x-P.x)<18&&Math.abs(T.y-P.y)<14);if(Tn&&Tn.id!=='vil'&&!(RUN.towns&&RUN.towns[Tn.id])){RUN.towns=RUN.towns||{};RUN.towns[Tn.id]=1;save();toast(`📍 ${Tn.n} entdeckt!`)}}return}
@@ -80,7 +95,7 @@ function healQuiz(){RUN.kap=Math.max(RUN.kap,10);updateHud();for(const m of RUN.
   if(full()){toast('PÄD: Dein Team ist gesund. Handschellen aufgefüllt.');save();return}
   const keys=Object.keys(QZ).filter(k=>SPECIES[k]&&QZ[k].length);let n=0,cur=null;const seen=new Set();
   // questions are about the monster being healed (its own paragraph); monsters without one get random ones
-  const pickQ=()=>{const own=cur&&QZ[cur.s]&&QZ[cur.s].length?cur.s:null;if(own){let fresh=QZ[own].filter(q=>!seen.has(q[0]));if(!fresh.length){for(const q of QZ[own])seen.delete(q[0]);fresh=QZ[own]}const q=fresh[Math.floor(Math.random()*fresh.length)];seen.add(q[0]);return{src:own,q:qReal(q)}}
+  const pickQ=()=>{const own=cur&&qzHas(cur.s)?cur.s:null;if(own){const q=qzPick(own,seen);seen.add(q[0]);return{src:own,q:qReal(q)}}
     for(let t=0;t<40;t++){const k=keys[Math.floor(Math.random()*keys.length)],q=QZ[k][Math.floor(Math.random()*QZ[k].length)];if(!seen.has(q[0])){seen.add(q[0]);return{src:k,q:qReal(q)}}}return{src:keys[0],q:qReal(QZ[keys[0]][0])}};
   const img={};const pic=m=>img[m.s]||(img[m.s]=(()=>{const c=mk(48,48),x=c.getContext('2d');x.imageSmoothingEnabled=false;x.drawImage(monSprite(m.s,24),0,0,48,48);return c.toDataURL()})());
   const card=(m,i,big)=>{const mx=stats(m).mhp,r=m.hp/mx,col=r>0.5?'#3ddc6b':r>0.2?'#ffcb3d':'#ef4444',hurt=m.hp<mx,inT=i<RUN.team.length;
@@ -161,7 +176,7 @@ function drawWorld(){
   const x0=Math.floor(camX/16),y0=Math.floor(camY/16),x1=x0+Math.ceil(LW/16)+1,y1=y0+Math.ceil(LH/16)+1;const wf=Math.floor(T*1.6)%2;
   if(!WORLD&&!BAKE_FAIL){bakeTick();c.fillStyle='#10121c';c.fillRect(0,0,LW,LH);c.font='8px "Press Start 2P",monospace';c.fillStyle='#ffcb3d';c.textAlign='center';c.fillText('WELT WIRD GELADEN…',LW/2,LH/2);c.fillStyle='#9aa1bd';c.fillText('v'+VERSION,LW/2,LH/2+14);c.textAlign='left';return}
   if(BAKE_FAIL){for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){if(x<0||y<0||x>=MW||y>=MHT)continue;c.fillStyle=MCOL[tget(x,y)]||'#000';c.fillRect(x*16-camX,y*16-camY,16,16)}}
-  if(WORLD)drawWorldLayer(c,camX,camY,LW,LH,'g');
+  if(WORLD)drawWorldLayer(c,camX,camY,LW,LH,'g');try{drawFalls(c,camX,camY,LW,LH)}catch(e){}
   // animated water sparkle
   for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){if(tget(x,y)!==3)continue;const h=th(x,y);const ph=(T*1.3+(h%100)/100)%1;if(ph<0.5){const X=x*16-camX+(h%11)+2,Y=y*16-camY+((h>>4)%11)+2;c.fillStyle=ph<0.25?'#d8f0ff':'#8fc8f0';c.fillRect(X,Y,ph<0.25?3:2,1)}}
   // cuttable trees / boulders

@@ -5,14 +5,16 @@ const HM={cut:{n:'ZERSCHNEIDER',i:'✂',from:'rita',d:'Fällt kleine Bäume auf 
 const HM_FROM={rita:'cut',sue:'swim',hank:'str',axel:'fly'};
 // a field skill is used by a monster of a fitting type in the squad (like teaching the HM to the right Pokémon)
 const HM_TYPES={cut:['grass','normal'],swim:['water'],str:['rock','fire'],fly:['flying']};
-// FLY only needs the license: a flying monster carries you if you have one, otherwise any healthy squad monster does
-function hmUser(k){try{const T=(RUN&&RUN.team||[]).filter(m=>m&&m.hp>0);return T.find(m=>HM_TYPES[k].includes(SPECIES[m.s].t))||(k==='fly'?T[0]:null)||null}catch(e){return null}}
+// FLY / SURF / WHIRLPOOL: license from the trainer + a squad monster of the right type that knows the VM move
+const HM_MOVE={fly:'fly',swim:'surf',whirl:'whirlpool'},VM_MOVES={fly:'fly',surf:'swim',whirlpool:'swim'};
+function hmUser(k){try{const T=(RUN&&RUN.team||[]).filter(m=>m&&m.hp>0),ty=HM_TYPES[k==='whirl'?'swim':k],mv=HM_MOVE[k];return T.find(m=>ty.includes(SPECIES[m.s].t)&&(!mv||(m.m||[]).includes(mv)))||null}catch(e){return null}}
+function canWhirl(){return hasHM('swim')&&!!hmUser('whirl')}
 function canHM(k){return hasHM(k)&&!!hmUser(k)}
-function hmNeed(k){return HM_TYPES[k].map(t=>TYPES[t].n).join('- oder ')+'-Monster'}
+function hmNeed(k){const base=HM_TYPES[k==='whirl'?'swim':k].map(t=>TYPES[t].n).join('- oder ')+'-Monster';return HM_MOVE[k]?`${base} mit der VM ${MOVES[HM_MOVE[k]].n.toUpperCase()}`:base}
 function hasHM(k){try{return!!(RUN&&RUN.hm&&RUN.hm[k])}catch(e){return false}}  // also called while the map is built, before the save is loaded
 const FIELD=[],FIELDGONE=new Set();
 function fieldAt(x,y){return FIELD.find(f=>f.x===x&&f.y===y&&!FIELDGONE.has(f.id))||null}
-function walkable(x,y){const t=tget(x,y);return(WALK.has(t)||(t===3&&canHM('swim')))&&!SIGNSET.has(y*MW+x)&&!fieldAt(x,y)}
+function walkable(x,y){const t=tget(x,y);return(WALK.has(t)||(t===3&&P.surf&&canHM('swim')))&&!SIGNSET.has(y*MW+x)&&!fieldAt(x,y)}
 // optional side paths to some shrines are blocked by small trees (CUT) or boulders (STRENGTH); islands need SURFER
 (function placeField(){let id=0;const spots=[[70,122,'cut'],[71,123,'cut'],[150,22,'str'],[275,36,'str'],[276,124,'cut']];
   for(const[x,y,kind]of spots){let best=null,bd=9;for(let dy=-3;dy<=3;dy++)for(let dx=-3;dx<=3;dx++){const X=x+dx,Y=y+dy;if(tget(X,Y)!==4)continue;const d=Math.abs(dx)+Math.abs(dy);if(d<bd){bd=d;best={x:X,y:Y}}}

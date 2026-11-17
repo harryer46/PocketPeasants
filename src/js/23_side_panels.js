@@ -29,6 +29,13 @@ const QZ={};
 //@inc js/data/qz/08_stpo.js
 //@inc js/data/qz/09_stpo.js
 //@inc js/data/qz/10_stpo.js
+//@inc js/data/qz/11_vault.js
+// vault questions: to the monster of the same paragraph (e.g. § 242 StGB), otherwise to its law book in general
+const VAULT_BOOK={StGB:[],StPO:[],PolG:[],GG:[]},VAULT_N={};
+(function(){const key=s=>{const L=(SPECIES[s]&&SPECIES[s].law)||'',m=L.match(/^(?:§|Art\.)\s*(\d+[a-z]?)\s+([A-Za-zÄÖÜäöü]+)/);return m?m[1]+' '+m[2]:null};
+  const byKey={};for(const s of Object.keys(SPECIES)){const k=key(s);if(k&&ALT_IDS.has(s)&&RAR[s]!=='legendary')(byKey[k]=byKey[k]||[]).push(s)}
+  for(const[b,r,q,ok,wr,ex]of VAULT_QZ){const A=VAULT_A[b],item=[q,[A[ok]],wr.map(i=>A[i]),ex];const sp=[...new Set(r.flatMap(k=>byKey[k]||[]))];
+    if(sp.length){for(const s of sp){(QZ[s]=QZ[s]||[]).push(item);VAULT_N[s]=(VAULT_N[s]||0)+1}}else VAULT_BOOK[b].push(item)}})();
 //@inc js/data/dex_text.js
 
 
@@ -38,7 +45,7 @@ let ST=null;
 function lawShort(sid){const l=SPECIES[sid]&&SPECIES[sid].law;return l?l.split(' · ')[0]:''}
 function shuffleArr(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
 function studyQuestions(sid){
-  if(QZ[sid])return shuffleArr(QZ[sid].slice()).slice(0,STUDY_N).map(q=>({src:sid,q:qReal(q)}));
+  if(qzHas(sid)){const av=new Set(),out=[];for(let i=0;i<STUDY_N*3&&out.length<STUDY_N;i++){const q=qzPick(sid,av);if(!q||av.has(q[0]))continue;av.add(q[0]);out.push({src:sid,q:qReal(q)})}if(out.length)return out}
   // hero monsters (no paragraph): random questions from random paragraph monsters
   const keys=Object.keys(QZ).filter(k=>SPECIES[k]);const out=[];const used=new Set();
   while(out.length<STUDY_N){const k=keys[Math.floor(Math.random()*keys.length)];const q=QZ[k][Math.floor(Math.random()*QZ[k].length)];if(used.has(q[0]))continue;used.add(q[0]);out.push({src:k,q:qReal(q)})}

@@ -459,16 +459,17 @@ function tmMoves(){return Object.keys(MOVES).filter(k=>{const v=MOVES[k];return 
 function tmRandom(r,tier){const lo=[0,30,55,80][tier||1],hi=[0,60,85,130][tier||1];const c=tmMoves().filter(k=>MOVES[k].p>=lo&&MOVES[k].p<=hi);return c.length?c[Math.floor(r()*c.length)]:null}
 function tmGive(k){RUN.tm=RUN.tm||{};RUN.tm[k]=(RUN.tm[k]||0)+1;save()}
 function tmOK(m,k){const v=MOVES[k];return!!v&&!m.m.includes(k)&&(v.t===SPECIES[m.s].t||v.t==='normal')}
-function tmOwned(){return Object.entries(RUN&&RUN.tm||{}).filter(e=>e[1]>0).map(e=>e[0])}
+function vmOwned(){return Object.keys(VM_MOVES).filter(k=>hasHM(VM_MOVES[k]))}
+function tmOwned(){return[...new Set(Object.entries(RUN&&RUN.tm||{}).filter(e=>e[1]>0).map(e=>e[0]).concat(vmOwned()))]}
 function tmPrice(k){return 120+Math.round((MOVES[k].p||40)*4)}
 function shopTown(){let best=null,bd=1e9;for(const T of TOWNS){const d=Math.abs(T.x-P.x)+Math.abs(T.y-P.y);if(d<bd){bd=d;best=T}}return best}
 function tmShopList(){const T=shopTown();if(!T)return[];const ty=TM_SHOP[T.id]||['normal'],r=mulberry32(hashStr('tm:'+T.id)),pool=tmMoves().filter(k=>ty.includes(MOVES[k].t)&&MOVES[k].p<=95),out=[];
   while(out.length<4&&pool.length){out.push(pool.splice(Math.floor(r()*pool.length),1)[0])}return out}
 function buyTM(k){if(!shopOK()||!tmShopList().includes(k))return;const p=tmPrice(k);if(money()<p){toast('Nicht genug Geld.');return}RUN.money-=p;tmGive(k);updateHud();toast(`💿 TM ${MOVES[k].n} gekauft.`);openShop()}
-function openTMFor(m){const ks=tmOwned().filter(k=>tmOK(m,k));if(!ks.length){toast('Keine passende TM — TMs gibt es von Trainern und regional im Copshop.');return}
-  openModal(`<h3>💿 TM FÜR ${esc(SPECIES[m.s].n.toUpperCase())}</h3><p class="small">Nur Attacken vom Typ ${esc(TYPES[SPECIES[m.s].t].n)} oder Normal.</p><div style="display:flex;flex-direction:column;gap:6px">${ks.map(k=>`<button class="btn ghost" data-tm="${k}" style="font-family:VT323,monospace;font-size:19px">💿 ${esc(MOVES[k].n)} · ${esc(TYPES[MOVES[k].t].n)} · Stärke ${MOVES[k].p} ×${RUN.tm[k]}</button>`).join('')}</div><div class="acts" style="margin-top:8px"><button class="btn" id="mok">SCHLIESSEN</button></div>`);
+function openTMFor(m){const ks=tmOwned().filter(k=>tmOK(m,k));if(!ks.length){toast('Keine passende TM/VM — TMs gibt es von Trainern und im Copshop, VMs mit den Lizenzen der Trainer.');return}
+  openModal(`<h3>💿 TM FÜR ${esc(SPECIES[m.s].n.toUpperCase())}</h3><p class="small">Nur Attacken vom Typ ${esc(TYPES[SPECIES[m.s].t].n)} oder Normal.</p><div style="display:flex;flex-direction:column;gap:6px">${ks.map(k=>`<button class="btn ghost" data-tm="${k}" style="font-family:VT323,monospace;font-size:19px">${VM_MOVES[k]?'📀 VM':'💿'} ${esc(MOVES[k].n)} · ${esc(TYPES[MOVES[k].t].n)} · Stärke ${MOVES[k].p} ${VM_MOVES[k]?'· beliebig oft':'×'+RUN.tm[k]}</button>`).join('')}</div><div class="acts" style="margin-top:8px"><button class="btn" id="mok">SCHLIESSEN</button></div>`);
   document.querySelectorAll('[data-tm]').forEach(b=>b.onclick=()=>tmTeach(m,b.dataset.tm));$('#mok').onclick=closeModal}
-function tmTeach(m,k){const fin=()=>{RUN.tm[k]--;closeModal();toast(`${SPECIES[m.s].n} hat ${MOVES[k].n} gelernt!`);changed()};
+function tmTeach(m,k){const fin=()=>{if(!VM_MOVES[k])RUN.tm[k]--;closeModal();toast(`${SPECIES[m.s].n} hat ${MOVES[k].n} gelernt!`);changed()};
   if(m.m.length<4){m.m.push(k);fin();return}
   openModal(`<h3>WELCHE ATTACKE VERGESSEN?</h3><p class="small">${esc(SPECIES[m.s].n)} lernt ${esc(MOVES[k].n)}.</p><div style="display:flex;flex-direction:column;gap:6px">${m.m.map((mv,i)=>`<button class="btn ghost" data-fg="${i}" style="font-family:VT323,monospace;font-size:19px">${esc(MOVES[mv].n)} · ${esc(TYPES[MOVES[mv].t].n)} · Stärke ${MOVES[mv].p||0}</button>`).join('')}</div><div class="acts" style="margin-top:8px"><button class="btn ghost" id="mno">ABBRECHEN</button></div>`);
   document.querySelectorAll('[data-fg]').forEach(b=>b.onclick=()=>{m.m[+b.dataset.fg]=k;fin()});$('#mno').onclick=closeModal}

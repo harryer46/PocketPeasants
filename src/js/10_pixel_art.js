@@ -218,6 +218,14 @@ function drawWorldLayer(c,camX,camY,LW,LH,layer){const x0=Math.floor(Math.max(0,
     if(ch&&ch.g){ch.t=performance.now();c.drawImage(layer==='g'?ch.g:ch.c,X,Y);continue}
     if(layer!=='g')continue;const tx0=Math.max(cx*CS,Math.floor(camX/16)),ty0=Math.max(cy*CS,Math.floor(camY/16)),tx1=Math.min(cx*CS+CS-1,Math.floor((camX+LW)/16),MW-1),ty1=Math.min(cy*CS+CS-1,Math.floor((camY+LH)/16),MHT-1);
     for(let y=ty0;y<=ty1;y++)for(let x=tx0;x<=tx1;x++){c.fillStyle=MCOL[tget(x,y)]||'#000';c.fillRect(x*16-camX,y*16-camY,16,16)}}}
+// animated waterfalls on top of the baked ground: falling streaks + foam at the foot (pixel style, 1px cells)
+function drawFalls(c,camX,camY,LW,LH){if(!WFALLS.length)return;const t=performance.now()/1000;
+  for(const f of WFALLS){const X=f.x*16-camX,Y=f.y*16-camY,W=f.w*16,H=f.h*16;if(X>LW||Y>LH||X+W<0||Y+H+12<0)continue;
+    c.fillStyle='rgba(20,60,110,0.35)';c.fillRect(X-2,Y,2,H);c.fillRect(X+W,Y,2,H);
+    for(let i=0;i<W;i+=2){const sp=60+((i*37)%5)*14,len=6+((i*13)%5)*2,o=(t*sp+(i*29)%H)%(H+len)-len;c.fillStyle=(i/2)%3===0?'#ffffff':'#d8f1ff';c.fillRect(X+i,Y+Math.max(0,Math.round(o)),1,Math.round(Math.max(0,Math.min(len,H-Math.max(0,o)))))}
+    for(let i=0;i<W;i+=2){const h=2+Math.round((Math.sin(t*9+i)+1)*1.5);c.fillStyle='#ffffff';c.fillRect(X+i,Y+H-1,2,h)}
+    c.fillStyle='#e9f7ff';for(let i=0;i<W;i+=3)c.fillRect(X+i+((Math.floor(t*6)+i)%2),Y+H+3+((i*7)%3),1,1);
+    c.fillStyle='rgba(255,255,255,0.7)';c.fillRect(X,Y,W,1)}}
 function townArea(x,y){let best=1,bd=1e9;for(const T of TOWN_DEF){const d=Math.abs(T.x-x)+Math.abs(T.y-y);if(d<bd){bd=d;best=T.b}}return best}
 const GROUND_PAL=b=>b===2?RGB.forest:b===3?RGB.shore:b===4?RGB.hills:b===6?RGB.snow:b===7?RGB.desert:b===8?RGB.jungle:RGB.meadow;
 function* bakeChunkGen(cx,cy){
@@ -228,11 +236,12 @@ function* bakeChunkGen(cx,cy){
   for(let ly=0;ly<SH;ly++){if((ly&7)===0)yield;const py=PY0+ly;if(!(ly&1))for(let k=0;k<=S>>1;k++){JX[k]=(jx(PX0+k*2,py)-0.5)*7;JY[k]=(jy(PX0+k*2,py)-0.5)*7}
     for(let lx=0;lx<SW;lx++){const px=PX0+lx;
     const ox=JX[lx>>1],oy=JY[lx>>1];let t=T(px+ox,py+oy);const t0=T(px,py);
-    if(t0===6||t0===7||t0===8||t0===10||t0===11||t0===12||t0===20||t0>=21&&t0<=23||t0===27||t0===13||t0===36)t=t0;
+    if(t0===6||t0===7||t0===8||t0===10||t0===11||t0===12||t0===20||t0>=21&&t0<=23||t0===27||t0===13||t0===36||t0===37)t=t0;
     const tx=clamp(Math.floor((px+ox)/16),0,MW-1),ty=clamp(Math.floor((py+oy)/16),0,MHT-1),b=BIOME[ty*MW+tx];
     const dth=BAYER[(py&3)*4+(px&3)]*0.22;let v=nL(px,py)*0.62+nS(px,py)*0.38+dth;let pal;const o=(ly*S+lx)*4;
+    if(t===37){const s=((px*5+Math.floor(px/3)*7)%11);const cc=s<2?[236,248,255]:s<5?[150,205,240]:[88,160,220];d[o]=cc[0];d[o+1]=cc[1];d[o+2]=cc[2];d[o+3]=255;continue}
     if(t===3||t===27){pal=RGB.water;v=nW(px,py+((px*7)%3))*0.7+0.15+dth;
-      const nearLand=[[-2,0],[2,0],[0,-2],[0,2]].some(([a,c2])=>{const q=T(px+a+ox*0.3,py+c2+oy*0.3);return q!==3&&q!==27});if(nearLand){d[o]=200;d[o+1]=232;d[o+2]=245;d[o+3]=255;continue}}
+      const nearLand=[[-2,0],[2,0],[0,-2],[0,2]].some(([a,c2])=>{const q=T(px+a+ox*0.3,py+c2+oy*0.3);return q!==3&&q!==27&&q!==37});if(nearLand){d[o]=200;d[o+1]=232;d[o+2]=245;d[o+3]=255;continue}}
     else if(t===5)pal=RGB.sand;else if(t===18)pal=nD(px,py)>0.5?RGB.sand:RGB.shore;
     else if(t===4||t===7||t===12)pal=b===6?RGB.stone:b===7?RGB.desert:RGB.dirt;else if(t===13||t===20)pal=RGB.stone;
     else if(t===28||t===24)pal=RGB.snow;else if(t===29||t===25)pal=RGB.desert;else if(t===30||t===26)pal=RGB.jungle;
