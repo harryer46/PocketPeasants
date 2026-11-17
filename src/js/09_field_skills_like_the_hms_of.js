@@ -5,7 +5,8 @@ const HM={cut:{n:'ZERSCHNEIDER',i:'✂',from:'rita',d:'Fällt kleine Bäume auf 
 const HM_FROM={rita:'cut',sue:'swim',hank:'str',axel:'fly'};
 // a field skill is used by a monster of a fitting type in the squad (like teaching the HM to the right Pokémon)
 const HM_TYPES={cut:['grass','normal'],swim:['water'],str:['rock','fire'],fly:['flying']};
-function hmUser(k){try{return(RUN&&RUN.team||[]).find(m=>m&&m.hp>0&&HM_TYPES[k].includes(SPECIES[m.s].t))||null}catch(e){return null}}
+// FLY only needs the license: a flying monster carries you if you have one, otherwise any healthy squad monster does
+function hmUser(k){try{const T=(RUN&&RUN.team||[]).filter(m=>m&&m.hp>0);return T.find(m=>HM_TYPES[k].includes(SPECIES[m.s].t))||(k==='fly'?T[0]:null)||null}catch(e){return null}}
 function canHM(k){return hasHM(k)&&!!hmUser(k)}
 function hmNeed(k){return HM_TYPES[k].map(t=>TYPES[t].n).join('- oder ')+'-Monster'}
 function hasHM(k){try{return!!(RUN&&RUN.hm&&RUN.hm[k])}catch(e){return false}}  // also called while the map is built, before the save is loaded
