@@ -199,8 +199,8 @@ function dealDamage(T,d,col,text){const def=act(T);if(def.hp<=0)return;def.hp=Ma
   if(B.mode==='duel'&&T===B.me)publishDuel(true)}
 function hitLocal(T,s){
   const def=act(T);const r=calcDmg(s.att,def,s.mid,s.p);let d=r.d;if(d>0)d=Math.max(1,Math.round(d*(s.am||1)/stageMul(stgOf(T).d)));if(T.st.shield>0&&d>0)d=Math.max(1,Math.round(d*0.5));
-  const mv=MOVES[s.mid]||MOVES.bump;
-  T.flash=0.25;T.hurtT=performance.now();T.hitstun=0.14;T.inv=Math.max(T.inv,mv.combo?0.06:0.12);const L=Math.hypot(s.vx,s.vy)||1,kb=mv.fx==='knock'?16:mv.combo?2:5;T.x+=s.vx/L*kb;T.y+=s.vy/L*kb*0.8;arenaClamp(T);
+  const mv=s.wv?{...(MOVES[s.mid]||MOVES.bump),fx:null}:MOVES[s.mid]||MOVES.bump;
+  T.flash=0.25;T.hurtT=performance.now();T.hitstun=0.14;T.inv=Math.max(T.inv,mv.combo?0.06:0.12);const L=Math.hypot(s.vx,s.vy)||1,kb=s.kb!=null?s.kb:mv.fx==='knock'?16:mv.combo?2:5;T.x+=s.vx/L*kb;T.y+=s.vy/L*kb*0.8;arenaClamp(T);
   if(r.e>1)say('Sehr effektiv!');else if(r.e===0)say('Das hatte keine Wirkung…');
   if(d>0&&mv.fx==='burn'&&Math.random()<0.35&&SPECIES[def.s].t!=='fire'){T.st.burn=3;say(`${SPECIES[def.s].n} wurde verbrannt!`)}
   if(d>0&&mv.fx==='slow'){T.st.slow=2.2}
@@ -211,6 +211,14 @@ function hitLocal(T,s){
   if(d>0&&mv.fx==='conf'&&T.st.conf<=0&&Math.random()<0.6){T.st.conf=3;say(`${SPECIES[def.s].n} ist verwirrt!`)}
   dealDamage(T,d,r.e>1?'#ffcb3d':r.e<1?'#c0c4d6':'#ffffff',d?'-'+d:'0');return d;
 }
+// attacks from above (fly, sky/air strikes): the impact hits as before and pushes outward; around it a small shockwave
+// ring hits for ~60 % damage with a push back (no status effects)
+function impactWave(s,T,x,y){const W=s.r+18;(B.rings=B.rings||[]).push({x,y,t0:performance.now(),r0:s.r*0.6,r1:W,col:TYPES[MOVES[s.mid].t].c});
+  if(T.inv>0||airBusy(T))return;const dx=T.x-x,dy=(T.y-y)*1.3,D=Math.hypot(dx,dy),ux=D>0.5?dx/D:0,uy=D>0.5?dy/D:1;
+  if(D<s.r+9){shotHit(Object.assign({},s,{vx:ux*100,vy:uy*100,kb:9}),T);return}
+  if(D<W+9)shotHit(Object.assign({},s,{p:Math.max(1,Math.round(s.p*0.6)),vx:ux*100,vy:uy*100,kb:16,wv:1}),T)}
+function drawRings(c,now){if(!B||!B.rings||!B.rings.length)return;B.rings=B.rings.filter(g=>now-g.t0<320);for(const g of B.rings){const k=(now-g.t0)/320,r=g.r0+(g.r1-g.r0)*k;
+  c.globalAlpha=0.85*(1-k);c.strokeStyle='#ffffff';pxEl(c,g.x,g.y,r,r*0.45,0);c.strokeStyle=g.col;pxEl(c,g.x,g.y,r-1,r*0.45-1,0);c.globalAlpha=1}}
 function shotHit(s,T){burst(s.x,s.y,TYPES[MOVES[s.mid].t].c,7);effLabel(s,T);
   if(B.mode!=='duel'||T===B.me){const d=hitLocal(T,s);drainHeal(s,d)}
   else if(MOVES[s.mid].fx==='drain'){drainHeal(s,calcDmg(s.att,act(T),s.mid,s.p).d)}}
@@ -226,10 +234,10 @@ function specialShot(s,dt){const T=s.side===B.me.side?B.foe:B.me,alive=T&&!T.out
     if(A&&A.ctrl!=='remote'&&s.age>=s.life*0.78&&!s.moved){s.moved=1;A.x=s.x;A.y=s.y+0.1;arenaClamp(A)}
     if(s.age<s.life)return;s.dead=1;burst(s.x,s.y-4,col,18);burst(s.x,s.y-4,'#ffffff',12);B.shakeUntil=performance.now()+180;
     for(const o of B.obs||[])if(!o.dead&&Math.hypot(o.x-s.x,(o.y-s.y)*1.3)<s.r+o.r)hitObs(o,s);
-    if(alive&&T.inv<=0&&!airBusy(T)&&Math.hypot(T.x-s.x,(T.y-s.y)*1.3)<s.r+9)shotHit(s,T);return}
+    if(alive)impactWave(s,T,s.x,s.y);return}
   if(s.k==='air'){if(s.age<s.life){if(s.age>s.life-0.18&&!s.fall){s.fall=1}return}s.dead=1;burst(s.x,s.y-4,col,22);burst(s.x,s.y-4,'#ffffff',10);B.shakeUntil=performance.now()+200;
     for(const o of B.obs||[])if(!o.dead&&Math.hypot(o.x-s.x,(o.y-s.y)*1.3)<s.r+o.r)hitObs(o,s);
-    if(alive&&T.inv<=0&&!airBusy(T)&&Math.hypot(T.x-s.x,(T.y-s.y)*1.3)<s.r+9)shotHit(s,T);leaveHazard(s,s.x,s.y);return}
+    if(alive){if(s.r>=18)impactWave(s,T,s.x,s.y);else if(T.inv<=0&&!airBusy(T)&&Math.hypot(T.x-s.x,(T.y-s.y)*1.3)<s.r+9)shotHit(s,T)}leaveHazard(s,s.x,s.y);return}
   const L=Math.hypot(s.vx,s.vy)||1,ux=s.vx/L,uy=s.vy/L;
   if(s.k==='beam'){if(s.age>=s.life){s.dead=1;return}if(s.age<0.3||s.fired)return;s.fired=1;let len=250,hitO=null;
     for(const o of B.obs||[]){if(o.dead)continue;const ox=o.x-s.x,oy=(o.y-8)-s.y,t=ox*ux+oy*uy;if(t<0||t>len)continue;if(Math.hypot(ox-ux*t,oy-uy*t)<o.r){len=t;hitO=o}}
@@ -936,7 +944,7 @@ function drawBattle(){
   if(!B)return;const c=bc;const K=sizeBattle();const CM=updateCam(performance.now());c.setTransform(K*CM.z,0,0,K*CM.z,K*(AW/2-CM.x*CM.z),K*(CAMY-CM.y*CM.z));const _n=performance.now();if(B.shakeUntil&&_n<B.shakeUntil)c.translate(Math.round((Math.random()-.5)*4),Math.round((Math.random()-.5)*4));c.imageSmoothingEnabled=false;const now=performance.now();
   c.drawImage(battleBG(B.zone||'arena'),0,0,AW,AH);
 
-  drawHazards(c,_n);drawArenaEv(c,_n,0);
+  drawHazards(c,_n);drawArenaEv(c,_n,0);drawRings(c,_n);
   const ents=[B.me,B.foe].filter(Boolean).concat((B.obs||[]).filter(o=>!o.dead)).sort((a,b)=>a.y-b.y);
   for(const F of ents){if(F.kind){drawObs(c,F,now);continue}if(F.out&&act(F).hp<=0&&F.faint<=0&&F.ctrl!=='remote')continue;const mon=act(F);
     let catchK=-1;if(F===B.foe&&B.catch){const el=(now-B.catch.t0)/1000;if(el>0.4||B.catch.done)continue;catchK=el/0.4}
