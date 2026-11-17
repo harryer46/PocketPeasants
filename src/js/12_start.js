@@ -30,7 +30,7 @@ function begin(){
   // free play has no timer and no arena (also repairs saves broken by an older version)
   if(RUN&&RUN.free){RUN.phase='train';RUN.st='free';RUN.r=1;RUN.res=[];$('#arena').classList.remove('on')}
   if(RUN&&!RUN.free&&RUN.phase==='train'&&Date.now()>=RUN.end){RUN.phase='arena_pending'}
-  if(RUN&&!RUN.free&&RUN.phase==='arena'){RUN.res=RUN.res||[];if(RUN.st==='duel'){RUN.res.push([RUN.r,RUN.dopp||'?',0]);RUN.r++;RUN.st=RUN.r>cfgOf().rounds?'done':'wait'}if(RUN.st==='pick')RUN.st='wait'}
+  if(RUN&&!RUN.free&&RUN.phase==='arena'){RUN.res=RUN.res||[];if(RUN.st==='duel'){RUN.res.push([RUN.r,RUN.dopp||'?',0]);RUN.r++;RUN.st=RUN.r>roundsOf()?'done':'wait'}if(RUN.st==='pick')RUN.st='wait'}
   // new world (map v2): old positions and toll passes no longer fit → back to Villingen
   if(G.mapv!==2&&G.mapv!==3){G.mapv=2;G.x=VSPAWN.x;G.y=VSPAWN.y;for(const R of[G.run,G.freeRun])if(R){R.toll={};R.towns={vil:1};R.lastPad=null}}
   if(G.mapv!==3){G.mapv=3;G.x=VSPAWN.x;G.y=VSPAWN.y;for(const R of[G.run,G.freeRun])if(R)R.lastPad=null}

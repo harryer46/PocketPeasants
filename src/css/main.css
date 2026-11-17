@@ -325,3 +325,5 @@ body.mob #study.on #sbox,body.mob #cquiz.on #cqbox{margin-right:96px}
 #sleepfall .sfi{position:absolute;left:0;top:0;pointer-events:auto;overflow-wrap:anywhere;hyphens:auto;max-width:150px;padding:3px 6px;background:#f6f1e1;color:#14141f;border:2px solid #14141f;box-shadow:2px 2px 0 #000;font:15px VT323,monospace;line-height:1;text-align:left;cursor:pointer}
 #sleepfall .sfi b{display:block;font:bold 17px VT323,monospace;color:#5b3fd1;margin-bottom:1px}
 #sleepfall .sfi.ok{background:#3ddc6b}#sleepfall .sfi.bad{background:#ef6f6f}
+.specbar{grid-column:1/-1;display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:6px 8px;background:#14141f;border:2px solid #000;color:#c9b8ff;font:12px "Press Start 2P",monospace}
+.specbar .btn{font-size:10px;padding:6px 10px}

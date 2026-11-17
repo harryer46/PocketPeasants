@@ -11,6 +11,7 @@ addEventListener('keydown',e=>{
   if(TALK){if(!e.repeat){e.preventDefault();talkTap()}return}
   if(capturing){captureKey(e);return}
   if(typing()){if(e.key==='Escape')document.activeElement.blur();return}
+  if(B&&B.mode==='spec'){if(e.key==='Escape'){e.preventDefault();specStop(true)}else if(e.key==='t'||e.key==='T'){e.preventDefault();switchTab('chat');setSide(true);$('#chatin').focus()}return}
   // slot-machine reel open: A/D (and ←/→) spin it instead of moving
   if(B&&!B.tb&&!CQ&&pickMode()&&!(pickMode()==='lead'&&B.leadPicked)&&!$('#modal').classList.contains('on')){const kk=e.key.toLowerCase();if(kk==='a'||e.key==='ArrowLeft'){e.preventDefault();reelSpin(-1);return}if(kk==='d'||e.key==='ArrowRight'){e.preventDefault();reelSpin(1);return}}
   const d=KEYMAP[e.key];if(d){e.preventDefault();if(e.key.startsWith('Arrow')&&B&&!B.tb){if(!aimHeld.includes(d))aimHeld.push(d);return}if(!held.includes(d))held.push(d);return}

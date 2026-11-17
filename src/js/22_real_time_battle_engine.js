@@ -304,7 +304,7 @@ function aiUpdate(F,dt){
   if(F.dashCd<=0&&(F.ap??AP_MAX)>=DASH_AP)for(const s of B.shots)if(s.side!==F.side&&!s.cap&&Math.hypot(s.x-F.x,s.y-F.y+10)<30&&Math.random()<0.06){F.ap=(F.ap??AP_MAX)-DASH_AP;F.noRegen=3;F.dashT=0.14;F.dashCd=1.6;F.inv=0.24;F.pdz=0.14+0.5;F.ddx=-s.vy/(Math.hypot(s.vx,s.vy)||1);F.ddy=s.vx/(Math.hypot(s.vx,s.vy)||1);break}
   move(F,F.mvx,F.mvy,dt);
 }
-function bUpdate(dt){if(dt>0)B.fps=B.fps?B.fps*0.95+(1/dt)*0.05:1/dt;
+function bUpdate(dt){if(B.mode==='spec'){specUpdate(dt);return}if(dt>0)B.fps=B.fps?B.fps*0.95+(1/dt)*0.05:1/dt;
   if(B.frozen)return;
   const now=performance.now();if(B.slowUntil&&now<B.slowUntil)dt*=0.3;
   for(const F of[B.me,B.foe]){if(!F)continue;F.cd=F.cd.map(v=>Math.max(0,v-dt));F.dashT=Math.max(0,F.dashT-dt);F.dashCd=Math.max(0,F.dashCd-dt);F.pdz=Math.max(0,(F.pdz||0)-dt);F.hitstun=Math.max(0,(F.hitstun||0)-dt);F.inv=Math.max(0,F.inv-dt);F.swCd=Math.max(0,F.swCd-dt);F.flash=Math.max(0,F.flash-dt)}
@@ -633,14 +633,14 @@ function startDuel(opp,id,spar){
   const op=findPeer(opp);const oppName=op?cleanName(op.presence.n):'Gegner';const left=(MYPEER||'')<opp;
   const raw=(spar?RUN.team.map((_,i)=>i):arenaIdx()).map(i=>RUN.team[i]).map(m=>[m.s,m.l,m.m.slice(0,4)]);
   const sameTb=!!(RUN.cfg&&RUN.cfg.tb&&!RUN.free&&op&&op.presence.mt&&op.presence.mt.id===RUN.id);
-  newBattle({mode:'duel',tb:sameTb,spar:!!spar,id,opp,oppName,raw,me:mkFighter(left?'L':'R',tourneyTeam(spar),left?XL:XR,'local'),foe:null,state:'wait',mySh:[],seen:new Set(),pubT:0,missing:0,t0:performance.now()});
+  newBattle({mode:'duel',zone:duelZone(id),tb:sameTb,spar:!!spar,id,opp,oppName,raw,me:mkFighter(left?'L':'R',tourneyTeam(spar),left?XL:XR,'local'),foe:null,state:'wait',mySh:[],seen:new Set(),pubT:0,missing:0,t0:performance.now()});
   say(spar?`Freundschaftskampf: warte auf ${oppName}…`:`Runde ${RUN.r}: warte auf ${oppName}…`);publishDuel(true);
 }
 function publishDuel(force){const now=performance.now();if(!force&&now-B.pubT<60)return;B.pubT=now;const F=B.me;
   if(B.tb){const ta={};for(let t=B.turn-2;t<=B.turn;t++)if(B.tbActs['t'+t])ta['t'+t]=B.tbActs['t'+t];B.q=(B.q||0)+1;pres({du:{id:B.id,opp:B.opp,team:B.raw,tb:1,ta,q:B.q,pm:PANIC?1:0}});return}
   const shm=e=>flipOn()?[e[0],e[1],e[2],2*ACX-e[3],2*ACY-e[4],-e[5],-e[6],e[7]]:e;
   if(ROOM&&ROOM.fast){B.fsS=B.fsS||new Set();const nw=B.mySh.filter(e=>!B.fsS.has(e[0]));if(nw.length){nw.forEach(e=>B.fsS.add(e[0]));try{ROOM.fast({fs:{id:B.id,t:Math.round(now),sh:nw.map(shm)}},B.opp)}catch(e){}}}
-  B.q=(B.q||0)+1;pres({du:{id:B.id,opp:B.opp,q:B.q,t:Math.round(now),team:B.raw,a:F.a,x:Math.round(fx_(F.x)),y:Math.round(fy_(F.y)),hp:F.team.map(m=>m.hp),ob:B.obGone||[],sh:B.mySh.map(shm),fx:Object.keys(F.st).filter(k=>F.st[k]>0),sg:[F.stg.a|0,F.stg.d|0,F.stg.s|0],pm:PANIC?1:0}})}
+  B.q=(B.q||0)+1;pres({du:{id:B.id,opp:B.opp,q:B.q,t:Math.round(now),team:B.raw,a:F.a,x:Math.round(fx_(F.x)),y:Math.round(fy_(F.y)),hp:F.team.map(m=>m.hp),ob:B.obGone||[],sh:B.mySh.map(shm),fx:Object.keys(F.st).filter(k=>F.st[k]>0),sg:[F.stg.a|0,F.stg.d|0,F.stg.s|0],pm:PANIC?1:0,ov:B.state==='over'||F.out?1:0}})}
 function duelSync(dt){
   const op=findPeer(B.opp);const du=op&&op.presence.du;
   if(B.state==='over')return;const now=performance.now();
@@ -700,7 +700,7 @@ function duelResult(win,why){
   }
   const sc=win===true?1:win===false?0:0.5;RUN.res=(RUN.res||[]).concat([[RUN.r,B.opp||'bot',sc]]);earn(sc===1?50:sc===0.5?20:10,'Prozesskosten-Erstattung');
   sysChat(`Runde ${RUN.r}: ${sc===1?'gewonnen':sc===0?'verloren':'draw'} against ${B.oppName||'opponent'}.`);
-  RUN.r++;RUN.st=RUN.r>cfgOf().rounds||RUN.gaveUp?'done':'wait';
+  RUN.r++;RUN.st=RUN.r>roundsOf()||RUN.gaveUp?'done':'wait';
   save();const myB=B;setTimeout(()=>{if(B===myB){closeBattle();pushMt();showArena()}},2800);
 }
 
@@ -756,7 +756,7 @@ function renderPick(){const el=$('#bpick');if(!el)return;const mode=pickMode();
   el.querySelectorAll('[data-rd]').forEach(b=>b.onpointerdown=e=>{e.preventDefault();e.stopPropagation();reelSpin(+b.dataset.rd)});
   $('#rgo').onpointerdown=e=>{e.preventDefault();e.stopPropagation();reelConfirm()};
   el.classList.add('on')}
-function updateBattleUI(){try{renderPick()}catch(e){console.error(e)}try{bagLabel()}catch(e){}
+function updateBattleUI(){if(B.mode==='spec')return;try{renderPick()}catch(e){console.error(e)}try{bagLabel()}catch(e){}
   const F=B.me;const mon=act(F);const key=mon.s+F.a+mon.m.join();
   const btns=document.querySelectorAll('#bact .mv');
   if(key!==B.uiKey){B.uiKey=key;btns.forEach((b,i)=>{const mid=mon.m[i];b.style.visibility=mid?'visible':'hidden';if(!mid)return;const mv=MOVES[mid];b.style.background=TYPES[mv.t].c;b.querySelector('.lbl').innerHTML=`<span class="k">${isMob()?'':esc(keyLabel(SET.keys['a'+(i+1)]))}</span> ${esc(mv.n)}<small>${esc(moveDesc(mid).replace(/^\w+ · /,''))}</small>`})}
@@ -1030,7 +1030,7 @@ function drawBattle(){
   tags(B.me,4,false);if(B.foe)tags(B.foe,UW-4-62,true);
   if(B.foe)hudPanel(c,UW-4,4,B.foe,true,B.legend?'★':'');
   if(B.foe&&B.mode==='wild'){const rc=rarOf(act(B.foe).s);if(RAR[act(B.foe).s]!=='common'){c.fillStyle='#14141f';c.fillRect(UW-116,40,58,9);vtText(c,rc.n.toUpperCase(),UW-113,47,rc.c,9)}}
-  if(B.mode!=='wild'&&B.zone===undefined&&B.oppName)vtText(c,'gegen '+B.oppName,UW/2,48,'#ffffff',9,'center');
+  if((B.mode==='duel'||B.mode==='trainer'&&B.zone===undefined)&&B.oppName)vtText(c,'gegen '+B.oppName,UW/2,48,'#ffffff',9,'center');
   const msgs=B.log.filter(m=>now-m.at<2600);msgs.forEach((m,i)=>{const y=UH-6-(msgs.length-1-i)*10;c.font='10px VT323,monospace';const w=c.measureText(m.t).width+8;c.fillStyle='#0b0d16c8';c.fillRect(Math.round(UW/2-w/2),y-8,Math.ceil(w),10);vtText(c,m.t,UW/2,y,'#ffffff',10,'center')});
   if(B.state==='count'&&!B.leadWait){const n=Math.ceil((B.cntEnd-now)/1000);pxText(c,n>0?String(n):'LOS!',UW/2,UH/2+8,'#ffcb3d',16,'center')}
   if(B.state==='wait'){pxText(c,'WARTE AUF GEGNER',UW/2,UH/2+4,'#ffffff',8,'center')}

@@ -105,7 +105,7 @@ function renderLobbyPane(){
     for(const m of ms)h+=`<div class="plr" style="align-items:flex-start"><div class="who"><b>${esc(m.cfg.name||"Lobby von "+m.names[0])}</b><span class="small">${m.names.length} Spieler · ${lobbyLine(m)}<br>${esc(cfgSummary(m.cfg))} · ${m.cfg.dur} Min.</span></div>${m.v===VERSION?`<button class="btn green" data-lb="join" data-id="${esc(m.id)}">BEITRETEN</button>`:verLock(m)}</div>`;
   }else{
     const parts=participants(),hp=hostPeer(),host=isHost(),c=RUN.cfg;
-    const phase=RUN.phase==='lobby'?'Warte auf den Start durch den Host':RUN.phase==='train'?`Training · noch ${fmt(RUN.end-Date.now())}`:RUN.st==='done'?'Turnier beendet':`Gericht · Runde ${Math.min(RUN.r,c.rounds)}/${c.rounds}`;
+    const phase=RUN.phase==='lobby'?'Warte auf den Start durch den Host':RUN.phase==='train'?`Training · noch ${fmt(RUN.end-Date.now())}`:RUN.st==='done'?'Turnier beendet':`Gericht · Runde ${Math.min(RUN.r,roundsOf())}/${roundsOf()}`;
     h+=`<div class="sec">LOBBY${c.name?': '+esc(c.name.toUpperCase()):''}</div><div class="stat" style="margin-bottom:8px"><b style="font-size:20px">${esc(phase)}</b>${esc(cfgSummary(c))} · ${c.dur} Min. Training</div>`;
     h+=`<div class="sec">SPIELER (${parts.length})</div>`;
     for(const p of parts)h+=`<div class="plr"><span class="sw" style="background:${p.c}"></span><div class="who"><b>${esc(p.n)}${p.me?' (du)':''}${p.peer===hp?' ★ Host':''}</b><span class="small">${stTxt[p.st]||p.st}</span></div></div>`;

@@ -144,8 +144,8 @@ function bagUse(key){if(!B)return;const[k,ix]=key.split(':'),F=B.me,a=act(F);if(
   if(B.tb){B.state='tbPlay';setTimeout(()=>{if(B&&B.state==='tbPlay')tbRun(null)},500)}}
 function cfgOf(){return(RUN&&RUN.cfg)||DEF_CFG}
 function sanitizeCfg(c){c=c&&typeof c==='object'?c:{};const n=(v,d,a,b)=>Number.isFinite(+v)&&v!==''&&v!=null?clamp(Math.floor(+v),a,b):d;
-  return{name:String(c.name||'').replace(/[\u0000-\u001f<>]/g,'').trim().slice(0,24),dur:n(c.dur,10,1,60),rounds:n(c.rounds,3,1,7),team:n(c.team,3,1,4),kap:n(c.kap,10,0,50),xp:[1,2,3].includes(+c.xp)?+c.xp:1,enc:[0.6,1,1.6].includes(+c.enc)?+c.enc:1,leg:+c.leg===0?0:1,tb:+c.tb===1?1:0,alt:+c.alt===0?0:1,aim:[0,1,2].includes(+c.aim)?+c.aim:0,money:n(c.money,100,0,5000),fol:n(c.fol,3,0,4),kader:n(c.kader,4,1,4),host:typeof c.host==='string'?c.host.slice(0,40):''}}
-function cfgSummary(c){return`${c.tb?'rundenbasiert':'Echtzeit'} · ${c.rounds} Runde${c.rounds>1?'n':''} · Kader ${c.kader??4} · Team aus ${c.team}${c.xp>1?` · ${c.xp}× EP`:''}${c.enc!==1?(c.enc>1?' · viele Begegnungen':' · wenige Begegnungen'):''}${c.leg?'':' · ohne Legendäre'} · ${c.kap} Handschellen · $${c.money??100} · ${c.aim===1?'Auto-Zielen':c.aim===2?'freies Zielen 360°':'Zielen in 8 Richtungen'}`}
+  return{name:String(c.name||'').replace(/[\u0000-\u001f<>]/g,'').trim().slice(0,24),dur:n(c.dur,10,1,60),rounds:n(c.rounds,0,0,7),arena:ARENA_ZONES.includes(c.arena)?c.arena:'',team:n(c.team,3,1,4),kap:n(c.kap,10,0,50),xp:[1,2,3].includes(+c.xp)?+c.xp:1,enc:[0.6,1,1.6].includes(+c.enc)?+c.enc:1,leg:+c.leg===0?0:1,tb:+c.tb===1?1:0,alt:+c.alt===0?0:1,aim:[0,1,2].includes(+c.aim)?+c.aim:0,money:n(c.money,100,0,5000),fol:n(c.fol,3,0,4),kader:n(c.kader,4,1,4),host:typeof c.host==='string'?c.host.slice(0,40):''}}
+function cfgSummary(c){return`${c.tb?'rundenbasiert':'Echtzeit'} · ${c.rounds?c.rounds+' Runde'+(c.rounds>1?'n':''):'Runden: auto'} · Arena: ${c.arena?arenaName(c.arena):'zufällig'} · Kader ${c.kader??4} · Team aus ${c.team}${c.xp>1?` · ${c.xp}× EP`:''}${c.enc!==1?(c.enc>1?' · viele Begegnungen':' · wenige Begegnungen'):''}${c.leg?'':' · ohne Legendäre'} · ${c.kap} Handschellen · $${c.money??100} · ${c.aim===1?'Auto-Zielen':c.aim===2?'freies Zielen 360°':'Zielen in 8 Richtungen'}`}
 function runningMatches(){const seen=new Map();for(const p of others()){const mt=p.presence.mt;if(!mt||typeof mt.id!=='string'||mt.id.length>=40||(RUN&&RUN.id===mt.id))continue;
   const open=mt.st==='lobby'||(mt.st==='train'&&+mt.end>Date.now()+10000);if(!open)continue;
   const e=seen.get(mt.id)||{id:mt.id,end:+mt.end||0,names:[],cfg:sanitizeCfg(mt.cfg),waiting:true,v:String(p.presence.v||'old').slice(0,12)};e.names.push(cleanName(p.presence.n));if(mt.st==='train'){e.waiting=false;e.end=Math.max(e.end,+mt.end)}seen.set(mt.id,e)}return[...seen.values()]}
@@ -197,7 +197,8 @@ function openCreate(){
    ${row('Kampfstil',sel('ctb',[[0,'⚡ Echtzeit'],[1,'⏳ Rundenbasiert']],c.tb))}
    ${row('Zielen',sel('caim',[[0,'🎯 Manuell (8 Richtungen)'],[2,'🎯 Frei (360°)'],[1,'Auto-Zielen']],c.aim||0))}
    ${row('Trainingszeit (Min.)',num('cdur',c.dur,1,60))}
-   ${row('Verhandlungsrunden (Schweizer System)',sel('crounds',[1,2,3,4,5,6,7].map(v=>[v,v+(v===3?' (Standard)':'')]),c.rounds))}
+   ${row('Verhandlungsrunden (Schweizer System)',sel('crounds',[[0,'Auto – bis die Rangliste steht'],...[1,2,3,4,5,6,7].map(v=>[v,v])],c.rounds))}
+   ${row('Arena (Kampfplatz)',`<select id="carena" style="width:100%"><option value="">🎲 Zufällig (jeder Kampf neu)</option>${ARENA_ZONES.map(z=>`<option value="${z}" ${c.arena===z?'selected':''}>${esc(arenaName(z))}</option>`).join('')}</select>`)}
    ${row('Kader (aktive Monster, Rest in der Box)',sel('ckader',[1,2,3,4].map(v=>[v,v+(v===4?' (Standard)':'')]),c.kader??4))}
    ${row('Monster pro Gerichtskampf',sel('cteam',[1,2,3,4].map(v=>[v,v]),Math.min(4,c.team)))}
    ${row('Begleiter in der Welt',sel('cfol',[[0,'keine'],[1,'1'],[2,'2'],[3,'3'],[4,'4']],c.fol??3))}
@@ -209,7 +210,7 @@ function openCreate(){
    <div class="small" style="text-align:left;margin:6px 0 12px;line-height:1.1">Zuerst treten die Spieler deiner Lobby bei; du startest das Spiel, wenn alle da sind. Alle beginnen mit Lv ${START_LV}. Das Gericht tagt, wenn der Timer abläuft — oder früher, sobald alle Spieler (2+) drin sind und ✔ BEREIT gesetzt haben.</div>
    <div class="acts"><button class="btn ghost" id="mno">ABBRECHEN</button><button class="btn green" id="myes">ERSTELLEN</button></div>`);
   $('#mno').onclick=closeModal;
-  $('#myes').onclick=()=>{const cfg=sanitizeCfg({name:$('#cname').value,dur:$('#cdur').value,rounds:$('#crounds').value,team:$('#cteam').value,kap:$('#ckap').value,xp:$('#cxp').value,enc:$('#cenc').value,leg:$('#cleg').value,tb:$('#ctb').value,money:$('#cmoney').value,aim:$('#caim').value,fol:$('#cfol').value,kader:$('#ckader').value});G.lastCfg=cfg;save();closeModal();
+  $('#myes').onclick=()=>{const cfg=sanitizeCfg({name:$('#cname').value,dur:$('#cdur').value,rounds:$('#crounds').value,arena:$('#carena').value,team:$('#cteam').value,kap:$('#ckap').value,xp:$('#cxp').value,enc:$('#cenc').value,leg:$('#cleg').value,tb:$('#ctb').value,money:$('#cmoney').value,aim:$('#caim').value,fol:$('#cfol').value,kader:$('#ckader').value});G.lastCfg=cfg;save();closeModal();
     pickStarter(sid=>startRun('m'+Math.random().toString(36).slice(2,10),0,sid,null,Object.assign({},cfg,{host:MYPEER||'me'}),'lobby'),cfg)};
 }
 function pickStarter(cb,cfg){const alt=altOn(cfg||{alt:SET.alt==='0'?0:1});
@@ -284,7 +285,7 @@ function matchTick(){try{lobbyCapCheck()}catch(e){console.error(e)}
   if(RUN.free){$('#htimer').textContent='FREIES SPIEL';$('#htimer').classList.remove('hot');return}const tm=$('#htimer');
   syncHost();const left=RUN.end-Date.now();if(RUN.phase==='lobby'){tm.textContent=`LOBBY · ${participants().length} WARTEN`;tm.classList.remove('hot');return}
   if(RUN.phase==='train'){tm.textContent='STREIFE '+fmt(left);tm.classList.toggle('hot',left<30000);if(left<=0)enterArena()}
-  else{tm.textContent=RUN.st==='done'?'BEENDET':`GERICHT ${Math.min(RUN.r,cfgOf().rounds)}/${cfgOf().rounds}`;tm.classList.remove('hot')}
+  else{tm.textContent=RUN.st==='done'?'BEENDET':`GERICHT ${Math.min(RUN.r,roundsOf())}/${roundsOf()}`;tm.classList.remove('hot')}
 }
 function confirmEarlyArena(){
   if(!RUN||RUN.free||RUN.phase!=='train'){return}
@@ -296,7 +297,7 @@ function enterArena(early){
   if(B&&B.mode==='wild')endWild('Die Zeit ist um!');
   if(B&&(B.spar||B.mode==='trainer'))closeBattle();
   if(myCh)cancelCh();if(incoming){closeModal();incoming=null}
-  RUN.rdy=0;RUN.phase='arena';RUN.r=1;RUN.res=[];RUN.st='pick';healAll();teleport(COURT.x,COURT.y);P.d='up';
+  RUN.rdy=0;RUN.R=0;RUN.pair=null;RUN.phase='arena';RUN.r=1;RUN.res=[];RUN.st='pick';healAll();teleport(COURT.x,COURT.y);P.d='up';
   sysChat(early?'Du bist früh ins Gericht gegangen. Warte auf die anderen…':'Die Streife ist vorbei — ab ins Gericht!');save();pushMt();showArena();pickArenaTeam();
 }
 function pickArenaTeam(){
@@ -309,12 +310,14 @@ function pickArenaTeam(){
   const t=setInterval(()=>{if(RUN!==run||RUN.phase!=='arena'){clearInterval(t);return}left--;if(left<=0)done();else{const p=document.querySelector('#mbox p');if(p)p.textContent=`Stell dein Gerichts-Team zusammen (${sel.length}/${n}). Automatisch bestätigt in ${left} s.`}},1000);
   render();
 }
+// rounds: fixed in the settings, or "auto" = enough Swiss rounds for a clear ranking (log2 of the players, fixed when round 1 starts)
+function roundsOf(){if(RUN&&RUN.R)return RUN.R;const c=cfgOf().rounds;if(c)return c;let n=2;try{n=participants().length}catch(e){}return Math.max(1,Math.ceil(Math.log2(Math.max(2,n))))}
 function cleanRes(a){return Array.isArray(a)?a.slice(0,12).filter(x=>Array.isArray(x)&&Number.isFinite(+x[0])&&typeof x[1]==='string'&&x[1].length<40).map(x=>[Math.floor(+x[0]),x[1],[0,0.5,1].includes(+x[2])?+x[2]:0]):[]}
 const PACT=new Map(),DECT=new Map();
 function peerStale(p,ms){const a=PACT.get(p.peer);return!!a&&!p.me&&Date.now()-a.t>ms}
 function participants(){
-  const list=[{peer:MYPEER||'me',me:true,n:G.name,c:G.color,r:RUN.r,st:RUN.st,res:RUN.res||[],rd:RUN.rdy?1:0,jt:RUN.jt||0}];
-  for(const p of others()){const mt=p.presence.mt;if(mt&&mt.id===RUN.id){const e={peer:p.peer,n:cleanName(p.presence.n),c:validColor(p.presence.c),r:Math.floor(+mt.r)||0,st:typeof mt.st==='string'?mt.st:'train',res:cleanRes(mt.res),rd:mt.rd?1:0,jt:+mt.jt||0};list.push(e);
+  const list=[{peer:MYPEER||'me',me:true,n:G.name,c:G.color,r:RUN.r,st:RUN.st,res:RUN.res||[],rd:+RUN.rdy||0,jt:RUN.jt||0}];
+  for(const p of others()){const mt=p.presence.mt;if(mt&&mt.id===RUN.id){const e={peer:p.peer,n:cleanName(p.presence.n),c:validColor(p.presence.c),r:Math.floor(+mt.r)||0,st:typeof mt.st==='string'?mt.st:'train',res:cleanRes(mt.res),rd:clamp(Math.floor(+mt.rd)||0,0,99),jt:+mt.jt||0};list.push(e);
     const sig=e.st+'|'+e.r+'|'+e.res.length,a=PACT.get(p.peer);if(!a||a.sig!==sig)PACT.set(p.peer,{sig,t:Date.now()})}}
   return list;
 }
@@ -333,18 +336,19 @@ function pairRound(parts,r){
   return pairs;
 }
 function readyRoom(parts){return RUN&&RUN.phase==='arena'&&RUN.r===1&&parts.length>1&&!parts.some(p=>p.res.length)}
-function toggleReady(){if(!RUN||RUN.phase!=='arena')return;RUN.rdy=!RUN.rdy;save();pushMt();$('#abox').dataset.h='';showArena()}
+function toggleReady(){if(!RUN||RUN.phase!=='arena')return;RUN.rdy=(+RUN.rdy||0)>=RUN.r?RUN.r-1:RUN.r;save();pushMt();$('#abox').dataset.h='';showArena()}
 function arenaTick(){
   if(!RUN||RUN.free||RUN.phase!=='arena')return;
   if(!B)showArena();
-  if(B||RUN.st!=='wait')return;
+  try{specAuto()}catch(e){}
+  if((B&&B.mode!=='spec')||RUN.st!=='wait')return;
   const parts=participants();
   // players still training/picking hold the start — unless the timer ran out 45 s ago (phone asleep / tab in background)
   const late=Date.now()>RUN.end+45000;
   if(!late&&parts.some(p=>p.st==='train'||p.st==='pick'||p.st==='lobby'))return;
   if(RUN.r===1&&!(RUN.res||[]).length&&Date.now()<RUN.end&&!(parts.length>1))return;
   // ready room: round 1 only starts when everyone ticked ✔ BEREIT (or 90 s after the timer as anti-deadlock)
-  if(readyRoom(parts)&&!(parts.filter(p=>p.st!=='train'&&p.st!=='lobby').every(p=>p.rd)||Date.now()>RUN.end+90000))return;
+  if(readyRoom(parts)&&!(parts.filter(p=>p.st!=='train'&&p.st!=='lobby').every(p=>p.rd>=1)||Date.now()>RUN.end+90000))return;
   // nobody to fight → no tournament (the Arena is PvP only)
   if(parts.length<2&&RUN.r===1&&!(RUN.res||[]).length){RUN.st='done';RUN.solo=1;save();pushMt();$('#abox').dataset.h='';showArena();return}
   // a player still in an earlier round only blocks if that round is really undecided (opponent has no result against them) and they are not frozen
@@ -354,12 +358,17 @@ function arenaTick(){
   const pool=parts.filter(p=>p.r>=RUN.r&&p.st!=='done'&&p.st!=='pick'&&p.st!=='train'&&p.st!=='lobby'&&!p.res.some(x=>x[0]===RUN.r));const me=MYPEER||'me';
   const pr=pairRound(pool,RUN.r).find(x=>x[0]===me||x[1]===me);if(!pr)return;
   const opp=pr[0]===me?pr[1]:pr[0];
-  if(opp==='bye'){RUN.res=(RUN.res||[]).concat([[RUN.r,'bye',1]]);earn(25,'bye');RUN.r++;RUN.st=RUN.r>cfgOf().rounds?'done':'wait';sysChat(`Runde ${RUN.r-1}: ungerade Spielerzahl — du bekommst einen kampflosen Sieg (Freilos).`);toast('Kampfloser Sieg in dieser Runde (Freilos)!');save();pushMt();$('#abox').dataset.h='';showArena();return}
+  if(RUN.r===1&&!RUN.R){RUN.R=cfgOf().rounds||Math.max(1,Math.ceil(Math.log2(Math.max(2,pool.length))));save()}
+  if(!RUN.pair||RUN.pair.r!==RUN.r||RUN.pair.opp!==opp){RUN.pair={r:RUN.r,opp,t:Date.now()};$('#abox').dataset.h=''}
+  // from round 2 on: both duelists tick ✔ BEREIT before their fight (after 60 s it starts anyway — nobody can block the court)
+  if(opp!=='bye'&&RUN.r>1){const op=parts.find(p=>p.peer===opp);const both=(+RUN.rdy||0)>=RUN.r&&op&&op.rd>=RUN.r;if(!both&&Date.now()-RUN.pair.t<60000)return}
+  if(B&&B.mode==='spec')specStop();
+  if(opp==='bye'){RUN.res=(RUN.res||[]).concat([[RUN.r,'bye',1]]);earn(25,'bye');RUN.r++;RUN.st=RUN.r>roundsOf()?'done':'wait';sysChat(`Runde ${RUN.r-1}: ungerade Spielerzahl — du bekommst einen kampflosen Sieg (Freilos).`);toast('Kampfloser Sieg in dieser Runde (Freilos)!');save();pushMt();$('#abox').dataset.h='';showArena();return}
   startDuel(opp,RUN.id+'-'+RUN.r+'-'+[me,opp].sort().join('-'));
 }
 function showArena(){
   const el=$('#arena');el.classList.add('on');
-  const parts=participants();const R=cfgOf().rounds;const allDone=parts.every(p=>p.st==='done');
+  const parts=participants();const R=roundsOf();const allDone=parts.every(p=>p.st==='done');
   const tab=standings(parts,99);
   if(allDone&&!RUN.trophy&&!RUN.gaveUp&&!RUN.solo&&tab[0]&&tab[0].me&&parts.length>1){RUN.trophy=1;G.tro++;save();pres({tr:G.tro});updateHud();sysChat('🏆 Du hast das Turnier gewonnen!');earn(200,'Siegerprämie')}
   const stTxt={train:'STREIFE',pick:'WÄHLT',wait:'BEREIT',duel:'IM DUELL',done:'FERTIG'};
@@ -373,16 +382,18 @@ function showArena(){
   else if(parts.length>1&&Date.now()<=RUN.end+45000&&parts.some(p=>p.st==='train'||p.st==='lobby'))my=`Warte auf andere Spieler… (${parts.filter(p=>p.st!=='train'&&p.st!=='lobby').length}/${parts.length} im Gericht · Timer ${fmt(RUN.end-Date.now())})`;
   else if(parts.length<=1&&Date.now()<RUN.end&&RUN.r===1&&!(RUN.res||[]).length)my=`Warte auf andere Spieler… Du bist allein — das Turnier beginnt, wenn der Timer abläuft (${fmt(RUN.end-Date.now())}).`;
   else if(parts.some(p=>p.st==='pick'))my='Warte, bis alle ihr Gerichts-Team gewählt haben…';
-  else if(RUN.st==='wait'&&readyRoom(parts)&&!parts.every(p=>p.rd))my=`🚪 BEREITSCHAFTSRAUM — alle müssen ✔ BEREIT setzen, dann beginnt Runde 1. (${parts.filter(p=>p.rd).length}/${parts.length} bereit${Date.now()<RUN.end+90000?` · Start spätestens in ${fmt(RUN.end+90000-Date.now())}`:''})`;
+  else if(RUN.st==='wait'&&RUN.pair&&RUN.pair.r===RUN.r&&RUN.r>1&&RUN.pair.opp!=='bye'&&!B){const op=parts.find(p=>p.peer===RUN.pair.opp),left=Math.max(0,60000-(Date.now()-RUN.pair.t));my=`Runde ${RUN.r}: gegen ${op?op.n:'?'} — beide setzen ✔ BEREIT. ${op&&op.rd>=RUN.r?'Gegner ist bereit.':'Gegner noch nicht bereit.'} (Start spätestens in ${fmt(left)})`}
+  else if(RUN.st==='wait'&&readyRoom(parts)&&!parts.every(p=>p.rd>=1))my=`🚪 BEREITSCHAFTSRAUM — alle müssen ✔ BEREIT setzen, dann beginnt Runde 1. (${parts.filter(p=>p.rd).length}/${parts.length} bereit${Date.now()<RUN.end+90000?` · Start spätestens in ${fmt(RUN.end+90000-Date.now())}`:''})`;
   else my=`Runde ${RUN.r} von ${R} — Paarung, sobald die vorherigen Duelle fertig sind…`;
   const rec=p=>{const w=p.res.filter(x=>x[2]===1).length,l=p.res.filter(x=>x[2]===0).length,d=p.res.filter(x=>x[2]===0.5).length;return`${w}-${l}${d?'-'+d:''}`};
   const h=`<h2>⚖ DAS GERICHT</h2><div class="small">${cfgOf().tb?'Rundenbasiert':'Echtzeit'} · Schweizer System · ${R} Runde${R>1?'n':''} · je ${cfgOf().team} Monster · Teams voll geheilt</div><div class="st">${esc(my)}</div>
    <div class="arow" style="background:transparent;border-color:transparent;font-size:16px;color:var(--muted)"><span>#  SPIELER</span><span>PKT · BUCHHOLZ · S-N</span></div>
-   ${tab.map((p,i)=>`<div class="arow" ${p.me?'style="border-color:var(--accent)"':''}><span>${i+1}. <span class="sw" style="display:inline-block;width:10px;height:10px;background:${p.c};border:2px solid #000;margin:0 4px"></span>${esc(p.n)}${p.me?' (du)':''}${readyRoom(parts)?(p.rd?' <b style="color:#3ddc6b">✔</b>':' <span style="color:var(--muted)">☐</span>'):''}</span><span>${p.score} · ${p.bh} · ${rec(p)} <span class="tag" style="background:${stCol[p.st]||'#555'}">${stTxt[p.st]||'?'}</span></span></div>`).join('')}
+   ${tab.map((p,i)=>`<div class="arow" ${p.me?'style="border-color:var(--accent)"':''}><span>${i+1}. <span class="sw" style="display:inline-block;width:10px;height:10px;background:${p.c};border:2px solid #000;margin:0 4px"></span>${esc(p.n)}${p.me?' (du)':''}${readyRoom(parts)?(p.rd>=1?' <b style="color:#3ddc6b">✔</b>':' <span style="color:var(--muted)">☐</span>'):''}</span><span>${p.score} · ${p.bh} · ${rec(p)} <span class="tag" style="background:${stCol[p.st]||'#555'}">${stTxt[p.st]||'?'}</span></span></div>`).join('')}
    ${(RUN.res||[]).length?`<div class="small" style="margin-top:8px">Deine Spiele: ${RUN.res.map(x=>`R${x[0]} gegen ${esc(nameOf(x[1]))}: ${x[2]===1?'gewonnen':x[2]===0?'verloren':'unentschieden'}`).join(' · ')}</div>`:''}
-   ${RUN.st==='wait'&&readyRoom(parts)?`<div style="margin-top:10px"><button class="btn ${RUN.rdy?'ghost':'green'}" id="ardy" style="width:100%">${RUN.rdy?'☐ DOCH NICHT BEREIT':'✔ BEREIT'}</button></div>`:''}
+   ${RUN.st==='wait'&&(readyRoom(parts)||(RUN.pair&&RUN.pair.r===RUN.r&&RUN.r>1&&RUN.pair.opp!=='bye'))?`<div style="margin-top:10px"><button class="btn ${(+RUN.rdy||0)>=RUN.r?'ghost':'green'}" id="ardy" style="width:100%">${(+RUN.rdy||0)>=RUN.r?'☐ DOCH NICHT BEREIT':'✔ BEREIT'}</button></div>`:''}
+   ${(()=>{const ds=runningDuels();return ds.length?`<div class="small" style="margin-top:10px">Laufende Kämpfe:</div>${ds.map(d=>`<button class="btn ghost" data-spec="${esc(d.id)}" style="width:100%;margin-top:4px">👁 ZUSCHAUEN: ${esc(d.nL)} gegen ${esc(d.nR)}</button>`).join('')}`:''})()}
    ${RUN.st!=='done'?'<div style="margin-top:10px"><button class="btn red" id="agiveup" style="width:100%">🏳 TURNIER AUFGEBEN</button></div>':''}${RUN.st==='done'?rematchHtml():''}${canGoBack()?'<div style="margin-top:10px"><button class="btn ghost" id="aback" style="width:100%">◀ ZURÜCK INS TRAINING</button></div>':''}`;
-  if($('#abox').dataset.h!==h){$('#abox').dataset.h=h;$('#abox').innerHTML=h;const b=$('#aleave');if(b)b.onclick=leaveRun;const bk=$('#aback');if(bk)bk.onclick=backToTraining;const gu=$('#agiveup');if(gu)gu.onclick=giveUpArena;const rdb=$('#ardy');if(rdb)rdb.onclick=toggleReady;
+  if($('#abox').dataset.h!==h){$('#abox').dataset.h=h;$('#abox').innerHTML=h;const b=$('#aleave');if(b)b.onclick=leaveRun;const bk=$('#aback');if(bk)bk.onclick=backToTraining;const gu=$('#agiveup');if(gu)gu.onclick=giveUpArena;const rdb=$('#ardy');if(rdb)rdb.onclick=toggleReady;document.querySelectorAll('[data-spec]').forEach(b=>b.onclick=()=>{const d=runningDuels().find(x=>x.id===b.dataset.spec);if(d)specStart(d)});
     const r=$('#arematch');if(r)r.onclick=()=>{const prev=RUN.id,cfg=Object.assign({},RUN.cfg,{host:MYPEER||'me'});pickStarter(sid=>startRun('m'+Math.random().toString(36).slice(2,10),0,sid,prev,cfg,'lobby'),cfg)};
     document.querySelectorAll('[data-rjoin]').forEach(b=>b.onclick=()=>joinLobby(b.dataset.rjoin))}
 }

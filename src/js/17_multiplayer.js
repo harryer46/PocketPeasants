@@ -10,7 +10,7 @@ function trailPush(o,x,y){o.trail=o.trail||[];o.trail.unshift({x,y});if(o.trail.
 function trailReset(o,x,y){o.trail=[];o.fols=[];for(let k=0;k<4;k++)o.fols[k]={x,y,fx:x,fy:y,tx:x,ty:y}}
 function folEnts(o,list,ents,px,py){if(!list||!list.length||!o.fols)return;for(let k=0;k<list.length&&k<4;k++){const f=o.fols[k];if(!f||f.fx==null||!SPECIES[list[k]])continue;
   const prev=k===0?{fx:px,fy:py}:o.fols[k-1];if(Math.abs(f.fx-prev.fx)+Math.abs(f.fy-prev.fy)<0.3)continue;if(tget(Math.round(f.fx),Math.round(f.fy))===3)continue;ents.push({fx:f.fx,fy:f.fy,mon:list[k]})}}
-function mtInfo(){if(RUN&&RUN.free)return{id:RUN.id,end:0,r:0,st:'free',prev:null};return RUN?{id:RUN.id,end:RUN.end,r:RUN.phase==='arena'?RUN.r:0,st:RUN.phase==='arena'?RUN.st:RUN.phase==='lobby'?'lobby':'train',prev:RUN.prev||null,res:RUN.res||[],cfg:RUN.cfg,rs:RUN.rs||0,rd:RUN.rdy?1:0,jt:RUN.jt||0}:null}
+function mtInfo(){if(RUN&&RUN.free)return{id:RUN.id,end:0,r:0,st:'free',prev:null};return RUN?{id:RUN.id,end:RUN.end,r:RUN.phase==='arena'?RUN.r:0,st:RUN.phase==='arena'?RUN.st:RUN.phase==='lobby'?'lobby':'train',prev:RUN.prev||null,res:RUN.res||[],cfg:RUN.cfg,rs:RUN.rs||0,rd:+RUN.rdy||0,R:RUN.R||0,jt:RUN.jt||0}:null}
 function pushFull(){if(!G)return;pres({v:VERSION,lf:folInfo(),n:G.name,c:G.color,sx:G.sex==='f'?'f':'m',x:P.moving?P.tx:P.x,y:P.moving?P.ty:P.y,d:P.d,tr:G.tro,sb:sbInfo(),ld:leadInfo(),bt:B?(B.mode==='wild'?'wild':'duel'):null,mt:mtInfo()})}
 // player overview stats: beaten trainers and the highest monster level (team + box) of the current game
 function sbInfo(){if(!RUN)return{tb:0,hl:0};const tb=Object.keys(RUN.beat||{}).filter(k=>RUN.beat[k]).length,hl=Math.max(0,...(RUN.team||[]).concat(RUN.box||[]).map(m=>+m.l||0));return{tb,hl}}
