@@ -77,7 +77,11 @@ function updateTouch(){
   if(B&&B.me){const mon=act(B.me),F=B.me;document.querySelectorAll('#tbtns .mvb').forEach(b=>{const i=+b.dataset.i,mid=mon.m[i];if(!mid)return;const cd=B.tb?0:F.cd[i]/cdOf(mid);b.style.setProperty('--cd',clamp(cd,0,1)+'turn');b.classList.toggle('off',(!!B.tb&&B.state!=='tbChoose')||(B.tb?Math.min(AP_MAX,(F.ap??AP_MAX)+TB_AP_REGEN):(F.ap??AP_MAX))<apCost(mid))})}
 }
 // top menu bar: on desktop it switches the side panel, on phones it opens the slide-in drawer
-document.querySelectorAll('#topbar button[data-t]').forEach(b=>b.onclick=()=>{const t=b.dataset.t,sd=$('#side');if(isMob()){sd.classList.add('open')}switchTab(t)});
+// clicking the tab that is already open closes the panel again (mobile: slide out, desktop: hide the side bar)
+function sideOpen(){const sd=$('#side');return isMob()?sd.classList.contains('open'):!sd.classList.contains('shut')}
+function setSide(on){const sd=$('#side');if(isMob())sd.classList.toggle('open',on);else{sd.classList.toggle('shut',!on);setTimeout(()=>dispatchEvent(new Event('resize')),0)}
+  document.querySelectorAll('#topbar button[data-t]').forEach(b=>b.classList.toggle('act',on&&b.dataset.t===curTab))}
+document.querySelectorAll('#topbar button[data-t]').forEach(b=>b.onclick=()=>{const t=b.dataset.t;if(t===curTab&&sideOpen()){setSide(false);return}switchTab(t);setSide(true)});
 $('#tupd').onclick=()=>location.reload();
 // fullscreen on/off, always in the menu bar (hidden where the browser has no fullscreen, e.g. iPhone Safari)
 {const fb=$('#hfs'),de=document.documentElement,can=document.fullscreenEnabled||document.webkitFullscreenEnabled;
