@@ -10,6 +10,9 @@ Alles steckt in **einer Datei: `index.html`** – kein Server, keine Kosten.
 
 ![QR-Code zum Spiel](qr.png)
 
+**Monster-Übersicht** (alle Monster mit Typ, Entwicklung und zugehörigen Fragen): https://harryer46.github.io/PocketPeasants/uebersicht/  
+Neu erzeugen nach Änderungen: `python3 tools/export_uebersicht.py` (braucht Playwright + Chrome).
+
 ## Auf GitHub Pages veröffentlichen (kostenlos, ca. 5 Minuten)
 
 1. Auf **github.com** anmelden (oder kostenloses Konto erstellen).

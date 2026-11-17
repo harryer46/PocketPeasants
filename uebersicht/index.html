@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pocket Peasants – Monster-Übersicht</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0b0d16;--panel:#151a2b;--line:#000;--text:#e9e6dc;--muted:#8d93a8;--accent:#ffcb3d}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:19px/1.15 VT323,monospace}
+header{position:sticky;top:0;z-index:5;background:#0f1322;border-bottom:3px solid #000;padding:10px 14px;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+h1{font:14px "Press Start 2P",monospace;color:var(--accent);margin:0 12px 0 0}
+input,select{background:#0b0d16;color:var(--text);border:2px solid #000;font:inherit;padding:3px 8px}
+.stat{color:var(--muted);font-size:17px}
+main{padding:14px;display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:12px}
+.card{background:var(--panel);border:3px solid #000;box-shadow:3px 3px 0 #000;padding:10px}
+.top{display:flex;gap:10px;align-items:center}.top img{width:64px;height:64px;image-rendering:pixelated;background:#0b0d16;border:2px solid #000}
+.nm{font-size:23px}.chip{display:inline-block;font:9px "Press Start 2P",monospace;color:#fff;padding:3px 5px;border:2px solid #000;margin-right:4px}
+.law{color:#c9b8ff}.evo{color:var(--muted);font-size:17px;margin-top:4px}.dex{margin-top:6px;font-size:17px;color:#cfd3e0}
+details{margin-top:8px}summary{cursor:pointer;color:var(--accent)}ol{margin:6px 0 0;padding-left:22px}li{margin-bottom:6px}
+.a{color:#3ddc6b}.src{color:var(--muted);font-size:15px}.none{color:var(--muted);font-size:17px;margin-top:8px}
+section.book{grid-column:1/-1}h2{font:12px "Press Start 2P",monospace;color:var(--accent);margin:18px 0 6px}
+</style></head><body>
+<header><h1>MONSTER-ÜBERSICHT</h1>
+<input id="q" placeholder="Suche: Name, §, Frage …" size="26">
+<select id="ty"><option value="">alle Typen</option></select>
+<select id="bk"><option value="">alle Gesetze</option><option>StGB</option><option>StPO</option><option>PolG</option><option>GG</option><option>OWiG</option><option value="-">ohne Paragraf</option></select>
+<span class="stat" id="st"></span></header>
+<main id="m"></main>
+<script>
+const RAR={unique:'einzigartig',common:'häufig',uncommon:'selten',rare:'sehr selten',legendary:'legendär'};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let D=null;
+function bookOf(l){const m=(l||'').match(/^(?:§|Art\.)\s*\d+[a-z]?\s+([A-Za-zÄÖÜäöü]+)/);return m?m[1]:''}
+function qList(qs){return`<ol>${qs.map(q=>`<li>${esc(q[0])}<br><span class="a">✓ ${esc(q[1])}</span>${q[2]?` <span class="src">${esc(q[2])}</span>`:''}</li>`).join('')}</ol>`}
+function render(){const q=document.getElementById('q').value.trim().toLowerCase(),ty=document.getElementById('ty').value,bk=document.getElementById('bk').value;
+  let h='',n=0,nq=0;
+  for(const s of D.sp){const b=bookOf(s.law);if(ty&&s.t!==ty)continue;if(bk&&(bk==='-'?b:b!==bk))continue;
+    const hay=(s.n+' '+s.law+' '+s.t+' '+s.q.map(x=>x[0]+' '+x[1]).join(' ')).toLowerCase();if(q&&!hay.includes(q))continue;n++;nq+=s.q.length;
+    const qs=q?s.q.filter(x=>(x[0]+' '+x[1]).toLowerCase().includes(q)||(s.n+' '+s.law).toLowerCase().includes(q)):s.q;
+    h+=`<div class="card"><div class="top"><img src="${s.img}" alt=""><div><div class="nm">${esc(s.n)}</div><span class="chip" style="background:${s.tc}">${esc(s.t.toUpperCase())}</span>${s.rar?`<span class="chip" style="background:#3a3f5c">${esc((RAR[s.rar]||s.rar).toUpperCase())}</span>`:''}${s.law?`<div class="law">${esc(s.law)}</div>`:''}</div></div>
+      <div class="evo">${s.prev?`↖ entwickelt sich aus ${esc(s.prev)}`:''}${s.prev&&s.evo?' · ':''}${s.evo?`→ ab Lv ${s.evo[0]} zu ${esc(s.evo[1])}`:''}${!s.prev&&!s.evo?'keine Entwicklung':''}</div>
+      ${s.dex?`<div class="dex">📖 ${esc(s.dex)}</div>`:''}
+      ${s.q.length?`<details ${q?'open':''}><summary>${s.q.length} Fragen${b&&D.book[b]&&D.book[b].length?` (+ ${D.book[b].length} allgemeine ${b}-Fragen)`:''}</summary>${qList(qs)}</details>`:`<div class="none">${b&&D.book[b]?`Keine eigenen Fragen – bekommt die ${D.book[b].length} allgemeinen ${b}-Fragen.`:'Keine eigenen Fragen (Quiz zieht zufällige Fragen).'}</div>`}</div>`}
+  for(const b of ['StGB','StPO','PolG','GG']){if(bk&&bk!==b)continue;const qs=D.book[b].filter(x=>!q||(x[0]+' '+x[1]).toLowerCase().includes(q));if(!qs.length||ty)continue;
+    h+=`<section class="book card"><h2>ALLGEMEINE ${b}-FRAGEN (${D.book[b].length}) – ohne passendes Monster, gelten für alle ${b}-Monster und die PMLK</h2><details ${q?'open':''}><summary>${qs.length} anzeigen</summary>${qList(qs)}</details></section>`}
+  document.getElementById('m').innerHTML=h||'<div class="none">Nichts gefunden.</div>';
+  document.getElementById('st').textContent=`${n} Monster · ${nq} eigene Fragen · ${Object.values(D.book).reduce((a,v)=>a+v.length,0)} allgemeine · Stand v${D.ver}`}
+fetch('data.json').then(r=>r.json()).then(d=>{D=d;const ts=[...new Set(d.sp.map(s=>s.t))].sort();const sel=document.getElementById('ty');for(const t of ts)sel.insertAdjacentHTML('beforeend',`<option>${esc(t)}</option>`);
+  for(const id of['q','ty','bk'])document.getElementById(id).addEventListener('input',render);render()}).catch(e=>{document.getElementById('m').textContent='Daten konnten nicht geladen werden.'});
+</script></body></html>
