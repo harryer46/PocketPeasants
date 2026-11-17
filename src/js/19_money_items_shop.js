@@ -152,6 +152,7 @@ function runningMatches(){const seen=new Map();for(const p of others()){const mt
 function lobbyLine(m){return m.waiting?'wartet in der Lobby':`noch ${fmt(m.end-Date.now())}`}
 let LOBBY_MIN=true;
 function startFree(){
+  try{setSide(false)}catch(e){}
   if(G.freeRun){RUN=G.freeRun;RUN.beat=RUN.beat||{};RUN.leg=RUN.leg||{};afterRunChange();toast('Willkommen zurück! Das freie Spiel geht weiter.');return}
   // same starter choice as in a lobby (no paragraph monsters)
   const go=sid=>{RUN={id:'f'+Math.random().toString(36).slice(2,10),free:true,end:0,phase:'train',team:[newMon(sid,START_LV)],box:[],kap:10,money:100,items:{},r:1,st:'free',res:[],beat:{},leg:{},cfg:Object.assign({},DEF_CFG,{alt:SET.alt==='0'?0:1})};G.dex[sid]=1;G.freeRun=RUN;afterRunChange();teleport(VSPAWN.x,VSPAWN.y);sysChat('Freies Spiel gestartet — dein Team wird gespeichert. Erstelle oder betrete jederzeit eine Lobby.');toast(`Dein Start-Monster: ${SPECIES[sid].n}!`)};
@@ -170,7 +171,7 @@ function renderLobby(){
   const el=$('#lobby');
   if(G&&RUN&&!RUN.free&&RUN.phase==='lobby'){const parts=participants(),host=isHost();const h=`<h3>LOBBY${RUN.cfg.name?': '+esc(RUN.cfg.name.toUpperCase()):''}</h3><p>${parts.length} Spieler warten: ${esc(parts.map(p=>p.n+(p.peer===hostPeer()?' ★':'')).join(', '))}<br><span class="small">${esc(cfgSummary(RUN.cfg))} · ${RUN.cfg.dur} Min. Training</span></p><div class="lrow">${host?'<button class="btn green" id="lgo" style="flex:1">▶ SPIEL STARTEN</button>':'<span style="flex:1" class="small">Warte auf den Start durch den Host (★)…</span>'}<button class="btn ghost" id="lleave">VERLASSEN</button></div>`;
     if(el.dataset.h!==h){el.dataset.h=h;el.innerHTML=h;const g=$('#lgo');if(g)g.onclick=hostStart;$('#lleave').onclick=leaveRun}el.classList.add('on');return}
-  if(!G||!RUN||RUN.free||(RUN&&!RUN.free)){el.classList.remove('on');if(G&&!RUN&&typeof switchTab==='function'&&curTab!=='lobby'&&!renderLobby.once){renderLobby.once=1;switchTab('lobby')}return}
+  if(!G||!RUN||RUN.free||(RUN&&!RUN.free)){el.classList.remove('on');if(G&&!RUN&&typeof switchTab==='function'&&curTab!=='lobby'&&!renderLobby.once){renderLobby.once=1;switchTab('lobby');setSide(true)}return}
   const ms=runningMatches();let h;
   if(RUN&&RUN.free){
     if(LOBBY_MIN){h=`<div class="lrow"><span style="flex:1;font-family:'Press Start 2P',monospace;font-size:8px;color:var(--accent)">FREIES SPIEL${ms.length?` · <span style="color:var(--green)">${ms.length} LOBBY${ms.length>1?'S':''} OFFEN</span>`:''}</span><button class="btn ghost" id="lmax">LOBBYS ▲</button></div>`;
@@ -221,7 +222,7 @@ function startRun(id,end,sid,prev,cfg,phase){
   cfg=sanitizeCfg(cfg||DEF_CFG);
   RUN={id,jt:Date.now(),starter:sid,rs:cfg.host===(MYPEER||'me')?0:null,end:phase==='lobby'?0:end,cfg,phase,team:[newMon(sid,START_LV)],box:[],kap:cfg.kap,money:cfg.money??100,items:{},r:1,st:phase==='lobby'?'lobby':'train',res:[],prev:prev||null,beat:{},leg:{}};G.dex[sid]=1;$('#arena').classList.remove('on');
   save();$('#lobby').dataset.h='';renderLobby();renderTeam();updateHud();pushMt();teleport(VSPAWN.x,VSPAWN.y);
-  if(phase==='lobby'){sysChat(`Du bist in der Lobby${cfg.name?' „'+cfg.name+'“':''} (${cfgSummary(cfg)}). Der Host startet das Spiel.`);switchTab('lobby')}
+  if(phase==='lobby'){sysChat(`Du bist in der Lobby${cfg.name?' „'+cfg.name+'“':''} (${cfgSummary(cfg)}). Der Host startet das Spiel.`);switchTab('lobby');setSide(true)}
   else{sysChat(`Spiel${cfg.name?' "'+cfg.name+'"':''} läuft! ${fmt(end-Date.now())} Training (${cfgSummary(cfg)}). Geh ins Gericht, wenn du bereit bist.`);toast('Streife gestartet! Ab ins hohe Gras.')}
 }
 function verLock(m){return`<button class="btn ghost" disabled title="Alle in einer Lobby brauchen dieselbe Version">v${esc(m.v)}</button>`}
@@ -250,14 +251,14 @@ function hardExit(){
 function leaveRun(){
   hardExit();RUN=G.freeRun||null;if(RUN){RUN.beat=RUN.beat||{};RUN.leg=RUN.leg||{}}
   P.d='down';teleport(VSPAWN.x,VSPAWN.y);save();pres({mt:mtInfo(),ld:leadInfo(),lf:folInfo()});afterRunChange();
-  switchTab('lobby');if(isMob())$('#side').classList.add('open');
+  switchTab('lobby');setSide(true);
   if(RUN)toast('Zurück am Start — freies Spiel. Tritt jederzeit einer Lobby bei oder erstelle eine.');else startFree();
 }
 // host: send everyone in this lobby back to the start (lobby phase, fresh starter, no timer)
 function resetRun(n){
   hardExit();const c=RUN.cfg,sid=RUN.starter||(RUN.team[0]&&RUN.team[0].s)||startersNow()[0];
   Object.assign(RUN,{rs:n,phase:'lobby',st:'lobby',end:0,r:1,res:[],gaveUp:0,solo:0,pick:null,dopp:null,trophy:0,team:[newMon(sid,START_LV)],box:[],kap:c.kap,money:c.money??100,items:{},beat:{},leg:{}});
-  P.d='down';teleport(VSPAWN.x,VSPAWN.y);save();afterRunChange();switchTab('lobby');
+  P.d='down';teleport(VSPAWN.x,VSPAWN.y);save();afterRunChange();switchTab('lobby');setSide(true);
   sysChat('Der Host hat die Sitzung zurückgesetzt — alle sind zurück am Start. Der Host startet das Spiel erneut.');toast('Sitzung zurückgesetzt — zurück am Start!');
 }
 function hostReset(){if(!isHost())return;openModal(`<h3>SITZUNG ZURÜCKSETZEN?</h3><p>Alle in dieser Lobby gehen zurück zum Start: neues Starter-Monster, keine Fänge, Timer und Urteile gelöscht. Danach könnt ihr neu starten.</p><div class="acts"><button class="btn ghost" id="mno">ABBRECHEN</button><button class="btn red" id="myes">ZURÜCKSETZEN</button></div>`);

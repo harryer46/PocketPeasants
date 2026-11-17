@@ -270,6 +270,8 @@ function visOf(mid){const mv=MOVES[mid];if(!mv)return'ball';return MOVE_VIS[mid]
 // [question,[correct phrasings…],[wrong answers…],explanation]. qReal() turns one into a playable 4-answer item:
 // one random phrasing of the right answer + three random wrong ones (index 0 = correct, shuffled at display time).
 // the length of an answer must not give it away: at least one (usually more) of the three wrong answers is about as long or longer
+// quiz feedback: right → short; wrong / too slow → name the right answer + the explanation (max. 2 sentences)
+function qFb(ok,k,q){const ex=esc((q&&q[2])||'');if(ok)return'✓ Richtig. '+ex;const c=q&&q[1]&&q[1][0];return(k<0?'⏱ Zeit abgelaufen':'✗ Falsch')+(c?` – richtig ist „${esc(c)}“.`:'.')+' '+ex}
 function qReal(q){if(!q||q.length<4)return q;const mx=Math.max(...q[2].map(w=>w.length)),okC=q[1].filter(c=>c.length*0.9<=mx),cs=okC.length?okC:[q[1].slice().sort((a,b)=>a.length-b.length)[0]];
   const c=cs[Math.floor(Math.random()*cs.length)],L=c.length,ws=shuffleArr(q[2].slice());
   const th=ws.some(w=>w.length>L)?L+1:L*0.9,lng=ws.filter(w=>w.length>=th),sh=ws.filter(w=>w.length<th).sort((a,b)=>Math.abs(a.length-L)-Math.abs(b.length-L));

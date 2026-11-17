@@ -1,7 +1,7 @@
 /* ===================== SIDE PANELS ===================== */
 let curTab='team',unread=0;
 document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>switchTab(b.dataset.t));
-function switchTab(t){curTab=t;{const sd=$('#side');if(sd&&sd.classList.contains('shut')){sd.classList.remove('shut');setTimeout(()=>dispatchEvent(new Event('resize')),0)}}document.querySelectorAll('.tabs button,#topbar button[data-t]').forEach(b=>b.classList.toggle('act',b.dataset.t===t));document.querySelectorAll('.pane').forEach(p=>p.classList.toggle('act',p.id==='pane-'+t));if(t==='chat'){unread=0;$('#cbadge').innerHTML='';const l=$('#chatlog');l.scrollTop=l.scrollHeight}if(t==='players')renderPlayers();if(t==='lobby'){lastLob='';renderLobbyPane()}}
+function switchTab(t){curTab=t;document.querySelectorAll('.tabs button,#topbar button[data-t]').forEach(b=>b.classList.toggle('act',b.dataset.t===t));document.querySelectorAll('.pane').forEach(p=>p.classList.toggle('act',p.id==='pane-'+t));if(t==='chat'){unread=0;$('#cbadge').innerHTML='';const l=$('#chatlog');l.scrollTop=l.scrollHeight}if(t==='players')renderPlayers();if(t==='lobby'){lastLob='';renderLobbyPane()}}
 function monCard(m,i,inTeam){
   const st=stats(m),sp=SPECIES[m.s],r=m.hp/st.mhp;const d=document.createElement('div');d.className='card';
   const cv=mk(52,52);{const cx=cv.getContext('2d');cx.imageSmoothingEnabled=false;cx.drawImage(monSprite(m.s,24),0,0,52,52)}d.appendChild(cv);
@@ -79,7 +79,7 @@ function renderStudy(){if(!ST)return;const m=ST.m,sp=SPECIES[m.s],st=stats(m);co
       <div class="sacts"><button class="btn" id="sclose">SCHLIESSEN</button></div>`;
   }else{
     const q=cur.q;if(!cur.order)cur.order=shuffleArr([0,1,2,3]);const LB=`<button class="rbtn" id="slearn" title="Ohne Frage: +5 % EP-Fortschritt, danach 1 s warten"><div class="cdr"></div><span><b>📖</b>+5 %</span></button>`;
-    h+=`<div class="sdlg"><span class="slaw">${esc(SPECIES[cur.src].law||'')}</span><br>${esc(q[0])}${ST.state==='ask'?`<div class="cqt"><i id="sqbar"></i></div>`:''}${ST.state==='shown'?`<div class="sexp ${cur.right?'ok':'bad'}">${cur.right?'✓ Richtig.':(cur.pick<0?'⏱ Zeit abgelaufen.':'✗ Falsch.')} ${esc(q[2])}</div>`:''}</div>
+    h+=`<div class="sdlg"><span class="slaw">${esc(SPECIES[cur.src].law||'')}</span><br>${esc(q[0])}${ST.state==='ask'?`<div class="cqt"><i id="sqbar"></i></div>`:''}${ST.state==='shown'?`<div class="sexp ${cur.right?'ok':'bad'}">${qFb(cur.right,cur.pick<0?-1:1,q)}</div>`:''}</div>
       <div class="qrow"><div class="sans">${cur.order.map((k,j)=>`<button class="sa ${ST.state==='shown'?(k===0?'ok':(cur.pick===k?'bad':'dim')):''}" data-k="${k}" ${ST.state==='shown'?'disabled':''}><span class="sk">${'ABCD'[j]}</span>${esc(q[1][k])}</button>`).join('')}</div></div>
       ${ST.state==='shown'?`<div class="sacts"><button class="btn" id="snext">${ST.i+1<ST.qs.length?'WEITER ▶':'ERGEBNIS ▶'}</button></div>`:`<div class="sacts"><button class="btn ghost" id="squit">AUFGEBEN</button></div>`}`}
   const el=$('#sbox');el.innerHTML=h;

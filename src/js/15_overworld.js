@@ -113,7 +113,7 @@ function healQuiz(){RUN.kap=Math.max(RUN.kap,10);updateHud();for(const m of RUN.
     document.querySelectorAll('[data-ck]').forEach(bt=>{const kk=+bt.dataset.ck;bt.disabled=true;bt.classList.add(kk===0?'ok':kk===k?'bad':'dim')});
     {const mx=stats(tm).mhp;if(ok)tm.hp=mx}if(!ok)healQuiz.pen=Date.now()+5000;
     const tmFull=tm.hp>=stats(tm).mhp,done=full();renderTeam();
-    $('#cqexp').innerHTML=`<div class="sexp ${ok?'ok':'bad'}">${ok?'✓ Richtig.':(k<0?'⏱ Zeit abgelaufen.':'✗ Falsch.')} ${esc(it.q[2])}</div>`;
+    $('#cqexp').innerHTML=`<div class="sexp ${ok?'ok':'bad'}">${qFb(ok,k,it.q)}</div>`;
     $('#cqact').innerHTML=done?`<button class="btn" id="cqstop">WEITER</button>`:tmFull?`<button class="btn" id="cqback">ÜBERSICHT</button><button class="btn ghost" id="cqstop">GEHEN</button>`:`<button class="btn" id="cqnext">NÄCHSTE FRAGE</button><button class="btn ghost" id="cqback">ÜBERSICHT</button><button class="btn ghost" id="cqstop">GEHEN</button>`;
     if(done){const hb=$('#cqheal');if(hb)hb.remove()}
     const nx=$('#cqnext');if(nx)nx.onclick=ask;penBtns();const bk=$('#cqback');if(bk)bk.onclick=overview;$('#cqstop').onclick=stop};

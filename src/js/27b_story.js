@@ -68,7 +68,7 @@ function pplkTheory(t){const pool=shuffleArr(lawQuestions(t.law)).slice(0,PPLK_N
       if(bar){bar.style.width=(l/PPLK_QT*100)+'%';bar.style.background=l<PPLK_QT/3?'#ef4444':'#ffcb3d'}const tt=$('#cqtime');if(tt)tt.textContent=Math.ceil(l/1000)+' s';if(l<=0)pick(-1)},100)};
   const pick=k=>{if(!CQ||CQ.done)return;CQ.done=true;clearInterval(PQ);const ok=k===0,it=CQ.it;if(ok)right++;
     document.querySelectorAll('[data-ck]').forEach(bt=>{const kk=+bt.dataset.ck;bt.disabled=true;bt.classList.add(kk===0?'ok':kk===k?'bad':'dim')});
-    $('#cqexp').innerHTML=`<div class="sexp ${ok?'ok':'bad'}">${ok?'✓ Richtig.':k<0?'⏱ Zeit abgelaufen.':'✗ Falsch.'} ${esc(it.q[2]||'')}</div>`;
+    $('#cqexp').innerHTML=`<div class="sexp ${ok?'ok':'bad'}">${qFb(ok,k,it.q)}</div>`;
     const need=Math.min(PPLK_MIN,pool.length),last=i>=pool.length-1,lost=right+(pool.length-1-i)<need;
     $('#cqact').innerHTML=`<button class="btn" id="cqnext">${last||lost?'ERGEBNIS':'NÄCHSTE FRAGE'}</button>`;
     $('#cqnext').onclick=()=>{if(!last&&!lost){i++;ask();return}$('#cquiz').classList.remove('on');CQ=null;CQ_PICK=null;

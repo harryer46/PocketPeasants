@@ -26,7 +26,7 @@ addEventListener('keydown',e=>{
   if((e.key==='f'||e.key==='F')&&G&&!e.repeat&&!modalOpen()){e.preventDefault();toggleFly();return}
   if(e.key==='Escape'&&mapOpen()){closeMap();return}
   if(mapOpen()&&(e.key==='+'||e.key==='='||e.key==='-'||e.key==='_')){e.preventDefault();mapZoom(e.key==='+'||e.key==='='?1:-1);return}
-  if((e.key==='t'||e.key==='T')&&G){e.preventDefault();switchTab('chat');$('#chatin').focus()}
+  if((e.key==='t'||e.key==='T')&&G){e.preventDefault();switchTab('chat');setSide(true);$('#chatin').focus()}
 },true);
 addEventListener('keyup',e=>{const d=KEYMAP[e.key];if(d){const i=held.indexOf(d);if(i>=0)held.splice(i,1);const j=aimHeld.indexOf(d);if(j>=0)aimHeld.splice(j,1)}if(B&&B.aim&&normKey(e.key)===SET.keys.cap)capRelease()});
 addEventListener('blur',()=>{held.length=0;aimHeld.length=0});
@@ -82,7 +82,7 @@ function sideOpen(){const sd=$('#side');return isMob()?sd.classList.contains('op
 function setSide(on){const sd=$('#side');if(isMob())sd.classList.toggle('open',on);else{sd.classList.toggle('shut',!on);setTimeout(()=>dispatchEvent(new Event('resize')),0)}
   document.querySelectorAll('#topbar button[data-t]').forEach(b=>b.classList.toggle('act',on&&b.dataset.t===curTab))}
 document.querySelectorAll('#topbar button[data-t]').forEach(b=>b.onclick=()=>{const t=b.dataset.t;if(t===curTab&&sideOpen()){setSide(false);return}switchTab(t);setSide(true)});
-$('#tupd').onclick=()=>location.reload();
+$('#tupd').onclick=()=>{try{sessionStorage.setItem('pp_upd','1')}catch(e){}location.reload()};
 // fullscreen on/off, always in the menu bar (hidden where the browser has no fullscreen, e.g. iPhone Safari)
 {const fb=$('#hfs'),de=document.documentElement,can=document.fullscreenEnabled||document.webkitFullscreenEnabled;
  const isFs=()=>!!(document.fullscreenElement||document.webkitFullscreenElement),upd=()=>{fb.textContent=isFs()?'⛶ ✕':'⛶';fb.title=isFs()?'Vollbild beenden':'Vollbild'};

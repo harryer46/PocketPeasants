@@ -9,12 +9,14 @@ function buildStart(){
   prev();
   // a new session always starts here: a lobby from an earlier session is not resumed (free-play team, dex and trophies are kept)
   $('#sgo').onclick=()=>{if(!pwOK()){const v=($('#spw').value||'').trim().toUpperCase();if(!pwCheck(v)){toast('Falsches Passwort.');$('#spw').focus();return}try{localStorage.setItem(PW_KEY,v)}catch(e){}if(!ROOM)initRoom()}
-    const nm=cleanName($('#sname').value);if(G){G.name=nm;G.color=pickColor;G.sex=pickSex;G.x=VSPAWN.x;G.y=VSPAWN.y;G.d='down';const live=G.run&&!G.run.free&&Date.now()-(G.t||0)<30*60000&&!(G.run.phase!=='lobby'&&G.run.end&&Date.now()-G.run.end>20*60000);G.run=live?G.run:(G.freeRun||null)}else G={mapv:2,name:nm,color:pickColor,sex:pickSex,dex:{},tro:0,x:VSPAWN.x,y:VSPAWN.y,d:'down',run:null};RUN=G.run||G.freeRun||null;save();begin()};
+    const nm=cleanName($('#sname').value);let resume=false;try{resume=sessionStorage.getItem('pp_live')==='1'}catch(e){}if(G){G.name=nm;G.color=pickColor;G.sex=pickSex;if(!resume||!Number.isFinite(G.x)){G.x=VSPAWN.x;G.y=VSPAWN.y;G.d='down'}const live=G.run&&!G.run.free&&Date.now()-(G.t||0)<30*60000&&!(G.run.phase!=='lobby'&&G.run.end&&Date.now()-G.run.end>20*60000);G.run=live?G.run:(G.freeRun||null)}else G={mapv:2,name:nm,color:pickColor,sex:pickSex,dex:{},tro:0,x:VSPAWN.x,y:VSPAWN.y,d:'down',run:null};RUN=G.run||G.freeRun||null;save();begin()};
   $('#sname').addEventListener('keydown',e=>{if(e.key==='Enter')$('#sgo').click()});$('#spw').addEventListener('keydown',e=>{if(e.key==='Enter')$('#sgo').click()});
   if(pwOK())$('#spwf').style.display='none';
+  // after an update reload: continue right away (same name, same place)
+  try{if(sessionStorage.getItem('pp_upd')==='1'&&G&&G.name&&pwOK()){sessionStorage.removeItem('pp_upd');if(!$('#sname').value)$('#sname').value=G.name;setTimeout(()=>$('#sgo').click(),60)}}catch(e){}
 }
 function begin(){
-  $('#start').classList.add('off');
+  $('#start').classList.add('off');try{sessionStorage.setItem('pp_live','1')}catch(e){}
   RUN=G.run||G.freeRun||null;
   // a lobby game saved long ago is dead (its players are gone) → back to free play instead of a lonely arena
   if(RUN&&!RUN.free){const age=Date.now()-(G.t||0),over=RUN.phase!=='lobby'&&RUN.end&&Date.now()-RUN.end>20*60000;if(age>30*60000||over){RUN=G.freeRun||null;G.run=RUN;setTimeout(()=>sysChat('Dein altes Lobby-Spiel ist beendet — zurück zum freien Spiel.'),500)}}
@@ -36,5 +38,6 @@ function begin(){
   P.fol={x:P.x,y:P.y,tx:P.x,ty:P.y};
   renderTeam();updateHud();pushFull();sysChat(`Willkommen bei Pocket Peasants, ${G.name}! Dienstbeginn — schnapp sie dir alle!`);
   if(RUN&&RUN.phase==='arena_pending'){RUN.phase='train';enterArena()}else if(RUN&&RUN.phase==='arena')showArena();
+  if(RUN)setSide(false);
 }
 

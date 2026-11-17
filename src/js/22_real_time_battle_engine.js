@@ -609,7 +609,7 @@ function cqTick(){if(!CQ||CQ.done)return;const now=performance.now();if(PANIC){C
   if(left<=0){cqAnswer(-1);return}setTimeout(cqTick,50)}
 function cqAnswer(k){if(!CQ||CQ.done)return;CQ.done=true;const ok=k===0,it=CQ.it;if(ok&&CQ.flee&&B)B.frozen=true;
   document.querySelectorAll('[data-ck]').forEach(b=>{const kk=+b.dataset.ck;b.disabled=true;b.classList.add(kk===0?'ok':kk===k?'bad':'dim')});
-  $('#cqexp').innerHTML=`<div class="sexp ${ok?'ok':'bad'}">${ok?'✓ Richtig.':k<0?'⏱ Zeit abgelaufen.':'✗ Falsch.'} ${esc(it.q[2])}</div>`;
+  $('#cqexp').innerHTML=`<div class="sexp ${ok?'ok':'bad'}">${qFb(ok,k,it.q)}</div>`;
   const cb=CQ.cb,fast=!!CQ.T;setTimeout(()=>{$('#cquiz').classList.remove('on','lite');CQ=null;cb(ok)},ok?(fast?900:1400):(fast?1800:2600))}
 function endWild(msg){if(!B)return;syncBack();if(msg)toast(msg);closeBattle();save();pushMt()}
 

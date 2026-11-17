@@ -87,7 +87,7 @@ function tollQuiz(b){const law=TOLL_LAW[b],pool=shuffleArr(lawQuestions(law)).sl
     $('#cquiz').classList.add('on');document.querySelectorAll('[data-ck]').forEach(bt=>bt.onclick=()=>pick(+bt.dataset.ck))};
   const pick=k=>{if(!CQ||CQ.done)return;CQ.done=true;const ok=k===0,it=CQ.it;
     document.querySelectorAll('[data-ck]').forEach(bt=>{const kk=+bt.dataset.ck;bt.disabled=true;bt.classList.add(kk===0?'ok':kk===k?'bad':'dim')});
-    $('#cqexp').innerHTML=`<div class="sexp ${ok?'ok':'bad'}">${ok?'✓ Richtig.':'✗ Falsch.'} ${esc(it.q[2])}</div>`;
+    $('#cqexp').innerHTML=`<div class="sexp ${ok?'ok':'bad'}">${qFb(ok,k,it.q)}</div>`;
     $('#cqact').innerHTML=`<button class="btn" id="cqnext">${ok&&i<2?'NÄCHSTE FRAGE':'WEITER'}</button>`;
     $('#cqnext').onclick=()=>{if(ok&&i<2){i++;ask();return}$('#cquiz').classList.remove('on');CQ=null;if(ok)tollPass(b,'Prüfung bestanden');else tollFail(b)}};
   CQ_PICK=pick;ask()}
