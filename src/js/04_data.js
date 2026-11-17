@@ -92,7 +92,7 @@ Object.assign(MOVES,{
  metalclaw:{n:'Metallklaue',t:'rock',p:50,k:'melee',fx:'selfbuff',bs:{a:1},stc:0.3},crunch:{n:'Knirscher',t:'rock',p:80,k:'melee',fx:'debuff',bs:{d:-1},stc:0.3},defcurl:{n:'Einigler',t:'rock',p:0,k:'self',fx:'buff',bs:{d:2}},
  ancientpower:{n:'Antik-Kraft',t:'rock',p:60,k:'lob',fx:'selfbuff',bs:{a:1,d:1,s:1},stc:0.2},
  wingattack:{n:'Flügelschlag',t:'flying',p:60,k:'melee'},drillpeck:{n:'Bohrschnabel',t:'flying',p:80,k:'melee'},aeroblast:{n:'Luftstoß',t:'flying',p:100,k:'beam'},
- ember:{n:'Glut',t:'fire',p:40,k:'arc',fx:'burn'},fly:{n:'Fliegen',t:'flying',p:90,k:'fly'},dive:{n:'Taucher',t:'water',p:80,k:'dive'},
+ ember:{n:'Glut',t:'fire',p:40,k:'arc',fx:'burn',split:3},fly:{n:'Fliegen',t:'flying',p:90,k:'fly'},dive:{n:'Taucher',t:'water',p:80,k:'dive'},
  agility:{n:'Agilität',t:'flying',p:0,k:'self',fx:'buff',bs:{s:2}},steelwing:{n:'Stahlflügel',t:'flying',p:70,k:'melee',fx:'selfbuff',bs:{d:1},stc:0.3},featherdance:{n:'Federtanz',t:'flying',p:10,k:'spread',fx:'debuff',bs:{a:-2}}
 });
 const STAT_DE={a:'Angriff',d:'Verteidigung',s:'Initiative'};

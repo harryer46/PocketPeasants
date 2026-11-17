@@ -25,7 +25,7 @@ function shotParams0(mid){const mv=MOVES[mid]||MOVES.bump;const k=mv.k||(mv.t===
   if(mid==='surf')return{sp:84,life:2.5,r:10,p:Math.round(mv.p*0.85),n:1,wave:1};
   if(MOVE_VIS[mid]==='wave'&&(k==='spread'||k==='shot'))return{sp:100,life:1.8,r:6,p:Math.round(mv.p*0.85),n:1,wave:1};
   if(k==='rapid'){const n=clamp(mv.rn||6,5,10);return{rapid:n,int:0.085,sp:215,life:1.8,r:2.5,p:Math.max(3,Math.round(mv.p*0.8/n)),n:1}}
-  if(k==='arc')return{k:'lob',nm:1,h:30,life:0.85,r:12,p:mv.n3?Math.round(mv.p*0.5):mv.p,n:mv.n3?3:1,ang:0.24};
+  if(k==='arc')return{k:'lob',nm:1,h:30,life:0.85,r:mv.split?16:12,p:mv.n3?Math.round(mv.p*0.5):mv.p,n:mv.n3?3:1,ang:0.24};
   if(k==='rain')return{k:'air',nm:1,sp:0,life:0.9,r:12,p:Math.round(mv.p*0.36),n:1,rain:5};
   if(k==='fly')return{k:'fly',nm:1,sp:0,life:1.25,r:20,p:mv.p,n:1};
   if(k==='dive')return{k:'air',nm:1,sp:0,life:0.06,r:30,p:mv.p,n:1,dive:1.1};
@@ -104,7 +104,7 @@ function drawSpecial(c,s,col,now){const P=(x,y,w,h,cl)=>{c.fillStyle=cl;c.fillRe
     if(k>0.3){c.fillStyle='#00000040';const r=4+k*10;pxEl(c,Math.round(s.x),Math.round(s.y),r,r*0.45,1)}return}
   if(s.k==='lob'){const k=lobU(s.age/s.life),h=Math.sin(k*Math.PI)*(s.h||54),x0=s.x0??s.x,y0=s.y0??s.y,tx=x0+s.vx*s.life,ty=y0+s.vy*s.life+12;
     c.strokeStyle=col+'90';c.lineWidth=1;pxEl(c,Math.round(tx),Math.round(ty),s.r*(0.5+k*0.5),s.r*0.4*(0.5+k*0.5),0);
-    P(s.x-4,s.y+11,8,2,'#00000050');const Y=s.y-h;if(drawVis(c,Object.assign({},s,{y:Y,vy:s.vy-h}),col,now))return;P(s.x-5,Y-5,10,10,'#14141f');P(s.x-4,Y-4,8,8,col);P(s.x-4,Y-4,3,3,'#ffffffb0');return}
+    P(s.x-4,s.y+11,8,2,'#00000050');const Y=s.y-h;if(drawEmber(c,s,Y,now))return;if(drawVis(c,Object.assign({},s,{y:Y,vy:s.vy-h}),col,now))return;P(s.x-5,Y-5,10,10,'#14141f');P(s.x-4,Y-4,8,8,col);P(s.x-4,Y-4,3,3,'#ffffffb0');return}
   if(s.k==='air'){const k=clamp(s.age/s.life,0,1),bl=Math.floor(now/90)%2;c.strokeStyle=bl?'#ff4d4d':'#ffffff';c.lineWidth=1;pxEl(c,Math.round(s.x),Math.round(s.y),s.r*(1.25-k*0.25),s.r*0.45*(1.25-k*0.25),0);
     P(s.x-1,s.y-6,2,12,bl?'#ff4d4d':'#ffffff');P(s.x-6,s.y-1,12,2,bl?'#ff4d4d':'#ffffff');
     {const r=3+k*8;c.fillStyle='#00000040';pxEl(c,Math.round(s.x),Math.round(s.y),r,r*0.45,1)}
@@ -187,8 +187,8 @@ function nextAlive(F){const n=F.team.findIndex((m,i)=>i!==F.a&&m.hp>0);return n}
 function doSwitch(F,idx){F.a=idx;F.stg={a:0,d:0,s:0};F.spawnT=performance.now()+(F===B.me?480:0);if(F!==B.me)burst(F.x,F.y-14,'#ffffff',12);F.swCd=1.6;F.inv=0.7;F.cd=[0.3,0.3,0.3,0.3];say(`${F===B.me?'Los,':'Gegner schickt'} ${SPECIES[act(F).s].n}!`);if(B.mode==='duel'&&F===B.me)publishDuel(true)}
 function selfMove(F,mv){const m=act(F);F.castT=performance.now();
   if(mv.fx==='heal'){const h=Math.round(m.mhp*0.3);m.hp=Math.min(m.mhp,m.hp+h);B.nums.push({x:F.x,y:F.y-34,t:'+'+h,c:'#3ddc6b',at:performance.now()});burst(F.x,F.y-14,'#3ddc6b',14)}
-  else if(mv.fx==='shield'){F.st.shield=3.5;burst(F.x,F.y-14,'#9fd2ff',14)}
-  else if(mv.fx==='haste'){F.st.haste=3.5;burst(F.x,F.y-14,'#ffffff',12)}
+  else if(mv.fx==='shield'){F.st.shield=8;burst(F.x,F.y-14,'#9fd2ff',14)}
+  else if(mv.fx==='haste'){F.st.haste=8;burst(F.x,F.y-14,'#ffffff',12)}
   else if(mv.fx==='buff'){applyStages(F,mv.bs)}
   say(`${SPECIES[m.s].n} setzt ${mv.n} ein!`);if(B.mode==='duel'&&F===B.me)publishDuel(true)}
 // apply damage to a fighter this client is authoritative for
@@ -207,7 +207,7 @@ function hitLocal(T,s){
   if(r.e>0&&mv.fx==='debuff'){const n_=performance.now();if(!(T.dbk===s.mid&&n_-T.dbt<600)){T.dbk=s.mid;T.dbt=n_;if(Math.random()<(mv.stc??1))applyStages(T,mv.bs)}}
   if(d>0&&T.st.sleep>0&&mv.fx!=='sleep'){T.st.sleep=0;say(`${SPECIES[def.s].n} ist aufgewacht!`)}
   if(d>0&&mv.fx==='stun'&&T.st.stun<=0){T.st.stun=mv.k==='big'?1:0.6;say(`${SPECIES[def.s].n} ist betäubt!`)}
-  if(d>0&&mv.fx==='sleep'&&T.st.sleep<=0&&Math.random()<0.6){T.st.sleep=2.4;say(`${SPECIES[def.s].n} schläft ein!`)}
+  if(d>0&&mv.fx==='sleep'&&T.st.sleep<=0&&Math.random()<0.6){const mine=T===B.me&&!B.tb;T.st.sleep=mine?6:2.4;say(`${SPECIES[def.s].n} schläft ein!${mine?' Tipp den richtigen Paragrafen an!':''}`);if(mine)sleepGame()}
   if(d>0&&mv.fx==='conf'&&T.st.conf<=0&&Math.random()<0.6){T.st.conf=3;say(`${SPECIES[def.s].n} ist verwirrt!`)}
   dealDamage(T,d,r.e>1?'#ffcb3d':r.e<1?'#c0c4d6':'#ffffff',d?'-'+d:'0');return d;
 }
@@ -229,7 +229,8 @@ function specialShot(s,dt){const T=s.side===B.me.side?B.foe:B.me,alive=T&&!T.out
   if(s.k==='vortex'){vortexShot(s,dt,T,alive);return}
   if(s.k==='lob'){if(s.x0==null){s.x0=s.x;s.y0=s.y}const u=lobU(s.age/s.life);s.x=s.x0+s.vx*s.life*u;s.y=s.y0+s.vy*s.life*u;if(s.age<s.life)return;s.dead=1;burst(s.x,s.y+12,col,16);burst(s.x,s.y+12,'#ffffff',6);B.shakeUntil=performance.now()+120;
     for(const o of B.obs||[])if(!o.dead&&Math.hypot(o.x-s.x,(o.y-(s.y+12))*1.3)<s.r+o.r)hitObs(o,s);
-    if(alive&&T.inv<=0&&!airBusy(T)&&Math.hypot(T.x-s.x,(T.y-(s.y+12))*1.3)<s.r+9)shotHit(s,T);leaveHazard(s,s.x,s.y+12);return}
+    if(alive&&T.inv<=0&&!airBusy(T)&&Math.hypot(T.x-s.x,(T.y-(s.y+12))*1.3)<s.r+9)shotHit(s,T);if(!s.sub)leaveHazard(s,s.x,s.y+12);
+    const smv=MOVES[s.mid];if(smv&&smv.split&&!s.sub){const a0=Math.atan2(s.vy,s.vx);for(let i=0;i<smv.split;i++){const a=a0+(i-(smv.split-1)/2)*1.1,sp=95;B.shots.push({id:s.id+'e'+i,side:s.side,att:s.att,mid:s.mid,x:s.x,y:s.y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp*0.8,age:0,life:0.42,r:7,p:Math.max(1,Math.round(s.p*0.3)),k:'lob',nm:1,h:14,sub:1,am:s.am})}}return}
   if(s.k==='fly'){const A=sideF(s.side);if(!s.started){s.started=1;if(A&&A.ctrl==='remote'){A.flyT0=performance.now()-s.age*1000;A.flyDur=s.life}}
     if(A&&A.ctrl!=='remote'&&s.age>=s.life*0.78&&!s.moved){s.moved=1;A.x=s.x;A.y=s.y+0.1;arenaClamp(A)}
     if(s.age<s.life)return;s.dead=1;if(A)A.landT=performance.now()+600;burst(s.x,s.y-4,col,18);burst(s.x-8,s.y+2,'#c8b89a',6);burst(s.x+8,s.y+2,'#c8b89a',6);burst(s.x,s.y-4,'#ffffff',12);B.shakeUntil=performance.now()+180;
@@ -1108,6 +1109,11 @@ function drawHazards(c,now){if(!B||!B.haz)return;for(const h of B.haz){const lif
 
 
 // ===== projectile looks: chunky pixel shapes per attack (wave arcs, flames, bubbles, leaves, bolts, rocks, wind blades, spores, coins, feathers, § …)
+// Glut: a big pixel fireball; on impact it bursts into small embers that fly a short arc
+function drawEmber(c,s,Y,now){const mv=MOVES[s.mid];if(!mv||!mv.split)return false;const Q=(x,y,w,h,col)=>{c.fillStyle=col;c.fillRect(x,y,w,h)},X=Math.round(s.x),y=Math.round(Y),fl=Math.floor(now/70)%2;
+  if(s.sub){Q(X-2,y-2,4,4,'#14141f');Q(X-1,y-1,3,3,fl?'#ffb347':'#ff6a1a');Q(X-1,y-1,1,1,'#fff3b0');return true}
+  c.fillStyle='#14141f';pxEl(c,X,y,10,10,1);c.fillStyle=fl?'#e2421a':'#ff5a1f';pxEl(c,X,y,9,9,1);c.fillStyle='#ffa024';pxEl(c,X+(fl?1:0),y-1,6.5,6.5,1);c.fillStyle='#ffe066';pxEl(c,X+1,y-2,3,3,1);
+  for(let i=0;i<3;i++){const a=now/120+i*2.1;Q(X+Math.round(Math.cos(a)*9)-1,y+Math.round(Math.sin(a)*9)-1,2,2,i%2?'#ffb347':'#ff6a1a')}return true}
 function drawVis(c,s,col,now){const v=s.wave?'wave':visOf(s.mid);if(v==='ball')return false;const a=Math.atan2(s.vy,s.vx),X=Math.round(s.x),Y=Math.round(s.y),ca=Math.cos(a),sa=Math.sin(a),
   P=(x,y,w,h,cl)=>{c.fillStyle=cl;c.fillRect(Math.round(x/2)*2,Math.round(y/2)*2,w,h)},R=(u,v2)=>[X+ca*u-sa*v2,Y+sa*u+ca*v2],t=now/1000+(s.age||0);
   if(v==='wave'){const al=0.45+0.55*Math.max(0,1-s.age/(s.life||1.8)),span=0.55+s.r/80;for(let k=0;k<3;k++){const rr=s.r-k*7;if(rr<3)continue;const n=Math.max(6,Math.round(rr*span*0.9));for(let q=-n;q<=n;q++){const an=a+q/n*span,x=X+Math.cos(an)*rr-ca*s.r*0.6,y=Y+Math.sin(an)*rr-sa*s.r*0.6;c.globalAlpha=al*(1-k*0.25);P(x-2,y-2,4,4,'#14141f70');P(x-1,y-1,3,3,k===0?'#ffffff':k===1?col:'#ffffffa0')}}c.globalAlpha=1;return true}

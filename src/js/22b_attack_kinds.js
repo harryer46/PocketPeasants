@@ -68,3 +68,24 @@ function douseTick(){if(!B||!B.haz||!B.haz.some(h=>h.k==='fire'))return;const we
   for(const h of B.haz)if(h.k==='puddle')wet.push([h.x,h.y,h.r-4]);if(!wet.length)return;
   B.haz=B.haz.filter(h=>{if(h.k!=='fire')return true;for(const[x,y,r]of wet)if(Math.hypot(h.x-x,(h.y-y)*1.3)<h.r+r){steamPuff(h.x,h.y);return false}return true})}
 function steamPuff(x,y){burst(x,y-4,'#e8eef4',12);burst(x,y-8,'#b8c4cc',6)}
+
+// ---- sleep mini-game: while your monster sleeps, paragraphs of its law book fall down on the right side of the arena.
+// Only about 1 in 10 shows the number with its matching name — tap that one and your monster wakes up (a wrong tap: +0.5 s sleep)
+function sleepPairs(sid){let book=lawOf(sid);const all=b=>Object.keys(SPECIES).map(s=>lawTitle(s)&&lawOf(s)===b?lawTitle(s):null).filter(Boolean);
+  let L=book?all(book):[];if(L.length<4){book='StGB';L=all(book)}const seen=new Set();L=L.filter(t=>{const k=t.head;if(seen.has(k))return false;seen.add(k);return true});return{book,L}}
+function sleepGame(){if(!B||B.tb||$('#sleepfall'))return;const myB=B,F=B.me;const{book,L}=sleepPairs(act(F).s);if(L.length<2)return;
+  const ov=document.createElement('div');ov.id='sleepfall';ov.innerHTML=`<div class="sfh">💤 ${esc(book)}: passenden § antippen</div>`;document.body.appendChild(ov);
+  const items=[];let spawnT=0,cnt=0,lastOk=-99,last=performance.now();
+  const spawn=()=>{cnt++;const ok=Math.random()<0.1||cnt-lastOk>=10;if(ok)lastOk=cnt;const a=L[Math.floor(Math.random()*L.length)];let t=a.title;
+    if(!ok){let o;do o=L[Math.floor(Math.random()*L.length)];while(o.title===a.title&&L.length>1);t=o.title}
+    const el=document.createElement('button');el.className='sfi';el.innerHTML=`<b>${esc(a.head.replace(' '+book,''))}</b>${esc(t)}`;
+    const it={el,ok,y:-50,lane:cnt%2,v:62};el.onclick=e=>{e.stopPropagation();if(it.done)return;it.done=1;
+      if(ok){F.st.sleep=0;say(`${SPECIES[act(F).s].n} ist aufgewacht! (${a.head} – ${a.title})`);burst(F.x,F.y-14,'#ffe066',14);el.classList.add('ok')}
+      else{F.st.sleep=Math.min(8,F.st.sleep+0.5);el.classList.add('bad');say(`Falsch – ${a.head} ist nicht „${t}“.`)}setTimeout(()=>el.remove(),350)};
+    ov.appendChild(el);items.push(it)};
+  const tick=()=>{const now=performance.now(),dt=Math.min(0.1,(now-last)/1000);last=now;
+    if(B!==myB||!B||B.state==='over'||F.st.sleep<=0||F.out||F.faint>0){ov.remove();return}
+    const cv=$('#bcv'),r=cv.getBoundingClientRect();const w=Math.max(130,r.width*0.34);ov.style.left=(r.right-w)+'px';ov.style.top=r.top+'px';ov.style.width=w+'px';ov.style.height=r.height+'px';
+    spawnT-=dt;if(spawnT<=0){spawn();spawnT=0.5}
+    for(const it of items){if(it.done)continue;it.y+=it.v*dt*(r.height/320);const lw=w/2;it.el.style.maxWidth=(lw-6)+'px';it.el.style.transform=`translate(${Math.round(it.lane*lw+3)}px,${Math.round(it.y)}px)`;if(it.y>r.height){it.done=1;it.el.remove()}}
+    requestAnimationFrame(tick)};tick()}
