@@ -139,7 +139,7 @@ function newBattle(o){try{if(typing())document.activeElement.blur()}catch(e){}
 }
 function closeBattle(){const myB=B;if(!myB)return;myB.closing=true;if(CQ){CQ.done=true;CQ=null}$('#cquiz').classList.remove('on','lite');$('#bpick').classList.remove('on');transition('fade',()=>{if(B===myB)B=null;placeDpad();$('#battle').classList.remove('on');$('#stage').style.transform='';pres({bt:null,du:null,ld:leadInfo(),lf:folInfo()});renderTeam();updateHud()},300,350)}
 function fire(F,i,remote){
-  const bt=act(F);const mid=bt.m[i];if(!mid||F.cd[i]>0||F.faint>0||F.out||F.st.stun>0||F.st.sleep>0||F.hitstun>0||airBusy(F)||F.rq)return;
+  const bt=act(F);const mid=bt.m[i];if(!mid||F.cd[i]>0||F.faint>0||F.out||F.st.stun>0||F.st.sleep>0||F.hitstun>0||airBusy(F)||F.rq||(!remote&&F.landT&&performance.now()<F.landT))return;
   const cost=apCost(mid);if(F.ctrl!=='remote'){if((F.ap??AP_MAX)<cost){if(F===B.me){F.apShake=performance.now();const n=performance.now();if(!B.apMsgT||n-B.apMsgT>1200){B.apMsgT=n;say('Nicht genug AP!')}}return}F.ap=(F.ap??AP_MAX)-cost}
   const T=F===B.me?B.foe:B.me;F.cd[i]=cdOf(mid)*(F.ctrl==='ai'?1.35:1);seenMove(mid);
   const mvv=MOVES[mid];if(mvv.k==='self'){selfMove(F,mvv);return}F.atkT=performance.now();
@@ -232,7 +232,7 @@ function specialShot(s,dt){const T=s.side===B.me.side?B.foe:B.me,alive=T&&!T.out
     if(alive&&T.inv<=0&&!airBusy(T)&&Math.hypot(T.x-s.x,(T.y-(s.y+12))*1.3)<s.r+9)shotHit(s,T);leaveHazard(s,s.x,s.y+12);return}
   if(s.k==='fly'){const A=sideF(s.side);if(!s.started){s.started=1;if(A&&A.ctrl==='remote'){A.flyT0=performance.now()-s.age*1000;A.flyDur=s.life}}
     if(A&&A.ctrl!=='remote'&&s.age>=s.life*0.78&&!s.moved){s.moved=1;A.x=s.x;A.y=s.y+0.1;arenaClamp(A)}
-    if(s.age<s.life)return;s.dead=1;burst(s.x,s.y-4,col,18);burst(s.x,s.y-4,'#ffffff',12);B.shakeUntil=performance.now()+180;
+    if(s.age<s.life)return;s.dead=1;if(A)A.landT=performance.now()+600;burst(s.x,s.y-4,col,18);burst(s.x-8,s.y+2,'#c8b89a',6);burst(s.x+8,s.y+2,'#c8b89a',6);burst(s.x,s.y-4,'#ffffff',12);B.shakeUntil=performance.now()+180;
     for(const o of B.obs||[])if(!o.dead&&Math.hypot(o.x-s.x,(o.y-s.y)*1.3)<s.r+o.r)hitObs(o,s);
     if(alive)impactWave(s,T,s.x,s.y);return}
   if(s.k==='air'){if(s.age<s.life){if(s.age>s.life-0.18&&!s.fall){s.fall=1}return}s.dead=1;burst(s.x,s.y-4,col,22);burst(s.x,s.y-4,'#ffffff',10);B.shakeUntil=performance.now()+200;
@@ -280,7 +280,7 @@ function controlMe(dt){
   const L=Math.hypot(dx,dy);if(L){dx/=L;dy/=L;F.ddx=dx;F.ddy=dy}
   move(F,dx*sc,dy*sc,dt);
 }
-function move(F,dx,dy,dt){if(F.st&&F.st.fly>0)return;
+function move(F,dx,dy,dt){if(F.st&&F.st.fly>0)return;if(F.landT&&performance.now()<F.landT)return;
   // slight inertia: velocity eases toward the input instead of jumping (dash stays instant)
   // (post-dash freeze removed in v0.70)
   if(dx||dy||F.dashT>0)F.mvT=performance.now();
@@ -567,17 +567,17 @@ function secondChanceItem(sid){const t=lawTitle(sid);if(!t)return null;const boo
   const ranked=cands.map(x=>({x,sc:score(x)+(same.has(x)||Object.keys(SPECIES).some(s=>lawTitle(s)&&lawTitle(s).title===x&&lawOf(s)===book)?0.8:0)})).sort((a,b)=>b.sc-a.sc);
   const wrong=ranked.slice(0,3).map(r=>r.x);if(wrong.length<3)return null;
   return{src:sid,q:[`Zweite Chance! Wie heißt ${t.head}?`,[t.title,...wrong],`${t.head}: ${t.title}.`]}}
-function secondChance(sid,cb){const it=secondChanceItem(sid);if(!it){cb(false);return}const order=shuffleArr([0,1,2,3]),T=5000;
+function secondChance(sid,cb){let it=secondChanceItem(sid);if(!it){const f=fleeItem(sid);if(f&&f.q&&f.q[1]&&f.q[1].length>=4)it={src:f.src,q:['Zweite Chance! '+f.q[0],f.q[1],f.q[2]]}}if(!it){cb(false);return}const order=shuffleArr([0,1,2,3]),T=5000;
   CQ={it,order,end:performance.now()+T,cb,done:false};held.length=0;aimHeld.length=0;
   $('#cqbox').innerHTML=`<div class="sdlg"><span class="slaw">⚡ ZWEITE CHANCE — 5 SEKUNDEN</span><br>${esc(it.q[0])}<div class="cqt"><i id="cqbar"></i></div><div class="small" id="cqtime" style="text-align:right">5 s</div><div id="cqexp"></div></div>
     <div class="sans">${order.map((k,j)=>`<button class="sa" data-ck="${k}"><span class="sk">${'ABCD'[j]}</span>${esc(it.q[1][k])}</button>`).join('')}</div><div class="sacts" id="cqact"></div>`;
   $('#cquiz').classList.add('on');document.querySelectorAll('[data-ck]').forEach(b=>b.onclick=()=>cqAnswer(+b.dataset.ck));CQ.T=T;cqTick()}
 async function wildLose(){
-  if(B&&!B.second&&B.foe&&act(B.foe)&&lawTitle(act(B.foe).s)){B.second=1;const myB=B;B.state='second';say('Alle deine Monster sind besiegt — zweite Chance!');
+  if(B&&!B.second&&B.foe&&act(B.foe)&&(B.mode==='wild'||B.mode==='trainer')){B.second=1;const myB=B;B.state='second';say('Alle deine Monster sind besiegt — zweite Chance!');
     const ok=await new Promise(r=>secondChance(act(B.foe).s,r));if(B!==myB)return;
-    if(ok){const F=B.me;const i=F.team[F.a]?F.a:0;const m=F.team[i];m.hp=Math.max(1,Math.round(m.mhp*0.25));F.a=i;F.out=false;F.faint=0;F.inv=1;F.spawnT=performance.now()+480;F.cd=[0.3,0.3,0.3,0.3];
+    if(ok){const F=B.me;const i=F.team[F.a]?F.a:0;const m=F.team[i];m.hp=Math.max(1,Math.round(m.mhp*0.1));F.a=i;F.out=false;F.faint=0;F.inv=1;F.spawnT=performance.now()+480;F.cd=[0.3,0.3,0.3,0.3];
       if(B.mode==='wild'||B.mode==='trainer'){const rm=RUN.team[i];if(rm)rm.hp=m.hp}
-      say(`${SPECIES[m.s].n} rappelt sich mit 25 % KP wieder auf!`);if(B.tb){B.state='tbChoose'}else{B.state='count';B.leadDone=1;B.leadWait=false;B.cntEnd=performance.now()+3000}return}
+      say(`${SPECIES[m.s].n} rappelt sich mit 10 % KP wieder auf!`);if(B.tb){B.state='tbChoose'}else{B.state='count';B.leadDone=1;B.leadWait=false;B.cntEnd=performance.now()+3000}return}
     B.state='fight'}
   B.state='over';finale(false);say('Alle deine Monster sind besiegt…');const myB=B;await sleep(2400);if(B!==myB)return;endWild();respawnHeal()}
 function throwBonus(){const r=ringR(performance.now());if(r<8){say('Hervorragender Wurf!');return 1.6}if(r<11.5){say('Toller Wurf!');return 1.3}return 1}

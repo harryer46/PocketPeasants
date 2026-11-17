@@ -68,7 +68,7 @@ const KNAST_C={x:262,y:13};
   // ---- towns
   const fillRect=(x0,y0,x1,y1,t,b)=>{for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){tset(x,y,t);if(b!=null)BIOME[y*MW+x]=b}};
   const pad=(x,y)=>{for(let X=x;X<x+6;X++){tset(X,y,8);tset(X,y+1,8);tset(X,y+2,6);tset(X,y+3,6)}tset(x+3,y+3,7);PADS.push({x:x+3,y:y+3,bx:x,by:y,old:!CUR_T||!CUR_T.center})};
-  const bld=(id,x,y,w,dxo,door)=>{for(let Y=y;Y<y+4;Y++)for(let X=x;X<x+w;X++)tset(X,Y,21);tset(x+dxo,y+3,door);BLDG.push({id,x,y,w,h:4,dx:x+dxo,door,n:id==='shop'?'COPSHOP':'HfPol',old:!CUR_T||!CUR_T.center})};let CUR_T=null;
+  const bld=(id,x,y,w,dxo,door)=>{for(let Y=y;Y<y+4;Y++)for(let X=x;X<x+w;X++)tset(X,Y,21);tset(x+dxo,y+3,door);BLDG.push({id,x,y,w,h:4,dx:x+dxo,door,n:id==='shop'?'COPSHOP':(!CUR_T||CUR_T.id==='vil'?'HfPol':'IAuT'),town:CUR_T&&CUR_T.id,old:!CUR_T||!CUR_T.center})};let CUR_T=null;
   for(const T of TOWN_DEF){CUR_T=T;
     // compact towns like the originals: buildings shoulder to shoulder inside a tree ring
     if(T.center){const{x:cx,y:cy}=T;

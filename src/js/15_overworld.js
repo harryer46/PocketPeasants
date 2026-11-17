@@ -64,7 +64,7 @@ function onArrive(){
   if(P.fly){if(BIOME[P.y*MW+P.x]===0&&RUN){const Tn=TOWNS.find(T=>Math.abs(T.x-P.x)<18&&Math.abs(T.y-P.y)<14);if(Tn&&Tn.id!=='vil'&&!(RUN.towns&&RUN.towns[Tn.id])){RUN.towns=RUN.towns||{};RUN.towns[Tn.id]=1;save();toast(`📍 ${Tn.n} entdeckt!`)}}return}
   const t=tget(P.x,P.y);
   if(t===22){if(RUN)openShop();else toast('Copshop — tritt einer Lobby bei oder starte das freie Spiel.')}
-  if(t===23){if(RUN)openHfPol();else toast('HfPol — tritt einer Lobby bei oder starte das freie Spiel, um zu lernen.')}
+  if(t===23){if(RUN)openHfPol();else toast(`${studyBld().n} — tritt einer Lobby bei oder starte das freie Spiel, um zu lernen.`)}
   if(BIOME[P.y*MW+P.x]===0&&RUN){const Tn=TOWNS.find(T=>Math.abs(T.x-P.x)<26&&Math.abs(T.y-P.y)<24);if(Tn){RUN.towns=RUN.towns||{};if(!RUN.towns[Tn.id]){RUN.towns[Tn.id]=1;save();if(Tn.id!=='vil')toast(`📍 ${Tn.n} entdeckt — Schnellreise über die Weltkarte (M) freigeschaltet!`)}}}
   if(t===7&&RUN){const pd=PADS.find(p=>p.x===P.x&&p.y===P.y);if(pd){RUN.lastPad={x:pd.x,y:pd.y+1};save()}}
   if(t===7){if(RUN)healQuiz();else toast('PÄD — tritt einer Lobby bei oder starte das freie Spiel, um ein Team zu bekommen.')}

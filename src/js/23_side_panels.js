@@ -44,20 +44,24 @@ function studyQuestions(sid){
   while(out.length<STUDY_N){const k=keys[Math.floor(Math.random()*keys.length)];const q=QZ[k][Math.floor(Math.random()*QZ[k].length)];if(used.has(q[0]))continue;used.add(q[0]);out.push({src:k,q:qReal(q)})}
   return out}
 function atHfPol(){return tget(P.x,P.y)===23}
-function openHfPol(){if(!RUN||B)return;if(RUN.phase==='arena'){toast('Während des Gerichtsturniers ist die HfPol geschlossen.');return}
+// study building here: the HfPol (only in Villingen) or an IAuT (every other town)
+function studyBld(){const b=BLDG.find(b=>b.door===23&&b.dx===P.x&&b.y+3===P.y)||BLDG.filter(b=>b.door===23).sort((a,c)=>Math.hypot(a.dx-P.x,a.y-P.y)-Math.hypot(c.dx-P.x,c.y-P.y))[0];
+  const hf=!b||b.n==='HfPol',T=b&&TOWNS.find(t=>t.id===b.town);return{n:hf?'HfPol':'IAuT',long:hf?'Hochschule für Polizei':'Institut für Ausbildung und Training',town:T?T.n:'Villingen-Knastingen',hall:hf?'Hörsaal':'Lehrsaal'}}
+function openHfPol(){if(!RUN||B)return;if(RUN.phase==='arena'){toast(`Während des Gerichtsturniers ist ${studyBld().n==='HfPol'?'die HfPol':'das IAuT'} geschlossen.`);return}
+  const SB=studyBld();
   const now=Date.now();
-  openModal(`<h3>🎓 HfPol — Hochschule für Polizei</h3><p>Villingen-Knastningen · Hörsaal. Wähle ein Monster für die Prüfung (5 Fragen, Multiple Choice). Richtige Antworten geben EP.</p>
-   <div style="display:flex;flex-direction:column;gap:6px;max-height:50vh;overflow:auto">${RUN.team.map((m,i)=>{const left=(m.stT||0)+STUDY_CD-now;return`<div style="display:flex;gap:6px"><button class="btn ${left>0?'ghost':''}" data-hs="${i}" style="flex:1;text-align:left;font-family:VT323,monospace;font-size:19px">📚 ${nameHtml(m.s)} · Lv ${m.l}${left>0?` · Lernpause ${Math.floor(Math.ceil(left/1000)/60)}:${String(Math.ceil(left/1000)%60).padStart(2,"0")}`:''}</button><button class="btn ghost" data-cp="${i}" ${left>0||money()<CRIB_P?'disabled':''} title="Sofort die EP einer bestandenen Prüfung (5/5), danach Lernpause">📄 ABSCHREIBEN $${CRIB_P}</button></div>`}).join('')}</div>
+  openModal(`<h3>🎓 ${SB.n} — ${SB.long}</h3><p>${esc(SB.town)} · ${SB.hall}. Wähle ein Monster für die Prüfung (5 Fragen, Multiple Choice). Richtige Antworten geben EP.</p>
+   <div style="display:flex;flex-direction:column;gap:6px;max-height:50vh;overflow:auto">${RUN.team.map((m,i)=>{const left=(m.stT||0)+STUDY_CD-now;return`<div style="display:flex;gap:6px"><button class="btn ${left>0?'ghost':''}" data-hs="${i}" style="flex:1;text-align:left;font-family:VT323,monospace;font-size:19px">📚 ${nameHtml(m.s)} · Lv ${m.l}${left>0?` · Lernpause ${Math.floor(Math.ceil(left/1000)/60)}:${String(Math.ceil(left/1000)%60).padStart(2,"0")}`:''}</button><button class="btn ghost" data-cp="${i}" ${left>0||money()<CRIB_P?'disabled':''} title="Sofort die EP einer bestandenen Prüfung (5/5), danach Lernpause">📄 SPICKEN $${CRIB_P}</button></div>`}).join('')}</div>
    <div class="acts" style="margin-top:10px"><button class="btn ghost" id="mno">HÖRSAAL VERLASSEN</button></div>`);
   document.querySelectorAll('[data-hs]').forEach(b=>b.onclick=()=>openStudy(RUN.team[+b.dataset.hs]));document.querySelectorAll('[data-cp]').forEach(b=>b.onclick=()=>studyCrib(RUN.team[+b.dataset.cp]));$('#mno').onclick=closeModal}
-// Abschreiben: $100 → immediately the XP of a perfect exam (5/5), then the usual study break
+// Spicken: $100 → immediately the XP of a perfect exam (5/5), then the usual study break
 const CRIB_P=100;
 function studyCrib(m){if(!m||!atHfPol())return;if((m.stT||0)+STUDY_CD>Date.now()){toast('Lernpause — erst später wieder.');return}if(money()<CRIB_P){toast('Nicht genug Geld.');return}
   RUN.money-=CRIB_P;const amt=Math.max(8,Math.round(xpNeed(m.l)*0.25/((RUN.cfg&&RUN.cfg.xp)||1)))*STUDY_N;m.stT=Date.now();const msgs=gainXp(m,amt);for(const t of msgs)sysChat(t);
-  toast(`📄 ${SPECIES[m.s].n} hat abgeschrieben: +${Math.round(amt*((RUN.cfg&&RUN.cfg.xp)||1))} EP.`);save();updateHud();renderTeam();pushMt();openHfPol()}
+  toast(`📄 ${SPECIES[m.s].n} hat gespickt: +${Math.round(amt*((RUN.cfg&&RUN.cfg.xp)||1))} EP.`);save();updateHud();renderTeam();pushMt();openHfPol()}
 function openStudy(m){
   if(!RUN||B||RUN.phase==='arena'){toast('Lernen geht nur außerhalb von Kämpfen und Gericht.');return}
-  if(!atHfPol()){toast('Lernen geht nur in der HfPol (Hochschule für Polizei) — in der Stadt südlich der Hauptstraße, rechts (🎓 auf der Karte).');return}
+  if(!atHfPol()){toast('Lernen geht nur an der HfPol in Villingen oder am IAuT der anderen Städte — jeweils südlich der Hauptstraße, rechts (🎓 auf der Karte).');return}
   const left=(m.stT||0)+STUDY_CD-Date.now();if(left>0){const sec=Math.ceil(left/1000);toast(`☕ ${SPECIES[m.s].n} hat Lernpause — noch ${Math.floor(sec/60)}:${String(sec%60).padStart(2,'0')} min.`);return}
   closeModal();
   ST={m,qs:studyQuestions(m.s),i:0,ok:0,xp:0,state:'ask',fx:null,t0:performance.now()};

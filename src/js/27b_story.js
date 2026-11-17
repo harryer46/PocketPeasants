@@ -1,9 +1,9 @@
 /* ===================== STORY =====================
    Anwärter auf Gnade → (4 FEM-Legendäre gefangen) einsatzbereit → (alle Gesetzes-Monster gefangen) Polizist auf Ewigkeit.
-   Durchsuchungsbeschlüsse gibt es nach bestandener PMLK (Theorie-Fragen + Kampf gegen die Klausur) an den vier
+   Durchsuchungsbeschlüsse gibt es nach bestandener PMLK (erst Kampf gegen die Klausur, dann Theorie-Fragen) an den vier
    Ausbildungsstandorten; nur mit Beschluss öffnet sich der Dungeon mit dem jeweiligen FEM-Monster. Progress per run (RUN.story). */
 const FEM=['schlagstock','taser','pfefferspray','kelle'];
-const PPLK_N=8,PPLK_MIN=6,PPLK_QT=20000,PPLK_CD=60000;
+const PPLK_N=10,PPLK_MIN=8,PPLK_QT=15000,PPLK_CD=60000;
 MCOL[T_CAVE]='#1b1430';
 function caveTile(){TILE[T_CAVE]=[tileCanvas(x=>{x.fillStyle='#6b6f7a';x.fillRect(0,0,16,16);x.fillStyle='#8e929c';x.fillRect(0,0,16,3);x.fillRect(0,0,2,16);x.fillRect(14,0,2,16);
   x.fillStyle='#14141f';x.fillRect(2,3,12,13);x.fillStyle='#0a0a12';x.fillRect(3,4,10,12);x.fillStyle='#2a2a3a';x.fillRect(3,4,10,2);x.fillStyle='#b8bcc6';x.fillRect(1,1,3,1);x.fillRect(11,2,3,1)})]}
@@ -25,7 +25,7 @@ const BERATER_TXT=[
   'Bis dahin bist du nur eins: Anwärter auf Gnade. Jederzeit widerruflich, versteht sich.',
   'Und ohne Ausrüstung bist du nicht einsatzbereit. Zuerst brauchst du die vier legendären FEM-Monster: Schlagstock, Taser, Pfefferspray und Kelle.',
   'Die stecken in Dungeons überall auf der Karte. Reinkommen? Nur mit Durchsuchungsbeschluss – § 105 StPO lässt grüßen!',
-  'Die Beschlüsse gibt es an den Ausbildungsstandorten: Besteh dort die PMLK – die Praktische Monster Leistungskontrolle – und besiege die Klausur.',
+  'Die Beschlüsse gibt es an den Ausbildungsstandorten: Besteh dort die PMLK – die Praktische Monster Leistungskontrolle: erst besiegst du die Klausur, danach kommen die Theoriefragen.',
   `Dein erster Weg: ${routesTo('mar')||'nach Süden'} – nach Marderach zur ersten PMLK (StPO). Die Routenschilder zeigen dir, wie stark die wilden Monster dort sind.`,
   'Danach geht es weiter: Marderach prüft die StPO, dann Damental das GG, Lahribar das PolG und Unterwertheim das StGB. Folg den Routenschildern – Route 1 beginnt hier.',
   'Mostbach ist das Einsatzzentrum. Da laufen die ganz harten Brocken rum – geh erst hin, wenn du stark genug bist.',
@@ -47,18 +47,19 @@ function bossFight(t){const strong=['boorberg','arenamon','zhang'].filter(s=>SPE
   const ids=[...laws.slice(0,6-Math.min(2,strong.length)),...strong.slice(0,2)].slice(0,6);while(ids.length<6)ids.push(ids[ids.length%Math.max(1,ids.length)]||'owigon');
   const team=ids.map((s,q)=>[s,BOSS_LV[0]+q]);team[5][1]=BOSS_LV[1];
   const tr={id:'boss_berater',boss:1,fixed:true,x:t.x,y:t.y,n:t.n,c:t.c,d:t.d,team,reward:20,line:'Abschlussprüfung. Keine Gnade.',after:'Polizist auf Ewigkeit.'};if(RUN.beat)delete RUN.beat[tr.id];startTrainer(tr)}
-// ---- PPLK: theory (8 questions, 6 correct, 20 s each) then the exam fight ("die Klausur")
+// ---- PMLK: first the exam fight ("die Klausur"), then theory (10 questions, 8 correct, 15 s each); a won fight stays won
 function storyBump(t){if(!storyOn())return;if(!RUN||RUN.phase!=='train'){toast(`${t.n}: „Komm wieder, wenn dein Spiel begonnen hat!“`);return}const s=storyOf();
   if(t.story==='berater'){if(!s.met){storyIntro(t);return}if(femCaught().length>=4&&!(G&&G.ewig)){bossDialog(t);return}storyStatus();return}
   if(t.story==='pplk'){const dg=dungeonFor(t.law);
     if(hasBesch(t.law)){talk(t.n,`Bestanden ist bestanden. Dein Durchsuchungsbeschluss (${t.law}) für die ${dg?dg.n:'Dungeon'} ist gültig – ab ins Einsatzgebiet!`);return}
     const left=(s.cd[t.town]||0)-Date.now();if(left>0){talk(t.n,`Nach dem Durchfallen gibt es eine Nachdenkpause. Wiederholung in ${Math.ceil(left/1000)} s.`);return}
+    const fw=!!(s.pfw&&s.pfw[t.town]);
     openModal(`<h3>📝 PMLK – ${esc(t.law)}</h3><p>${esc(t.n)}: „Praktische Monster Leistungskontrolle im <b>${esc(t.law)}</b>. Wer besteht, bekommt den Durchsuchungsbeschluss für die <b>${esc(dg?dg.n:'Dungeon')}</b>.“</p>
-      <div style="text-align:left" class="small">1. Theorie: ${PPLK_N} Fragen zum ${esc(t.law)}, je ${PPLK_QT/1000} s – mindestens ${PPLK_MIN} richtig.<br>2. Praxis: Kampf gegen die Klausur (Lv ${PPLK[t.town].lv}+).</div>
-      <div class="acts"><button class="btn ghost" id="mno">SPÄTER</button><button class="btn" id="myes">PMLK STARTEN</button></div>`);
-    $('#mno').onclick=closeModal;$('#myes').onclick=()=>{closeModal();pplkTheory(t)}}}
+      <div style="text-align:left" class="small">${fw?'✓ ':'1. '}Praxis: Kampf gegen die Klausur (Lv ${PPLK[t.town].lv}+)${fw?' – bestanden':''}.<br>${fw?'➜ ':'2. '}Theorie: ${PPLK_N} Fragen zum ${esc(t.law)}, je ${PPLK_QT/1000} s – mindestens ${PPLK_MIN} richtig.</div>
+      <div class="acts"><button class="btn ghost" id="mno">SPÄTER</button><button class="btn" id="myes">${fw?'THEORIE STARTEN':'KAMPF STARTEN'}</button></div>`);
+    $('#mno').onclick=closeModal;$('#myes').onclick=()=>{closeModal();fw?pplkTheory(t):pplkFight(t)}}}
 let PQ=null;
-function pplkTheory(t){const pool=shuffleArr(lawQuestions(t.law)).slice(0,PPLK_N);if(!pool.length){pplkFight(t);return}let i=0,right=0;held.length=0;
+function pplkTheory(t){const pool=shuffleArr(lawQuestions(t.law)).slice(0,PPLK_N);if(!pool.length){pplkPass(t);return}let i=0,right=0;held.length=0;
   const ask=()=>{const it=pool[i],order=shuffleArr([0,1,2,3]);CQ={it,order,end:Infinity,done:false,cb:null};const qEnd=Date.now()+PPLK_QT,myQ=CQ;
     $('#cqbox').innerHTML=`<div class="sdlg"><span class="slaw">📝 PMLK ${esc(t.law)} · Frage ${i+1}/${pool.length} · ${right} richtig${it.src?' · '+esc(SPECIES[it.src].law||''):''}</span><br>${esc(it.q[0])}<div class="cqt"><i id="cqbar"></i></div><div class="small" id="cqtime" style="text-align:right">${PPLK_QT/1000} s</div><div id="cqexp"></div></div>
       <div class="sans">${order.map((k,j)=>`<button class="sa" data-ck="${k}"><span class="sk">${j+1}</span>${esc(it.q[1][k])}</button>`).join('')}</div><div class="sacts" id="cqact"></div>`;
@@ -68,18 +69,21 @@ function pplkTheory(t){const pool=shuffleArr(lawQuestions(t.law)).slice(0,PPLK_N
   const pick=k=>{if(!CQ||CQ.done)return;CQ.done=true;clearInterval(PQ);const ok=k===0,it=CQ.it;if(ok)right++;
     document.querySelectorAll('[data-ck]').forEach(bt=>{const kk=+bt.dataset.ck;bt.disabled=true;bt.classList.add(kk===0?'ok':kk===k?'bad':'dim')});
     $('#cqexp').innerHTML=`<div class="sexp ${ok?'ok':'bad'}">${ok?'✓ Richtig.':k<0?'⏱ Zeit abgelaufen.':'✗ Falsch.'} ${esc(it.q[2]||'')}</div>`;
-    const last=i>=pool.length-1,lost=right+(pool.length-1-i)<PPLK_MIN;
+    const need=Math.min(PPLK_MIN,pool.length),last=i>=pool.length-1,lost=right+(pool.length-1-i)<need;
     $('#cqact').innerHTML=`<button class="btn" id="cqnext">${last||lost?'ERGEBNIS':'NÄCHSTE FRAGE'}</button>`;
     $('#cqnext').onclick=()=>{if(!last&&!lost){i++;ask();return}$('#cquiz').classList.remove('on');CQ=null;CQ_PICK=null;
-      if(right>=PPLK_MIN){talk(t.n,`${right} von ${pool.length} – Theorie bestanden! Jetzt die Praxis: Die Klausur wartet. Zeig, was dein Team kann!`,()=>pplkFight(t))}
-      else{storyOf().cd[t.town]=Date.now()+PPLK_CD;save();talk(t.n,`${right} richtig – zu wenig (mindestens ${PPLK_MIN}). Lern an der HfPol nach und komm in einer Minute wieder.`)}}};
+      if(right>=need){talk(t.n,`${right} von ${pool.length} – Theorie bestanden! Die PMLK im ${t.law} ist geschafft.`,()=>pplkPass(t))}
+      else{storyOf().cd[t.town]=Date.now()+PPLK_CD;save();talk(t.n,`${right} richtig – zu wenig (mindestens ${need}). Den Kampf hast du schon – lern nach (HfPol oder IAuT) und versuch die Theorie in einer Minute nochmal.`)}}};
   CQ_PICK=pick;ask()}
+function pplkPass(t){const s=storyOf();s.besch[t.law]=1;save();const dg=dungeonFor(t.law);toast(`📜 Durchsuchungsbeschluss (${t.law}) erhalten!`);
+  sysChat(`📜 PMLK ${t.law} bestanden! Dein Durchsuchungsbeschluss öffnet die ${dg?dg.n:'Dungeon'}.`);try{renderTeam()}catch(e){}}
 function pplkFight(t){const p=PPLK[t.town],pool=lawSpecies(t.law);const n=4;
   const team=Array.from({length:n},(_,q)=>[pool.length?pool[(hashStr(t.id)+q)%pool.length]:'owigon',p.lv+(q===n-1?3:q)]);
   const tr={id:'klausur_'+t.town,pplk:t.law,town:t.town,fixed:true,x:t.x,y:t.y,n:'Klausur '+t.law,c:t.c,d:t.d,team,reward:6,line:`Ich bin die Klausur im ${t.law}. Keiner besteht mich beim ersten Versuch!`,after:'Bestanden.'};
   if(RUN.beat)delete RUN.beat[tr.id];startTrainer(tr)}
-{const _tw=trainerWin;trainerWin=async function(){const t=B&&B.trainer;if(t&&t.boss){G.ewig=1;save();say('👑 Du bist jetzt Polizist auf Ewigkeit!');setTimeout(()=>sysChat('👑 Abschlussprüfung bestanden – Polizist auf Ewigkeit!'),2600)}if(t&&t.pplk){const s=storyOf();s.besch[t.pplk]=1;save();const dg=dungeonFor(t.pplk);
-    say(`📜 Durchsuchungsbeschluss (${t.pplk}) erhalten!`);setTimeout(()=>sysChat(`📜 PMLK ${t.pplk} bestanden! Dein Durchsuchungsbeschluss öffnet die ${dg?dg.n:'Dungeon'}.`),2600)}
+{const _tw=trainerWin;trainerWin=async function(){const t=B&&B.trainer;if(t&&t.boss){G.ewig=1;save();say('👑 Du bist jetzt Polizist auf Ewigkeit!');setTimeout(()=>sysChat('👑 Abschlussprüfung bestanden – Polizist auf Ewigkeit!'),2600)}if(t&&t.pplk){const s=storyOf();(s.pfw=s.pfw||{})[t.town]=1;save();say('Klausur besiegt! Jetzt folgt die Theorie.');
+    const np=TRAINERS.find(x=>x.story==='pplk'&&x.town===t.town);if(np){const w=()=>{if(B||$('#modal').classList.contains('on')){setTimeout(w,300);return}
+      talk(np.n,`Praxis bestanden! Jetzt die Theorie: ${PPLK_N} Fragen zum ${np.law}, je ${PPLK_QT/1000} s – mindestens ${PPLK_MIN} richtig.`,()=>pplkTheory(np))};setTimeout(w,600)}}
   return _tw.apply(this,arguments)}}
 // ---- dungeon doors
 function caveDungeon(x,y){return DUNGEONS.find(d=>d.ex===x&&d.ey===y)||null}
