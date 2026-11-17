@@ -13,16 +13,16 @@ function rideSid(){try{if(P.fly){const u=hmUser('fly');return u?u.s:null}if(P.su
 function rideSync(){const r=rideSid();if(r!==P.rdS){P.rdS=r;pres({rd:r})}}
 function flyAlt(){const t=(performance.now()-(P.flyT||0))/350;return P.fly?Math.min(1,t):Math.max(0,1-t)}
 function updatePlayer(dt){
-  if(P.moving){P.mt+=dt/(P.fly?STEP*0.5:P.wf?STEP*3.2:P.jump?STEP*2.2:STEP);P.ph+=dt;
+  if(P.moving){P.mt+=dt/(P.fly?STEP*0.5:P.wf?STEP*3.2:P.jump?STEP*2.2:P.bike?STEP*0.5:STEP);P.ph+=dt;
     if(P.mt>=1){P.moving=false;P.jump=false;P.wf=false;P.x=P.tx;P.y=P.ty;P.fx=P.x;P.fy=P.y;onArrive();if(B)return}
     else{P.fx=P.sx+(P.tx-P.sx)*P.mt;P.fy=P.sy+(P.ty-P.sy)*P.mt}}
   if(!P.moving&&!B&&!modalOpen()&&!P.lock){const d=heldDir();if(d){const turned=P.d!==d;P.d=d;const[dx,dy]=DIRS[d];const nx=P.x+dx,ny=P.y+dy;
     if(P.fly){if(flyable(nx,ny)){P.moving=true;P.mt=0;P.sx=P.x;P.sy=P.y;P.tx=nx;P.ty=ny;pres({x:nx,y:ny,d})}else if(turned)pres({d});else if(P.bumpCd<=0){P.bumpCd=1.2;const b=BIOME[ny*MW+nx];if(TOLL_LAW[b])toast('Dieses Gebiet ist noch gesperrt – erst am Prof. vorbei, dann darfst du es überfliegen.')}}
-    else if(LEDGE_DIR[tget(nx,ny)]){const jx=nx+dx,jy=ny+dy;if(LEDGE_DIR[tget(nx,ny)]===d&&walkable(jx,jy)&&!trainerAt(jx,jy)&&!LEGENDS.some(L=>L.x===jx&&L.y===jy)){P.moving=true;P.jump=true;P.mt=0;P.sx=P.x;P.sy=P.y;P.tx=jx;P.ty=jy;P.fol.tx=P.x;P.fol.ty=P.y;trailPush(P,P.x,P.y);trailPush(P,nx,ny);pres({x:jx,y:jy,d})}else if(turned)pres({d})}
+    else if(LEDGE_DIR[tget(nx,ny)]){const jx=nx+dx,jy=ny+dy;if(LEDGE_DIR[tget(nx,ny)]===d&&walkable(jx,jy)&&!trainerAt(jx,jy)&&!LEGENDS.some(L=>L.x===jx&&L.y===jy)){P.moving=true;P.jump=true;P.mt=0;P.sx=P.x;P.sy=P.y;P.tx=jx;P.ty=jy;P.fol.tx=P.x;P.fol.ty=P.y;trailPush(P,P.x,P.y);trailPush(P,nx,ny);pres({x:jx,y:jy,d})}else if(!bootJump(d,dx,dy,nx,ny)&&turned)pres({d})}
     else if(tget(nx,ny)===T_WF||(d==='up'&&tget(nx,ny)===3&&tget(P.x,P.y)===T_WF)){wfMove(d,dx,dy,nx,ny,turned)}
-    else if(walkable(nx,ny)&&!trainerAt(nx,ny)&&!LEGENDS.some(L=>L.x===nx&&L.y===ny)&&!tollBlock(nx,ny)){P.moving=true;P.mt=0;P.sx=P.x;P.sy=P.y;P.tx=nx;P.ty=ny;P.fol.tx=P.x;P.fol.ty=P.y;trailPush(P,P.x,P.y);pres({x:nx,y:ny,d})}else{if(trainerAt(nx,ny)||LEGENDS.some(L=>L.x===nx&&L.y===ny))bump(nx,ny);else if(tget(nx,ny)===3&&!P.surf)surfAsk();if(turned)pres({d})}}}
+    else if(walkable(nx,ny)&&!trainerAt(nx,ny)&&!LEGENDS.some(L=>L.x===nx&&L.y===ny)&&!tollBlock(nx,ny)){P.moving=true;P.mt=0;P.sx=P.x;P.sy=P.y;P.tx=nx;P.ty=ny;P.fol.tx=P.x;P.fol.ty=P.y;trailPush(P,P.x,P.y);pres({x:nx,y:ny,d})}else if(bootJump(d,dx,dy,nx,ny)){}else{if(trainerAt(nx,ny)||LEGENDS.some(L=>L.x===nx&&L.y===ny))bump(nx,ny);else if(tget(nx,ny)===3&&!P.surf)surfAsk();if(turned)pres({d})}}}
   P.bumpCd=Math.max(0,(P.bumpCd||0)-dt);
-  approach(P.fol,dt);if(P.fols)for(const f of P.fols)approach(f,dt);
+  {const fd=dt*(P.bike?2:1);approach(P.fol,fd);if(P.fols)for(const f of P.fols)approach(f,fd)}
 }
 function approach(o,dt){if(o.fx==null){o.fx=o.x;o.fy=o.y}const dx=o.tx-o.fx,dy=o.ty-o.fy,dist=Math.hypot(dx,dy);if(dist>3){o.fx=o.tx;o.fy=o.ty;return}const sp=dt/STEP*1.05;if(dist<=sp){o.fx=o.tx;o.fy=o.ty}else{o.fx+=dx/dist*sp;o.fy+=dy/dist*sp}}
 function legendHere(x,y){if(!RUN||RUN.phase!=='train')return null;return LEGENDS.find(L=>L.x===x&&L.y===y&&!(RUN.leg&&RUN.leg[L.id]))||null}
@@ -67,7 +67,7 @@ function talkTap(){if(!TALK)return;if(TALK.n<TALK.full.length){TALK.n=TALK.full.
 function endTalk(silent){const T_=TALK;if(!T_)return;TALK=null;clearInterval(T_.t);clearTimeout(T_.auto);T_.ov.remove();held.length=0;if(!silent&&T_.cb)T_.cb()}
 function checkSight(){
   if(!RUN||RUN.phase!=='train')return false;
-  for(const t of TRAINERS){if(RUN.beat&&RUN.beat[t.id]||t.story)continue;const[dx,dy]=DIRS[t.d];
+  for(const t of TRAINERS){if(RUN.beat&&RUN.beat[t.id]||t.story||t.gift)continue;const[dx,dy]=DIRS[t.d];
     for(let k=1;k<=4;k++){const x=t.x+dx*k,y=t.y+dy*k;if(!walkable(x,y))break;if(x===P.x&&y===P.y){spotted(t);return true}}}
   if(typeof tollSight==='function'&&tollSight())return true;
   return false;
@@ -195,8 +195,8 @@ function drawWorld(){
   c.textAlign='left';
   // entities
   const ents=[];
-  for(const o of OTH.values()){if(o.fx==null)continue;ents.push({fx:o.fx,fy:o.fy,col:o.c,sx:o.sx,d:o.d,ph:o.ph,mv:o.moving,name:o.n,bt:o.bt,bub:o.bub,alt:o.fl?1:0,ride:o.rd||null});if(o.fl){}else if(o.lf)folEnts(o,o.lf,ents,o.fx,o.fy);else if(o.ld&&o.fol.fx!=null)ents.push({fx:o.fol.fx,fy:o.fol.fy,mon:o.ld})}
-  if(G){ents.push({fx:P.fx,fy:P.fy,col:G.color,sx:G.sex,d:P.d,ph:P.ph,mv:P.moving,name:G.name+' (du)',bt:B?(B.mode==='wild'?'wild':'duel'):null,bub:myBubble,me:1,ride:rideSid(),alt:flyAlt(),hop:P.jump?Math.round(Math.sin(P.mt*Math.PI)*9):0});if(RUN&&!P.fly&&flyAlt()===0)folEnts(P,folInfo(),ents,P.fx,P.fy)}
+  for(const o of OTH.values()){if(o.fx==null)continue;ents.push({fx:o.fx,fy:o.fy,col:o.c,sx:o.sx,d:o.d,ph:o.ph,mv:o.moving,name:o.n,bt:o.bt,bub:o.bub,alt:o.fl?1:0,ride:o.rd||null,bike:!!o.bk});if(o.fl){}else if(o.lf)folEnts(o,o.lf,ents,o.fx,o.fy);else if(o.ld&&o.fol.fx!=null)ents.push({fx:o.fol.fx,fy:o.fol.fy,mon:o.ld})}
+  if(G){ents.push({fx:P.fx,fy:P.fy,col:G.color,sx:G.sex,d:P.d,ph:P.ph,mv:P.moving,name:G.name+' (du)',bt:B?(B.mode==='wild'?'wild':'duel'):null,bub:myBubble,me:1,bike:!!P.bike,ride:rideSid(),alt:flyAlt(),hop:P.jump?Math.round(Math.sin(P.mt*Math.PI)*9):0});if(RUN&&!P.fly&&flyAlt()===0)folEnts(P,folInfo(),ents,P.fx,P.fy)}
   for(const t of tollSpots()){const fx=t.x,fy=t.y;ents.push({fx,fy,col:t.c,sx:/Würde|Strafe/.test(t.n)?'f':'m',d:t.d,npc:t,name:t.n})}
   for(const t of TRAINERS)if(!t.story||storyOn())ents.push({fx:t.x,fy:t.y,col:t.c,sx:/^\S+in\s/.test(t.n)?'f':'m',d:t.d,ph:0,mv:false,name:t.n,npc:t,bt:null});
   for(const L of LEGENDS){const gone=(RUN&&RUN.leg&&RUN.leg[L.id])||!cfgOf().leg;if(!gone)ents.push({fx:L.x,fy:L.y,legend:L})}
@@ -207,7 +207,7 @@ function drawWorld(){
     if(e.legend){if(X<-40||X>LW+40||Y<-40||Y>LH+40)continue;const s=monSprite(legSid(e.legend),32);const bob=Math.round(Math.sin(T*2)*1.5);c.globalAlpha=RUN&&RUN.phase==='train'?1:0.45;c.drawImage(s,X-8,Y+15-27+bob,32,32);c.globalAlpha=1;
       c.fillStyle='#ffcb3d';for(let i=0;i<3;i++){const a=T*1.5+i*2.1;c.fillRect(Math.round(X+8+Math.cos(a)*12),Math.round(Y+4+Math.sin(a)*7),1,1)}continue}
     if(e.mon){const s=monSprite(e.mon,24);c.drawImage(s,X-4,Y+15-21,24,24)}
-    else{const fr=e.mv?(Math.floor(e.ph/STEP*2)%2?1:2):0;if(tget(Math.round(e.fx),Math.round(e.fy))===3&&e.ride&&SPECIES[e.ride]){const wb=Math.round(Math.sin(T*4)*1),ms=monSprite(e.ride,24);c.drawImage(ms,X-4,Y-1+wb,24,24);c.fillStyle='#ffffff90';c.fillRect(X-4,Y+19+wb,6,1);c.fillRect(X+14,Y+19+wb,6,1);c.drawImage(charSprite(e.col,e.d,0,e.sx),0,0,16,12,X,Y+3+wb,16,12)}else if(tget(Math.round(e.fx),Math.round(e.fy))===3){const wb=Math.round(Math.sin(T*4)*1);c.drawImage(charSprite(e.col,e.d,fr,e.sx),0,0,16,13,X,Y+1+wb,16,13);c.fillStyle='#ffffffb0';c.fillRect(X+1,Y+13+wb,4,1);c.fillRect(X+11,Y+13+wb,4,1);c.fillStyle='#ffffff60';c.fillRect(X-1,Y+14,18,1)}else{const ti=e.npc&&trainerImg(e.npc,e.d);if(ti)c.drawImage(ti,Math.round(X+8-ti.naturalWidth/2),Y+15-ti.naturalHeight);else c.drawImage(charSprite(e.col,e.d,fr,e.sx),X,Y-4)}}
+    else{const fr=e.mv?(Math.floor(e.ph/STEP*2)%2?1:2):0;if(tget(Math.round(e.fx),Math.round(e.fy))===3&&e.ride&&SPECIES[e.ride]){const wb=Math.round(Math.sin(T*4)*1),ms=monSprite(e.ride,24);c.drawImage(ms,X-4,Y-1+wb,24,24);c.fillStyle='#ffffff90';c.fillRect(X-4,Y+19+wb,6,1);c.fillRect(X+14,Y+19+wb,6,1);c.drawImage(charSprite(e.col,e.d,0,e.sx),0,0,16,12,X,Y+3+wb,16,12)}else if(tget(Math.round(e.fx),Math.round(e.fy))===3){const wb=Math.round(Math.sin(T*4)*1);c.drawImage(charSprite(e.col,e.d,fr,e.sx),0,0,16,13,X,Y+1+wb,16,13);c.fillStyle='#ffffffb0';c.fillRect(X+1,Y+13+wb,4,1);c.fillRect(X+11,Y+13+wb,4,1);c.fillStyle='#ffffff60';c.fillRect(X-1,Y+14,18,1)}else{const ti=e.npc&&trainerImg(e.npc,e.d);if(ti)c.drawImage(ti,Math.round(X+8-ti.naturalWidth/2),Y+15-ti.naturalHeight);else if(e.bike)drawBiker(c,e,X,Y);else c.drawImage(charSprite(e.col,e.d,fr,e.sx),X,Y-4)}}
     {const tx=Math.round(e.fx),ty=Math.round(e.fy),tt=tget(tx,ty);if(ENC.has(tt))c.drawImage(TILE[tt][(tx*7+ty*3)%TILE[tt].length],0,8,16,8,X,Y+8,16,8)}}
   if(WORLD)drawWorldLayer(c,camX,camY,LW,LH,'c');
   for(const e of ents)if(e.alt>0)drawFlyer(c,e,Math.round(e.fx*16-camX),Math.round(e.fy*16-camY));

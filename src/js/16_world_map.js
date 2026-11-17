@@ -21,7 +21,7 @@ function mapZoom(d,cx,cy){const i=MAPZS.indexOf(MAPZ),j=clamp(i+d,0,MAPZS.length
   mapZoom.focus=fx!=null?{fx,fy,cx,cy}:null;drawMap()}
 function mapCenter(ts){const w=$('#mapwrap'),cv=$('#mapcv');if(!w)return;const f=mapZoom.focus;mapZoom.focus=null;
   if(f){w.scrollLeft=f.fx*cv.clientWidth-f.cx;w.scrollTop=f.fy*cv.clientHeight-f.cy;return}
-  const dg=P.fy>=MH?dungeonAt(P.x,P.y):null,px=((dg?dg.ex:P.fx)+.5)*ts,py=((dg?dg.ey:P.fy)+.5)*ts;w.scrollLeft=px-w.clientWidth/2;w.scrollTop=py-w.clientHeight/2}
+  const dg=P.fy>=MH?(dungeonAt(P.x,P.y)||caveAt(P.x,P.y)):null,px=((dg?dg.ex:P.fx)+.5)*ts,py=((dg?dg.ey:P.fy)+.5)*ts;w.scrollLeft=px-w.clientWidth/2;w.scrollTop=py-w.clientHeight/2}
 function bindMapZoom(){if(bindMapZoom.done)return;bindMapZoom.done=1;$('#mzin').onclick=()=>mapZoom(1);$('#mzout').onclick=()=>mapZoom(-1);
   $('#mapwrap').addEventListener('wheel',e=>{if(!e.ctrlKey&&!e.metaKey)return;e.preventDefault();const r=$('#mapwrap').getBoundingClientRect();mapZoom(e.deltaY<0?1:-1,e.clientX-r.left,e.clientY-r.top)},{passive:false})}
 function drawMap(){bindMapZoom();
@@ -45,7 +45,7 @@ function drawMap(){bindMapZoom();
   for(const t of tollSpots())dot(t.x+.5,t.y+.5,tollPaid(t.b)?'#3ddc6b':'#c27bff');
   for(const t of TRAINERS){if(t.y>=MH||t.story&&!storyOn())continue;const beat=RUN&&RUN.beat&&RUN.beat[t.id];dot(t.x+.5,t.y+.5,beat?'#8a8ea6':t.c,Math.max(2,ts*1.2))}
   for(const o of OTH.values()){if(o.fx==null)continue;dot(o.fx+.5,o.fy+.5,o.c||'#888',Math.max(3,ts*2.4))}
-  const blink=Math.floor(performance.now()/350)%2;{const dg=P.fy>=MH?dungeonAt(P.x,P.y):null;dot((dg?dg.ex:P.fx)+.5,(dg?dg.ey:P.fy)+.5,blink?'#ffffff':G.color,Math.max(4,ts*3))}
+  const blink=Math.floor(performance.now()/350)%2;{const dg=P.fy>=MH?(dungeonAt(P.x,P.y)||caveAt(P.x,P.y)):null;dot((dg?dg.ex:P.fx)+.5,(dg?dg.ey:P.fy)+.5,blink?'#ffffff':G.color,Math.max(4,ts*3))}
   c.textAlign='left';
 }
 function renderMapLegend(){

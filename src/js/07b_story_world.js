@@ -34,7 +34,7 @@ function storyLv(x,y){const dg=dungeonAt(x,y);if(dg)return dg.lv[0]+((x*7+y*13)%
   for(const id in PPLK){const T=TOWNS.find(t=>t.id===id);if(!T)continue;const p=PPLK[id];put({id:'pplk_'+id,story:'pplk',town:id,law:p.law,n:p.n,c:'#6b2fb3',team:[],reward:5,line:'',after:''},T.x,T.y)}
   // ---- dungeons: 3×3 rooms connected in a snake from the entrance (bottom left) to the shrine (top right)
   DUNGEONS.forEach((dg,i)=>{const L=LEGENDS.find(l=>l.id===dg.id);if(!L)return;const r=mulberry32(7100+i*31);const ri=n=>Math.floor(r()*n);
-    dg.x0=3+i*74;dg.y0=MH+2;dg.w=70;dg.h=DH-4;
+    dg.x0=3+i*74;dg.y0=MH+2;dg.w=70;dg.h=60;
     for(let y=dg.y0;y<dg.y0+dg.h;y++)for(let x=dg.x0;x<dg.x0+dg.w;x++){tset(x,y,dg.wall!==31&&r()<0.07?16:dg.wall);BIOME[y*MW+x]=dg.b}
     const cw=Math.floor((dg.w-2)/3),ch=Math.floor((dg.h-2)/3),rooms=[];
     for(let ry=0;ry<3;ry++)for(let rx=0;rx<3;rx++){const w=8+ri(Math.max(1,cw-12)),h=6+ri(Math.max(1,ch-10));const x=dg.x0+1+rx*cw+1+ri(Math.max(1,cw-w-2)),y=dg.y0+1+ry*ch+1+ri(Math.max(1,ch-h-2));rooms[ry*3+rx]={x,y,w,h,cx:x+(w>>1),cy:y+(h>>1)}}

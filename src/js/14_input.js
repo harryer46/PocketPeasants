@@ -25,6 +25,7 @@ addEventListener('keydown',e=>{
     return}
   if((e.key==='m'||e.key==='M')&&G){toggleMap();return}
   if((e.key==='f'||e.key==='F')&&G&&!e.repeat&&!modalOpen()){e.preventDefault();toggleFly();return}
+  if((e.key==='b'||e.key==='B')&&G&&!e.repeat&&!modalOpen()){e.preventDefault();toggleBike();return}
   if(e.key==='Escape'&&mapOpen()){closeMap();return}
   if(mapOpen()&&(e.key==='+'||e.key==='='||e.key==='-'||e.key==='_')){e.preventDefault();mapZoom(e.key==='+'||e.key==='='?1:-1);return}
   if((e.key==='t'||e.key==='T')&&G){e.preventDefault();switchTab('chat');setSide(true);$('#chatin').focus()}
