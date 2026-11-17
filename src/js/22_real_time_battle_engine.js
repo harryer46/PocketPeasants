@@ -35,7 +35,7 @@ function shotParams0(mid){const mv=MOVES[mid]||MOVES.bump;const k=mv.k||(mv.t===
   if(k==='big')return{sp:92,life:3,r:7,p:mv.p,n:1};
   if(k==='self')return{self:1,p:0,n:0};
   // special mechanics: beam (charged line), breath (short cone, several ticks), air (strike from above at the target spot), lob (high throw over obstacles)
-  if(k==='beam')return{k,nm:1,sp:100,life:0.62,charge:0.3,len:250,r:5,p:Math.round(mv.p*0.95),n:1};
+  if(k==='beam')return{k,nm:1,sp:100,life:0.82,charge:0.5,len:250,r:5,p:Math.round(mv.p*0.95),n:1};
   if(k==='breath')return{k,nm:1,sp:100,life:0.6,rng:82,cone:0.5,ticks:3,r:6,p:Math.round(mv.p*0.42),n:1};
   if(k==='air')return{k,nm:1,sp:0,life:0.95,r:22,p:mv.p,n:1};
   if(k==='lob')return{k,nm:1,sp:520,h:54,life:1.15,r:18,p:mv.p,n:1};
@@ -110,7 +110,7 @@ function drawSpecial(c,s,col,now){const P=(x,y,w,h,cl)=>{c.fillStyle=cl;c.fillRe
     {const r=3+k*8;c.fillStyle='#00000040';pxEl(c,Math.round(s.x),Math.round(s.y),r,r*0.45,1)}
     if(k>0.72){const q=(k-0.72)/0.28,Y=s.y-150*(1-q);c.globalAlpha=0.5;P(s.x-2,Y-40,4,40,col);c.globalAlpha=1;if(!drawVis(c,Object.assign({},s,{y:Y-6,vx:0,vy:1}),col,now)){P(s.x-6,Y-12,12,12,'#14141f');P(s.x-5,Y-11,10,10,col);P(s.x-5,Y-11,3,3,'#ffffffc0')}}return}
   const L=Math.hypot(s.vx,s.vy)||1,ux=s.vx/L,uy=s.vy/L;
-  if(s.k==='beam'){if(!s.fired){const k=s.age/0.3;c.globalAlpha=0.35+0.4*Math.abs(Math.sin(now/40));for(let d=0;d<250;d+=6)P(s.x+ux*d-1,s.y+uy*d-1,2,2,col);c.globalAlpha=1;P(s.x-3-k*3,s.y-3-k*3,6+k*6,6+k*6,'#ffffff');return}
+  if(s.k==='beam'){if(!s.fired){const k=Math.min(1,s.age/BEAM_CH),bl=Math.floor(now/80)%2;c.globalAlpha=0.3+0.5*k;for(let d=0;d<250;d+=2)P(s.x+ux*d,s.y+uy*d,1,1,bl?'#ff4d4d':'#ffffff');c.globalAlpha=0.35+0.4*Math.abs(Math.sin(now/40));for(let d=0;d<250*k;d+=6)P(s.x+ux*d-1,s.y+uy*d-1,2,2,col);c.globalAlpha=1;P(s.x-3-k*3,s.y-3-k*3,6+k*6,6+k*6,'#ffffff');return}
     const k=(s.age-0.3)/(s.life-0.3),w=Math.max(1,Math.round(7*(1-k)));c.save();c.lineCap='butt';c.strokeStyle='#14141f';c.lineWidth=w+4;c.beginPath();c.moveTo(s.x,s.y);c.lineTo(s.x+ux*s.len,s.y+uy*s.len);c.stroke();
     c.strokeStyle=col;c.lineWidth=w+2;c.stroke();c.strokeStyle='#ffffff';c.lineWidth=Math.max(1,w-2);c.stroke();c.restore();return}
   if(s.k==='breath'){c.globalAlpha=0.25;c.fillStyle=col;c.beginPath();const a=Math.atan2(uy,ux);c.moveTo(s.x,s.y);c.arc(s.x,s.y,82,a-0.5,a+0.5);c.closePath();c.fill();c.globalAlpha=1}}
@@ -219,6 +219,7 @@ function impactWave(s,T,x,y){const W=s.r+18;(B.rings=B.rings||[]).push({x,y,t0:p
   if(D<W+9)shotHit(Object.assign({},s,{p:Math.max(1,Math.round(s.p*0.6)),vx:ux*100,vy:uy*100,kb:16,wv:1}),T)}
 function drawRings(c,now){if(!B||!B.rings||!B.rings.length)return;B.rings=B.rings.filter(g=>now-g.t0<320);for(const g of B.rings){const k=(now-g.t0)/320,r=g.r0+(g.r1-g.r0)*k;
   c.globalAlpha=0.85*(1-k);c.strokeStyle='#ffffff';pxEl(c,g.x,g.y,r,r*0.45,0);c.strokeStyle=g.col;pxEl(c,g.x,g.y,r-1,r*0.45-1,0);c.globalAlpha=1}}
+const BEAM_CH=0.5; // beams: 0.5 s aiming line first (time to dodge), then the beam
 function shotHit(s,T){burst(s.x,s.y,TYPES[MOVES[s.mid].t].c,7);effLabel(s,T);
   if(B.mode!=='duel'||T===B.me){const d=hitLocal(T,s);drainHeal(s,d)}
   else if(MOVES[s.mid].fx==='drain'){drainHeal(s,calcDmg(s.att,act(T),s.mid,s.p).d)}}
@@ -240,7 +241,7 @@ function specialShot(s,dt){const T=s.side===B.me.side?B.foe:B.me,alive=T&&!T.out
     for(const o of B.obs||[])if(!o.dead&&Math.hypot(o.x-s.x,(o.y-s.y)*1.3)<s.r+o.r)hitObs(o,s);
     if(alive){if(s.r>=18)impactWave(s,T,s.x,s.y);else if(T.inv<=0&&!airBusy(T)&&Math.hypot(T.x-s.x,(T.y-s.y)*1.3)<s.r+9)shotHit(s,T)}leaveHazard(s,s.x,s.y);return}
   const L=Math.hypot(s.vx,s.vy)||1,ux=s.vx/L,uy=s.vy/L;
-  if(s.k==='beam'){if(s.age>=s.life){s.dead=1;return}if(s.age<0.3||s.fired)return;s.fired=1;let len=250,hitO=null;
+  if(s.k==='beam'){if(s.age>=s.life){s.dead=1;return}if(s.age<BEAM_CH||s.fired)return;s.fired=1;let len=250,hitO=null;
     for(const o of B.obs||[]){if(o.dead)continue;const ox=o.x-s.x,oy=(o.y-8)-s.y,t=ox*ux+oy*uy;if(t<0||t>len)continue;if(Math.hypot(ox-ux*t,oy-uy*t)<o.r){len=t;hitO=o}}
     s.len=len;if(hitO)hitObs(hitO,s);
     if(alive&&T.inv<=0){const tx=T.x-s.x,ty=(T.y-12)-s.y,t=tx*ux+ty*uy;if(t>0&&t<len+6&&Math.hypot(tx-ux*t,ty-uy*t)<s.r+9){s.len=Math.min(len,t);shotHit(Object.assign({},s,{x:T.x,y:T.y-12}),T)}}
