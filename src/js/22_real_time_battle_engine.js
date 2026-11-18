@@ -520,7 +520,7 @@ function forfeit(){if(B&&B.tb&&B.state!=='over'&&B.mode!=='wild'&&B.mode!=='trai
 function respawnHeal(){if(!RUN)return;RUN.kap=Math.max(RUN.kap,10);P.lock=false;held.length=0;{const sp=padSpawn();teleport(sp.x,sp.y)}try{closeModal()}catch(e){}if(TALK)endTalk(true);let n=0;const open=()=>{if(!RUN)return;if((B||CQ)&&n++<40){setTimeout(open,100);return}if(!B&&!CQ&&!$('#cquiz').classList.contains('on'))healQuiz()};open();toast('Du bist zurück zum PÄD geeilt.')}
 function teamDown(){if(RUN&&RUN.team.some(m=>m.hp>0))return false;const n=performance.now();if(!teamDown.t||n-teamDown.t>1500){teamDown.t=n;setTimeout(respawnHeal,0)}return true}
 function startWild(zk){if(teamDown())return;
-  const z=ZONES[zk];const sid=pickWild(poolOf(zk),1+distC(P.x,P.y)/80);const l=lvAt(P.x,P.y);
+  const z=ZONES[zk];const l=lvAt(P.x,P.y),pl=poolOf(zk).filter(s=>!(SPECIES[s].minLv>l));const sid=pickWild(pl.length?pl:poolOf(zk),1+distC(P.x,P.y)/80);
   const wild=newMon(sid,l);G.dex[sid]=G.dex[sid]||0;
   newBattle({mode:'wild',zone:zk,wild,me:mkFighter('L',RUN.team.map(battler),XL,'local'),foe:mkFighter('R',[battler(wild)],XR,'ai')});
   B.foe.inv=0.6;const rr=RAR[sid];say(rr==='rare'?`✦ Ein SELTENES ${SPECIES[wild.s].n} (Lv ${l}) erscheint! ✦`:rr==='uncommon'?`Ein ungewöhnliches ${SPECIES[wild.s].n} (Lv ${l}) erscheint!`:`Ein wildes ${SPECIES[wild.s].n} (Lv ${l}) erscheint!`);if(rr==='rare')burst(XR,64,'#4aa3ff',24);
@@ -889,7 +889,7 @@ function drawWildIntro(c,now){const V=B.wi,e=now-V.t0;if(e<0)return;if(e>V.dur){
   const pop=1-Math.pow(1-clamp(e/420,0,1),3),bob=Math.round(Math.sin(e/260)*2),img=monSprite(W.s,24),S=Math.round(118*pop);
   c.imageSmoothingEnabled=false;c.fillStyle='#00000055';c.beginPath();c.ellipse(UW/2,130,46*pop,7*pop,0,0,7);c.fill();
   if(S>0)c.drawImage(e<420?whiteSprite(W.s,24):img,Math.round(UW/2-S/2),Math.round(136-S)+bob,S,S);
-  vtText(c,V.title||(B.legend?'★ EIN LEGENDÄRES MONSTER! ★':'EIN WILDES MONSTER!'),UW/2,12,B.legend?'#ffcb3d':'#ffffff',10,'center');
+  vtText(c,V.title||(B.legend?(RAR[B.legend]==='legendary'?'★ EIN LEGENDÄRES MONSTER! ★':'📚 WÄCHTER DES MOORBERG-ARCHIVS'):'EIN WILDES MONSTER!'),UW/2,12,B.legend?'#ffcb3d':'#ffffff',10,'center');
   // info card
   const x=8,w=UW-16,y=142,h=UH-y-14,slide=1-Math.pow(1-clamp((e-200)/350,0,1),3),yy=Math.round(y+(1-slide)*80);
   c.fillStyle='#14141f';c.fillRect(x-2,yy-2,w+4,h+4);c.fillStyle='#f6f1e1';c.fillRect(x,yy,w,h);c.fillStyle=col;c.fillRect(x,yy,4,h);

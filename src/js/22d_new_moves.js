@@ -48,7 +48,7 @@ const NK={
       if(s.back){if(!A||A.out){s.dead=1;return}s.spd=Math.min(260,s.spd+300*dt);const dx=A.x-s.x,dy=(A.y-12)-s.y,d=Math.hypot(dx,dy)||1;s.vx=dx/d*s.spd;s.vy=dy/d*s.spd;
         if(d<12){s.dead=1;burst(s.x,s.y,'#e8dcc0',5);return}}
       s.x+=s.vx*dt;s.y+=s.vy*dt;if(s.age>s.life){s.dead=1;burst(s.x,s.y,'#e8dcc0',6);return}
-      const ph=s.back?'b':'o';if(alive&&!s.hit[ph]&&T.inv<=0&&!airBusy(T)&&Math.hypot(s.x-T.x,s.y-(T.y-12))<s.r+11){s.hit[ph]=1;nkHit(s,T,s.x,s.y)}},
+      const ph=s.back?'b':'o';if(alive&&!s.hit[ph]&&!(T.inv>0)&&!airBusy(T)&&Math.hypot(s.x-T.x,s.y-(T.y-12))<s.r+11){s.hit[ph]=1;nkHit(s,T,s.x,s.y)}},
     draw(c,s,col,now){const a=now/45,P=(x,y,w,h,cl)=>{c.fillStyle=cl;c.fillRect(Math.round(x),Math.round(y),w,h)};
       for(let i=-2;i<=2;i++){const x=s.x+Math.cos(a)*i*2.6,y=s.y+Math.sin(a)*i*2.6;P(x-2,y-2,4,4,'#14141f')}
       for(let i=-2;i<=2;i++){const x=s.x+Math.cos(a)*i*2.6,y=s.y+Math.sin(a)*i*2.6;P(x-1,y-1,2,2,Math.abs(i)===2?'#ffffff':'#e8dcc0')}}},
@@ -64,7 +64,7 @@ const NK={
       for(const o of B.obs||[]){if(o.dead||o.ind)continue;if(Math.hypot(A.x-o.x,(A.y-o.y)*1.4)<o.r+10){hitObs(o,s);const nx=A.x-o.x,ny=A.y-o.y,L=Math.hypot(nx,ny)||1,dot=(s.vx*nx+s.vy*ny)/L;if(dot<0){s.vx-=2*dot*nx/L;s.vy-=2*dot*ny/L}A.x+=nx/L*3;A.y+=ny/L*3;bounce=bounce||false;break}}
       if(bounce){arenaClamp(A);const nx=(A.x-ACX)/(ARX*ARX),ny=(A.y-ACY)/(ARY*ARY),L=Math.hypot(nx,ny)||1,ux=nx/L,uy=ny/L,dot=s.vx*ux+s.vy*uy;if(dot>0){s.vx-=2*dot*ux;s.vy-=2*dot*uy}
         s.b++;const k=1.15;s.vx*=k;s.vy*=k;burst(A.x,A.y-4,'#a2742c',10);B.shakeUntil=performance.now()+90;if(A===B.me)say(`Walzer prallt ab – Stufe ${s.b+1}!`);if(s.b>3){s.dead=1;return}}
-      if(alive&&!s.hitDone&&T.inv<=0&&!airBusy(T)&&Math.hypot(A.x-T.x,(A.y-T.y)*1.2)<20){s.hitDone=1;nkHit(s,T,T.x,T.y-12,{p:Math.round(s.p*(1+0.45*s.b)),kb:20});burst(T.x,T.y-10,'#ffffff',10);s.dead=1}
+      if(alive&&!s.hitDone&&!(T.inv>0)&&!airBusy(T)&&Math.hypot(A.x-T.x,(A.y-T.y)*1.2)<20){s.hitDone=1;nkHit(s,T,T.x,T.y-12,{p:Math.round(s.p*(1+0.45*s.b)),kb:20});burst(T.x,T.y-10,'#ffffff',10);s.dead=1}
       if(s.age>s.life)s.dead=1},
     draw(c,s,col,now){const a=now/40,P=(x,y,w,h,cl)=>{c.fillStyle=cl;c.fillRect(Math.round(x),Math.round(y),w,h)};const R=11;
       for(let i=0;i<10;i++){const q=a+i*0.628,x=s.x+Math.cos(q)*R,y=s.y+Math.sin(q)*R;P(x-2,y-2,4,4,'#14141f');P(x-1,y-1,2,2,i%2?'#e8dcc0':col)}
@@ -78,11 +78,11 @@ const NK={
     draw(c,s,col,now){if(!s.pts)return;const k=clamp(s.age/s.life,0,1);for(const p of s.pts){const x=p.x0+(p.x-p.x0)*k,y=p.y0+(p.y-p.y0)*k-Math.sin(k*Math.PI)*26;c.fillStyle='#14141f';c.fillRect(Math.round(x)-2,Math.round(y)-2,5,5);c.fillStyle='#b8bcc8';c.fillRect(Math.round(x)-1,Math.round(y)-1,3,3)}}},
   // ---- leech seed
   seed:{tick(s,dt,T,alive){s.x+=s.vx*dt;s.y+=s.vy*dt;if(s.age>s.life||outArena(s.x,s.y+10)){s.dead=1;return}if(shotVsObs(s))return;
-      if(alive&&T.inv<=0&&!airBusy(T)&&Math.hypot(s.x-T.x,s.y-(T.y-12))<s.r+11){s.dead=1;nkHit(s,T,s.x,s.y);if(act(T).hp>0){T.seed={side:s.side,t:6,tick:0};say(`Egelsamen klammert sich an ${SPECIES[act(T).s].n}!${T===B.me&&!B.tb?' Sprinte, um ihn abzuschütteln!':''}`)}}},
+      if(alive&&!(T.inv>0)&&!airBusy(T)&&Math.hypot(s.x-T.x,s.y-(T.y-12))<s.r+11){s.dead=1;nkHit(s,T,s.x,s.y);if(act(T).hp>0){T.seed={side:s.side,t:6,tick:0};say(`Egelsamen klammert sich an ${SPECIES[act(T).s].n}!${T===B.me&&!B.tb?' Sprinte, um ihn abzuschütteln!':''}`)}}},
     draw(c,s,col,now){const P=(x,y,w,h,cl)=>{c.fillStyle=cl;c.fillRect(Math.round(x),Math.round(y),w,h)};P(s.x-3,s.y-3,6,6,'#14141f');P(s.x-2,s.y-2,4,4,'#8a5a2a');P(s.x-1,s.y-4,2,2,'#3ddc6b')}},
   // ---- fire spin: a shrinking fire ring around the target
   ring:{tick(s,dt,T,alive){s.x+=s.vx*dt;s.y+=s.vy*dt;let at=null;
-      if(alive&&T.inv<=0&&!airBusy(T)&&Math.hypot(s.x-T.x,s.y-(T.y-12))<s.r+11){nkHit(s,T,s.x,s.y);at={x:T.x,y:T.y}}
+      if(alive&&!(T.inv>0)&&!airBusy(T)&&Math.hypot(s.x-T.x,s.y-(T.y-12))<s.r+11){nkHit(s,T,s.x,s.y);at={x:T.x,y:T.y}}
       else if(s.age>s.life||outArena(s.x,s.y+10)||shotVsObs(s))at={x:clamp(s.x,AX0+20,AX1-20),y:clamp(s.y+12,AY0+14,AY1-14)};
       if(!at)return;s.dead=1;const N=nkState();N.rings=N.rings.filter(r=>r.side!==s.side);
       const r={x:at.x,y:at.y,r0:36,t0:performance.now(),dur:4200,side:s.side,s:Object.assign({},s,{k:null,nm:0,p:Math.max(1,Math.round(s.p*0.4))}),inside:{}};
@@ -98,7 +98,7 @@ const NK={
       if(alive&&!airBusy(T)){const b=Math.atan2((T.y-12)-s.y,T.x-s.x);const d=Math.atan2(Math.sin(b-a),Math.cos(b-a));a+=clamp(d,-2.6*dt,2.6*dt)}
       s.vx=Math.cos(a)*sp;s.vy=Math.sin(a)*sp;s.x+=s.vx*dt;s.y+=s.vy*dt;
       const boom=()=>{s.dead=1;const col=TYPES.electric.c;burst(s.x,s.y,col,18);burst(s.x,s.y,'#ffffff',8);(B.rings=B.rings||[]).push({x:s.x,y:s.y+10,t0:performance.now(),r0:4,r1:30,col});B.shakeUntil=performance.now()+120;
-        if(alive&&T.inv<=0&&!airBusy(T)&&Math.hypot(T.x-s.x,(T.y-12-s.y)*1.2)<30)nkHit(s,T,T.x,T.y-12)};
+        if(alive&&!(T.inv>0)&&!airBusy(T)&&Math.hypot(T.x-s.x,(T.y-12-s.y)*1.2)<30)nkHit(s,T,T.x,T.y-12)};
       for(const b of nkFoeShots(s.side)){if(b.nm||b.mel)continue;if(Math.hypot(b.x-s.x,b.y-s.y)<(b.r||4)+s.r+1){b.dead=1;s.dead=1;burst(s.x,s.y,'#ffffff',10);burst(s.x,s.y,TYPES.electric.c,6);say('Magnetbombe abgeschossen!');return}}
       if(s.age>s.life||outArena(s.x,s.y+10)){boom();return}
       for(const o of B.obs||[])if(!o.dead&&Math.hypot(s.x-o.x,s.y-(o.y-8))<o.r+s.r){hitObs(o,s);boom();return}

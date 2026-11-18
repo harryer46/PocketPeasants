@@ -43,7 +43,7 @@ function storyStatus(){const s=storyOf();if(!s)return;const rk=rankOf(),fem=femC
 // ---- final boss: the career advisor himself (all four FEM monsters required)
 function bossDialog(t){openModal(`<h3>👑 ABSCHLUSSPRÜFUNG</h3><p>${esc(t.n)}: „Alle vier FEM-Monster – nicht schlecht, Anwärter. Jetzt zeig mir, ob du wirklich Polizist auf Ewigkeit werden willst. Mein Team kennt keine Gnade.“</p><p class="small">6 Monster, Lv ${BOSS_LV[0]}–${BOSS_LV[1]}. Keine Fragen – nur Praxis.</p>
   <div class="acts"><button class="btn ghost" id="mno">NOCH NICHT</button><button class="btn red" id="myes">PRÜFUNG STARTEN</button></div>`);$('#mno').onclick=closeModal;$('#myes').onclick=()=>{closeModal();bossFight(t)}}
-function bossFight(t){const strong=['boorberg','arenamon','zhang'].filter(s=>SPECIES[s]);const laws=['StGB','PolG','StPO','GG'].map(l=>lawSpecies(l).sort((a,b)=>SPECIES[b].b.reduce((x,y)=>x+y,0)-SPECIES[a].b.reduce((x,y)=>x+y,0))[0]).filter(Boolean);
+function bossFight(t){const strong=['moorberg','arenamon','zhang'].filter(s=>SPECIES[s]);const laws=['StGB','PolG','StPO','GG'].map(l=>lawSpecies(l).sort((a,b)=>SPECIES[b].b.reduce((x,y)=>x+y,0)-SPECIES[a].b.reduce((x,y)=>x+y,0))[0]).filter(Boolean);
   const ids=[...laws.slice(0,6-Math.min(2,strong.length)),...strong.slice(0,2)].slice(0,6);while(ids.length<6)ids.push(ids[ids.length%Math.max(1,ids.length)]||'owigon');
   const team=ids.map((s,q)=>[s,BOSS_LV[0]+q]);team[5][1]=BOSS_LV[1];
   const tr={id:'boss_berater',boss:1,fixed:true,x:t.x,y:t.y,n:t.n,c:t.c,d:t.d,team,reward:20,line:'Abschlussprüfung. Keine Gnade.',after:'Polizist auf Ewigkeit.'};if(RUN.beat)delete RUN.beat[tr.id];startTrainer(tr)}

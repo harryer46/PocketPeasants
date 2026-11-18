@@ -124,7 +124,7 @@ function trainerImg(t,dir){const lk=TR_LOOK[t.id]||(/^toll/.test(t.id)?'lehrer':
 const TRLB={};for(const k in TRLB_SRC){const im=new Image();im.src=TRLB_SRC[k];TRLB[k]=im}
 function trainerBig(t,dir){const lk=TR_LOOK[t.id]||(/^toll/.test(t.id)?'lehrer':null);if(!lk)return null;const im=TRLB[lk+'_'+(dir||'down')];return im&&im.complete&&im.naturalWidth?im:null}
 //@inc js/data/cop_big.js
-const COPBPAL={O:'#14141c',W:'#f4f4f0',w:'#c9cbd3',N:'#26305a',n:'#171d38',S:'#f6c89c',s:'#d6986e',G:'#e8b428',H:'#2a2220',h:'#7a4a2c',g:'#5f6470',L:'#d8dce4'};const CBS={};
+const COPBPAL={O:'#14141c',W:'#f4f4f0',w:'#c9cbd3',N:'#26305a',n:'#171d38',S:'#f6c89c',s:'#d6986e',G:'#e8b428',H:'#2a2220',h:'#7a4a2c',g:'#5f6470',L:'#d8dce4',K:'#22242c',k:'#3a3d48'};const CBS={};
 function copBig(col,dir,sx){sx=sx==='f'?'f':'m';const k=col+dir+sx;if(CBS[k])return CBS[k];const rows=COPBIG[sx+'_'+dir]||COPBIG[sx+'_down'];const c=mk(18,28),x=c.getContext('2d');
   rows.forEach((r,y)=>[...r].forEach((ch,xx)=>{const v=ch==='C'?col:COPBPAL[ch];if(v){x.fillStyle=v;x.fillRect(xx,y,1,1)}}));return CBS[k]=c}
 // police officers (Beamter / Beamtin), same scale as the old characters (16×19 canvas); the cap band takes the player's colour

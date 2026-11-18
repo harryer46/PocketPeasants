@@ -29,6 +29,7 @@ const QZ={};
 //@inc js/data/qz/08_stpo.js
 //@inc js/data/qz/09_stpo.js
 //@inc js/data/qz/10_stpo.js
+//@inc js/data/qz/12_stgb_neu.js
 //@inc js/data/qz/11_vault.js
 // vault questions: to the monster of the same paragraph (e.g. § 242 StGB), otherwise to its law book in general
 const VAULT_BOOK={StGB:[],StPO:[],PolG:[],GG:[]},VAULT_N={};
