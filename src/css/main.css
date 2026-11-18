@@ -327,3 +327,20 @@ body.mob #study.on #sbox,body.mob #cquiz.on #cqbox{margin-right:96px}
 #sleepfall .sfi.ok{background:#3ddc6b}#sleepfall .sfi.bad{background:#ef6f6f}
 .specbar{grid-column:1/-1;display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:6px 8px;background:#14141f;border:2px solid #000;color:#c9b8ff;font:12px "Press Start 2P",monospace}
 .specbar .btn{font-size:10px;padding:6px 10px}
+/* EP gain effects */
+.epfx{position:fixed;z-index:90;pointer-events:none;transform:translate(-50%,-50%);font:26px VT323,monospace;color:#7cc4ff;text-shadow:2px 2px 0 #14141f,-1px -1px 0 #14141f;white-space:nowrap;animation:epRise 1.4s ease-out forwards}
+.epfx.big{font-size:40px;color:#ffcb3d}
+.epfx.lvl{font:18px "Press Start 2P",monospace;color:#ffcb3d;animation:epLvl 1.9s ease-out forwards}
+@keyframes epRise{0%{opacity:0;transform:translate(-50%,-30%) scale(.6)}15%{opacity:1;transform:translate(-50%,-60%) scale(1.25)}30%{transform:translate(-50%,-70%) scale(1)}100%{opacity:0;transform:translate(-50%,-260%) scale(1)}}
+@keyframes epLvl{0%{opacity:0;transform:translate(-50%,-50%) scale(3)}20%{opacity:1;transform:translate(-50%,-50%) scale(1)}80%{opacity:1}100%{opacity:0;transform:translate(-50%,-140%)}}
+.epp{position:fixed;z-index:89;pointer-events:none;width:4px;height:4px;background:#bfe3ff;box-shadow:0 0 0 1px #4aa3ff}
+.epglow{animation:epGlow .6s ease-out}
+@keyframes epGlow{0%{box-shadow:0 0 0 0 #7cc4ff,0 0 12px 4px #4aa3ff}100%{box-shadow:0 0 0 0 transparent}}
+.sbar i{transition:width .7s cubic-bezier(.3,.1,.3,1)}
+#fleefall{position:fixed;z-index:41;pointer-events:none;overflow:hidden}
+#fleefall .ffh{position:absolute;left:0;right:0;top:6px;text-align:center;font:17px VT323,monospace;color:#3ddc6b;text-shadow:1px 1px 0 #000}
+#fleefall .sfi{position:absolute;left:0;top:0;pointer-events:auto;overflow-wrap:anywhere;hyphens:auto;padding:3px 6px;background:#f6f1e1;color:#14141f;border:2px solid #14141f;box-shadow:2px 2px 0 #000;font:15px VT323,monospace;line-height:1;text-align:left;cursor:pointer}
+#fleefall .sfi b{display:block;font:bold 17px VT323,monospace;color:#1f8a4c;margin-bottom:1px}
+#fleefall .sfi.ok{background:#3ddc6b}#fleefall .sfi.bad{background:#ef6f6f}
+#fleefall .sfi.pop{animation:ffPop .4s ease-out forwards;pointer-events:none}
+@keyframes ffPop{0%{filter:brightness(2)}40%{opacity:1;scale:1.35}100%{opacity:0;scale:.2;rotate:25deg}}

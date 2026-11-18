@@ -3,7 +3,7 @@
    Durchsuchungsbeschlüsse gibt es nach bestandener PMLK (erst Kampf gegen die Klausur, dann Theorie-Fragen) an den vier
    Ausbildungsstandorten; nur mit Beschluss öffnet sich der Dungeon mit dem jeweiligen FEM-Monster. Progress per run (RUN.story). */
 const FEM=['schlagstock','taser','pfefferspray','kelle'];
-const PPLK_N=10,PPLK_MIN=8,PPLK_QT=15000,PPLK_CD=60000;
+const PPLK_N=10,PPLK_MIN=8,PPLK_CD=60000;
 MCOL[T_CAVE]='#1b1430';
 function caveTile(){TILE[T_CAVE]=[tileCanvas(x=>{x.fillStyle='#6b6f7a';x.fillRect(0,0,16,16);x.fillStyle='#8e929c';x.fillRect(0,0,16,3);x.fillRect(0,0,2,16);x.fillRect(14,0,2,16);
   x.fillStyle='#14141f';x.fillRect(2,3,12,13);x.fillStyle='#0a0a12';x.fillRect(3,4,10,12);x.fillStyle='#2a2a3a';x.fillRect(3,4,10,2);x.fillStyle='#b8bcc6';x.fillRect(1,1,3,1);x.fillRect(11,2,3,1)})]}
@@ -47,7 +47,7 @@ function bossFight(t){const strong=['boorberg','arenamon','zhang'].filter(s=>SPE
   const ids=[...laws.slice(0,6-Math.min(2,strong.length)),...strong.slice(0,2)].slice(0,6);while(ids.length<6)ids.push(ids[ids.length%Math.max(1,ids.length)]||'owigon');
   const team=ids.map((s,q)=>[s,BOSS_LV[0]+q]);team[5][1]=BOSS_LV[1];
   const tr={id:'boss_berater',boss:1,fixed:true,x:t.x,y:t.y,n:t.n,c:t.c,d:t.d,team,reward:20,line:'Abschlussprüfung. Keine Gnade.',after:'Polizist auf Ewigkeit.'};if(RUN.beat)delete RUN.beat[tr.id];startTrainer(tr)}
-// ---- PMLK: first the exam fight ("die Klausur"), then theory (10 questions, 8 correct, 15 s each); a won fight stays won
+// ---- PMLK: first the exam fight ("die Klausur"), then theory (10 questions, ≥80 % correct, 10–22 s each by length); failing the theory means writing the exam again (fight first); a won fight stays won
 function storyBump(t){if(!storyOn())return;if(!RUN||RUN.phase!=='train'){toast(`${t.n}: „Komm wieder, wenn dein Spiel begonnen hat!“`);return}const s=storyOf();
   if(t.story==='berater'){if(!s.met){storyIntro(t);return}if(femCaught().length>=4&&!(G&&G.ewig)){bossDialog(t);return}storyStatus();return}
   if(t.story==='pplk'){const dg=dungeonFor(t.law);
@@ -55,25 +55,25 @@ function storyBump(t){if(!storyOn())return;if(!RUN||RUN.phase!=='train'){toast(`
     const left=(s.cd[t.town]||0)-Date.now();if(left>0){talk(t.n,`Nach dem Durchfallen gibt es eine Nachdenkpause. Wiederholung in ${Math.ceil(left/1000)} s.`);return}
     const fw=!!(s.pfw&&s.pfw[t.town]);
     openModal(`<h3>📝 PMLK – ${esc(t.law)}</h3><p>${esc(t.n)}: „Praktische Monster Leistungskontrolle im <b>${esc(t.law)}</b>. Wer besteht, bekommt den Durchsuchungsbeschluss für die <b>${esc(dg?dg.n:'Dungeon')}</b>.“</p>
-      <div style="text-align:left" class="small">${fw?'✓ ':'1. '}Praxis: Kampf gegen die Klausur (Lv ${PPLK[t.town].lv}+)${fw?' – bestanden':''}.<br>${fw?'➜ ':'2. '}Theorie: ${PPLK_N} Fragen zum ${esc(t.law)}, je ${PPLK_QT/1000} s – mindestens ${PPLK_MIN} richtig.</div>
+      <div style="text-align:left" class="small">${fw?'✓ ':'1. '}Praxis: Kampf gegen die Klausur (Lv ${PPLK[t.town].lv}+)${fw?' – bestanden':''}.<br>${fw?'➜ ':'2. '}Theorie: ${PPLK_N} Fragen zum ${esc(t.law)}, je mind. 10 s – mindestens ${PPLK_MIN} richtig (80 %), sonst geht es mit dem Kampf von vorne los.</div>
       <div class="acts"><button class="btn ghost" id="mno">SPÄTER</button><button class="btn" id="myes">${fw?'THEORIE STARTEN':'KAMPF STARTEN'}</button></div>`);
     $('#mno').onclick=closeModal;$('#myes').onclick=()=>{closeModal();fw?pplkTheory(t):pplkFight(t)}}}
 let PQ=null;
 function pplkTheory(t){const pool=qwSample(lawQuestions(t.law),PPLK_N);if(!pool.length){pplkPass(t);return}let i=0,right=0;held.length=0;
-  const ask=()=>{const it=pool[i],order=shuffleArr([0,1,2,3]);CQ={it,order,end:Infinity,done:false,cb:null};let qEnd=Date.now()+PPLK_QT;const myQ=CQ;
-    $('#cqbox').innerHTML=`<div class="sdlg"><span class="slaw">📝 PMLK ${esc(t.law)} · Frage ${i+1}/${pool.length} · ${right} richtig${it.src?' · '+esc(SPECIES[it.src].law||''):''}</span><br>${esc(it.q[0])}<div class="cqt"><i id="cqbar"></i></div><div class="small" id="cqtime" style="text-align:right">${PPLK_QT/1000} s</div><div id="cqexp"></div></div>
+  const ask=()=>{const it=pool[i],order=shuffleArr([0,1,2,3]);CQ={it,order,end:Infinity,done:false,cb:null};const QT=qTime(it.q);let qEnd=Date.now()+QT;const myQ=CQ;
+    $('#cqbox').innerHTML=`<div class="sdlg"><span class="slaw">📝 PMLK ${esc(t.law)} · Frage ${i+1}/${pool.length} · ${right} richtig${it.src?' · '+esc(SPECIES[it.src].law||''):''}</span><br>${esc(it.q[0])}<div class="cqt"><i id="cqbar"></i></div><div class="small" id="cqtime" style="text-align:right">${Math.round(QT/1000)} s</div><div id="cqexp"></div></div>
       <div class="sans">${order.map((k,j)=>`<button class="sa" data-ck="${k}"><span class="sk">${j+1}</span>${esc(it.q[1][k])}</button>`).join('')}</div><div class="sacts" id="cqact"></div>`;
     $('#cquiz').classList.remove('lite');$('#cquiz').classList.add('on');document.querySelectorAll('[data-ck]').forEach(bt=>bt.onclick=()=>pick(+bt.dataset.ck));
     clearInterval(PQ);PQ=setInterval(()=>{if(CQ!==myQ||myQ.done){clearInterval(PQ);return}if(PANIC){qEnd+=100;return}const l=Math.max(0,qEnd-Date.now()),bar=$('#cqbar');
-      if(bar){bar.style.width=(l/PPLK_QT*100)+'%';bar.style.background=l<PPLK_QT/3?'#ef4444':'#ffcb3d'}const tt=$('#cqtime');if(tt)tt.textContent=Math.ceil(l/1000)+' s';if(l<=0)pick(-1)},100)};
+      if(bar){bar.style.width=(l/QT*100)+'%';bar.style.background=l<QT/3?'#ef4444':'#ffcb3d'}const tt=$('#cqtime');if(tt)tt.textContent=Math.ceil(l/1000)+' s';if(l<=0)pick(-1)},100)};
   const pick=k=>{if(!CQ||CQ.done)return;CQ.done=true;clearInterval(PQ);const ok=k===0,it=CQ.it;if(ok)right++;
     document.querySelectorAll('[data-ck]').forEach(bt=>{const kk=+bt.dataset.ck;bt.disabled=true;bt.classList.add(kk===0?'ok':kk===k?'bad':'dim')});
     $('#cqexp').innerHTML=`<div class="sexp ${ok?'ok':'bad'}">${qFb(ok,k,it.q)}</div>`;
-    const need=Math.min(PPLK_MIN,pool.length),last=i>=pool.length-1,lost=right+(pool.length-1-i)<need;
+    const need=Math.ceil(pool.length*PPLK_MIN/PPLK_N),last=i>=pool.length-1,lost=right+(pool.length-1-i)<need;
     $('#cqact').innerHTML=`<button class="btn" id="cqnext">${last||lost?'ERGEBNIS':'NÄCHSTE FRAGE'}</button>`;
     $('#cqnext').onclick=()=>{if(!last&&!lost){i++;ask();return}$('#cquiz').classList.remove('on');CQ=null;CQ_PICK=null;
       if(right>=need){talk(t.n,`${right} von ${pool.length} – Theorie bestanden! Die PMLK im ${t.law} ist geschafft.`,()=>pplkPass(t))}
-      else{storyOf().cd[t.town]=Date.now()+PPLK_CD;save();talk(t.n,`${right} richtig – zu wenig (mindestens ${need}). Den Kampf hast du schon – lern nach (HfPol oder IAuT) und versuch die Theorie in einer Minute nochmal.`)}}};
+      else{const s=storyOf();if(s.pfw)s.pfw[t.town]=0;save();try{renderTeam()}catch(e){}talk(t.n,`${right} von ${pool.length} richtig – unter 80 %, durchgefallen! Die PMLK beginnt von vorn: erst wieder die Klausur (Kampf), dann die Theorie. Lern vorher nach (HfPol oder IAuT).`)}}};
   CQ_PICK=pick;ask()}
 function pplkPass(t){const s=storyOf();s.besch[t.law]=1;save();const dg=dungeonFor(t.law);toast(`📜 Durchsuchungsbeschluss (${t.law}) erhalten!`);
   sysChat(`📜 PMLK ${t.law} bestanden! Dein Durchsuchungsbeschluss öffnet die ${dg?dg.n:'Dungeon'}.`);try{renderTeam()}catch(e){}}
@@ -83,7 +83,7 @@ function pplkFight(t){const p=PPLK[t.town],pool=lawSpecies(t.law);const n=4;
   if(RUN.beat)delete RUN.beat[tr.id];startTrainer(tr)}
 {const _tw=trainerWin;trainerWin=async function(){const t=B&&B.trainer;if(t&&t.boss){G.ewig=1;save();say('👑 Du bist jetzt Polizist auf Ewigkeit!');setTimeout(()=>sysChat('👑 Abschlussprüfung bestanden – Polizist auf Ewigkeit!'),2600)}if(t&&t.pplk){const s=storyOf();(s.pfw=s.pfw||{})[t.town]=1;save();say('Klausur besiegt! Jetzt folgt die Theorie.');
     const np=TRAINERS.find(x=>x.story==='pplk'&&x.town===t.town);if(np){const w=()=>{if(B||$('#modal').classList.contains('on')){setTimeout(w,300);return}
-      talk(np.n,`Praxis bestanden! Jetzt die Theorie: ${PPLK_N} Fragen zum ${np.law}, je ${PPLK_QT/1000} s – mindestens ${PPLK_MIN} richtig.`,()=>pplkTheory(np))};setTimeout(w,600)}}
+      talk(np.n,`Praxis bestanden! Jetzt die Theorie: ${PPLK_N} Fragen zum ${np.law}, je mind. 10 s – mindestens ${PPLK_MIN} richtig.`,()=>pplkTheory(np))};setTimeout(w,600)}}
   return _tw.apply(this,arguments)}}
 // ---- dungeon doors
 function caveDungeon(x,y){return DUNGEONS.find(d=>d.ex===x&&d.ey===y)||null}

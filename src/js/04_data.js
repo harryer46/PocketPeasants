@@ -120,7 +120,7 @@ altMon("owigon",Object.assign({"n": "Owigon", "law": "§ 26 PolG · Ordnungswidr
 altMon("ausweisadler",Object.assign({"n": "Ausweisadler", "law": "§ 27 PolG · Personenfeststellung", "t": "flying", "img": "p27", "c": ["#34418b", "#dbcdd7", "#141414"], "b": [56, 62, 52, 66], "xp": 70, "an": "flap", "sc": 0.9, "faceR": 1},{ls:LS.owl}),'uncommon');
 altMon("platzfuchs",Object.assign({"n": "Platzfuchs", "law": "§ 30 PolG · Platzverweis & Aufenthaltsverbot", "t": "fire", "img": "p30", "c": ["#344185", "#fce5af", "#141414"], "b": [42, 54, 40, 60], "xp": 56, "an": "sniff", "sc": 0.88, "faceR": 1, "evo": [12, "sperrschild"]},{ls:LS.L_platz}),'common');
 altMon("sperrschild",Object.assign({"n": "Sperrschild", "law": "§ 31 PolG · Aufenthaltsvorgabe & Kontaktverbot", "t": "rock", "img": "p31", "c": ["#68638a", "#fdf6f0", "#141414"], "b": [70, 74, 92, 40], "xp": 120, "an": "tank", "sc": 0.9, "evo": [22, "drohnix"]},{ls:LS.L_platz}),'common');
-altMon("drohnix",Object.assign({"n": "Drohnix", "law": "§ 32 PolG · Elektronische Aufenthaltsüberwachung", "t": "electric", "img": "p32", "c": ["#f9e390", "#f9e390", "#141414"], "b": [82, 96, 82, 92], "xp": 180, "an": "float", "sc": 0.95},{ls:LS.L_platz}),'common');
+altMon("drohnix",Object.assign({"n": "Drohnix", "law": "§ 32 PolG · Elektronische Aufenthaltsüberwachung", "t": "electric", "img": "p32", "c": ["#f9e390", "#f9e390", "#141414"], "b": [80, 88, 80, 84], "xp": 180, "an": "float", "sc": 0.95},{ls:LS.L_platz}),'common');
 altMon("zellbaer",Object.assign({"n": "Zellbär", "law": "§ 33 PolG · Gewahrsam", "t": "rock", "img": "p33", "c": ["#9792ad", "#f7e7c2", "#141414"], "b": [92, 86, 98, 40], "xp": 95, "an": "rock", "sc": 0.95},{ls:LS.hog}),'rare');
 altMon("filzhund",Object.assign({"n": "Filzhund", "law": "§ 34 PolG · Durchsuchung von Personen", "t": "normal", "img": "p34", "c": ["#394691", "#fbe0b0", "#141414"], "b": [48, 56, 42, 62], "xp": 56, "an": "sniff", "sc": 0.9, "faceR": 1},{ls:LS.marten}),'common');
 altMon("kistenwasch",Object.assign({"n": "Kistenwasch", "law": "§ 35 PolG · Durchsuchung von Sachen", "t": "normal", "img": "p35", "c": ["#4d4561", "#fcf0e3", "#141414"], "b": [50, 48, 52, 54], "xp": 56, "an": "sniff", "sc": 0.9, "faceR": 1, "evo": [15, "wohnkroete"]},{ls:LS.L_kiste}),'common');
@@ -180,7 +180,9 @@ for(const k in SPECIES){const sp=SPECIES[k];if(!sp.law)continue;const m=sp.law.m
   water:[[5,'withdraw'],[12,'dive'],[12,'bubblebeam'],[18,'aurorabeam'],[22,'surf'],[28,'hydropump']],grass:[[5,'growth'],[9,'stringshot'],[13,'razorleaf'],[18,'sleeppowder'],[22,'gigadrain'],[28,'solarbeam']],
   electric:[[5,'thunderwave'],[9,'charge'],[13,'confuseray'],[20,'thunderbolt'],[28,'thunder']],rock:[[5,'defcurl'],[9,'metalclaw'],[14,'rockslide'],[19,'crunch'],[23,'irontail'],[28,'earthquake']],
   flying:[[5,'featherdance'],[12,'fly'],[9,'wingattack'],[14,'agility'],[18,'steelwing'],[22,'drillpeck'],[28,'aeroblast']]};
- const done=new Set();for(const sid in SPECIES){const sp=SPECIES[sid],ls=sp.ls;if(!Array.isArray(ls)||done.has(ls))continue;done.add(ls);
+ // every species gets its own copy: an evolution line shares its base list, but each stage adds the moves of ITS type
+ // (before, the whole line got the first stage's type – e.g. the electric Drohnix learned fire blasts from the fire Platzfuchs)
+ for(const sid in SPECIES){const sp=SPECIES[sid];if(!Array.isArray(sp.ls))continue;const ls=sp.ls=sp.ls.slice();
   for(const e of ADD[sp.t]||[])if(!ls.some(x=>x[1]===e[1]))ls.push(e);ls.sort((a,b)=>a[0]-b[0])}}
 // name as HTML with the paragraph in bold
 function nameHtml(sid){const sp=SPECIES[sid];if(!sp)return'';return sp.sfx?esc(sp.base)+' <b class="psfx">'+esc(sp.sfx)+'</b>':esc(sp.n)}
@@ -279,6 +281,9 @@ function qFb(ok,k,q){if(q)qsLog(q[0],ok);const ex=esc((q&&q[2])||'');if(ok)retur
 function qzPick(sid,avoid){const own=QZ[sid]||[],L=(SPECIES[sid]&&SPECIES[sid].law)||'',bm=L.match(/^(?:§|Art\.)\s*\d+[a-z]?\s+([A-Za-zÄÖÜäöü]+)/),bk=(bm&&typeof VAULT_BOOK!=='undefined'&&VAULT_BOOK[bm[1]])||[];
   const pool=bk.length&&(!own.length||Math.random()<0.35)?bk:own;if(!pool.length)return null;let q=null;for(let t=0;t<25;t++){q=pool[Math.floor(Math.random()*pool.length)];if(!avoid||!avoid.has(q[0]))break}return qwPick(pool,avoid)||q}
 function qzHas(sid){return!!qzPick(sid)}
+// answer time: at least 10 s; longer questions get reading time (≈16 characters per second for question + all four answers,
+// plus 2 s to decide), at most 22 s
+function qTime(q){if(!q)return 10000;const c=String(q[0]||'').length+(q[1]||[]).reduce((a,b)=>a+String(b).length,0);return Math.round(Math.min(22,Math.max(10,2+c/16)))*1000}
 // learning log per device (survives game resets): question text → [right, wrong, right-in-a-row]. Questions answered wrong
 // come up more often (×2.5…×7), each correct answer in a row halves the chance again (down to ×0.06 = practically mastered).
 const QS_KEY='pp_qstats';let QSTAT=null;

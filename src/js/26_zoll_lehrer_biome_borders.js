@@ -81,11 +81,14 @@ function tollDialog(b){const law=TOLL_LAW[b],nm=tollName(b);
   $('#tpay').onclick=()=>{if((RUN.money||0)<TOLL_FEE)return;RUN.money-=TOLL_FEE;updateHud();closeModal();tollPass(b,`${TOLL_FEE} $ — ich habe nichts gesehen`)};
   $('#tfight').onclick=()=>{closeModal();tollFight(b)}}
 function tollQuiz(b){const law=TOLL_LAW[b],pool=qwSample(lawQuestions(law),3);let i=0;
-  const ask=()=>{const it=pool[i],order=shuffleArr([0,1,2,3]);CQ={it,order,end:Infinity,done:false,cb:null};
-    $('#cqbox').innerHTML=`<div class="sdlg"><span class="slaw">🎓 ${esc(tollName(b))} · ${esc(law)} · Frage ${i+1}/3${it.src?' · '+esc(SPECIES[it.src].law||''):''}</span><br>${esc(it.q[0])}<div id="cqexp"></div></div>
+  let TQ=null;
+  const ask=()=>{const it=pool[i],order=shuffleArr([0,1,2,3]);CQ={it,order,end:Infinity,done:false,cb:null};const QT=qTime(it.q);let qEnd=Date.now()+QT;const myQ=CQ;
+    clearInterval(TQ);TQ=setInterval(()=>{if(CQ!==myQ||myQ.done){clearInterval(TQ);return}if(PANIC){qEnd+=100;return}const l=Math.max(0,qEnd-Date.now()),bar=$('#cqbar');
+      if(bar){bar.style.width=(l/QT*100)+'%';bar.style.background=l<QT/3?'#ef4444':'#ffcb3d'}const tt=$('#cqtime');if(tt)tt.textContent=Math.ceil(l/1000)+' s';if(l<=0)pick(-1)},100);
+    $('#cqbox').innerHTML=`<div class="sdlg"><span class="slaw">🎓 ${esc(tollName(b))} · ${esc(law)} · Frage ${i+1}/3${it.src?' · '+esc(SPECIES[it.src].law||''):''}</span><br>${esc(it.q[0])}<div class="cqt"><i id="cqbar"></i></div><div class="small" id="cqtime" style="text-align:right">${Math.round(QT/1000)} s</div><div id="cqexp"></div></div>
       <div class="sans">${order.map((k,j)=>`<button class="sa" data-ck="${k}"><span class="sk">${j+1}</span>${esc(it.q[1][k])}</button>`).join('')}</div><div class="sacts" id="cqact"></div>`;
     $('#cquiz').classList.add('on');document.querySelectorAll('[data-ck]').forEach(bt=>bt.onclick=()=>pick(+bt.dataset.ck))};
-  const pick=k=>{if(!CQ||CQ.done)return;CQ.done=true;const ok=k===0,it=CQ.it;
+  const pick=k=>{if(!CQ||CQ.done)return;CQ.done=true;clearInterval(TQ);const ok=k===0,it=CQ.it;
     document.querySelectorAll('[data-ck]').forEach(bt=>{const kk=+bt.dataset.ck;bt.disabled=true;bt.classList.add(kk===0?'ok':kk===k?'bad':'dim')});
     $('#cqexp').innerHTML=`<div class="sexp ${ok?'ok':'bad'}">${qFb(ok,k,it.q)}</div>`;
     $('#cqact').innerHTML=`<button class="btn" id="cqnext">${ok&&i<2?'NÄCHSTE FRAGE':'WEITER'}</button>`;

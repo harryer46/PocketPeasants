@@ -499,13 +499,13 @@ function fleeItem(sid){if(qzHas(sid))return{src:sid,q:qReal(qzPick(sid))};if(!QZ
 function tryRun(){if(!B||B.mode!=='wild'||CQ)return;
   if(B.tb){if(B.state!=='tbChoose')return;const myB=B;fleeQuiz(ok=>{if(B!==myB||B.state!=='tbChoose')return;B.runQ=ok?1:0;tbChoose({k:'run'})});return}
   if(B.state!=='fight')return;
-  if(!atEdge(B.me)){say('Lauf an den Rand der Arena, um zu fliehen!');return}
-  // the fight keeps running while the question is answered (small panel at the bottom, arena stays visible)
-  const myB=B;fleeQuiz(ok=>{if(B===myB)B.frozen=false;if(B!==myB||B.state!=='fight')return;if(ok){B.state='flee';B.fleeT=performance.now();B.me.face=-1;B.shots=[];say('Erfolgreich geflohen!')}else say('Flucht gescheitert!')})}
+  // real time: at the edge the falling paragraphs appear by themselves (fleeFallTick) – tap the matching one
+  if(!atEdge(B.me)){say('Lauf an den Rand der Arena – dort fallen Paragrafen herunter. Tipp den passenden an, um zu fliehen!');return}
+  say('Tipp den passenden Paragrafen an, der links oder rechts herunterfällt!')}
 // flee question: about your own active monster (its paragraph)
 function fleeQuiz(cb){const it=fleeItem(act(B.me).s),order=shuffleArr([0,1,2,3]);
-  CQ={it,order,end:performance.now()+5000,T:5000,flee:1,done:false,cb,okMsg:'✓ Richtig — die Flucht gelingt!'};held.length=0;aimHeld.length=0;
-  $('#cqbox').innerHTML=`<div class="sdlg"><span class="slaw">🏃 FLUCHT — 5 SEKUNDEN</span><br>${esc(it.q[0])}<div class="cqt"><i id="cqbar"></i></div><div class="small" id="cqtime" style="text-align:right">5 s</div><div id="cqexp"></div></div>
+  const T=qTime(it.q);CQ={it,order,end:performance.now()+T,T,flee:1,done:false,cb,okMsg:'✓ Richtig — die Flucht gelingt!'};held.length=0;aimHeld.length=0;
+  $('#cqbox').innerHTML=`<div class="sdlg"><span class="slaw">🏃 FLUCHT — ${Math.round(T/1000)} SEKUNDEN</span><br>${esc(it.q[0])}<div class="cqt"><i id="cqbar"></i></div><div class="small" id="cqtime" style="text-align:right">${Math.round(T/1000)} s</div><div id="cqexp"></div></div>
     <div class="sans">${order.map((k,j)=>`<button class="sa" data-ck="${k}"><span class="sk">${j+1}</span>${esc(it.q[1][k])}</button>`).join('')}</div><div class="sacts" id="cqact"></div>`;
   $('#cquiz').classList.toggle('lite',!B.tb);$('#cquiz').classList.add('on');document.querySelectorAll('[data-ck]').forEach(b=>b.onclick=()=>cqAnswer(+b.dataset.ck));cqTick()}
 function fleeUpdate(dt){const F=B.me;F.y+=150*dt;if(Math.random()<0.5)B.parts.push({x:F.x,y:F.y-8,vx:(Math.random()-.5)*20,vy:-20-Math.random()*15,life:0.4,age:0,c:'#e8dcc0'});
@@ -569,9 +569,9 @@ function secondChanceItem(sid){const t=lawTitle(sid);if(!t)return null;const boo
   const ranked=cands.map(x=>({x,sc:score(x)+(same.has(x)||Object.keys(SPECIES).some(s=>lawTitle(s)&&lawTitle(s).title===x&&lawOf(s)===book)?0.8:0)})).sort((a,b)=>b.sc-a.sc);
   const wrong=ranked.slice(0,3).map(r=>r.x);if(wrong.length<3)return null;
   return{src:sid,q:[`Zweite Chance! Wie heißt ${t.head}?`,[t.title,...wrong],`${t.head}: ${t.title}.`]}}
-function secondChance(sid,cb){let it=secondChanceItem(sid);if(!it){const f=fleeItem(sid);if(f&&f.q&&f.q[1]&&f.q[1].length>=4)it={src:f.src,q:['Zweite Chance! '+f.q[0],f.q[1],f.q[2]]}}if(!it){cb(false);return}const order=shuffleArr([0,1,2,3]),T=5000;
-  CQ={it,order,end:performance.now()+T,cb,done:false};held.length=0;aimHeld.length=0;
-  $('#cqbox').innerHTML=`<div class="sdlg"><span class="slaw">⚡ ZWEITE CHANCE — 5 SEKUNDEN</span><br>${esc(it.q[0])}<div class="cqt"><i id="cqbar"></i></div><div class="small" id="cqtime" style="text-align:right">5 s</div><div id="cqexp"></div></div>
+function secondChance(sid,cb){let it=secondChanceItem(sid);if(!it){const f=fleeItem(sid);if(f&&f.q&&f.q[1]&&f.q[1].length>=4)it={src:f.src,q:['Zweite Chance! '+f.q[0],f.q[1],f.q[2]]}}if(!it){cb(false);return}const order=shuffleArr([0,1,2,3]),T=qTime(it.q);
+  CQ={it,order,T,end:performance.now()+T,cb,done:false};held.length=0;aimHeld.length=0;
+  $('#cqbox').innerHTML=`<div class="sdlg"><span class="slaw">⚡ ZWEITE CHANCE — ${Math.round(T/1000)} SEKUNDEN</span><br>${esc(it.q[0])}<div class="cqt"><i id="cqbar"></i></div><div class="small" id="cqtime" style="text-align:right">${Math.round(T/1000)} s</div><div id="cqexp"></div></div>
     <div class="sans">${order.map((k,j)=>`<button class="sa" data-ck="${k}"><span class="sk">${'ABCD'[j]}</span>${esc(it.q[1][k])}</button>`).join('')}</div><div class="sacts" id="cqact"></div>`;
   $('#cquiz').classList.add('on');document.querySelectorAll('[data-ck]').forEach(b=>b.onclick=()=>cqAnswer(+b.dataset.ck));CQ.T=T;cqTick()}
 async function wildLose(){
@@ -598,14 +598,14 @@ function catchUpdate(now){const c=B.catch;const el=(now-c.t0)/1000;if(el<0.95+c.
 let CQ=null;
 function catchQuiz(sid,cb){
   let pool=qzHas(sid)?[{src:sid,q:qzPick(sid)}]:null;if(!pool){const keys=Object.keys(QZ).filter(k=>SPECIES[k]);const k=keys[Math.floor(Math.random()*keys.length)];pool=QZ[k].map(q=>({src:k,q}))}
-  const it0=qwSample(pool,1)[0]||pool[0],it={src:it0.src,q:qReal(it0.q)},order=shuffleArr([0,1,2,3]);const T=15000;
-  CQ={it,order,end:performance.now()+T,cb,done:false};held.length=0;aimHeld.length=0;
+  const it0=qwSample(pool,1)[0]||pool[0],it={src:it0.src,q:qReal(it0.q)},order=shuffleArr([0,1,2,3]);const T=qTime(it.q);
+  CQ={it,order,T,end:performance.now()+T,cb,done:false};held.length=0;aimHeld.length=0;
   const law=SPECIES[it.src].law||'';
-  $('#cqbox').innerHTML=`<div class="sdlg"><span class="slaw">⛓ FESTNAHME — ${esc(law||nameHtml(it.src))}</span><br>${esc(it.q[0])}<div class="cqt"><i id="cqbar"></i></div><div class="small" id="cqtime" style="text-align:right">15 s</div><div id="cqexp"></div></div>
+  $('#cqbox').innerHTML=`<div class="sdlg"><span class="slaw">⛓ FESTNAHME — ${esc(law||nameHtml(it.src))}</span><br>${esc(it.q[0])}<div class="cqt"><i id="cqbar"></i></div><div class="small" id="cqtime" style="text-align:right">${Math.round(T/1000)} s</div><div id="cqexp"></div></div>
     <div class="sans">${order.map((k,j)=>`<button class="sa" data-ck="${k}"><span class="sk">${j+1}</span>${esc(it.q[1][k])}</button>`).join('')}</div><div class="sacts" id="cqact"></div>`;
   $('#cquiz').classList.toggle('lite',!B.tb);$('#cquiz').classList.add('on');document.querySelectorAll('[data-ck]').forEach(b=>b.onclick=()=>cqAnswer(+b.dataset.ck));cqTick()}
 function cqTick(){if(!CQ||CQ.done)return;const now=performance.now();if(PANIC){CQ.end+=50;setTimeout(cqTick,50);return}
-  const left=Math.max(0,CQ.end-now),bar=$('#cqbar');if(bar){bar.style.width=(left/((CQ.T||15000)/100))+'%';bar.style.background=left<(CQ.T||15000)/3?'#ef4444':'#ffcb3d'}const tt=$('#cqtime');if(tt)tt.textContent=Math.ceil(left/1000)+' s';
+  const left=Math.max(0,CQ.end-now),bar=$('#cqbar');if(bar){bar.style.width=(left/((CQ.T||10000)/100))+'%';bar.style.background=left<(CQ.T||10000)/3?'#ef4444':'#ffcb3d'}const tt=$('#cqtime');if(tt)tt.textContent=Math.ceil(left/1000)+' s';
   if(left<=0){cqAnswer(-1);return}setTimeout(cqTick,50)}
 function cqAnswer(k){if(!CQ||CQ.done)return;CQ.done=true;const ok=k===0,it=CQ.it;if(ok&&CQ.flee&&B)B.frozen=true;
   document.querySelectorAll('[data-ck]').forEach(b=>{const kk=+b.dataset.ck;b.disabled=true;b.classList.add(kk===0?'ok':kk===k?'bad':'dim')});
