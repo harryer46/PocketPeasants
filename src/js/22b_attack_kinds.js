@@ -90,31 +90,32 @@ function sleepGame(){if(!B||B.tb||$('#sleepfall'))return;const myB=B,F=B.me;cons
     for(const it of items){if(it.done)continue;it.y+=it.v*dt*(r.height/320);const lw=w/2;it.el.style.maxWidth=(lw-6)+'px';it.el.style.transform=`translate(${Math.round(it.lane*lw+3)}px,${Math.round(it.y)}px)`;if(it.y>r.height){it.done=1;it.el.remove()}}
     requestAnimationFrame(tick)};tick()}
 
-// ---- fleeing (real time, wild fights): at the arena edge paragraphs of your monster's law book fall down on the left and
-// right of the arena. About 1 in 10 shows the number with its matching heading – tap it and you get away. A wrong tap makes
-// the right one currently falling burst. The fight goes on meanwhile; walking away from the edge clears the column.
-let FF=null;
+// ---- fleeing (real time, wild fights): press FLUCHT at the arena edge – paragraphs of your monster's law book fall down
+// beside the arena (left and right). About 1 in 10 shows the number with its matching heading. Press FLUCHT again while the
+// right one crosses the dashed line: you get away. Pressed at the wrong moment, the right one currently falling bursts.
+// The fight goes on meanwhile; walking away from the edge ends it.
+let FF=null;const FF_LINE=0.72;
 function fleeFallStop(){if(FF){FF.ov.remove();FF=null}}
-function fleeFallTick(dt){
-  const want=B&&!B.tb&&B.mode==='wild'&&B.state==='fight'&&!B.over&&B.me&&!B.me.out&&!(B.me.faint>0)&&!(B.me.st&&B.me.st.sleep>0)&&atEdge(B.me)&&!CQ&&!PANIC;
-  if(!want){fleeFallStop();return}
-  const F=B.me,sid=act(F).s;if(FF&&FF.sid!==sid)fleeFallStop();
-  if(!FF){const{book,L}=sleepPairs(sid);if(L.length<2)return;const ov=document.createElement('div');ov.id='fleefall';
-    ov.innerHTML=`<div class="ffh">🏃 FLUCHT – ${esc(book)}: passenden § antippen</div>`;document.body.appendChild(ov);FF={ov,B,sid,book,L,items:[],spawnT:0.15,cnt:0,lastOk:-99}}
-  const cv=$('#bcv'),r=cv.getBoundingClientRect();FF.ov.style.left=r.left+'px';FF.ov.style.top=r.top+'px';FF.ov.style.width=r.width+'px';FF.ov.style.height=r.height+'px';
-  const cw=Math.max(110,r.width*0.2);
+function fleeFallOk(){return B&&!B.tb&&B.mode==='wild'&&B.state==='fight'&&!B.over&&B.me&&!B.me.out&&!(B.me.faint>0)&&!(B.me.st&&B.me.st.sleep>0)&&atEdge(B.me)&&!CQ}
+function fleeFallStart(){if(!fleeFallOk())return;const sid=act(B.me).s,{book,L}=sleepPairs(sid);if(L.length<2){say('Flucht gerade nicht möglich.');return}
+  const ov=document.createElement('div');ov.id='fleefall';const col=`<div class="ffcol"><div class="ffh">🏃 FLUCHT · ${esc(book)}</div><i class="ffline"></i><div class="ffk">passender § auf der Linie?<br>→ ${isMob()?'FLIEHEN':'R / FLIEHEN'}</div></div>`;ov.innerHTML=col+col;
+  document.body.appendChild(ov);FF={ov,B,sid,book,L,items:[],spawnT:0.1,cnt:0,lastOk:-99,lock:0};say('Paragrafen fallen! Drück FLUCHT nochmal, wenn der passende auf der gestrichelten Linie ist.')}
+function fleeFallTick(dt){if(!FF)return;if(!fleeFallOk()||FF.B!==B||act(B.me).s!==FF.sid){fleeFallStop();return}
+  const cv=$('#bcv'),r=cv.getBoundingClientRect(),cw=Math.max(96,Math.min(170,r.left-6));const side=r.left>=100;   // room beside the canvas? else on its edges
+  FF.geo={r,cw,side};const ov=FF.ov;ov.style.left='0px';ov.style.top=r.top+'px';ov.style.width=innerWidth+'px';ov.style.height=r.height+'px';
+  const xl=side?r.left-cw-4:r.left+3,xr=side?r.right+4:r.right-cw-3,ly=r.height*FF_LINE;
+  ov.querySelectorAll('.ffcol').forEach((c,i)=>{c.style.left=(i?xr:xl)+'px';c.style.width=cw+'px'});ov.querySelectorAll('.ffline').forEach(l=>l.style.top=ly+'px');ov.querySelectorAll('.ffk').forEach(l=>l.style.top=(ly+6)+'px');
   FF.spawnT-=dt;if(FF.spawnT<=0){FF.spawnT=0.55;fleeFallSpawn()}
-  for(const it of FF.items){if(it.done)continue;it.y+=it.v*dt*(r.height/320);it.el.style.maxWidth=(cw-6)+'px';
-    const x=it.side?r.width-cw+3:3;it.el.style.transform=`translate(${Math.round(x)}px,${Math.round(it.y)}px)`;if(it.y>r.height){it.done=1;it.el.remove()}}
+  for(const it of FF.items){if(it.done)continue;it.y+=it.v*dt*(r.height/320);it.el.style.width=(cw-4)+'px';it.el.style.transform=`translate(${Math.round((it.side?xr:xl)+2)}px,${Math.round(it.y)}px)`;if(it.y>r.height){it.done=1;it.el.remove()}}
   FF.items=FF.items.filter(it=>!it.done||it.el.isConnected)}
 function fleeFallSpawn(){const{L,book}=FF;FF.cnt++;const ok=Math.random()<0.1||FF.cnt-FF.lastOk>=10;if(ok)FF.lastOk=FF.cnt;
   const a=L[Math.floor(Math.random()*L.length)];let t=a.title;if(!ok){let o;do o=L[Math.floor(Math.random()*L.length)];while(o.title===a.title&&L.length>1);t=o.title}
-  const el=document.createElement('button');el.className='sfi';el.innerHTML=`<b>${esc(a.head.replace(' '+book,''))}</b>${esc(t)}`;
-  const it={el,ok,a,t,y:-50,side:FF.cnt%2,v:58};const myB=B;
-  el.onclick=e=>{e.stopPropagation();if(it.done||!FF||B!==myB)return;it.done=1;
-    if(ok){el.classList.add('ok');B.state='flee';B.fleeT=performance.now();B.me.face=-1;B.shots=[];say(`Erfolgreich geflohen! (${a.head} – ${a.title})`);burst(B.me.x,B.me.y-14,'#3ddc6b',14);setTimeout(fleeFallStop,300);return}
-    el.classList.add('bad');setTimeout(()=>el.remove(),350);
-    const good=FF.items.filter(x=>x.ok&&!x.done);for(const g of good){g.done=1;g.el.classList.add('pop');setTimeout(()=>g.el.remove(),420)}
-    say(good.length?`Falsch – ${a.head} ist nicht „${t}“. Der richtige § ist zerplatzt!`:`Falsch – ${a.head} ist nicht „${t}“.`)};
-  FF.ov.appendChild(el);FF.items.push(it)}
+  const el=document.createElement('div');el.className='sfi';el.innerHTML=`<b>${esc(a.head.replace(' '+book,''))}</b>${esc(t)}`;FF.ov.appendChild(el);FF.items.push({el,ok,a,t,y:-60,side:FF.cnt%2,v:52})}
+function fleeFallPress(){if(!FF||!fleeFallOk()){fleeFallStop();return}const now=performance.now();if(now<FF.lock)return;FF.lock=now+250;const ly=FF.geo?FF.geo.r.height*FF_LINE:0;
+  const on=it=>!it.done&&it.y<=ly&&it.y+it.el.offsetHeight>=ly,hit=FF.items.find(it=>it.ok&&on(it));
+  if(hit){hit.el.classList.add('ok');B.state='flee';B.fleeT=now;B.me.face=-1;B.shots=[];say(`Erfolgreich geflohen! (${hit.a.head} – ${hit.a.title})`);burst(B.me.x,B.me.y-14,'#3ddc6b',14);setTimeout(fleeFallStop,350);return}
+  const wrong=FF.items.find(on);if(wrong){wrong.el.classList.add('bad');setTimeout(()=>wrong.el.classList.remove('bad'),300)}
+  FF.ov.querySelectorAll('.ffline').forEach(l=>{l.classList.remove('miss');void l.offsetWidth;l.classList.add('miss')});
+  const good=FF.items.filter(x=>x.ok&&!x.done);for(const g of good){g.done=1;g.el.classList.add('pop');setTimeout(()=>g.el.remove(),420)}
+  say(wrong?`Flucht gescheitert – ${wrong.a.head} ist nicht „${wrong.t}“.${good.length?' Der richtige § ist zerplatzt!':''}`:`Flucht gescheitert – nichts Passendes auf der Linie.${good.length?' Der richtige § ist zerplatzt!':''}`)}
 {const _cb=closeBattle;closeBattle=function(){fleeFallStop();return _cb.apply(this,arguments)}}

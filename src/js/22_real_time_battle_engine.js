@@ -499,9 +499,10 @@ function fleeItem(sid){if(qzHas(sid))return{src:sid,q:qReal(qzPick(sid))};if(!QZ
 function tryRun(){if(!B||B.mode!=='wild'||CQ)return;
   if(B.tb){if(B.state!=='tbChoose')return;const myB=B;fleeQuiz(ok=>{if(B!==myB||B.state!=='tbChoose')return;B.runQ=ok?1:0;tbChoose({k:'run'})});return}
   if(B.state!=='fight')return;
-  // real time: at the edge the falling paragraphs appear by themselves (fleeFallTick) – tap the matching one
-  if(!atEdge(B.me)){say('Lauf an den Rand der Arena – dort fallen Paragrafen herunter. Tipp den passenden an, um zu fliehen!');return}
-  say('Tipp den passenden Paragrafen an, der links oder rechts herunterfällt!')}
+  // real time: 1st press at the edge lets the paragraphs fall, 2nd press = the moment of escape (fleeFallPress)
+  if(FF){fleeFallPress();return}
+  if(!atEdge(B.me)){say('Lauf an den Rand der Arena, um zu fliehen!');return}
+  fleeFallStart()}
 // flee question: about your own active monster (its paragraph)
 function fleeQuiz(cb){const it=fleeItem(act(B.me).s),order=shuffleArr([0,1,2,3]);
   const T=qTime(it.q);CQ={it,order,end:performance.now()+T,T,flee:1,done:false,cb,okMsg:'✓ Richtig — die Flucht gelingt!'};held.length=0;aimHeld.length=0;

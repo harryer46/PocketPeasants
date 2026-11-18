@@ -21,7 +21,7 @@ addEventListener('keydown',e=>{
     if(pickMode()&&!(pickMode()==='lead'&&B.leadPicked)){const kk=e.key.toLowerCase();if(kk==='a'||e.key==='ArrowLeft'){e.preventDefault();reelSpin(-1);return}if(kk==='d'||e.key==='ArrowRight'){e.preventDefault();reelSpin(1);return}if(k===K.sw){e.preventDefault();reelConfirm();return}if(e.key==='Escape'&&B.qsel){B.qsel=false;return}if(B.qsel)return}
     if((B.qsel&&B.state==='fight')||(B.leadWait&&B.state==='count')){const n=+e.key;if(n>=1&&n<=6){e.preventDefault();const alive=B.me.team.map((m,i)=>i).filter(i=>B.me.team[i].hp>0);const i=alive[n-1];if(i!=null){if(B.qsel)quickPick(i);else{const b=document.querySelector(`#bpick [data-pk="${i}"]`);if(b)b.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}))}}return}if(e.key==='Escape'&&B.qsel){B.qsel=false;return}}
     for(let i=0;i<4;i++)if(k===K['a'+(i+1)]){e.preventDefault();battleMove(i);return}
-    if(k===K.dash){e.preventDefault();battleDash()}else if(k===K.sw)battleSwitch();else if(k===K.cap){if(!e.repeat)capPress()}else if(k===K.run)tryRun();
+    if(k===K.dash){e.preventDefault();battleDash()}else if(k===K.sw)battleSwitch();else if(k===K.cap){if(!e.repeat)capPress()}else if(k===K.run){if(!e.repeat)tryRun()}
     return}
   if((e.key==='m'||e.key==='M')&&G){toggleMap();return}
   if((e.key==='f'||e.key==='F')&&G&&!e.repeat&&!modalOpen()){e.preventDefault();toggleFly();return}
