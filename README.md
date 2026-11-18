@@ -47,7 +47,7 @@ Manche Netze (Schule, Firma, einige Mobilfunkanbieter) erlauben keine direkte Ve
 Dann leitet ein TURN-Server die Daten weiter – nur für die Spieler, die es brauchen.
 
 **Kostenlos mit Metered „Open Relay“ (ca. 20 GB/Monat gratis):**
-1. Konto anlegen: https://dashboard.metered.ca/signup (keine Kreditkarte nötig).
+1. Konto anlegen: https://dashboard.metered.ca/signup – für den Free-Tarif mit 20 GB will Metered eine Kreditkarte; er stoppt aber am Monatslimit und bucht nie ab (ohne Karte: 500-MB-Testtarif).
 2. Im Dashboard: **TURN Server → Credentials → Add Credential**.
 3. Dort den **API-Key** der Credential kopieren und deinen App-Namen notieren
    (steht im Dashboard, Form `DEINAPP.metered.live`).
