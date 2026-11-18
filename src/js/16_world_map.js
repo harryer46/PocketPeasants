@@ -58,3 +58,15 @@ function renderMapLegend(){
 $('#hmap').onclick=toggleMap;if($('#hbug'))$('#hbug').onclick=()=>{openModal(`<h3>🐞 BUG MELDEN</h3><p>Lade zuerst das Protokoll herunter und hänge die Datei im GitHub-Ticket an (per Drag & Drop ins Textfeld). Es enthält Verbindungs- und Fehlerereignisse — keine Passwörter.</p><div class="acts"><button class="btn ghost" id="blog">🧾 PROTOKOLL</button><button class="btn" id="bgo">TICKET ÖFFNEN</button></div><div class="acts"><button class="btn ghost" id="mno">SCHLIESSEN</button></div>`);$('#blog').onclick=downloadLog;$('#bgo').onclick=()=>{closeModal();bugReport()};$('#mno').onclick=closeModal};$('#hdex').onclick=()=>{if(G)openDex()};$('#htimer').onclick=()=>{if(isMob())$('#side').classList.add('open');switchTab('lobby')};$('#mclose').onclick=closeMap;
 $('#mapov').addEventListener('click',e=>{if(e.target.id==='mapov')closeMap()});
 
+// hover (desktop) / tap (touch) on the world map: names of cops, professors and other players near the pointer
+function mapPick(cx,cy){const cv=$('#mapcv'),r=cv.getBoundingClientRect(),ts=r.width/MW,mx=(cx-r.left)/ts,my=(cy-r.top)/ts,rad=Math.max(1.6,7/ts);let best=null,bd=1e9;
+  const cand=(x,y,txt)=>{const d=Math.hypot(x+.5-mx,y+.5-my);if(d<rad&&d<bd){bd=d;best=txt}};
+  for(const t of TRAINERS){if(t.y>=MH||t.story&&!storyOn())continue;const beat=RUN&&RUN.beat&&RUN.beat[t.id];cand(t.x,t.y,`<b style="color:${t.c||'#fff'}">■</b> ${esc(t.n)}${beat?' <span style="color:#8a8ea6">✓ besiegt</span>':''}`)}
+  for(const t of tollSpots())cand(t.x,t.y,`<b style="color:#c27bff">■</b> ${esc(t.n)}${tollPaid(t.b)?' <span style="color:#3ddc6b">✓ bestanden</span>':''}`);
+  for(const o of OTH.values())if(o.fx!=null)cand(o.fx,o.fy,`👤 ${esc(o.n||'Spieler')}`);
+  return best}
+function mapTip(e){let tip=$('#maptip');if(!tip){tip=document.createElement('div');tip.id='maptip';tip.style.cssText='position:fixed;z-index:60;pointer-events:none;background:#14141fe8;border:1px solid #ffcb3d;color:#fff;font:18px VT323,monospace;padding:2px 7px;border-radius:4px;white-space:nowrap;display:none';document.body.appendChild(tip)}
+  const h=e&&mapOpen()?mapPick(e.clientX,e.clientY):null;if(!h){tip.style.display='none';return}
+  tip.innerHTML=h;tip.style.display='block';const w=tip.offsetWidth;tip.style.left=Math.min(innerWidth-w-4,e.clientX+12)+'px';tip.style.top=Math.max(4,e.clientY-30)+'px'}
+{const cv=$('#mapcv');cv.addEventListener('mousemove',mapTip);cv.addEventListener('mouseleave',()=>mapTip(null));cv.addEventListener('click',mapTip);$('#mapwrap').addEventListener('scroll',()=>mapTip(null),{passive:true})}
+{const _cm=closeMap;closeMap=function(){mapTip(null);return _cm.apply(this,arguments)}}
