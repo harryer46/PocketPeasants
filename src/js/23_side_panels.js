@@ -48,7 +48,7 @@ function studyQuestions(sid){
   if(qzHas(sid)){const av=new Set(),out=[];for(let i=0;i<STUDY_N*3&&out.length<STUDY_N;i++){const q=qzPick(sid,av);if(!q||av.has(q[0]))continue;av.add(q[0]);out.push({src:sid,q:qReal(q)})}if(out.length)return out}
   // hero monsters (no paragraph): random questions from random paragraph monsters
   const keys=Object.keys(QZ).filter(k=>SPECIES[k]);const out=[];const used=new Set();
-  while(out.length<STUDY_N){const k=keys[Math.floor(Math.random()*keys.length)];const q=QZ[k][Math.floor(Math.random()*QZ[k].length)];if(used.has(q[0]))continue;used.add(q[0]);out.push({src:k,q:qReal(q)})}
+  while(out.length<STUDY_N){const k=keys[Math.floor(Math.random()*keys.length)];const q=qwPick(QZ[k],used);if(used.has(q[0]))continue;used.add(q[0]);out.push({src:k,q:qReal(q)})}
   return out}
 function atHfPol(){return tget(P.x,P.y)===23}
 // study building here: the HfPol (only in Villingen) or an IAuT (every other town)
@@ -57,7 +57,7 @@ function studyBld(){const b=BLDG.find(b=>b.door===23&&b.dx===P.x&&b.y+3===P.y)||
 function openHfPol(){if(!RUN||B)return;if(RUN.phase==='arena'){toast(`Während des Gerichtsturniers ist ${studyBld().n==='HfPol'?'die HfPol':'das IAuT'} geschlossen.`);return}
   const SB=studyBld();
   const now=Date.now();
-  openModal(`<h3>🎓 ${SB.n} — ${SB.long}</h3><p>${esc(SB.town)} · ${SB.hall}. Wähle ein Monster für die Prüfung (5 Fragen, Multiple Choice). Richtige Antworten geben EP.</p>
+  openModal(`<h3>🎓 ${SB.n} — ${SB.long}</h3><p>${esc(SB.town)} · ${SB.hall}. Wähle ein Monster für die Prüfung (5 Fragen, Multiple Choice). Richtige Antworten geben EP.</p>${(()=>{const q=qsSummary();return q.seen?`<p class="small">📊 Lernstand: ${q.seen} Fragen beantwortet · ${q.sure} sitzen (3× in Folge richtig, kommen selten) · <span style="color:var(--red,#e05555)">${q.weak} Problemfragen</span> (kommen öfter dran)</p>`:''})()}
    <div style="display:flex;flex-direction:column;gap:6px;max-height:50vh;overflow:auto">${RUN.team.map((m,i)=>{const left=(m.stT||0)+STUDY_CD-now;return`<div style="display:flex;gap:6px"><button class="btn ${left>0?'ghost':''}" data-hs="${i}" style="flex:1;text-align:left;font-family:VT323,monospace;font-size:19px">📚 ${nameHtml(m.s)} · Lv ${m.l}${left>0?` · Lernpause ${Math.floor(Math.ceil(left/1000)/60)}:${String(Math.ceil(left/1000)%60).padStart(2,"0")}`:''}</button><button class="btn ghost" data-cp="${i}" ${left>0||money()<CRIB_P?'disabled':''} title="Sofort die EP einer bestandenen Prüfung (5/5), danach Lernpause">📄 SPICKEN $${CRIB_P}</button></div>`}).join('')}</div>
    <div class="acts" style="margin-top:10px"><button class="btn ghost" id="mno">HÖRSAAL VERLASSEN</button></div>`);
   document.querySelectorAll('[data-hs]').forEach(b=>b.onclick=()=>openStudy(RUN.team[+b.dataset.hs]));document.querySelectorAll('[data-cp]').forEach(b=>b.onclick=()=>studyCrib(RUN.team[+b.dataset.cp]));$('#mno').onclick=closeModal}
@@ -104,7 +104,7 @@ function studyLearn(){if(!ST||ST.state==='done'||(ST.lcd||0)>Date.now())return;c
 function studyLearnBtn(){const lb=$('#slearn');if(!lb||!ST)return;const l=Math.max(0,(ST.lcd||0)-Date.now());rbtnSet(lb,l,1000,'📖','+7,5 %');if(l>0)setTimeout(studyLearnBtn,100)}
 // round quick-action button with a radial cooldown (like the touch attack buttons)
 function rbtnSet(b,left,total,icon,lbl){b.disabled=left>0;b.querySelector('.cdr').style.setProperty('--cd',(left/total)+'turn');b.querySelector('span').innerHTML=`<b>${icon}</b>${left>0?Math.ceil(left/1000)+' s':lbl}`}
-function studyAnswer(k){if(!ST||ST.state!=='ask')return;const cur=ST.qs[ST.i];cur.pick=k;cur.right=k===0;ST.res=ST.res||[];ST.res[ST.i]=cur.right;
+function studyAnswer(k){if(!ST||ST.state!=='ask')return;const cur=ST.qs[ST.i];cur.pick=k;cur.right=k===0;qsLog(cur.q&&cur.q[0],cur.right);ST.res=ST.res||[];ST.res[ST.i]=cur.right;
   if(cur.right){ST.ok++;const amt=Math.max(8,Math.round(xpNeed(ST.m.l)*0.25/((RUN.cfg&&RUN.cfg.xp)||1)));ST.pend=(ST.pend||0)+amt;ST.fx={k:'hit',t:performance.now()}}
   else{ST.fx={k:'miss',t:performance.now()};ST.pend=(ST.pend||0)+Math.max(1,Math.round(xpNeed(ST.m.l)*0.05/((RUN.cfg&&RUN.cfg.xp)||1)));ST.pen=Date.now()+5000}
   ST.state='shown';renderStudy()}

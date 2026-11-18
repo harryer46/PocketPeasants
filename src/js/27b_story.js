@@ -59,7 +59,7 @@ function storyBump(t){if(!storyOn())return;if(!RUN||RUN.phase!=='train'){toast(`
       <div class="acts"><button class="btn ghost" id="mno">SPÄTER</button><button class="btn" id="myes">${fw?'THEORIE STARTEN':'KAMPF STARTEN'}</button></div>`);
     $('#mno').onclick=closeModal;$('#myes').onclick=()=>{closeModal();fw?pplkTheory(t):pplkFight(t)}}}
 let PQ=null;
-function pplkTheory(t){const pool=shuffleArr(lawQuestions(t.law)).slice(0,PPLK_N);if(!pool.length){pplkPass(t);return}let i=0,right=0;held.length=0;
+function pplkTheory(t){const pool=qwSample(lawQuestions(t.law),PPLK_N);if(!pool.length){pplkPass(t);return}let i=0,right=0;held.length=0;
   const ask=()=>{const it=pool[i],order=shuffleArr([0,1,2,3]);CQ={it,order,end:Infinity,done:false,cb:null};let qEnd=Date.now()+PPLK_QT;const myQ=CQ;
     $('#cqbox').innerHTML=`<div class="sdlg"><span class="slaw">📝 PMLK ${esc(t.law)} · Frage ${i+1}/${pool.length} · ${right} richtig${it.src?' · '+esc(SPECIES[it.src].law||''):''}</span><br>${esc(it.q[0])}<div class="cqt"><i id="cqbar"></i></div><div class="small" id="cqtime" style="text-align:right">${PPLK_QT/1000} s</div><div id="cqexp"></div></div>
       <div class="sans">${order.map((k,j)=>`<button class="sa" data-ck="${k}"><span class="sk">${j+1}</span>${esc(it.q[1][k])}</button>`).join('')}</div><div class="sacts" id="cqact"></div>`;

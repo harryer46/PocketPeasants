@@ -80,7 +80,7 @@ function tollDialog(b){const law=TOLL_LAW[b],nm=tollName(b);
   $('#mno').onclick=()=>{closeModal();tollStepBack(b)};$('#tex').onclick=()=>{closeModal();tollQuiz(b)};
   $('#tpay').onclick=()=>{if((RUN.money||0)<TOLL_FEE)return;RUN.money-=TOLL_FEE;updateHud();closeModal();tollPass(b,`${TOLL_FEE} $ — ich habe nichts gesehen`)};
   $('#tfight').onclick=()=>{closeModal();tollFight(b)}}
-function tollQuiz(b){const law=TOLL_LAW[b],pool=shuffleArr(lawQuestions(law)).slice(0,3);let i=0;
+function tollQuiz(b){const law=TOLL_LAW[b],pool=qwSample(lawQuestions(law),3);let i=0;
   const ask=()=>{const it=pool[i],order=shuffleArr([0,1,2,3]);CQ={it,order,end:Infinity,done:false,cb:null};
     $('#cqbox').innerHTML=`<div class="sdlg"><span class="slaw">🎓 ${esc(tollName(b))} · ${esc(law)} · Frage ${i+1}/3${it.src?' · '+esc(SPECIES[it.src].law||''):''}</span><br>${esc(it.q[0])}<div id="cqexp"></div></div>
       <div class="sans">${order.map((k,j)=>`<button class="sa" data-ck="${k}"><span class="sk">${j+1}</span>${esc(it.q[1][k])}</button>`).join('')}</div><div class="sacts" id="cqact"></div>`;

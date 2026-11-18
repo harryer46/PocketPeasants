@@ -274,11 +274,22 @@ function visOf(mid){const mv=MOVES[mid];if(!mv)return'ball';return MOVE_VIS[mid]
 // one random phrasing of the right answer + three random wrong ones (index 0 = correct, shuffled at display time).
 // the length of an answer must not give it away: at least one (usually more) of the three wrong answers is about as long or longer
 // quiz feedback: right → short; wrong / too slow → name the right answer + the explanation (max. 2 sentences)
-function qFb(ok,k,q){const ex=esc((q&&q[2])||'');if(ok)return'✓ Richtig. '+ex;const c=q&&q[1]&&q[1][0];return(k<0?'⏱ Zeit abgelaufen':'✗ Falsch')+(c?` – richtig ist „${esc(c)}“.`:'.')+' '+ex}
+function qFb(ok,k,q){if(q)qsLog(q[0],ok);const ex=esc((q&&q[2])||'');if(ok)return'✓ Richtig. '+ex;const c=q&&q[1]&&q[1][0];return(k<0?'⏱ Zeit abgelaufen':'✗ Falsch')+(c?` – richtig ist „${esc(c)}“.`:'.')+' '+ex}
 // a question for a monster: its own paragraph's questions, mixed with the general ones of its law book (vault)
 function qzPick(sid,avoid){const own=QZ[sid]||[],L=(SPECIES[sid]&&SPECIES[sid].law)||'',bm=L.match(/^(?:§|Art\.)\s*\d+[a-z]?\s+([A-Za-zÄÖÜäöü]+)/),bk=(bm&&typeof VAULT_BOOK!=='undefined'&&VAULT_BOOK[bm[1]])||[];
-  const pool=bk.length&&(!own.length||Math.random()<0.35)?bk:own;if(!pool.length)return null;let q=null;for(let t=0;t<25;t++){q=pool[Math.floor(Math.random()*pool.length)];if(!avoid||!avoid.has(q[0]))break}return q}
+  const pool=bk.length&&(!own.length||Math.random()<0.35)?bk:own;if(!pool.length)return null;let q=null;for(let t=0;t<25;t++){q=pool[Math.floor(Math.random()*pool.length)];if(!avoid||!avoid.has(q[0]))break}return qwPick(pool,avoid)||q}
 function qzHas(sid){return!!qzPick(sid)}
+// learning log per device (survives game resets): question text → [right, wrong, right-in-a-row]. Questions answered wrong
+// come up more often (×2.5…×7), each correct answer in a row halves the chance again (down to ×0.06 = practically mastered).
+const QS_KEY='pp_qstats';let QSTAT=null;
+function qsLoad(){if(!QSTAT){try{QSTAT=JSON.parse(localStorage.getItem(QS_KEY)||'{}')||{}}catch(e){QSTAT={}}}return QSTAT}
+function qsId(t){let h=2166136261;t=String(t||'');for(let i=0;i<t.length;i++){h^=t.charCodeAt(i);h=Math.imul(h,16777619)}return(h>>>0).toString(36)}
+function qsLog(text,ok){if(!text)return;const S=qsLoad(),k=qsId(text),r=S[k]||(S[k]=[0,0,0]);if(ok){r[0]++;r[2]++}else{r[1]++;r[2]=0}try{localStorage.setItem(QS_KEY,JSON.stringify(S))}catch(e){}}
+function qsW(text){const r=qsLoad()[qsId(text)];if(!r)return 1;return Math.max(0.06,(1+1.5*Math.min(r[1],4))*Math.pow(0.5,r[2]))}
+function qwPick(arr,avoid){if(!arr||!arr.length)return null;let tot=0;const ws=arr.map(q=>{const w=avoid&&avoid.has(q[0])?0:qsW(q[0]);tot+=w;return w});if(tot<=0)return arr[Math.floor(Math.random()*arr.length)];let x=Math.random()*tot;for(let i=0;i<arr.length;i++){x-=ws[i];if(x<=0&&ws[i]>0)return arr[i]}return arr[arr.length-1]}
+// weighted sample without repeats of {src,q} items
+function qwSample(items,n){const a=items.slice(),out=[];while(out.length<n&&a.length){const q=qwPick(a.map(it=>it.q));const i=a.findIndex(it=>it.q===q);out.push(a[i]);a.splice(i,1)}return out}
+function qsSummary(){const S=qsLoad();let seen=0,sure=0,weak=0;for(const k in S){const r=S[k];seen++;if(r[2]>=3)sure++;else if(r[2]===0&&r[1]>0)weak++}return{seen,sure,weak}}
 function qReal(q){if(!q||q.length<4)return q;const mx=Math.max(...q[2].map(w=>w.length)),okC=q[1].filter(c=>c.length*0.9<=mx),cs=okC.length?okC:[q[1].slice().sort((a,b)=>a.length-b.length)[0]];
   const c=cs[Math.floor(Math.random()*cs.length)],L=c.length,ws=shuffleArr(q[2].slice());
   const th=ws.some(w=>w.length>L)?L+1:L*0.9,lng=ws.filter(w=>w.length>=th),sh=ws.filter(w=>w.length<th).sort((a,b)=>Math.abs(a.length-L)-Math.abs(b.length-L));
