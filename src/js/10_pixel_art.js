@@ -72,8 +72,8 @@ function monSprite(sid,N){
 // artwork → our pixel style: downscale, snap to the monster's own palette, then the same GBA shading/outline as all monsters
 function imgSprite(sid,N,key){
   const sp=SPECIES[sid],im=ALT_IM[imgKey(sid)];if(!im||!im.complete||!im.naturalWidth)return mk(Math.round(N*64/24),Math.round(N*64/24));
-  // evolution artwork taller than the usual box gets a bigger canvas instead of being shrunk (same pixel size as everyone else)
-  const S=Math.max(Math.round(N*64/24),sp.evoOf?Math.ceil((Math.max(im.naturalWidth,im.naturalHeight)+2)*N/24):0),c=mk(S,S);
+  // artwork bigger than the usual box gets a bigger canvas instead of being shrunk (same pixel size for everyone)
+  const S=Math.max(Math.round(N*64/24),Math.ceil((Math.max(im.naturalWidth,im.naturalHeight)+2)*N/24)),c=mk(S,S);
   const x=c.getContext('2d');x.imageSmoothingEnabled=false;const w=im.naturalWidth,h=im.naturalHeight,k=Math.min((S-2)/w,(S-2)/h)>=1?Math.max(1,Math.floor(Math.min((S-2)/w,(S-2)/h))):Math.min((S-2)/w,(S-2)/h);
   const dx=Math.round((S-w*k)/2),dy=Math.round(S-h*k-1);
   if(sp.mega){const t=mk(S,S),tx=t.getContext('2d');tx.imageSmoothingEnabled=false;tx.drawImage(im,dx,dy,w*k,h*k);tx.globalCompositeOperation='source-in';tx.fillStyle='#ffd23f';tx.fillRect(0,0,S,S);

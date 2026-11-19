@@ -19,6 +19,15 @@ Object.assign(MOVES,{
   luftsog:{n:'Luftsog',t:'flying',p:60,k:'pull',cd:4},
   schattenschleier:{n:'Schattenschleier',t:'dark',p:0,k:'veil',cd:8}});
 const EVO_SIG={normal:'strafschaerfung',fire:'glutkern',water:'sturzflut',electric:'ueberspannung',grass:'rankennetz',rock:'felswand',flying:'luftsog',dark:'schattenschleier'};
+// legendaries instead of unique/rare: Pfisterio and Schlechtekunst wait at their own shrines (high-level areas)
+{RAR_INIT.pfisterio='legendary';RAR_INIT.pfisteriox='legendary';RAR_INIT.schlechtekunst='legendary';
+ SPECIES.pfisterio.b=[84,92,78,110];SPECIES.pfisterio.xp=200;
+ EVO_LINES.pfisterio.lv=[50,65];EVO_LINES.schlechtekunst.lv=[70];
+ LEGENDS.push({id:'leg_pfisterio',x:71,y:65,l:40,zone:'east'},{id:'leg_schlechtekunst',x:93,y:40,l:55,zone:'west'});ALT_LEG.leg_pfisterio='pfisterio';ALT_LEG.leg_schlechtekunst='schlechtekunst';
+ for(const z in ALT_POOLS){const p=ALT_POOLS[z],i=p.indexOf('schlechtekunst');if(i>=0)p.splice(i,1)}
+ for(const s of['pfisterio','schlechtekunst']){const i=ALT_BASES.indexOf(s);if(i>=0)ALT_BASES.splice(i,1)}
+ // the grave StGB crimes are rare and only live in high-level areas (from Lv 50)
+ for(const s of['fahrerflucht','totschlagbock','einbruchkatz','truhenschluck','raubwolf','erpressnatter','vereitelkraehe','hehlfuchs','datenspaeher','sensenmord']){RAR_INIT[s]='rare';SPECIES[s].minLv=50;if(EVO_LINES[s])EVO_LINES[s].lv=[65]}}
 {const sum=b=>b.reduce((a,c)=>a+c,0);
  const grow=(b,f)=>{const m=Math.max(...b);return b.map(v=>Math.round(v*f*(v===m?1.06:1)))};
  const sfx=(sp)=>{if(!sp.law)return;const m=sp.law.match(/^(§|Art\.)\s*(\d+[a-z]?)(?:\s+([A-Za-zÄÖÜäöü]+))?/);if(m){sp.sfx=(m[1]==='§'?'§':'Art.')+m[2]+(m[3]?' '+m[3]:'');sp.base=sp.n;sp.n+=' '+sp.sfx}};
@@ -38,11 +47,13 @@ const EVO_SIG={normal:'strafschaerfung',fire:'glutkern',water:'sturzflut',electr
      if(law||B.law)sp.law=law||B.law;sfx(sp);RAR_INIT[id]=r;ALT_IDS.add(id);EVOT.add(id);
      SPECIES[prev].evo=[lv[i],id];prev=id});
    // starters: the old Mega form follows the new middle stage, with its own big sprite
-   if(uniq&&SPECIES[b+'x']){const X=SPECIES[b+'x'];SPECIES[prev].evo=[lv[1],b+'x'];X.b=grow(b0,1.8);X.evoOf=b;X.ls=X.ls.slice();if(EVO_SIG[X.t]&&!X.ls.some(x=>x[1]===EVO_SIG[X.t]))X.ls.push([lv[1]+4,EVO_SIG[X.t]])}}
+   if(SPECIES[b+'x']&&SPECIES[b+'x'].img!==undefined&&(uniq||b==='pfisterio')){const X=SPECIES[b+'x'];SPECIES[prev].evo=[lv[1],b+'x'];X.b=grow(b0,uniq?1.8:1.4);X.evoOf=b;X.ls=X.ls.slice();if(EVO_SIG[X.t]&&!X.ls.some(x=>x[1]===EVO_SIG[X.t]))X.ls.push([lv[1]+4,EVO_SIG[X.t]])}}
  // starters' last stage: new names to the delivered artwork
  {const MX={harrymonx:'Harry Owiemax',goeggelix:'Göggiantus',pfisteriox:'Pfisterion Rex',zhangsx:'Zwangtor'};for(const k in MX)if(SPECIES[k])SPECIES[k].n=MX[k]}
  // delivered artwork replaces the placeholders (at our pixel size, so no extra scaling and no Mega glow)
- for(const k in EVO_IMG){const sp=SPECIES[k];if(!sp)continue;sp.img=1;delete sp.ph;sp.mega=0;sp.sc=1;ALT_IMG[k]=EVO_IMG[k];const im=new Image();im.onload=()=>{for(const key in SPR){if(key.split(':')[0]===k)delete SPR[key]}};im.src=EVO_IMG[k];ALT_IM[k]=im}
+ for(const k in EVO_IMG){const sp=SPECIES[k];if(!sp)continue;sp.img=1;if(EVO_ART.has(k))delete sp.ph;sp.mega=0;ALT_IMG[k]=EVO_IMG[k];const im=new Image();im.onload=()=>{for(const key in SPR){if(key.split(':')[0]===k)delete SPR[key]}};im.src=EVO_IMG[k];ALT_IM[k]=im}
+ // one pixel grid for all: every artwork is cut at its final size, so nothing is scaled by an odd factor any more
+ for(const id in SPECIES){const sp=SPECIES[id];if(sp.img)sp.sc=1}if(SPECIES.zhang&&ALT_IMG.zhangL)SPECIES.zhang.img='zhangL';
  const ix=ALT_BASES.filter(s=>EVOT.has(s));for(const s of ix)ALT_BASES.splice(ALT_BASES.indexOf(s),1);
  // 3) habitats: each monster where its kind lives (evolutions appear where their base lives, from their evolution level on)
  const mv=(id,from,to)=>{for(const z of from){const p=ALT_POOLS[z];if(p&&p.includes(id))p.splice(p.indexOf(id),1)}for(const z of to){const p=ALT_POOLS[z];if(p&&!p.includes(id))p.push(id)}};
