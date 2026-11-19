@@ -11,7 +11,11 @@ input,select{background:#0b0d16;color:var(--text);border:2px solid #000;font:inh
 .stat{color:var(--muted);font-size:17px}
 main{padding:14px;display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:12px}
 .card{background:var(--panel);border:3px solid #000;box-shadow:3px 3px 0 #000;padding:10px}
-.top{display:flex;gap:10px;align-items:center}.top img{width:64px;height:64px;image-rendering:pixelated;background:#0b0d16;border:2px solid #000}
+.top{display:flex;gap:10px;align-items:center}.pic{position:relative;flex:none;cursor:zoom-in}.top img{width:64px;height:64px;image-rendering:pixelated;background:#0b0d16;border:2px solid #000;display:block}
+.zb{position:absolute;right:-6px;bottom:-6px;width:24px;height:24px;padding:0;font-size:14px;line-height:20px;background:var(--accent);color:#000;border:2px solid #000;cursor:pointer;box-shadow:2px 2px 0 #000}
+#zoom{position:fixed;inset:0;z-index:20;background:#05060cf0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:16px;cursor:zoom-out}#zoom.on{display:flex}
+#zoom .line{display:flex;gap:18px;align-items:flex-end;justify-content:center;flex-wrap:wrap;max-width:96vw}#zoom figure{margin:0;text-align:center}#zoom figure img{image-rendering:pixelated;background:#151a2b;border:3px solid #000;box-shadow:4px 4px 0 #000}
+#zoom figure.cur img{border-color:var(--accent)}#zoom figcaption{margin-top:6px;font-size:21px}#zoom figcaption small{display:block;color:var(--muted);font-size:16px}#zoom .arr{font-size:28px;color:var(--muted);align-self:center}#zoom .hint{color:var(--muted);font-size:16px}
 .nm{font-size:23px}.chip{display:inline-block;font:9px "Press Start 2P",monospace;color:#fff;padding:3px 5px;border:2px solid #000;margin-right:4px}
 .law{color:#c9b8ff}.evo{color:var(--muted);font-size:17px;margin-top:4px}.dex{margin-top:6px;font-size:17px;color:#cfd3e0}
 details{margin-top:8px}summary{cursor:pointer;color:var(--accent)}ol{margin:6px 0 0;padding-left:22px}li{margin-bottom:6px}
@@ -24,6 +28,7 @@ section.book{grid-column:1/-1}h2{font:12px "Press Start 2P",monospace;color:var(
 <select id="bk"><option value="">alle Gesetze</option><option>StGB</option><option>StPO</option><option>PolG</option><option>GG</option><option>OWiG</option><option value="-">ohne Paragraf</option></select>
 <span class="stat" id="st"></span></header>
 <main id="m"></main>
+<div id="zoom" role="dialog" aria-label="Vergrößerung"></div>
 <script>
 const RAR={unique:'einzigartig',common:'häufig',uncommon:'selten',rare:'sehr selten',legendary:'legendär'};
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -35,7 +40,7 @@ function render(){const q=document.getElementById('q').value.trim().toLowerCase(
   for(const s of D.sp){const b=bookOf(s.law);if(ty&&s.t!==ty)continue;if(bk&&(bk==='-'?b:b!==bk))continue;
     const hay=(s.n+' '+s.law+' '+s.t+' '+s.q.map(x=>x[0]+' '+x[1]).join(' ')).toLowerCase();if(q&&!hay.includes(q))continue;n++;nq+=s.q.length;
     const qs=q?s.q.filter(x=>(x[0]+' '+x[1]).toLowerCase().includes(q)||(s.n+' '+s.law).toLowerCase().includes(q)):s.q;
-    h+=`<div class="card"><div class="top"><img src="${s.img}" alt=""><div><div class="nm">${esc(s.n)}</div><span class="chip" style="background:${s.tc}">${esc(s.t.toUpperCase())}</span>${s.rar?`<span class="chip" style="background:#3a3f5c">${esc((RAR[s.rar]||s.rar).toUpperCase())}</span>`:''}${s.law?`<div class="law">${esc(s.law)}</div>`:''}</div></div>
+    h+=`<div class="card"><div class="top"><div class="pic" data-id="${esc(s.id)}"><img src="${s.img}" alt=""><button class="zb" title="Vergrößern">🔍</button></div><div><div class="nm">${esc(s.n)}</div><span class="chip" style="background:${s.tc}">${esc(s.t.toUpperCase())}</span>${s.rar?`<span class="chip" style="background:#3a3f5c">${esc((RAR[s.rar]||s.rar).toUpperCase())}</span>`:''}${s.law?`<div class="law">${esc(s.law)}</div>`:''}</div></div>
       <div class="evo">${s.prev?`↖ entwickelt sich aus ${esc(s.prev)}`:''}${s.prev&&s.evo?' · ':''}${s.evo?`→ ab Lv ${s.evo[0]} zu ${esc(s.evo[1])}`:''}${!s.prev&&!s.evo?'keine Entwicklung':''}</div>
       ${s.dex?`<div class="dex">📖 ${esc(s.dex)}</div>`:''}
       ${s.q.length?`<details ${q?'open':''}><summary>${s.q.length} Fragen${b&&D.book[b]&&D.book[b].length?` (+ ${D.book[b].length} allgemeine ${b}-Fragen)`:''}</summary>${qList(qs)}</details>`:`<div class="none">${b&&D.book[b]?`Keine eigenen Fragen – bekommt die ${D.book[b].length} allgemeinen ${b}-Fragen.`:'Keine eigenen Fragen (Quiz zieht zufällige Fragen).'}</div>`}</div>`}
@@ -43,6 +48,18 @@ function render(){const q=document.getElementById('q').value.trim().toLowerCase(
     h+=`<section class="book card"><h2>ALLGEMEINE ${b}-FRAGEN (${D.book[b].length}) – ohne passendes Monster, gelten für alle ${b}-Monster und die PMLK</h2><details ${q?'open':''}><summary>${qs.length} anzeigen</summary>${qList(qs)}</details></section>`}
   document.getElementById('m').innerHTML=h||'<div class="none">Nichts gefunden.</div>';
   document.getElementById('st').textContent=`${n} Monster · ${nq} eigene Fragen · ${Object.values(D.book).reduce((a,v)=>a+v.length,0)} allgemeine · Stand v${D.ver}`}
+// zoom: the whole evolution line, big and pixel-sharp (click / Esc closes)
+function lineOf(s){const byN={};for(const x of D.sp)byN[x.n]=x;let r=s,g=0;while(r.prev&&byN[r.prev]&&g++<6)r=byN[r.prev];const L=[r];g=0;while(L[L.length-1].evo&&byN[L[L.length-1].evo[1]]&&g++<6)L.push(byN[L[L.length-1].evo[1]]);return L}
+function zoom(id){const s=D.sp.find(x=>x.id===id);if(!s)return;const L=lineOf(s);const tmp=new Image();
+  const fig=(x,i)=>`<figure class="${x===s?'cur':''}"><img src="${x.img}" alt="" data-z="${i}"><figcaption>${esc(x.n)}<small>${i?`ab Lv ${L[i-1].evo[0]}`:'Grundform'}</small></figcaption></figure>`;
+  const z=document.getElementById('zoom');z.innerHTML=`<div class="line">${L.map((x,i)=>(i?'<span class="arr">→</span>':'')+fig(x,i)).join('')}</div><div class="hint">Klick oder Esc schließt</div>`;
+  // same pixel size for the whole line: scale by the largest that fits
+  const ims=[...z.querySelectorAll('figure img')];let left=ims.length;const fit=()=>{const ws=ims.map(i=>i.naturalWidth),hs=ims.map(i=>i.naturalHeight);
+    const k=Math.max(2,Math.floor(Math.min((innerWidth*0.92-ims.length*40)/ws.reduce((a,b)=>a+b,0),(innerHeight*0.62)/Math.max(...hs))));ims.forEach(i=>{i.style.width=i.naturalWidth*k+'px';i.style.height=i.naturalHeight*k+'px'})};
+  ims.forEach(i=>{if(i.complete)--left||fit();else i.onload=()=>--left||fit()});z.classList.add('on')}
+document.getElementById('m').addEventListener('click',e=>{const p=e.target.closest('.pic');if(p)zoom(p.dataset.id)});
+document.getElementById('zoom').addEventListener('click',()=>document.getElementById('zoom').classList.remove('on'));
+addEventListener('keydown',e=>{if(e.key==='Escape')document.getElementById('zoom').classList.remove('on')});
 fetch('data.json').then(r=>r.json()).then(d=>{D=d;const ts=[...new Set(d.sp.map(s=>s.t))].sort();const sel=document.getElementById('ty');for(const t of ts)sel.insertAdjacentHTML('beforeend',`<option>${esc(t)}</option>`);
   for(const id of['q','ty','bk'])document.getElementById(id).addEventListener('input',render);render()}).catch(e=>{document.getElementById('m').textContent='Daten konnten nicht geladen werden.'});
 </script></body></html>
