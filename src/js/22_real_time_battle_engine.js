@@ -978,7 +978,7 @@ function drawBattle(){
     if(F.hurtT){const k=(now-F.hurtT)/340;if(k<1){const e=Math.sin(k*Math.PI);ox-=e*5*dir;rot-=e*0.28*dir;sy*=1-e*0.08;if(k<0.4){const q=1-k/0.4;sx*=1+q*0.18;sy*=1-q*0.16;ox+=Math.round(Math.sin(now/16)*2*q);white=Math.max(white,q*0.85)}}}
     if(F.castT){const k=(now-F.castT)/700;if(k<1){sy*=1+Math.sin(k*Math.PI)*0.12;oy-=Math.sin(k*Math.PI)*5;white=Math.max(white,Math.sin(k*Math.PI)*0.5)}}
     let encDark=false,encX=0;if(B.enc&&F===B.foe){const ee=now-B.enc.t0;encDark=ee<560;if(ee<520){const q=1-ee/520;encX=-q*q*150}}
-    c.globalAlpha=alpha;c.translate(Math.round(X+ox+encX),Math.round(Y+yoff+oy));c.rotate(rot);if((F.face>0)!==!!SPECIES[mon.s].faceR)c.scale(-1,1);c.scale(sc*sx,sc*sy);const dw=s.width>24?64:48;c.drawImage(encDark?darkSprite(mon.s,24):s,-dw/2,6-dw,dw,dw);
+    c.globalAlpha=alpha;c.translate(Math.round(X+ox+encX),Math.round(Y+yoff+oy));c.rotate(rot);if((F.face>0)!==!!SPECIES[mon.s].faceR)c.scale(-1,1);c.scale(sc*sx,sc*sy);const dw=s.width>24?s.width:48;c.drawImage(encDark?darkSprite(mon.s,24):s,-dw/2,6-dw,dw,dw);
     if(white>0){c.globalAlpha=alpha*white;c.drawImage(whiteSprite(mon.s,24),-dw/2,6-dw,dw,dw)}
     c.restore();c.globalAlpha=1;
     if(F===B.me&&B.lvlFx&&now-B.lvlFx<1400){const k=(now-B.lvlFx)/1400;c.fillStyle='#ffe14d';for(let i=0;i<10;i++){const a=i/10*6.28+k*4;c.fillRect(Math.round(X+Math.cos(a)*18),Math.round(Y-20-k*26+Math.sin(a)*6),2,2)}pxText(c,'LEVEL-UP!',X,Math.round(Y-48-k*8),'#ffe14d',6,'center')}
