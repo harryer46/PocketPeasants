@@ -17,6 +17,7 @@ main{padding:14px;display:grid;grid-template-columns:repeat(auto-fill,minmax(340
 #zoom .line{display:flex;gap:18px;align-items:flex-end;justify-content:center;flex-wrap:wrap;max-width:96vw}#zoom figure{margin:0;text-align:center}#zoom figure img{image-rendering:pixelated;background:#151a2b;border:3px solid #000;box-shadow:4px 4px 0 #000}
 #zoom figure.cur img{border-color:var(--accent)}#zoom figcaption{margin-top:6px;font-size:21px}#zoom figcaption small{display:block;color:var(--muted);font-size:16px}#zoom .arr{font-size:28px;color:var(--muted);align-self:center}#zoom .hint{color:var(--muted);font-size:16px}
 .nm{font-size:23px}.chip{display:inline-block;font:9px "Press Start 2P",monospace;color:#fff;padding:3px 5px;border:2px solid #000;margin-right:4px}
+.strip{display:flex;align-items:flex-end;gap:4px;margin-top:6px;flex-wrap:wrap}.strip img{height:38px;image-rendering:pixelated;background:#0b0d16;border:2px solid #000;cursor:zoom-in}.strip img.cur{border-color:var(--accent)}.strip span{color:var(--muted);align-self:center}
 .law{color:#c9b8ff}.evo{color:var(--muted);font-size:17px;margin-top:4px}.dex{margin-top:6px;font-size:17px;color:#cfd3e0}
 details{margin-top:8px}summary{cursor:pointer;color:var(--accent)}ol{margin:6px 0 0;padding-left:22px}li{margin-bottom:6px}
 .a{color:#3ddc6b}.src{color:var(--muted);font-size:15px}.none{color:var(--muted);font-size:17px;margin-top:8px}
@@ -41,6 +42,7 @@ function render(){const q=document.getElementById('q').value.trim().toLowerCase(
     const hay=(s.n+' '+s.law+' '+s.t+' '+s.q.map(x=>x[0]+' '+x[1]).join(' ')).toLowerCase();if(q&&!hay.includes(q))continue;n++;nq+=s.q.length;
     const qs=q?s.q.filter(x=>(x[0]+' '+x[1]).toLowerCase().includes(q)||(s.n+' '+s.law).toLowerCase().includes(q)):s.q;
     h+=`<div class="card"><div class="top"><div class="pic" data-id="${esc(s.id)}"><img src="${s.img}" alt=""><button class="zb" title="Vergrößern">🔍</button></div><div><div class="nm">${esc(s.n)}</div><span class="chip" style="background:${s.tc}">${esc(s.t.toUpperCase())}</span>${s.rar?`<span class="chip" style="background:#3a3f5c">${esc((RAR[s.rar]||s.rar).toUpperCase())}</span>`:''}${s.law?`<div class="law">${esc(s.law)}</div>`:''}</div></div>
+      <div class="strip">${lineOf(s).map(x=>`<img src="${x.img}" alt="" title="${esc(x.n)}" class="${x===s?'cur':''}" data-id="${esc(x.id)}" onload="this.style.height=Math.round(this.naturalHeight*.6)+'px'">`).join('<span>→</span>')}</div>
       <div class="evo">${s.prev?`↖ entwickelt sich aus ${esc(s.prev)}`:''}${s.prev&&s.evo?' · ':''}${s.evo?`→ ab Lv ${s.evo[0]} zu ${esc(s.evo[1])}`:''}${!s.prev&&!s.evo?'keine Entwicklung':''}</div>
       ${s.dex?`<div class="dex">📖 ${esc(s.dex)}</div>`:''}
       ${s.q.length?`<details ${q?'open':''}><summary>${s.q.length} Fragen${b&&D.book[b]&&D.book[b].length?` (+ ${D.book[b].length} allgemeine ${b}-Fragen)`:''}</summary>${qList(qs)}</details>`:`<div class="none">${b&&D.book[b]?`Keine eigenen Fragen – bekommt die ${D.book[b].length} allgemeinen ${b}-Fragen.`:'Keine eigenen Fragen (Quiz zieht zufällige Fragen).'}</div>`}</div>`}
@@ -49,7 +51,7 @@ function render(){const q=document.getElementById('q').value.trim().toLowerCase(
   document.getElementById('m').innerHTML=h||'<div class="none">Nichts gefunden.</div>';
   document.getElementById('st').textContent=`${n} Monster · ${nq} eigene Fragen · ${Object.values(D.book).reduce((a,v)=>a+v.length,0)} allgemeine · Stand v${D.ver}`}
 // zoom: the whole evolution line, big and pixel-sharp (click / Esc closes)
-function lineOf(s){const byN={};for(const x of D.sp)byN[x.n]=x;let r=s,g=0;while(r.prev&&byN[r.prev]&&g++<6)r=byN[r.prev];const L=[r];g=0;while(L[L.length-1].evo&&byN[L[L.length-1].evo[1]]&&g++<6)L.push(byN[L[L.length-1].evo[1]]);return L}
+function lineOf(s){if(s._line)return s._line;const byN={};for(const x of D.sp)byN[x.n]=x;let r=s,g=0;while(r.prev&&byN[r.prev]&&g++<6)r=byN[r.prev];const L=[r];g=0;while(L[L.length-1].evo&&byN[L[L.length-1].evo[1]]&&g++<6)L.push(byN[L[L.length-1].evo[1]]);for(const x of L)x._line=L;return L}
 function zoom(id){const s=D.sp.find(x=>x.id===id);if(!s)return;const L=lineOf(s);const tmp=new Image();
   const fig=(x,i)=>`<figure class="${x===s?'cur':''}"><img src="${x.img}" alt="" data-z="${i}"><figcaption>${esc(x.n)}<small>${i?`ab Lv ${L[i-1].evo[0]}`:'Grundform'}</small></figcaption></figure>`;
   const z=document.getElementById('zoom');z.innerHTML=`<div class="line">${L.map((x,i)=>(i?'<span class="arr">→</span>':'')+fig(x,i)).join('')}</div><div class="hint">Klick oder Esc schließt</div>`;
@@ -57,9 +59,10 @@ function zoom(id){const s=D.sp.find(x=>x.id===id);if(!s)return;const L=lineOf(s)
   const ims=[...z.querySelectorAll('figure img')];let left=ims.length;const fit=()=>{const ws=ims.map(i=>i.naturalWidth),hs=ims.map(i=>i.naturalHeight);
     const k=Math.max(2,Math.floor(Math.min((innerWidth*0.92-ims.length*40)/ws.reduce((a,b)=>a+b,0),(innerHeight*0.62)/Math.max(...hs))));ims.forEach(i=>{i.style.width=i.naturalWidth*k+'px';i.style.height=i.naturalHeight*k+'px'})};
   ims.forEach(i=>{if(i.complete)--left||fit();else i.onload=()=>--left||fit()});z.classList.add('on')}
-document.getElementById('m').addEventListener('click',e=>{const p=e.target.closest('.pic');if(p)zoom(p.dataset.id)});
+document.getElementById('m').addEventListener('click',e=>{const p=e.target.closest('.pic')||e.target.closest('.strip img');if(p)zoom(p.dataset.id)});
 document.getElementById('zoom').addEventListener('click',()=>document.getElementById('zoom').classList.remove('on'));
 addEventListener('keydown',e=>{if(e.key==='Escape')document.getElementById('zoom').classList.remove('on')});
-fetch('data.json').then(r=>r.json()).then(d=>{D=d;const ts=[...new Set(d.sp.map(s=>s.t))].sort();const sel=document.getElementById('ty');for(const t of ts)sel.insertAdjacentHTML('beforeend',`<option>${esc(t)}</option>`);
+function groupLines(){const seen=new Set(),out=[];for(const s of D.sp){if(seen.has(s.id))continue;for(const x of lineOf(s)){if(!seen.has(x.id)){seen.add(x.id);out.push(x)}}}D.sp=out}
+fetch('data.json').then(r=>r.json()).then(d=>{D=d;groupLines();const ts=[...new Set(d.sp.map(s=>s.t))].sort();const sel=document.getElementById('ty');for(const t of ts)sel.insertAdjacentHTML('beforeend',`<option>${esc(t)}</option>`);
   for(const id of['q','ty','bk'])document.getElementById(id).addEventListener('input',render);render()}).catch(e=>{document.getElementById('m').textContent='Daten konnten nicht geladen werden.'});
 </script></body></html>
