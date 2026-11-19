@@ -135,7 +135,7 @@ function newBattle(o){try{if(typing())document.activeElement.blur()}catch(e){}
     const pickLead=!B.tb&&B.mode!=='duel'&&(realState==='fight'||realState==='count')&&B.me.team.filter(m=>m.hp>0).length>1;if(pickLead){B.me.spawnT=Infinity;if(B.losTO){clearTimeout(B.losTO);B.losTO=null}}
     const introMs=(B.mode==='wild'?0:1000)+vx;
     // every real-time battle starts with a 3-2-1 countdown (the lead can be changed meanwhile)
-    B.introAt=performance.now()+introMs;const go=()=>{if(B===myB&&B.state==='intro'){if(!B.tb&&(realState==='fight'||realState==='count')){B.state='count';B.cntEnd=performance.now()+3000;if(B.mode!=='duel'&&B.me.team.filter(m=>m.hp>0).length>1)B.leadWait=true}else B.state=realState}};B.introGo=go;B.introTO=setTimeout(go,introMs)},undefined,350);
+    B.introAt=performance.now()+introMs;const go=()=>{if(B===myB&&B.state==='intro'){if(!B.tb&&(realState==='fight'||realState==='count')){B.state='count';B.cntEnd=performance.now()+3000;if(B.mode!=='duel'&&B.me.team.filter(m=>m.hp>0).length>1&&!B.leadDone)B.leadWait=true}else B.state=realState}};B.introGo=go;B.introTO=setTimeout(go,introMs)},undefined,350);
 }
 function closeBattle(){const myB=B;if(!myB)return;myB.closing=true;if(CQ){CQ.done=true;CQ=null}$('#cquiz').classList.remove('on','lite');$('#bpick').classList.remove('on');transition('fade',()=>{if(B===myB)B=null;placeDpad();$('#battle').classList.remove('on');$('#stage').style.transform='';pres({bt:null,du:null,ld:leadInfo(),lf:folInfo()});renderTeam();updateHud()},300,350)}
 function fire(F,i,remote){
@@ -173,9 +173,9 @@ function startBreak(F){const now=performance.now();const alive=F.team.filter((m,
   const myAlive=B.me.team.filter(m=>m.hp>0).length;B.state='break';B.brk={F,t0:now,me:F===B.me,choice:null,mine:null,end:now+(F===B.me&&alive>1?4500:F!==B.me&&myAlive>1&&!B.tb?3800:2300)};B.shots=[];B.aimDrag=0;
   for(const X of[B.me,B.foe])if(X){X.vx=X.vy=0;X.dashT=0}
   say(F===B.me?(alive>1?'Runde pausiert — wähle dein nächstes Monster!':'Runde pausiert — nächstes Monster!'):`Runde pausiert — ${B.mode==='wild'?'der Gegner':B.oppName||'der Gegner'} schickt das nächste Monster…`)}
-function breakUpdate(now,dt){const k=B.brk,F=k.F;F.faint=Math.max(0.01,F.faint-dt*0.5);
-  if(B.mode!=='duel'&&!B.tb){const myAlive=B.me.team.filter(m=>m.hp>0).length;if(k.me&&myAlive>1&&k.choice==null&&now-k.t0>1200)k.end=now+500;if(!k.me&&myAlive>1&&k.mine==null&&now-k.t0>1200)k.end=now+500}
-  if(now<k.end)return;
+function breakUpdate(now,dt){const k=B.brk,F=k.F;F.faint=Math.max(0.01,F.faint-dt*0.6);
+  if(B.mode!=='duel'&&!B.tb){const myAlive=B.me.team.filter(m=>m.hp>0).length;if(k.me&&myAlive>1&&k.choice==null&&now-k.t0>1800)k.end=Math.max(k.end>now+500?now+500:k.end,k.t0+1700);if(!k.me&&myAlive>1&&k.mine==null&&now-k.t0>1800)k.end=Math.max(k.end>now+500?now+500:k.end,k.t0+1700)}
+  if(now<k.end||now<k.t0+1600)return;
   if(F.ctrl==='remote'&&act(F).hp<=0){if(now-k.t0<9000)return}  // wait until the other player has sent his next monster
   if(F.ctrl!=='remote'&&act(F).hp<=0){let idx=k.choice;if(idx==null||!F.team[idx]||F.team[idx].hp<=0)idx=nextAlive(F);if(idx<0){F.out=true;B.state='fight';B.brk=null;return}
     F.a=idx;F.spawnT=now+(F===B.me?480:0);F.cd=[0.3,0.3,0.3,0.3];say(`${F===B.me?'Los,':'Gegner schickt'} ${SPECIES[act(F).s].n}!`)}
@@ -314,7 +314,7 @@ function bUpdate(dt){if(B.mode==='spec'){specUpdate(dt);return}if(dt>0)B.fps=B.f
     if(F.noRegen>0){F.noRegen-=dt;F.stillT=0;F.apMul=0;continue}const mul=F.stillT<0.6?1:1+Math.min(2,(F.stillT-0.6)*1.5);F.apMul=mul;F.ap=Math.min(AP_MAX,(F.ap??AP_MAX)+AP_REGEN*mul*dt)}
   if(B.state==='fight')for(const F of[B.me,B.foe]){if(!F||!F.st)continue;for(const k in F.st)F.st[k]=Math.max(0,F.st[k]-dt);
     if(F.st.burn>0&&F.ctrl!=='remote'&&act(F).hp>0){F.burnT+=dt;if(F.burnT>=0.5){F.burnT=0;dealDamage(F,Math.max(1,Math.round(act(F).mhp*0.03)),'#ff8a3d')}if(Math.random()<0.3)B.parts.push({x:F.x+(Math.random()*16-8),y:F.y-20,vx:0,vy:-20,life:0.4,age:0,c:'#ff8a3d'})}}
-  if(B.state!=='fight')for(const F of[B.me,B.foe])if(F&&F.faint>0&&act(F).hp<=0)F.faint=Math.max(0,F.faint-dt);
+  if(B.state!=='fight'&&B.state!=='break')for(const F of[B.me,B.foe])if(F&&F.faint>0&&act(F).hp<=0)F.faint=Math.max(0,F.faint-dt);
   hazardTick(dt);
   for(const p of B.parts){p.age+=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;if(p.conf){p.vx+=Math.sin(p.age*6+p.y)*4*dt}else{p.vx*=0.9;p.vy*=0.9}}B.parts=B.parts.filter(p=>p.age<p.life);
   B.nums=B.nums.filter(n=>now-n.at<(n.life||900));
@@ -548,7 +548,7 @@ function startTrainer(t){
   say(`${t.n} will kämpfen!`);{const ty=trainerType(t);if(ty)say(`${t.n} setzt auf ${TYPES[ty].n}-Monster!`)}
 }
 function trainerKO(def){const idx=B.me.a;syncBack();const m=RUN.team[idx];if(m){const msgs=gainXp(m,Math.round(xpGain(def.s,def.l)*1.4));Object.assign(B.me.team[idx],battler(m));msgs.forEach(say)}}
-async function trainerWin(){B.state='over';finale(true);const t=B.trainer;RUN.beat[t.id]=1;if(t.toll){RUN.toll=RUN.toll||{};RUN.toll[t.toll]=1;setTimeout(()=>sysChat(`${t.n}: „Respekt. Du darfst passieren!“`),2600)}RUN.kap+=t.reward;{const k=HM_FROM[t.id];if(k&&!hasHM(k)){RUN.hm=RUN.hm||{};RUN.hm[k]=1;say(k==='fly'||k==='swim'?`Lizenz ${HM[k].i} ${HM[k].n} + VM ${k==='fly'?'FLIEGEN':'SURFER und WHIRLPOOL'} erhalten! Bring die VM einem ${k==='fly'?'Flug':'Wasser'}-Monster bei (Team → 💿).`:`Du hast die VM ${HM[k].i} ${HM[k].n} bekommen! Einsetzbar mit einem ${hmNeed(k)} im Kader.`);try{setTimeout(renderTeam,50)}catch(e){}sysChat(`${t.n} hat dir ${HM[k].n} beigebracht: ${HM[k].d}`)}}earn(t.reward*40,'von '+t.n);{const tm=tmRandom(mulberry32((Date.now()^hashStr(t.id))>>>0),vmTier(t));if(tm){tmGive(tm);say(`Belohnung: 💿 TM ${MOVES[tm].n} (${TYPES[MOVES[tm].t].n})!`)}}syncBack();say(`Du hast ${t.n} besiegt!`);say(`Belohnung: ${t.reward} Handschellen.`);sysChat(`Du hast ${t.n} besiegt und ${t.reward} Handschellen bekommen.`);updateHud();const myB=B;await sleep(2400);if(B===myB)endWild()}
+async function trainerWin(){B.state='over';finale(true);const t=B.trainer;RUN.beat[t.id]=1;if(t.toll){RUN.tollFw=RUN.tollFw||{};RUN.tollFw[t.toll]=1}RUN.kap+=t.reward;{const k=HM_FROM[t.id];if(k&&!hasHM(k)){RUN.hm=RUN.hm||{};RUN.hm[k]=1;say(k==='fly'||k==='swim'?`Lizenz ${HM[k].i} ${HM[k].n} + VM ${k==='fly'?'FLIEGEN':'SURFER und WHIRLPOOL'} erhalten! Bring die VM einem ${k==='fly'?'Flug':'Wasser'}-Monster bei (Team → 💿).`:`Du hast die VM ${HM[k].i} ${HM[k].n} bekommen! Einsetzbar mit einem ${hmNeed(k)} im Kader.`);try{setTimeout(renderTeam,50)}catch(e){}sysChat(`${t.n} hat dir ${HM[k].n} beigebracht: ${HM[k].d}`)}}earn(t.reward*40,'von '+t.n);{const tm=tmRandom(mulberry32((Date.now()^hashStr(t.id))>>>0),vmTier(t));if(tm){tmGive(tm);say(`Belohnung: 💿 TM ${MOVES[tm].n} (${TYPES[MOVES[tm].t].n})!`)}}syncBack();say(`Du hast ${t.n} besiegt!`);say(`Belohnung: ${t.reward} Handschellen.`);sysChat(`Du hast ${t.n} besiegt und ${t.reward} Handschellen bekommen.`);updateHud();const myB=B;await sleep(2400);if(B===myB)endWild()}
 function syncBack(){if(B&&(B.mode==='wild'||B.mode==='trainer'))B.me.team.forEach((b,i)=>{if(RUN.team[i])RUN.team[i].hp=b.hp})}
 async function wildWin(){
   if(B.legend&&typeof FEM!=='undefined'&&FEM.includes(B.legend)){B.state='over';finale(false);syncBack();const n=SPECIES[B.legend].n;say(`${n} ist geflohen!`);setTimeout(()=>sysChat(`${n} lässt sich nicht besiegen – fang es, bevor seine KP auf 0 sinken!`),900);const myB=B;setTimeout(()=>{if(B===myB)endWild(`${n} ist geflohen – versuch es nochmal!`)},2600);return}
@@ -726,12 +726,14 @@ function buildBattleUI(){
 // choose the lead during the start countdown, or the next monster during a round pause
 // monster choice as a slot-machine reel: A/D (or ◀ ▶) spin left/right, X or a tap on the middle card confirms
 function pickMode(){if(!(B&&!B.tb&&B.me&&!B.closing))return null;const alive=B.me.team.filter(m=>m.hp>0).length;
-  if(B.state==='count'&&!B.leadDone&&alive>1)return'lead';if(B.state==='break'&&B.brk&&B.brk.me&&alive>1)return'next';if(B.state==='break'&&B.brk&&!B.brk.me&&alive>1)return'swap';if(B.state==='fight'&&B.qsel&&alive>1)return'quick';return null}
+  if((B.state==='count'||(B.state==='intro'&&B.me.spawnT===Infinity))&&!B.leadDone&&alive>1)return'lead';const sunk=B.brk&&performance.now()-B.brk.t0>1500;  // the picker waits until the beaten monster has sunk into the ground
+  if(B.state==='break'&&B.brk&&B.brk.me&&alive>1&&sunk)return'next';if(B.state==='break'&&B.brk&&!B.brk.me&&alive>1&&sunk)return'swap';if(B.state==='fight'&&B.qsel&&alive>1)return'quick';return null}
 function reelList(){return B.me.team.map((m,i)=>i).filter(i=>B.me.team[i].hp>0)}
 function reelInit(mode){const L=reelList();let cur=mode==='next'?L.find(i=>i!==B.me.a)??L[0]:B.me.a;if(!L.includes(cur))cur=L[0];B.reel={mode,pos:L.indexOf(cur),dir:0}}
 function reelSpin(d){const mode=pickMode();if(!mode)return;if(!B.reel||B.reel.mode!==mode)reelInit(mode);const L=reelList();B.reel.pos=(B.reel.pos+d+L.length)%L.length;B.reel.dir=d;$('#bpick').dataset.k=''}
 function reelConfirm(){const mode=pickMode();if(!mode)return;if(!B.reel||B.reel.mode!==mode)reelInit(mode);const i=reelList()[B.reel.pos];if(i==null)return;B.reel=null;
   if(mode==='quick'){quickPick(i);return}
+  if(mode==='lead'&&B.state==='intro'){const now=performance.now();B.me.a=i;B.leadDone=1;B.wi=null;B.vs=null;if(B.introTO)clearTimeout(B.introTO);if(B.introGo)B.introGo();B.enterT=Math.min(B.enterT||now,now);if(B.foe)B.foe.spawnT=Math.min(B.foe.spawnT||0,now+150);B.me.spawnT=now+480;say(`Los, ${SPECIES[act(B.me).s].n}!`);$('#bpick').dataset.k='';return}
   if(mode==='lead'){if(i!==B.me.a||B.me.spawnT===Infinity){B.me.a=i;B.me.spawnT=performance.now()+480;say(`Los, ${SPECIES[act(B.me).s].n}!`);if(B.mode==='duel')publishDuel(true)}if(B.leadWait){B.leadWait=false;B.leadDone=1;B.cntEnd=performance.now()+3000}else B.leadPicked=1}
   else if(mode==='swap'){B.brk.mine=i;if(B.mode!=='duel')B.brk.end=Math.min(B.brk.end,performance.now()+300)}
   else if(mode==='next'){B.brk.choice=i;B.brk.end=Math.min(B.brk.end,performance.now()+500)}
@@ -758,11 +760,11 @@ function renderPick(){const el=$('#bpick');if(!el)return;const mode=pickMode();
   $('#rgo').onpointerdown=e=>{e.preventDefault();e.stopPropagation();reelConfirm()};
   el.classList.add('on')}
 function updateBattleUI(){if(B.mode==='spec')return;try{renderPick()}catch(e){console.error(e)}try{bagLabel()}catch(e){}
-  const F=B.me;const mon=act(F);const key=mon.s+F.a+mon.m.join();
+  const F=B.me;const pm=pickMode(),pi=(pm==='lead'||pm==='next'||pm==='swap')&&B.reel?reelList()[B.reel.pos]:null;const mon=pi!=null&&F.team[pi]?F.team[pi]:act(F);const key=mon.s+(pi??F.a)+mon.m.join();
   const btns=document.querySelectorAll('#bact .mv');
   if(key!==B.uiKey){B.uiKey=key;btns.forEach((b,i)=>{const mid=mon.m[i];b.style.visibility=mid?'visible':'hidden';if(!mid)return;const mv=MOVES[mid];b.style.background=TYPES[mv.t].c;b.querySelector('.lbl').innerHTML=`<span class="k">${isMob()?'':esc(keyLabel(SET.keys['a'+(i+1)]))}</span> ${esc(mv.n)}<small>${esc(moveDesc(mid).replace(/^\w+ · /,''))}</small>`})}
   const lock=B.tb&&B.state!=='tbChoose';document.querySelectorAll('#bact button').forEach(b=>{if(b.textContent!=='⚙')b.disabled=lock});
-  btns.forEach((b,i)=>{const mid=mon.m[i];if(!mid)return;b.querySelector('.cd').style.width=B.tb?'0%':(F.cd[i]/cdOf(mid)*100)+'%';const have=B.tb?Math.min(AP_MAX,(F.ap??AP_MAX)+TB_AP_REGEN):(F.ap??AP_MAX);b.style.filter=have<apCost(mid)?'grayscale(.8) brightness(.7)':''});
+  btns.forEach((b,i)=>{const mid=mon.m[i];if(!mid)return;b.querySelector('.cd').style.width=B.tb||pi!=null?'0%':(F.cd[i]/cdOf(mid)*100)+'%';const have=B.tb?Math.min(AP_MAX,(F.ap??AP_MAX)+TB_AP_REGEN):(F.ap??AP_MAX);b.style.filter=have<apCost(mid)?'grayscale(.8) brightness(.7)':''});
   const cap=$('#bcap');if(cap)cap.textContent=B.aim?'LOSLASSEN ZUM WERFEN!':B.capGreat?'HALTEN: SUPER-HANDSCHELLEN':`HALTEN: HANDSCHELLEN (${RUN.kap})`;
   if(B.aim&&performance.now()-B.aim.t0>4500)capRelease();
 }
@@ -961,7 +963,7 @@ function drawBattle(){
     const sk=F.spawnT?(now-F.spawnT)/380:1;if(sk<1){sc=0.2+0.8*sk;white=1-sk}
     if(catchK>=0){sc=1-catchK*0.9;white=1}
     sc*=ssc;
-    if(mon.hp<=0&&F.ctrl!=='remote'){const fk=1-clamp(F.faint/0.9,0,1);yoff=fk*fk*36;clipY=Y+2}else if(mon.hp<=0)yoff=36;
+    if(mon.hp<=0&&F.ctrl!=='remote'){const fk=1-clamp(F.faint/0.9,0,1);yoff=fk*fk*80;clipY=Y+2;if(fk<0.97&&Math.random()<0.5)B.parts.push({x:X+(Math.random()-.5)*26,y:Y-1,vx:(Math.random()-.5)*40,vy:-20-Math.random()*30,life:0.5,age:0,c:Math.random()<.5?'#8a6a48':'#b8946a'})}else if(mon.hp<=0)yoff=80;
     if(B.evoFx&&now-B.evoFx<1800&&F===B.me)white=Math.max(white,Math.abs(Math.sin((now-B.evoFx)/90))*0.9);
     const az=flyZ(F,now),dv=stOn(F,'dive');
     if(dv){const t2=now/1000;c.strokeStyle='#bfe2ff';c.lineWidth=1;for(let q=0;q<2;q++){const rr=7+((t2*14+q*7)%14);c.globalAlpha=1-rr/22;pxEl(c,X,Y,rr,rr*0.4,0)}c.globalAlpha=1;c.fillStyle='#3d8bf260';pxEl(c,X,Y,11,4,1);continue}

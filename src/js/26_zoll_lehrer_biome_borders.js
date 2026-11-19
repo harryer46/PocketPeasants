@@ -22,7 +22,7 @@ const PROF_NAMES={PolG:['Prof. Gefahr','Prof. Störer','Prof. Gefahrenabwehr','P
 const TOLL_AREA={2:'den Damentaler Wald',3:'die Marderacher Küste',4:'die Felsenhöhen',5:'den Knast',6:'das Lahribarer Gebirge',7:'den Unterwertheimer Canyon',8:'den Mostbacher Dschungel',9:'den Zellentrakt'};
 const TOLL_FEE=300;
 function lawOf(sid){const L=(SPECIES[sid]&&SPECIES[sid].law)||'';const m=L.match(/^(?:§|Art\.)\s*\d+[a-z]?\s+([A-Za-zÄÖÜäöü]+)/);return m?m[1]:null}
-function lawSpecies(law){if(law==='StVO')return['promillo','bleifuss','owigon'].filter(s=>SPECIES[s]);return Object.keys(SPECIES).filter(s=>ALT_IDS.has(s)&&RAR[s]!=='legendary'&&lawOf(s)===law)}
+function lawSpecies(law){if(law==='StVO')return['promillo','bleifuss','owigon'].filter(s=>SPECIES[s]);return Object.keys(SPECIES).filter(s=>ALT_IDS.has(s)&&RAR[s]!=='legendary'&&!EVOT.has(s)&&lawOf(s)===law)}  // base forms; newMon evolves them by level
 function lawQuestions(law){if(law==='StVO')return STVO_QZ.map(q=>({src:null,q}));const out=[];for(const s of lawSpecies(law))for(const q of QZ[s]||[])out.push({src:s,q:qReal(q)});for(const q of(typeof VAULT_BOOK!=='undefined'&&VAULT_BOOK[law])||[])out.push({src:null,q:qReal(q)});return out}
 let TOLLS=null;const TOLL_OPEN=new Set();
 function tollSpots(){if(TOLLS)return TOLLS;TOLLS=[];

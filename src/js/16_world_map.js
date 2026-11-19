@@ -30,6 +30,7 @@ function drawMap(){bindMapZoom();
   const dpr=Math.min(3,devicePixelRatio||1,9000/(MW*ts));const W=Math.round(MW*ts),H=Math.round(MH*ts);
   if(cv.width!==Math.round(W*dpr)){cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);cv.style.width=W+'px';cv.style.height=H+'px';mapCenter(ts)}else if(drawMap.rc)mapCenter(ts);drawMap.rc=0;
   const c=cv.getContext('2d');c.setTransform(dpr,0,0,dpr,0,0);c.imageSmoothingEnabled=false;c.drawImage(miniMap(),0,0,W,H);
+  try{drawLocked(c,W,H,ts)}catch(e){console.error(e)}
   c.textAlign='center';const F=Math.max(10,tf*5);
   for(const[k,p]of Object.entries(BIO_C)){if(!ZONES[k])continue;const L=ZLV[k];c.font=`${Math.max(7,Math.round(tf*3.2))}px "Press Start 2P",monospace`;const t=ZONES[k].n.toUpperCase();c.fillStyle='#000000a0';c.fillText(t,p.x*ts+1,p.y*ts+1);c.fillStyle='#ffffff';c.fillText(t,p.x*ts,p.y*ts);
   }
@@ -70,3 +71,17 @@ function mapTip(e){let tip=$('#maptip');if(!tip){tip=document.createElement('div
   tip.innerHTML=h;tip.style.display='block';const w=tip.offsetWidth;tip.style.left=Math.min(innerWidth-w-4,e.clientX+12)+'px';tip.style.top=Math.max(4,e.clientY-30)+'px'}
 {const cv=$('#mapcv');cv.addEventListener('mousemove',mapTip);cv.addEventListener('mouseleave',()=>mapTip(null));cv.addEventListener('click',mapTip);$('#mapwrap').addEventListener('scroll',()=>mapTip(null),{passive:true})}
 {const _cm=closeMap;closeMap=function(){mapTip(null);return _cm.apply(this,arguments)}}
+
+// areas whose professor has not been passed yet: diagonal pixel hatching and a pixel-art padlock
+const LOCK_PX=["..XXXXX..",".X.....X.",".X.....X.",".X.....X.","XXXXXXXXX","XYYYYYYYX","XYYYZYYYX","XYYYZYYYX","XYYYYYYYX","XXXXXXXXX"];
+function lockedBiomes(){if(!RUN||RUN.phase!=='train')return[];const out=[];for(const k in TOLL_LAW){const b=+k;if(!tollPaid(b)&&tollSpots().some(t=>t.b===b))out.push(b)}return out}
+function drawLocked(c,W,H,ts){const L=lockedBiomes();if(!L.length)return;const key=L.join(',');
+  if(drawLocked.key!==key){drawLocked.key=key;const m=mk(MW,MH),x=m.getContext('2d'),id=x.createImageData(MW,MH),d=id.data;const set=new Set(L);
+    for(let i=0;i<MW*MH;i++){if(!set.has(BIOME[i]))continue;const tx=i%MW,ty=(i-tx)/MW;const st=((tx+ty)%6)<2;d[i*4]=20;d[i*4+1]=20;d[i*4+2]=31;d[i*4+3]=st?175:60}
+    x.putImageData(id,0,0);drawLocked.cv=m;
+    // one padlock per locked area, at its middle
+    drawLocked.pos=L.map(b=>{let sx=0,sy=0,n=0;for(let i=0;i<MW*MH;i++)if(BIOME[i]===b){const tx=i%MW;sx+=tx;sy+=(i-tx)/MW;n++}return n?{x:sx/n,y:sy/n}:null}).filter(Boolean)}
+  c.drawImage(drawLocked.cv,0,0,W,H);
+  const px=Math.max(2,Math.round(ts*1.6));for(const p of drawLocked.pos){const x0=Math.round(p.x*ts-px*4.5),y0=Math.round(p.y*ts+px*2);
+    c.fillStyle='#000';c.fillRect(x0-px,y0-px,px*11,px*12);
+    for(let y=0;y<LOCK_PX.length;y++)for(let x=0;x<9;x++){const ch=LOCK_PX[y][x];if(ch==='.')continue;c.fillStyle=ch==='X'?(y<4?'#c9ccd6':'#7a5a12'):ch==='Y'?'#ffcb3d':'#14141f';c.fillRect(x0+x*px,y0+y*px,px,px)}}}
