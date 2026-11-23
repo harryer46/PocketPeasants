@@ -57,3 +57,29 @@ function openBoxWin(){if(!RUN)return;const locked=!!B||RUN.phase==='arena';
   acts();
   document.querySelectorAll('[data-srt]').forEach(b=>b.onclick=()=>{BOXW.sort=b.dataset.srt;BOXW.sel=null;openBoxWin()});
   $('#mok').onclick=closeModal}
+
+// ---- Lernstand: Übersicht über beantwortete / offene / falsche Fragen (ganz unten im Team-Reiter) ----
+let QIDX=null;
+function qIndex(){if(QIDX)return QIDX;const seen=new Map(),bookOf=sid=>{const L=(SPECIES[sid]&&SPECIES[sid].law)||'',m=L.match(/^(?:§|Art\.)\s*\d+[a-z]?\s+([A-Za-zÄÖÜäöü]+)/);return m?m[1]:'Sonstige'};
+  const add=(t,b)=>{if(!t)return;const k=qsId(t);if(!seen.has(k))seen.set(k,b)};
+  for(const sid in QZ){if(!SPECIES[sid])continue;const b=bookOf(sid);for(const q of QZ[sid])add(q[0],b)}
+  if(typeof VAULT_BOOK!=='undefined')for(const b in VAULT_BOOK)for(const q of VAULT_BOOK[b])add(q[0],b);
+  return QIDX=seen}
+function qOverview(){const S=qsLoad(),idx=qIndex(),B0=()=>({n:0,ans:0,r:0,w:0,sure:0,weak:0,everW:0}),all=B0(),per={};
+  for(const[k,b]of idx){const o=per[b]||(per[b]=B0());const r=S[k];for(const x of[o,all]){x.n++;if(r&&(r[0]+r[1])>0){x.ans++;x.r+=r[0];x.w+=r[1];if(r[1]>0)x.everW++;if(r[2]>=3)x.sure++;else if(r[2]===0&&r[1]>0)x.weak++}}}
+  return{all,per}}
+function qsOverviewEl(){const d=document.createElement('div');const{all,per}=qOverview(),pct=(a,b)=>b?Math.round(100*a/b)+'%':'–';
+  const row=(n,o,bold)=>`<tr${bold?' style="font-weight:bold;border-top:2px solid #000"':''}><td style="text-align:left">${n}</td><td>${o.n}</td><td>${o.ans}</td><td>${o.n-o.ans}</td><td style="color:var(--green,#3ddc6b)">${o.r}</td><td style="color:var(--red,#ff5a5a)">${o.w}</td><td>${pct(o.r,o.r+o.w)}</td><td>${o.sure}</td><td style="color:#ffcb3d">${o.weak}</td></tr>`;
+  const books=Object.keys(per).sort((a,b)=>per[b].n-per[a].n);const fo=qFocus();
+  d.innerHTML=`<div class="sec">LERNSTAND (FRAGEN)</div>
+  <div class="small" style="margin:2px 0 4px">${all.ans} von ${all.n} Fragen beantwortet (${pct(all.ans,all.n)}) · ${all.n-all.ans} noch offen · ${all.everW} mindestens einmal falsch · Trefferquote ${pct(all.r,all.r+all.w)}</div>
+  <div class="bar" style="margin-bottom:5px"><i style="width:${all.n?100*all.ans/all.n:0}%;background:#4aa3ff"></i></div>
+  <div style="overflow-x:auto"><table class="qstat" style="width:100%;border-collapse:collapse;font-family:VT323,monospace;font-size:15px;text-align:right">
+  <tr style="color:var(--muted)"><th style="text-align:left">Gesetz</th><th title="Fragen insgesamt">ges.</th><th title="mindestens einmal beantwortet">beantw.</th><th title="noch nie gestellt">offen</th><th title="richtige Antworten insgesamt">✓</th><th title="falsche Antworten insgesamt">✗</th><th title="Trefferquote">Quote</th><th title="3× in Folge richtig">sitzt</th><th title="zuletzt falsch beantwortet">Problem</th></tr>
+  ${books.map(b=>row(esc(b),per[b])).join('')}${row('Gesamt',all,1)}</table></div>
+  <div class="small" style="margin-top:4px">Auswahl: echter Zufall (Krypto-Zufallsgenerator), gleichmäßig über alle Fragen — keine Wiederholung, bevor der Fragenpool eines Monsters durch ist.</div>
+  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:5px"><button class="mini" id="qfocus" title="An: falsch beantwortete Fragen kommen deutlich häufiger, sichere seltener">🎯 Fehler-Fokus: ${fo?'AN':'AUS'}</button><button class="mini" id="qreset" title="Lernstand dieses Geräts löschen">↺ Lernstand zurücksetzen</button></div>`;
+  d.querySelector('#qfocus').onclick=()=>{try{localStorage.setItem('pp_qfocus',fo?'0':'1')}catch(e){}renderTeam()};
+  d.querySelector('#qreset').onclick=e=>{const b=e.currentTarget;if(!b.dataset.sure){b.dataset.sure=1;b.textContent='⚠ Wirklich alles löschen? Nochmal klicken';b.style.background='var(--red,#ff5a5a)';setTimeout(()=>{if(b.isConnected){delete b.dataset.sure;b.textContent='↺ Lernstand zurücksetzen';b.style.background=''}},4000);return}QSTAT={};try{localStorage.removeItem(QS_KEY)}catch(e){}renderTeam()};
+  return d}
+{const _rt=renderTeam;renderTeam=function(){const r=_rt.apply(this,arguments);try{const el=$('#pane-team');if(el&&RUN&&!el.querySelector('.qstat'))el.appendChild(qsOverviewEl())}catch(e){console.warn(e)}return r}}

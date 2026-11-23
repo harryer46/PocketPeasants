@@ -44,7 +44,7 @@ const VAULT_BOOK={StGB:[],StPO:[],PolG:[],GG:[]},VAULT_N={};
 const STUDY_N=5,STUDY_CD=300000;  // 5 min study break per monster after a session
 let ST=null;
 function lawShort(sid){const l=SPECIES[sid]&&SPECIES[sid].law;return l?l.split(' · ')[0]:''}
-function shuffleArr(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function shuffleArr(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=qRndInt(i+1);[a[i],a[j]]=[a[j],a[i]]}return a}
 function studyQuestions(sid){
   if(qzHas(sid)){const av=new Set(),out=[];for(let i=0;i<STUDY_N*3&&out.length<STUDY_N;i++){const q=qzPick(sid,av);if(!q||av.has(q[0]))continue;av.add(q[0]);out.push({src:sid,q:qReal(q)})}if(out.length)return out}
   // hero monsters (no paragraph): random questions from random paragraph monsters
