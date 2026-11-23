@@ -6,7 +6,7 @@ function outArena(x,y){const dx=(x-ACX)/(ARX+24),dy=(y-ACY)/(ARY+30);return dx*d
 // duels: each player sees himself at the bottom — the 'R' player's view is the canonical field turned by 180°
 function flipOn(){return!!(B&&B.mode==='duel'&&B.me&&B.me.side==='R')}
 function fx_(x){return flipOn()?2*ACX-x:x}function fy_(y){return flipOn()?2*ACY-y:y}
-function mkFighter(side,team,x,ctrl){const f={stg:{a:0,d:0,s:0},st:{burn:0,slow:0,stun:0,sleep:0,conf:0,shield:0,haste:0,fly:0,dive:0,wet:0,oil:0,mag:0,ground:0,blind:0,taunt:0},burnT:0,ap:AP_MAX,side,team,a:0,x:ACX,y:ctrl==='local'?YB:YT,face:ctrl==='local'?1:-1,cd:[0,0,0,0],dashT:0,dashCd:0,inv:1,swCd:0,flash:0,faint:0,out:false,ctrl,mvx:0,mvy:0,ddx:0,ddy:0,think:0};const i=team.findIndex(m=>m.hp>0);f.a=i<0?0:i;if(i<0)f.out=true;return f}
+function mkFighter(side,team,x,ctrl){const f={stg:{a:0,d:0,s:0},st:{burn:0,slow:0,stun:0,sleep:0,conf:0,shield:0,haste:0,fly:0,dive:0,wet:0,oil:0,mag:0,ground:0,blind:0,taunt:0,tox:0,trap:0,enc:0,root:0},burnT:0,ap:AP_MAX,side,team,a:0,x:ACX,y:ctrl==='local'?YB:YT,face:ctrl==='local'?1:-1,cd:[0,0,0,0],dashT:0,dashCd:0,inv:1,swCd:0,flash:0,faint:0,out:false,ctrl,mvx:0,mvy:0,ddx:0,ddy:0,think:0};const i=team.findIndex(m=>m.hp>0);f.a=i<0?0:i;if(i<0)f.out=true;return f}
 function act(F){return F.team[F.a]}
 // stat stages (buffs/debuffs) like the originals: -4…+4, reset when the monster leaves the field
 function stageMul(n){n=clamp(n|0,-4,4);return n>=0?(2+n)/2:2/(2-n)}
@@ -132,10 +132,11 @@ function newBattle(o){try{if(typing())document.activeElement.blur()}catch(e){}
     // trainer battles: after the VS screen the trainer's monster is introduced full-screen, just like a wild one (10 s or tap)
     if(B.mode==='trainer'&&B.trainer){const W=WI_MS,st=vx;B.wi={t0:now+st,dur:W,mon:act(B.foe),title:`${B.trainer.n.toUpperCase()} SCHICKT …`};vx=st+W;B.enterT=now+vx;for(const F of[B.me,B.foe])if(F)F.spawnT=now+vx+(F===B.foe?150:450)}
     // own monster is only sent out once the player has picked it (when there is a choice)
-    const pickLead=!B.tb&&B.mode!=='duel'&&(realState==='fight'||realState==='count')&&B.me.team.filter(m=>m.hp>0).length>1;if(pickLead){B.me.spawnT=Infinity;if(B.losTO){clearTimeout(B.losTO);B.losTO=null}}
+    const pickLead=false;  // no lead question: the first healthy monster of the team starts (switch any time with the switch key)
+    if(pickLead){B.me.spawnT=Infinity;if(B.losTO){clearTimeout(B.losTO);B.losTO=null}}
     const introMs=(B.mode==='wild'?0:1000)+vx;
     // every real-time battle starts with a 3-2-1 countdown (the lead can be changed meanwhile)
-    B.introAt=performance.now()+introMs;const go=()=>{if(B===myB&&B.state==='intro'){if(!B.tb&&(realState==='fight'||realState==='count')){B.state='count';B.cntEnd=performance.now()+3000;if(B.mode!=='duel'&&B.me.team.filter(m=>m.hp>0).length>1&&!B.leadDone)B.leadWait=true}else B.state=realState}};B.introGo=go;B.introTO=setTimeout(go,introMs)},undefined,350);
+    B.introAt=performance.now()+introMs;const go=()=>{if(B===myB&&B.state==='intro'){if(!B.tb&&(realState==='fight'||realState==='count')){B.state='count';B.cntEnd=performance.now()+3000;B.leadDone=1}else B.state=realState}};B.introGo=go;B.introTO=setTimeout(go,introMs)},undefined,350);
 }
 function closeBattle(){const myB=B;if(!myB)return;myB.closing=true;if(CQ){CQ.done=true;CQ=null}$('#cquiz').classList.remove('on','lite');$('#bpick').classList.remove('on');transition('fade',()=>{if(B===myB)B=null;placeDpad();$('#battle').classList.remove('on');$('#stage').style.transform='';pres({bt:null,du:null,ld:leadInfo(),lf:folInfo()});renderTeam();updateHud()},300,350)}
 function fire(F,i,remote){
@@ -170,17 +171,17 @@ function fire(F,i,remote){
   if(B.mode==='duel'&&F===B.me){B.mySh=B.mySh.slice(-9);publishDuel(true)}
 }
 function startBreak(F){const now=performance.now();const alive=F.team.filter((m,i)=>i!==F.a&&m.hp>0).length;
-  const myAlive=B.me.team.filter(m=>m.hp>0).length;B.state='break';B.brk={F,t0:now,me:F===B.me,choice:null,mine:null,end:now+(F===B.me&&alive>1?4500:F!==B.me&&myAlive>1&&!B.tb?3800:2300)};B.shots=[];B.aimDrag=0;
+  const myAlive=B.me.team.filter(m=>m.hp>0).length;B.state='break';B.brk={F,t0:now,me:F===B.me,choice:null,mine:null,end:now+(F===B.me&&alive>1?4500:2300)};B.shots=[];B.aimDrag=0;
   for(const X of[B.me,B.foe])if(X){X.vx=X.vy=0;X.dashT=0}
   say(F===B.me?(alive>1?'Runde pausiert — wähle dein nächstes Monster!':'Runde pausiert — nächstes Monster!'):`Runde pausiert — ${B.mode==='wild'?'der Gegner':B.oppName||'der Gegner'} schickt das nächste Monster…`)}
 function breakUpdate(now,dt){const k=B.brk,F=k.F;F.faint=Math.max(0.01,F.faint-dt*0.6);
-  if(B.mode!=='duel'&&!B.tb){const myAlive=B.me.team.filter(m=>m.hp>0).length;if(k.me&&myAlive>1&&k.choice==null&&now-k.t0>1800)k.end=Math.max(k.end>now+500?now+500:k.end,k.t0+1700);if(!k.me&&myAlive>1&&k.mine==null&&now-k.t0>1800)k.end=Math.max(k.end>now+500?now+500:k.end,k.t0+1700)}
+  if(B.mode!=='duel'&&!B.tb){const myAlive=B.me.team.filter(m=>m.hp>0).length;if(k.me&&myAlive>1&&k.choice==null&&now-k.t0>1800)k.end=now+500;/* wait for the player's choice */}
   if(now<k.end||now<k.t0+1600)return;
   if(F.ctrl==='remote'&&act(F).hp<=0){if(now-k.t0<9000)return}  // wait until the other player has sent his next monster
   if(F.ctrl!=='remote'&&act(F).hp<=0){let idx=k.choice;if(idx==null||!F.team[idx]||F.team[idx].hp<=0)idx=nextAlive(F);if(idx<0){F.out=true;B.state='fight';B.brk=null;return}
     F.a=idx;F.spawnT=now+(F===B.me?480:0);F.cd=[0.3,0.3,0.3,0.3];say(`${F===B.me?'Los,':'Gegner schickt'} ${SPECIES[act(F).s].n}!`)}
   if(!k.me&&k.mine!=null&&k.mine!==B.me.a&&B.me.team[k.mine]&&B.me.team[k.mine].hp>0){B.me.a=k.mine;B.me.spawnT=now+480;B.me.cd=[0.3,0.3,0.3,0.3];say(`Zurück! Los, ${SPECIES[act(B.me).s].n}!`)}
-  F.faint=0;F.st={burn:0,slow:0,stun:0,sleep:0,conf:0,shield:0,haste:0,wet:0,oil:0,mag:0,ground:0,blind:0,taunt:0};for(const X of[B.me,B.foe])if(X)X.stg={a:0,d:0,s:0};
+  F.faint=0;F.st={burn:0,slow:0,stun:0,sleep:0,conf:0,shield:0,haste:0,wet:0,oil:0,mag:0,ground:0,blind:0,taunt:0,tox:0,trap:0,enc:0,root:0};for(const X of[B.me,B.foe])if(X)X.stg={a:0,d:0,s:0};
   B.me.x=ACX;B.me.y=YB;if(B.foe){B.foe.x=ACX;B.foe.y=YT}for(const X of[B.me,B.foe])if(X){X.vx=X.vy=0;X.ap=AP_MAX;X.inv=1}B.aimV=null;B.enterT=now;
   B.brk=null;B.state='count';B.cntEnd=now+1600;if(B.mode==='duel')publishDuel(true)}
 function nextAlive(F){const n=F.team.findIndex((m,i)=>i!==F.a&&m.hp>0);return n}
@@ -195,7 +196,7 @@ function selfMove(F,mv){const m=act(F);F.castT=performance.now();
 function dealDamage(T,d,col,text){const def=act(T);if(def.hp<=0)return;def.hp=Math.max(0,def.hp-d);
   if(def.hp<=0&&!T.team.some(m=>m.hp>0)){B.slowUntil=performance.now()+700;B.shakeUntil=performance.now()+350}
   B.nums.push({x:T.x+(Math.random()*8-4),y:T.y-34,t:text||'-'+d,c:col||'#ffffff',at:performance.now()});
-  if(def.hp<=0){T.faint=0.9;T.st={burn:0,slow:0,stun:0,sleep:0,conf:0,shield:0,haste:0,fly:0,dive:0,wet:0,oil:0,mag:0,ground:0,blind:0,taunt:0};if(!(B.legend&&T===B.foe&&typeof FEM!=='undefined'&&FEM.includes(B.legend)))say(`${SPECIES[def.s].n} ist besiegt!`);if(B.mode==='wild'&&T===B.foe)wildWin();else if(B.mode==='trainer'&&T===B.foe)trainerKO(def)}
+  if(def.hp<=0){T.faint=0.9;T.st={burn:0,slow:0,stun:0,sleep:0,conf:0,shield:0,haste:0,fly:0,dive:0,wet:0,oil:0,mag:0,ground:0,blind:0,taunt:0,tox:0,trap:0,enc:0,root:0};if(!(B.legend&&T===B.foe&&typeof FEM!=='undefined'&&FEM.includes(B.legend)))say(`${SPECIES[def.s].n} ist besiegt!`);if(B.mode==='wild'&&T===B.foe)wildWin();else if(B.mode==='trainer'&&T===B.foe)trainerKO(def)}
   if(B.mode==='duel'&&T===B.me)publishDuel(true)}
 function hitLocal(T,s){
   const def=act(T);const r=calcDmg(s.att,def,s.mid,s.p);let d=r.d;if(d>0)d=Math.max(1,Math.round(d*(s.am||1)/stageMul(stgOf(T).d)));if(T.st.shield>0&&d>0)d=Math.max(1,Math.round(d*0.5));
@@ -726,8 +727,8 @@ function buildBattleUI(){
 // choose the lead during the start countdown, or the next monster during a round pause
 // monster choice as a slot-machine reel: A/D (or ◀ ▶) spin left/right, X or a tap on the middle card confirms
 function pickMode(){if(!(B&&!B.tb&&B.me&&!B.closing))return null;const alive=B.me.team.filter(m=>m.hp>0).length;
-  if((B.state==='count'||(B.state==='intro'&&B.me.spawnT===Infinity))&&!B.leadDone&&alive>1)return'lead';const sunk=B.brk&&performance.now()-B.brk.t0>1500;  // the picker waits until the beaten monster has sunk into the ground
-  if(B.state==='break'&&B.brk&&B.brk.me&&alive>1&&sunk)return'next';if(B.state==='break'&&B.brk&&!B.brk.me&&alive>1&&sunk)return'swap';if(B.state==='fight'&&B.qsel&&alive>1)return'quick';return null}
+  const sunk=B.brk&&performance.now()-B.brk.t0>1500;  // the picker waits until the beaten monster has sunk into the ground
+  if(B.state==='break'&&B.brk&&B.brk.me&&alive>1&&sunk)return'next';if(B.state==='fight'&&B.qsel&&alive>1)return'quick';return null}
 function reelList(){return B.me.team.map((m,i)=>i).filter(i=>B.me.team[i].hp>0)}
 function reelInit(mode){const L=reelList();let cur=mode==='next'?L.find(i=>i!==B.me.a)??L[0]:B.me.a;if(!L.includes(cur))cur=L[0];B.reel={mode,pos:L.indexOf(cur),dir:0}}
 function reelSpin(d){const mode=pickMode();if(!mode)return;if(!B.reel||B.reel.mode!==mode)reelInit(mode);const L=reelList();B.reel.pos=(B.reel.pos+d+L.length)%L.length;B.reel.dir=d;$('#bpick').dataset.k=''}
@@ -756,7 +757,7 @@ function renderPick(){const el=$('#bpick');if(!el)return;const mode=pickMode();
   B.reel.dir=0;
   el.querySelectorAll('.rc').forEach(c=>{const off=+c.dataset.rk,i=L[((pos+off)%n+n)%n];const cx=c.querySelector('canvas').getContext('2d');cx.imageSmoothingEnabled=false;cx.drawImage(monSprite(B.me.team[i].s,24),0,0,52,52);
     c.onpointerdown=e=>{e.preventDefault();e.stopPropagation();if(off===0)reelConfirm();else reelSpin(off)}});
-  el.querySelectorAll('[data-rd]').forEach(b=>b.onpointerdown=e=>{e.preventDefault();e.stopPropagation();reelSpin(+b.dataset.rd)});
+  el.querySelectorAll('[data-rd]').forEach(b=>{b.onpointerdown=e=>{e.preventDefault();e.stopPropagation();reelHold(+b.dataset.rd,'ptr')};b.onpointerup=b.onpointerleave=b.onpointercancel=()=>reelStop()});
   $('#rgo').onpointerdown=e=>{e.preventDefault();e.stopPropagation();reelConfirm()};
   el.classList.add('on')}
 function updateBattleUI(){if(B.mode==='spec')return;try{renderPick()}catch(e){console.error(e)}try{bagLabel()}catch(e){}
@@ -1028,7 +1029,7 @@ function drawBattle(){
   if(B.tb&&B.state==='tbChoose'){const t=B.mode==='duel'?`ZUG ${B.turn} · wähle eine Aktion`:'Wähle eine Aktion';c.fillStyle='#0b0d16c8';c.font='10px VT323,monospace';const w=c.measureText(t).width+10;c.fillRect(UW/2-w/2,46,w,11);vtText(c,t,UW/2,55,'#ffcb3d',10,'center')}
   if(B.tb&&B.state==='tbWait'){c.fillStyle='#0b0d16c8';c.fillRect(UW/2-55,46,110,11);vtText(c,'warte auf den Gegner…',UW/2,55,'#ffffff',10,'center')}
   if(B.me.spawnT!==Infinity)hudPanel(c,4,4,B.me,false,'');
-  const stTag={sleep:['SLF','#c4b5fd'],conf:['VRW','#f472b6'],burn:['BRN','#ff8a3d'],slow:['SLW','#6db6f0'],stun:['STN','#ffe14d'],shield:['SHD','#9fd2ff'],haste:['HST','#3ddc6b'],wet:['NAS','#5aa8ff'],oil:['ÖL','#c8a040'],mag:['MAG','#ff5a8a'],ground:['ERD','#c49a6c'],blind:['BLD','#b07aff'],taunt:['PRV','#d23b3b']};
+  const stTag={sleep:['SLF','#c4b5fd'],conf:['VRW','#f472b6'],burn:['BRN','#ff8a3d'],slow:['SLW','#6db6f0'],stun:['STN','#ffe14d'],shield:['SHD','#9fd2ff'],haste:['HST','#3ddc6b'],wet:['NAS','#5aa8ff'],oil:['ÖL','#c8a040'],mag:['MAG','#ff5a8a'],ground:['ERD','#c49a6c'],tox:['TOX','#a040c0'],trap:['FANG','#7a4aa0'],enc:['ZUG','#e88ab8'],root:['FEST','#3d8bf2'],blind:['BLD','#b07aff'],taunt:['PRV','#d23b3b']};
   const tags=(F,x,right)=>{const g=stgOf(F);const ks=(F.ctrl==='remote'?(F.stShow||[]):Object.keys(F.st).filter(k=>F.st[k]>0)).filter(k=>stTag[k]);for(const q of['a','d','s'])if(g[q]){const t=q.toUpperCase().replace('S','G')+(g[q]>0?'+':'')+g[q];stTag[t]=[t,g[q]>0?'#3ddc6b':'#ef6f6f'];ks.push(t)}ks.forEach((k,i)=>{const[t,col]=stTag[k];const X=right?x-24-i*24:x+i*24;c.fillStyle='#14141f';c.fillRect(X,40,22,9);vtText(c,t,X+11,47,col,9,'center')})};
   tags(B.me,4,false);if(B.foe)tags(B.foe,UW-4-62,true);
   if(B.foe)hudPanel(c,UW-4,4,B.foe,true,B.legend?'★':'');

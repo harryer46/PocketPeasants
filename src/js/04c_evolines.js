@@ -18,7 +18,7 @@ Object.assign(MOVES,{
   felswand:{n:'Felswand',t:'rock',p:45,k:'wall',cd:7},
   luftsog:{n:'Luftsog',t:'flying',p:60,k:'pull',cd:4},
   schattenschleier:{n:'Schattenschleier',t:'dark',p:0,k:'veil',cd:8}});
-const EVO_SIG={normal:'strafschaerfung',fire:'glutkern',water:'sturzflut',electric:'ueberspannung',grass:'rankennetz',rock:'felswand',flying:'luftsog',dark:'schattenschleier'};
+const EVO_SIG={fighting:'dynamopunch',normal:'strafschaerfung',fire:'glutkern',water:'sturzflut',electric:'ueberspannung',grass:'rankennetz',rock:'felswand',flying:'luftsog',dark:'schattenschleier'};
 // legendaries instead of unique/rare: Pfisterio and Schlechtekunst wait at their own shrines (high-level areas)
 {RAR_INIT.pfisterio='legendary';RAR_INIT.pfisteriox='legendary';RAR_INIT.schlechtekunst='legendary';
  SPECIES.pfisterio.b=[84,92,78,110];SPECIES.pfisterio.xp=200;
