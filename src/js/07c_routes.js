@@ -127,3 +127,6 @@ function routeWay(fromId,toId){const N=ROUTE_NODES,st=N.findIndex(n=>n.town===fr
     if(ok)for(let yy=y-4;yy<=y+8&&ok;yy++)for(let xx=x-3;xx<=x1+3;xx++)if(tget(xx,yy)===27)ok=false;
     if(!ok){x=x1;continue}
     for(let yy=y+1;yy<=y+3;yy++)for(let xx=x;xx<=x1;xx++)MAP[yy*MW+xx]=T_WF;WFALLS.push({x,y:y+1,w,h:3});n++;x=x1}})();
+// hand-placed road links, carved AFTER the routes are traced so numbering and level ranges stay as they are:
+//   R58 (Lahribar, dead end at 58/44) ↔ R65 through the pine belt (58/45–49); the new tiles belong to R58
+{const r=ROUTE_OF[44*MW+58];for(let y=45;y<=49;y++){tset(58,y,4);ROUTE_OF[y*MW+58]=r}}

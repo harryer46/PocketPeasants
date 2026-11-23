@@ -199,9 +199,10 @@ const KNAST_C={x:262,y:13};
       // standing beside a road, looking at it
       for(const[ddx,ddy,d]of[[1,0,'right'],[-1,0,'left'],[0,1,'down'],[0,-1,'up']]){const j=(Y+ddy)*MW+X+ddx;if(ROAD.has(j)&&BIOME[j]===b)return{x:X,y:Y,d}}}return null};
   const roadsIn=b=>[...ROAD].filter(i=>BIOME[i]===b);
-  const FIX={ben:[150,124,1],lina:[150,58,1],gwen:[118,90,1],rita:[78,101,2],hank:[120,30,4],sue:[176,159,3],axel:[262,124,8]};
+  const FIX={ben:[150,124,1],lina:[150,58,1],gwen:[118,90,1],rita:[78,101,2],hank:[120,30,4],sue:[176,158,3,'down'],axel:[262,124,8]};
   const used=[];const okSpot=(x,y)=>!used.some(([a,b])=>Math.abs(a-x)+Math.abs(b-y)<15)&&!GATES.some(g=>{const gx=g.i%MW,gy=(g.i-gx)/MW;return Math.abs(gx-x)+Math.abs(gy-y)<6})&&!TOWNS.some(t=>Math.abs(t.x-x)<18&&Math.abs(t.y-y)<12);
-  for(const t of TRAINERS){const f=FIX[t.id];if(!f)continue;const s=near(f[0],f[1],f[2])||{x:f[0],y:f[1],d:t.d};Object.assign(t,s);used.push([s.x,s.y])}
+  for(const t of TRAINERS){const f=FIX[t.id];if(!f)continue;const s=f[3]?{x:f[0],y:f[1],d:f[3]}:near(f[0],f[1],f[2])||{x:f[0],y:f[1],d:t.d};  // f[3]: exact spot (Sue stands beside the ford, not on it)
+  Object.assign(t,s);used.push([s.x,s.y])}
   const RANKS=['Polizeimeisterin','Polizeimeister','Kommissar','Kommissarin','Polizeiobermeister','Oberkommissarin','Hauptkommissar','Anwärterin','Anwärter','Polizeihauptmeister','Kriminalkommissarin','Diensthundeführer','Verkehrspolizist','Bereitschaftspolizistin'];
   const NAMES=['Jonas','Lea','Finn','Mila','Paul','Emma','Luis','Hanna','Ben','Sofia','Noah','Lina','Elias','Clara','Felix','Ida','Max','Nele','Tim','Greta','Moritz','Pia','Jan','Zoe','Karl','Frieda','Emil','Lotta','Oskar','Ella','Theo','Maja','Anton','Leni','Jakob','Marie','David','Ronja','Leon','Amelie'];
   const LINES=['Halt, Personenkontrolle!','Ich hab da ein paar Paragrafen für dich.','Hier kommt keiner ungeprüft vorbei!','Zeig mal, was dein Team drauf hat!','Dienstsport! Los geht’s!','Sie wurden geblitzt — von meinem Monster!','Routinekontrolle. Ganz entspannt…','Meine Monster haben die Prüfung mit Auszeichnung bestanden!'];
@@ -213,6 +214,8 @@ const KNAST_C={x:262,y:13};
     TRAINERS.push({id:'tr'+b+'_'+k,n:nm,x:s.x,y:s.y,d:s.d,c:COL[k%COL.length],team:Array.from({length:cnt},(_,j)=>['owigon',5+j]),reward:2+(b>=6?2:b>=3?1:0),line:LINES[Math.floor(rt()*LINES.length)],after:AFTER[Math.floor(rt()*AFTER.length)]});used.push([s.x,s.y]);k++;
     if(R.length/4<k)break}}
   for(const t of TRAINERS){if(!WALK0.has(tget(t.x,t.y))||ENC.has(tget(t.x,t.y)))tset(t.x,t.y,BASE_T[B(t.x,t.y)]||0);const[dx,dy]={up:[0,-1],down:[0,1],left:[-1,0],right:[1,0]}[t.d];for(let s=1;s<=4;s++){const x=t.x+dx*s,y=t.y+dy*s;const tt=tget(x,y);if(tt===2||tt===16||tt===31||tt===3)tset(x,y,ROAD.has(y*MW+x)?4:BASE_T[B(x,y)]||0)}}
+  // Sue's ford (Bootskontrolle): the shallow crossing she used to stand in front of stays; she now waits beside it, so the way is free after the fight
+  for(let x=177;x<=180;x++){const tt=tget(x,159);if(tt===2||tt===16||tt===31||tt===3)tset(x,159,BASE_T[B(x,159)]||0)}
   // level range per area: grows with the distance from Villingen inside the area
   for(const z in ZLV){ZLV[z].d0=1e9;ZLV[z].d1=0}
   for(let i=0;i<MW*MH;i++){if(!ENC.has(MAP[i])&&MAP[i]!==20)continue;const z=BKEYS[BIOME[i]];if(!z||!ZLV[z])continue;const x=i%MW,y=(i-x)/MW,d=distC(x,y);ZLV[z].d0=Math.min(ZLV[z].d0,d);ZLV[z].d1=Math.max(ZLV[z].d1,d)}
