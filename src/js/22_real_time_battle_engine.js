@@ -976,7 +976,7 @@ function drawBattle(){
     c.fillStyle='#00000040';{const ss=sc*(1-az/240);c.fillRect(X-12*ss,Y-2,24*ss,4);c.fillRect(X-9*ss,Y-3,18*ss,6)}Y-=Math.round(az);
     let alpha=1;if(F.flash>0)alpha=Math.floor(F.flash*30)%2?0.3:1;else if(F.inv>0&&F.dashT>0)alpha=0.5;
     if(B.state==='flee'&&F===B.me){/* running away */}
-    c.save();if(clipY!=null){c.beginPath();c.rect(X-40,0,80,clipY);c.clip()}
+    c.save();if(clipY!=null){c.beginPath();c.rect(X-70,0,140,clipY);c.clip()}  // wide enough for the biggest artwork
     // sprite animation: idle breathing, hop while moving, attack lunge, hit recoil, cast glow
     const dir=F.face>0?1:-1,tt=now/1000+(F.side==='L'?0:0.7);let{sx,sy,rot,ox,oy}=idleAnim(SPECIES[mon.s].an,tt);
     if(F.lx===undefined){F.lx=F.x;F.ly=F.y}const mvs=Math.hypot(F.x-F.lx,F.y-F.ly);F.lx=F.x;F.ly=F.y;F.mvs=(F.mvs||0)*0.8+mvs*0.2;
