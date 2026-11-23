@@ -116,5 +116,5 @@ function shockwave(x,y,R,col,dur){if(!B)return;const now=performance.now();dur=(
       const n=Math.max(20,Math.round(r*1.4));for(let i=0;i<n;i++){const t=i/n*Math.PI*2,px=Math.round(w.x+Math.cos(t)*r),py=Math.round(w.y+Math.sin(t)*r*0.45);c.fillStyle=cl;c.fillRect(px-1,py-1,th,th-(k>0.6?1:0))}c.restore()}
     if(k<0.25){c.save();c.globalAlpha=(0.25-k)*2.4;c.fillStyle='#ffffff';pxEl(c,w.x,w.y,w.R*0.25,w.R*0.11,1);c.restore()}}}}
 // strikes from above already push outward (impactWave) – now they also show the wave; big explosions and 100+ hits too
-{const _iw=impactWave;impactWave=function(s,T,x,y){const r=_iw.apply(this,arguments);shockwave(x,y,(s.r||12)+44,TYPES[(MOVES[s.mid]||{}).t||'normal'].c,0.5);return r}}
+{const _iw=impactWave;impactWave=function(s,T,x,y){const r=_iw.apply(this,arguments);shockwave(x,y,(s.r||12)+36,TYPES[(MOVES[s.mid]||{}).t||'normal'].c,0.5);return r}}
 {const _sh=shotHit;shotHit=function(s,T){const r=_sh.apply(this,arguments);const mv=MOVES[s&&s.mid];if(mv&&T&&!s.wv&&!['jet','nova','dash','spin'].includes(mv.k)&&((mv.k==='big')||(mv.p||0)>=100)&&!(s.sw)){shockwave(T.x,T.y,mv.k==='big'?90:60,TYPES[mv.t].c,0.5)}return r}}

@@ -13,12 +13,12 @@ addEventListener('keydown',e=>{
   if(typing()){if(e.key==='Escape')document.activeElement.blur();return}
   if(B&&B.mode==='spec'){if(e.key==='Escape'){e.preventDefault();specStop(true)}else if(e.key==='t'||e.key==='T'){e.preventDefault();switchTab('chat');setSide(true);$('#chatin').focus()}return}
   // slot-machine reel open: A/D (and ←/→) spin it instead of moving
-  if(B&&!B.tb&&!CQ&&pickMode()&&!$('#modal').classList.contains('on')){const kk=e.key.toLowerCase(),d=(kk==='a'||e.key==='ArrowLeft')?-1:(kk==='d'||e.key==='ArrowRight')?1:0;if(d){e.preventDefault();if(!e.repeat)reelHold(d,e.key);return}}
+  if(B&&!B.tb&&!CQ&&pickMode()&&!$('#modal').classList.contains('on')){const kk=e.key.toLowerCase(),d=(kk==='a'||kk==='w'||e.key==='ArrowLeft'||e.key==='ArrowUp')?-1:(kk==='d'||kk==='s'||e.key==='ArrowRight'||e.key==='ArrowDown')?1:0;if(d){e.preventDefault();if(!e.repeat||!RH)reelHold(d,kk);return}}
   const d=KEYMAP[e.key];if(d){e.preventDefault();if(e.key.startsWith('Arrow')&&B&&!B.tb){if(!aimHeld.includes(d))aimHeld.push(d);return}if(!held.includes(d))held.push(d);return}
   if(B&&CQ){const n=+e.key;if(n>=1&&n<=4&&!CQ.done){e.preventDefault();cqAnswer(CQ.order[n-1])}return}
   if(!B&&CQ&&$('#cquiz').classList.contains('on')){const n=+e.key;if(n>=1&&n<=4&&!CQ.done&&CQ_PICK){e.preventDefault();CQ_PICK(CQ.order[n-1])}else if((e.key===' '||e.key==='Enter')&&CQ.done&&$('#cqnext')){e.preventDefault();$('#cqnext').click()}return}
   if(B){if($('#modal').classList.contains('on')||$('#study').classList.contains('on'))return;const k=normKey(e.key),K=SET.keys;
-    if(pickMode()){const kk=e.key.toLowerCase(),d=(kk==='a'||e.key==='ArrowLeft')?-1:(kk==='d'||e.key==='ArrowRight')?1:0;if(d){e.preventDefault();if(!e.repeat)reelHold(d,e.key);return}if(k===K.sw){e.preventDefault();reelConfirm();return}if(e.key==='Escape'&&B.qsel){B.qsel=false;return}if(B.qsel)return}
+    if(pickMode()){const kk=e.key.toLowerCase(),d=(kk==='a'||kk==='w'||e.key==='ArrowLeft'||e.key==='ArrowUp')?-1:(kk==='d'||kk==='s'||e.key==='ArrowRight'||e.key==='ArrowDown')?1:0;if(d){e.preventDefault();if(!e.repeat||!RH)reelHold(d,kk);return}if(k===K.sw){e.preventDefault();reelConfirm();return}if(e.key==='Escape'&&B.qsel){B.qsel=false;return}if(B.qsel)return}
     if((B.qsel&&B.state==='fight')||(B.leadWait&&B.state==='count')){const n=+e.key;if(n>=1&&n<=6){e.preventDefault();const alive=B.me.team.map((m,i)=>i).filter(i=>B.me.team[i].hp>0);const i=alive[n-1];if(i!=null){if(B.qsel)quickPick(i);else{const b=document.querySelector(`#bpick [data-pk="${i}"]`);if(b)b.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}))}}return}if(e.key==='Escape'&&B.qsel){B.qsel=false;return}}
     for(let i=0;i<4;i++)if(k===K['a'+(i+1)]){e.preventDefault();battleMove(i);return}
     if(k===K.dash){e.preventDefault();battleDash()}else if(k===K.sw)battleSwitch();else if(k===K.cap){if(!e.repeat)capPress()}else if(k===K.run){if(!e.repeat)tryRun()}
@@ -107,5 +107,7 @@ $('#hbag').addEventListener('click',e=>{e.currentTarget.blur();openBagMenu()});
 let RH=null;
 function reelHold(d,key){reelStop();reelSpin(d);let gap=320;const step=()=>{if(!RH)return;if(!B||!pickMode()){reelStop();return}reelSpin(d);gap=Math.max(55,gap*0.78);RH.t=setTimeout(step,gap)};RH={key,t:setTimeout(step,gap)}}
 function reelStop(){if(RH){clearTimeout(RH.t);RH=null}}
-addEventListener('keyup',e=>{if(RH&&(e.key===RH.key||e.key.toLowerCase()===String(RH.key).toLowerCase()))reelStop()});
+addEventListener('keyup',e=>{if(RH&&RH.key!=='ptr'&&e.key.toLowerCase()===String(RH.key).toLowerCase())reelStop()});
+// touch / mouse: the arrow buttons are redrawn on every step, so the hold ends on the window's pointerup, not on the button
+addEventListener('pointerup',()=>{if(RH&&RH.key==='ptr')reelStop()});addEventListener('pointercancel',()=>{if(RH&&RH.key==='ptr')reelStop()});
 addEventListener('blur',reelStop);

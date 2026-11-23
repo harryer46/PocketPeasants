@@ -136,7 +136,9 @@ function newBattle(o){try{if(typing())document.activeElement.blur()}catch(e){}
     if(pickLead){B.me.spawnT=Infinity;if(B.losTO){clearTimeout(B.losTO);B.losTO=null}}
     const introMs=(B.mode==='wild'?0:1000)+vx;
     // every real-time battle starts with a 3-2-1 countdown (the lead can be changed meanwhile)
-    B.introAt=performance.now()+introMs;const go=()=>{if(B===myB&&B.state==='intro'){if(!B.tb&&(realState==='fight'||realState==='count')){B.state='count';B.cntEnd=performance.now()+3000;B.leadDone=1}else B.state=realState}};B.introGo=go;B.introTO=setTimeout(go,introMs)},undefined,350);
+    // with a choice to make, your monster only comes out after the choice (the opponent's is shown first)
+    if(!B.tb&&B.me.team.filter(m=>m.hp>0).length>1){B.me.spawnT=Infinity;if(B.losTO){clearTimeout(B.losTO);B.losTO=null}}
+    B.introAt=performance.now()+introMs;const go=()=>{if(B===myB&&B.state==='intro'){if(!B.tb&&(realState==='fight'||realState==='count')){B.state='count';B.cntEnd=performance.now()+3000;B.leadDone=1;choiceOpen(true)}else B.state=realState}};B.introGo=go;B.introTO=setTimeout(go,introMs)},undefined,350);
 }
 function closeBattle(){const myB=B;if(!myB)return;myB.closing=true;if(CQ){CQ.done=true;CQ=null}$('#cquiz').classList.remove('on','lite');$('#bpick').classList.remove('on');transition('fade',()=>{if(B===myB)B=null;placeDpad();$('#battle').classList.remove('on');$('#stage').style.transform='';pres({bt:null,du:null,ld:leadInfo(),lf:folInfo()});renderTeam();updateHud()},300,350)}
 function fire(F,i,remote){
@@ -183,7 +185,7 @@ function breakUpdate(now,dt){const k=B.brk,F=k.F;F.faint=Math.max(0.01,F.faint-d
   if(!k.me&&k.mine!=null&&k.mine!==B.me.a&&B.me.team[k.mine]&&B.me.team[k.mine].hp>0){B.me.a=k.mine;B.me.spawnT=now+480;B.me.cd=[0.3,0.3,0.3,0.3];say(`Zurück! Los, ${SPECIES[act(B.me).s].n}!`)}
   F.faint=0;F.st={burn:0,slow:0,stun:0,sleep:0,conf:0,shield:0,haste:0,wet:0,oil:0,mag:0,ground:0,blind:0,taunt:0,tox:0,trap:0,enc:0,root:0};for(const X of[B.me,B.foe])if(X)X.stg={a:0,d:0,s:0};
   B.me.x=ACX;B.me.y=YB;if(B.foe){B.foe.x=ACX;B.foe.y=YT}for(const X of[B.me,B.foe])if(X){X.vx=X.vy=0;X.ap=AP_MAX;X.inv=1}B.aimV=null;B.enterT=now;
-  B.brk=null;B.state='count';B.cntEnd=now+1600;if(B.mode==='duel')publishDuel(true)}
+  B.brk=null;B.state='count';B.cntEnd=now+1600;if(B.mode==='duel')publishDuel(true);if(!k.me)choiceOpen(false)}
 function nextAlive(F){const n=F.team.findIndex((m,i)=>i!==F.a&&m.hp>0);return n}
 function doSwitch(F,idx){F.a=idx;F.stg={a:0,d:0,s:0};F.spawnT=performance.now()+(F===B.me?480:0);if(F!==B.me)burst(F.x,F.y-14,'#ffffff',12);F.swCd=1.6;F.inv=0.7;F.cd=[0.3,0.3,0.3,0.3];say(`${F===B.me?'Los,':'Gegner schickt'} ${SPECIES[act(F).s].n}!`);if(B.mode==='duel'&&F===B.me)publishDuel(true)}
 function selfMove(F,mv){const m=act(F);F.castT=performance.now();
@@ -213,11 +215,12 @@ function hitLocal(T,s){
   dealDamage(T,d,r.e>1?'#ffcb3d':r.e<1?'#c0c4d6':'#ffffff',d?'-'+d:'0');return d;
 }
 // attacks from above (fly, sky/air strikes): the impact hits as before and pushes outward; around it a small shockwave
-// ring hits for ~60 % damage with a push back (no status effects)
-function impactWave(s,T,x,y){const W=s.r+18;(B.rings=B.rings||[]).push({x,y,t0:performance.now(),r0:s.r*0.6,r1:W,col:TYPES[MOVES[s.mid].t].c});
+// ring hits for 75 % → 15 % damage (less with distance) with a push back (no status effects)
+function impactWave(s,T,x,y){const W=s.r+30;(B.rings=B.rings||[]).push({x,y,t0:performance.now(),r0:s.r*0.6,r1:W,col:TYPES[MOVES[s.mid].t].c});
   if(T.inv>0||airBusy(T))return;const dx=T.x-x,dy=(T.y-y)*1.3,D=Math.hypot(dx,dy),ux=D>0.5?dx/D:0,uy=D>0.5?dy/D:1;
   if(D<s.r+9){shotHit(Object.assign({},s,{vx:ux*100,vy:uy*100,kb:9}),T);return}
-  if(D<W+9)shotHit(Object.assign({},s,{p:Math.max(1,Math.round(s.p*0.6)),vx:ux*100,vy:uy*100,kb:16,wv:1}),T)}
+  // the shock wave: the farther from the impact, the weaker (75 % right next to it down to 15 % at its edge)
+  if(D<W+9){const k=clamp(1-(D-(s.r+9))/(W-s.r),0,1),f=0.15+0.6*k;shotHit(Object.assign({},s,{p:Math.max(1,Math.round(s.p*f)),vx:ux*100,vy:uy*100,kb:Math.round(6+12*k),wv:1}),T)}}
 function drawRings(c,now){if(!B||!B.rings||!B.rings.length)return;B.rings=B.rings.filter(g=>now-g.t0<320);for(const g of B.rings){const k=(now-g.t0)/320,r=g.r0+(g.r1-g.r0)*k;
   c.globalAlpha=0.85*(1-k);c.strokeStyle='#ffffff';pxEl(c,g.x,g.y,r,r*0.45,0);c.strokeStyle=g.col;pxEl(c,g.x,g.y,r-1,r*0.45-1,0);c.globalAlpha=1}}
 const BEAM_CH=0.5; // beams: 0.5 s aiming line first (time to dodge), then the beam
@@ -324,7 +327,7 @@ function bUpdate(dt){if(B.mode==='spec'){specUpdate(dt);return}if(dt>0)B.fps=B.f
   if(B.state==='intro'){return}
   if(B.tb){tbUpdate(dt,now);return}
   if(B.state==='flee'){fleeUpdate(dt);return}
-  if(B.state==='count'){if(B.leadWait){B.cntEnd=now+3000;return}if(now>=B.cntEnd){B.state='fight';B.leadDone=1;say('KAMPF!')}return}
+  if(B.state==='count'){if(B.choice&&!B.choice.done){if(now>=B.choice.until)choiceClose(null);else{B.cntEnd=Math.max(B.cntEnd,now+1000);return}}if(B.leadWait){B.cntEnd=now+3000;return}if(now>=B.cntEnd){B.state='fight';B.leadDone=1;say('KAMPF!')}return}
   if(B.state==='break'){breakUpdate(now,dt);return}
   if(B.state==='catch'){catchUpdate(now);return}
   if(B.state!=='fight')return;
@@ -660,7 +663,7 @@ function duelSync(dt){
   B.missing=0;B.oppPanic=du.pm===1;
   if(B.tb){tbDuelSync(du);return}
   if(!B.foe){let ot=sanitizeTeam(du.team);if(!ot)return;if(!B.spar)ot=ot.slice(0,cfgOf().team);const left=B.me.side==='L';B.foe=mkFighter(left?'R':'L',ot,left?XR:XL,'remote');if(Number.isFinite(+du.x)&&Number.isFinite(+du.y)&&+du.x){B.foe.x=fx_(+du.x);B.foe.y=fy_(+du.y)}arenaClamp(B.foe);
-    if(Array.isArray(du.sh))du.sh.forEach(e=>Array.isArray(e)&&B.seen.add(String(e[0])));{const n_=performance.now(),vx=vsStart(n_);B.state='count';B.cntEnd=n_+3000+vx;B.foe.spawnT=n_+vx}say(`${B.oppName} betritt den Gerichtssaal!`);return}
+    if(Array.isArray(du.sh))du.sh.forEach(e=>Array.isArray(e)&&B.seen.add(String(e[0])));{const n_=performance.now(),vx=vsStart(n_);B.state='count';B.cntEnd=n_+3000+vx;B.foe.spawnT=n_+vx;choiceOpen(true)}say(`${B.oppName} betritt den Gerichtssaal!`);return}
   const F=B.foe;const P_=netPos(now)||{x:+du.x?fx_(+du.x):F.x,y:+du.y?fy_(+du.y):F.y,old:1};arenaClamp(P_);if(P_.snap){F.x=P_.x;F.y=P_.y}else{const k=Math.min(1,dt*(P_.old?14:28));F.x+=(P_.x-F.x)*k;F.y+=(P_.y-F.y)*k}F.face=B.me.x<F.x?-1:1;netFast(F);
   if(Array.isArray(du.ob)&&B.obs)for(const id of du.ob){const o=B.obs.find(o=>o.id===+id);if(o&&!o.dead)breakObs(o)}
   const a=Math.floor(+du.a);if(a>=0&&a<F.team.length&&a!==F.a){F.a=a;say(`${B.oppName} schickt ${SPECIES[act(F).s].n} in den Kampf!`)}
@@ -728,12 +731,13 @@ function buildBattleUI(){
 // monster choice as a slot-machine reel: A/D (or ◀ ▶) spin left/right, X or a tap on the middle card confirms
 function pickMode(){if(!(B&&!B.tb&&B.me&&!B.closing))return null;const alive=B.me.team.filter(m=>m.hp>0).length;
   const sunk=B.brk&&performance.now()-B.brk.t0>1500;  // the picker waits until the beaten monster has sunk into the ground
-  if(B.state==='break'&&B.brk&&B.brk.me&&alive>1&&sunk)return'next';if(B.state==='fight'&&B.qsel&&alive>1)return'quick';return null}
+  if(B.state==='count'&&B.choice&&!B.choice.done&&alive>1)return'choose';if(B.state==='break'&&B.brk&&B.brk.me&&alive>1&&sunk)return'next';if(B.state==='fight'&&B.qsel&&alive>1)return'quick';return null}
 function reelList(){return B.me.team.map((m,i)=>i).filter(i=>B.me.team[i].hp>0)}
 function reelInit(mode){const L=reelList();let cur=mode==='next'?L.find(i=>i!==B.me.a)??L[0]:B.me.a;if(!L.includes(cur))cur=L[0];B.reel={mode,pos:L.indexOf(cur),dir:0}}
 function reelSpin(d){const mode=pickMode();if(!mode)return;if(!B.reel||B.reel.mode!==mode)reelInit(mode);const L=reelList();B.reel.pos=(B.reel.pos+d+L.length)%L.length;B.reel.dir=d;$('#bpick').dataset.k=''}
 function reelConfirm(){const mode=pickMode();if(!mode)return;if(!B.reel||B.reel.mode!==mode)reelInit(mode);const i=reelList()[B.reel.pos];if(i==null)return;B.reel=null;
   if(mode==='quick'){quickPick(i);return}
+  if(mode==='choose'){choiceClose(i);$('#bpick').dataset.k='';return}
   if(mode==='lead'&&B.state==='intro'){const now=performance.now();B.me.a=i;B.leadDone=1;B.wi=null;B.vs=null;if(B.introTO)clearTimeout(B.introTO);if(B.introGo)B.introGo();B.enterT=Math.min(B.enterT||now,now);if(B.foe)B.foe.spawnT=Math.min(B.foe.spawnT||0,now+150);B.me.spawnT=now+480;say(`Los, ${SPECIES[act(B.me).s].n}!`);$('#bpick').dataset.k='';return}
   if(mode==='lead'){if(i!==B.me.a||B.me.spawnT===Infinity){B.me.a=i;B.me.spawnT=performance.now()+480;say(`Los, ${SPECIES[act(B.me).s].n}!`);if(B.mode==='duel')publishDuel(true)}if(B.leadWait){B.leadWait=false;B.leadDone=1;B.cntEnd=performance.now()+3000}else B.leadPicked=1}
   else if(mode==='swap'){B.brk.mine=i;if(B.mode!=='duel')B.brk.end=Math.min(B.brk.end,performance.now()+300)}
@@ -743,13 +747,13 @@ function renderPick(){const el=$('#bpick');if(!el)return;const mode=pickMode();
   if(mode!=='quick'&&B)B.qsel=false;
   if(!mode||(mode==='lead'&&B.leadPicked)){if(el.classList.contains('on')){el.classList.remove('on');el.dataset.k=''}if(B&&!mode)B.reel=null;return}
   if(!B.reel||B.reel.mode!==mode)reelInit(mode);
-  const L=reelList(),n=L.length,pos=B.reel.pos,timed=B.mode==='duel'&&mode!=='quick';
-  const left=timed?Math.max(0,Math.ceil(((mode==='lead'?B.cntEnd:B.brk.end)-performance.now())/1000)):'';
+  const L=reelList(),n=L.length,pos=B.reel.pos,timed=mode==='choose'||(B.mode==='duel'&&mode!=='quick');
+  const left=timed?Math.max(0,Math.ceil(((mode==='choose'?B.choice.until:mode==='lead'?B.cntEnd:B.brk.end)-performance.now())/1000)):'';
   const key=mode+pos+n+B.me.a+B.me.team.map(m=>m.s+m.hp).join()+left;if(el.dataset.k===key)return;el.dataset.k=key;
   const card=(off,cls)=>{const i=L[((pos+off)%n+n)%n],m=B.me.team[i];const act_=i===B.me.a;
     return`<div class="rc ${cls}" data-rk="${off}"><canvas width="52" height="52"></canvas><div class="rn">${nameHtml(m.s)}</div><div class="small">Lv ${m.l} · ${m.hp}/${m.mhp}${act_&&mode!=='next'?' · aktiv':''}</div><div class="rh"><i style="width:${Math.round(m.hp/m.mhp*100)}%;background:${m.hp/m.mhp>0.5?'#3ddc6b':m.hp/m.mhp>0.2?'#ffcb3d':'#ef4444'}"></i></div></div>`};
-  const title=mode==='lead'?'WER BEGINNT?':mode==='swap'?'GEGNER WECHSELT — DU AUCH?':mode==='quick'?'WECHSELN':'NÄCHSTES MONSTER';
-  const curI=L[pos],btxt=mode==='swap'&&curI===B.me.a?'BEHALTEN':mode==='quick'&&curI===B.me.a?'ABBRECHEN':'LOS!';
+  const title=mode==='choose'?(B.choice.start?'WER BEGINNT?':`GEGNER SCHICKT ${esc(SPECIES[act(B.foe).s].base||SPECIES[act(B.foe).s].n).toUpperCase()} — WECHSELN?`):mode==='lead'?'WER BEGINNT?':mode==='swap'?'GEGNER WECHSELT — DU AUCH?':mode==='quick'?'WECHSELN':'NÄCHSTES MONSTER';
+  const curI=L[pos],btxt=(mode==='swap'||(mode==='choose'&&!B.choice.start))&&curI===B.me.a?'BEHALTEN':mode==='quick'&&curI===B.me.a?'ABBRECHEN':'LOS!';
   el.innerHTML=`<div class="t">${title}${left!==''?' · '+left:''}</div>
     <div class="reel ${B.reel.dir>0?'spinR':B.reel.dir<0?'spinL':''}"><button class="ra" data-rd="-1">◀</button>${n>2?card(-1,'side'):''}${card(0,'mid')}${n>1?card(1,'side'):''}<button class="ra" data-rd="1">▶</button></div>
     <button class="btn" id="rgo" style="margin-top:6px">${btxt} <span class="small">(${esc(keyLabel(SET.keys.sw))})</span></button>
@@ -757,7 +761,7 @@ function renderPick(){const el=$('#bpick');if(!el)return;const mode=pickMode();
   B.reel.dir=0;
   el.querySelectorAll('.rc').forEach(c=>{const off=+c.dataset.rk,i=L[((pos+off)%n+n)%n];const cx=c.querySelector('canvas').getContext('2d');cx.imageSmoothingEnabled=false;cx.drawImage(monSprite(B.me.team[i].s,24),0,0,52,52);
     c.onpointerdown=e=>{e.preventDefault();e.stopPropagation();if(off===0)reelConfirm();else reelSpin(off)}});
-  el.querySelectorAll('[data-rd]').forEach(b=>{b.onpointerdown=e=>{e.preventDefault();e.stopPropagation();reelHold(+b.dataset.rd,'ptr')};b.onpointerup=b.onpointerleave=b.onpointercancel=()=>reelStop()});
+  el.querySelectorAll('[data-rd]').forEach(b=>{b.onpointerdown=e=>{e.preventDefault();e.stopPropagation();reelHold(+b.dataset.rd,'ptr')};});
   $('#rgo').onpointerdown=e=>{e.preventDefault();e.stopPropagation();reelConfirm()};
   el.classList.add('on')}
 function updateBattleUI(){if(B.mode==='spec')return;try{renderPick()}catch(e){console.error(e)}try{bagLabel()}catch(e){}
@@ -876,7 +880,7 @@ const KSPR={};function darkSprite(sid,N){const k=sid+':'+N;if(KSPR[k])return KSP
 const ENC_MS=1100,ENC_ME=800;
 // wild encounter like the handhelds: the monster slides in as a dark silhouette, flashes into colour, then a short ID card introduces it
 // wild monsters first appear full-screen with an info card (10 s, tap/click/key skips)
-const WI_MS=10000;
+const WI_MS=4500;
 function wiSkip(){const W=B.wi,now=performance.now(),e=now-W.t0;if(e<350||W.dur-e<350)return false;const cut=W.dur-e-250;W.dur=e+250;
   if(B.enc)B.enc.t0-=cut;B.enterT-=cut;for(const F of[B.me,B.foe])if(F&&F.spawnT)F.spawnT-=cut;
   clearTimeout(B.introTO);B.introTO=setTimeout(B.introGo,Math.max(0,B.introAt-cut-now));B.introAt-=cut;
@@ -1143,3 +1147,13 @@ function aimSpread(F){const m=clamp(1-(performance.now()-(F.mvT||0))/700,0,1);re
 function homeShot(s,dt){if(s.wave||s.mel||s.cap||s.dead||s.age<0.08)return;const mv=MOVES[s.mid];if(!mv||mv.k!=='shot')return;const T=s.side===B.me.side?B.foe:B.me;if(!T||T.out||T.faint>0)return;
   const a=Math.atan2(s.vy,s.vx),b=Math.atan2(T.y-12-s.y,T.x-s.x);let d=b-a;while(d>Math.PI)d-=2*Math.PI;while(d<-Math.PI)d+=2*Math.PI;if(Math.abs(d)>0.9)return;
   const t=clamp(d,-1.1*dt,1.1*dt),sp=Math.hypot(s.vx,s.vy),na=a+t;s.vx=Math.cos(na)*sp;s.vy=Math.sin(na)*sp}
+
+// one choice with a countdown: at the start of a battle (after the opponent's monster is out) and after the opponent's
+// monster fell (the opponent has already sent the next one). PvP: both players choose at the same time.
+const CHOICE_MS={start:6000,after:4500};
+function choiceOpen(start){if(!B||B.tb||!B.me)return;if(B.me.team.filter(m=>m.hp>0).length<2){B.choice=null;return}
+  const now=performance.now();B.choice={start,until:now+(start?CHOICE_MS.start:CHOICE_MS.after)};B.reel=null;if(start)B.me.spawnT=Infinity;B.cntEnd=Math.max(B.cntEnd||0,B.choice.until+1000)}
+function choiceClose(i){const c=B&&B.choice;if(!c||c.done)return;c.done=1;const now=performance.now(),F=B.me;if(i==null||!F.team[i]||F.team[i].hp<=0)i=F.team[F.a]&&F.team[F.a].hp>0?F.a:F.team.findIndex(m=>m.hp>0);
+  if(c.start){F.a=i;F.spawnT=now+480;say(`Los, ${SPECIES[act(F).s].n}!`);if(B.mode==='duel')publishDuel(true)}
+  else if(i!==F.a)doSwitch(F,i);
+  B.cntEnd=now+1200;B.reel=null}
