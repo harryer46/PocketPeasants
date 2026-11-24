@@ -606,7 +606,7 @@ function catchQuiz(sid,cb){
   const it0=qwSample(pool,1)[0]||pool[0],it={src:it0.src,q:qReal(it0.q)},order=shuffleArr([0,1,2,3]);const T=qTime(it.q);
   CQ={it,order,T,end:performance.now()+T,cb,done:false};held.length=0;aimHeld.length=0;
   const law=SPECIES[it.src].law||'';
-  $('#cqbox').innerHTML=`<div class="sdlg"><span class="slaw">⛓ FESTNAHME — ${esc(law||nameHtml(it.src))}</span><br>${esc(it.q[0])}<div class="cqt"><i id="cqbar"></i></div><div class="small" id="cqtime" style="text-align:right">${Math.round(T/1000)} s</div><div id="cqexp"></div></div>
+  $('#cqbox').innerHTML=`<div class="sdlg"><span class="slaw">${cuffIcon(16)} FESTNAHME — ${esc(law||nameHtml(it.src))}</span><br>${esc(it.q[0])}<div class="cqt"><i id="cqbar"></i></div><div class="small" id="cqtime" style="text-align:right">${Math.round(T/1000)} s</div><div id="cqexp"></div></div>
     <div class="sans">${order.map((k,j)=>`<button class="sa" data-ck="${k}"><span class="sk">${j+1}</span>${esc(it.q[1][k])}</button>`).join('')}</div><div class="sacts" id="cqact"></div>`;
   $('#cquiz').classList.toggle('lite',!B.tb);$('#cquiz').classList.add('on');document.querySelectorAll('[data-ck]').forEach(b=>b.onclick=()=>cqAnswer(+b.dataset.ck));cqTick()}
 function cqTick(){if(!CQ||CQ.done)return;const now=performance.now();if(PANIC){CQ.end+=50;setTimeout(cqTick,50);return}

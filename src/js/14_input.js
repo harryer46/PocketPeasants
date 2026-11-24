@@ -66,7 +66,7 @@ function buildTouchButtons(){
   if(!B.tb)el.appendChild(tbBtn('SPRINT','',{right:'166px',bottom:'4px',width:'60px',height:'60px'},battleDash));
   el.appendChild(tbBtn('TAUSCH','',{right:'140px',bottom:'80px',width:'48px',height:'48px'},battleSwitch));
   {const bg=tbBtn('BEUTEL','',{right:'146px',bottom:'140px',width:'46px',height:'46px',background:'#8b5cf6cc'},null);bg.id='tbag';bindBag(bg);el.appendChild(bg);if(B)B.bagK=null}
-  if(B.mode==='wild'){el.appendChild(tbBtn('⛓<br>ZIEHEN','',{right:'78px',bottom:'146px',width:'56px',height:'56px',background:'#2fb7b0cc'},capPress,()=>{if(B)B.aimDrag=0;capRelease()},B.tb?null:aimDrag));el.appendChild(tbBtn('FLUCHT','',{right:'10px',bottom:'166px',width:'44px',height:'44px'},tryRun))}
+  if(B.mode==='wild'){el.appendChild(tbBtn(cuffIcon(22)+'<br>ZIEHEN','',{right:'78px',bottom:'146px',width:'56px',height:'56px',background:'#2fb7b0cc'},capPress,()=>{if(B)B.aimDrag=0;capRelease()},B.tb?null:aimDrag));el.appendChild(tbBtn('FLUCHT','',{right:'10px',bottom:'166px',width:'44px',height:'44px'},tryRun))}
   else if(B.mode!=='trainer')el.appendChild(tbBtn('AUF-<br>GEBEN','',{right:'10px',bottom:'166px',width:'44px',height:'44px',background:'#ef4444cc'},forfeit));
   $('#joyhint').style.display=B.tb?'none':(JOY.active?'none':'flex');
   if(!B.tb&&!buildTouchButtons.tip){buildTouchButtons.tip=1;say('Tipp: Zieh einen Attacken-Knopf zum Zielen — loslassen zum Feuern.')}

@@ -138,7 +138,7 @@ function padSpawn(){const l=RUN&&RUN.lastPad;if(l&&walkable(l.x,l.y))return l;co
 function healAll(){if(!RUN)return;for(const m of RUN.team.concat(RUN.box))m.hp=stats(m).mhp;RUN.kap=Math.max(RUN.kap,10);save();renderTeam();updateHud()}
 function updateHud(){try{flyBtn()}catch(e){}
   const z=zoneAt(P.x,P.y);$('#hzone').textContent=z?ZONES[z].n:'Stadt';
-  $('#hkap').textContent=RUN?`$${money()} · ⛓ ${RUN.kap}`:'Kein Team';
+  $('#hkap').innerHTML=RUN?`$${money()} · ${cuffIcon(22)} ${RUN.kap}`:'Kein Team';
   {const R=rosterIds();$('#sdex').textContent=`Dex ${R.filter(s=>G.dex[s]!==undefined).length}/${R.length}`}$('#stro').textContent=`Trophäen ${G.tro}`;
 }
 

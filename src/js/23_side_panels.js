@@ -7,7 +7,7 @@ function monCard(m,i,inTeam){
   const cv=mk(52,52);{const cx=cv.getContext('2d');cx.imageSmoothingEnabled=false;cx.drawImage(monSprite(m.s,24),0,0,52,52)}d.appendChild(cv);
   const info=document.createElement('div');info.className='info';
   info.innerHTML=`<div class="nm"><span>${nameHtml(m.s)}</span><span class="lv">Lv ${m.l}</span></div><span class="tb" style="background:${TYPES[sp.t].c}">${TYPES[sp.t].n.toUpperCase()}</span> <span class="tb" style="background:${rarOf(m.s).c};color:#14141f">${rarOf(m.s).n.toUpperCase()}</span> <span class="small">KP ${m.hp}/${st.mhp}</span><div class="bar"><i style="width:${r*100}%;background:${hpColor(r)}"></i></div><div class="bar xp"><i style="width:${Math.min(100,m.xp/xpNeed(m.l)*100)}%"></i></div><div class="mvl"></div>`;
-  {const L=info.querySelector('.mvl'),lock=!!B||(RUN&&RUN.phase==='arena');m.m.forEach((x,j)=>{const mv=MOVES[x];if(!mv)return;const r=document.createElement('div');r.className='mvr';
+  {const L=info.querySelector('.mvl'),lock=!!B||(RUN&&RUN.phase==='arena');m.m.forEach((x,j)=>{const mv=MOVES[x];if(!mv)return;const r=document.createElement('div');r.className='mvr';r.dataset.prev=x;r.dataset.prevS=m.s;
     r.innerHTML=`<span class="k">${j+1}</span><span class="tb" style="background:${TYPES[mv.t].c}">${TYPES[mv.t].n.slice(0,3).toUpperCase()}</span><span class="n" title="${esc(moveDesc(x))}">${esc(mv.n)}</span><span class="p">${mv.p?mv.p:'–'}</span>`;
     const mvb=(t,d,tt)=>{const b=document.createElement('button');b.className='mini';b.textContent=t;b.title=tt;b.disabled=lock||j+d<0||j+d>=m.m.length;b.onclick=()=>{const q=m.m[j+d];m.m[j+d]=m.m[j];m.m[j]=q;changed()};r.appendChild(b)};
     mvb('▲',-1,'Nach oben (Attacke '+j+')');mvb('▼',1,'Nach unten');L.appendChild(r)})}
