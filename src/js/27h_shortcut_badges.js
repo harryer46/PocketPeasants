@@ -20,3 +20,8 @@ addEventListener('keydown',e=>{if(e.ctrlKey||e.metaKey||e.altKey||typing()||PANI
   if(B){if(Object.values(SET.keys).includes(k))return;if(B.mode==='spec'||$('#modal').classList.contains('on')||$('#study').classList.contains('on')||(typeof pickMode==='function'&&pickMode()))return;
     if(k==='b'){e.preventDefault();bagTry()}else if(k==='i'){e.preventDefault();if(B.me)openMonInfo(act(B.me).s,act(B.me))}else if(k==='o'){e.preventDefault();openSettings()}return}
   if(!G||modalOpen())return;const m=TOP_KEYS.find(([,kk])=>kk===k&&k!=='m'&&k!=='t');if(!m)return;const b=document.querySelector('#topbar '+m[0]);if(b&&b.offsetParent!==null){e.preventDefault();b.click()}});
+// Esc schließt Popups: es wird der Schließen/Abbrechen/Zurück-Knopf des Fensters gedrückt (Pflicht-Dialoge ohne solchen Knopf bleiben offen)
+addEventListener('keydown',e=>{if(e.key!=='Escape'||capturing||PANIC)return;let box=null;if($('#modal').classList.contains('on'))box=$('#mbox');else if($('#study')&&$('#study').classList.contains('on'))box=$('#study');if(!box)return;
+  const bs=[...box.querySelectorAll('button')].filter(b=>b.offsetParent!==null&&!b.disabled);
+  const b=box.querySelector('#mno:not([disabled]),#mok:not([disabled]),#mback:not([disabled])')||bs.find(b=>/^(✕|×)|SCHLIESSEN|ABBRECHEN|ZURÜCK|WEITER TRAINIEREN|NICHTS MITNEHMEN|SPÄTER|NEIN/i.test(b.textContent.trim()));
+  if(!b)return;e.preventDefault();e.stopImmediatePropagation();b.click()},true);

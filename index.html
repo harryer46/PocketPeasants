@@ -484,7 +484,7 @@ const TURN_CONFIG = {
 
 /* ===================== VERSION ===================== */
 // bump with every release (MAJOR.MINOR.PATCH). Players can only share lobbies/duels with the same version.
-const VERSION='0.104.0';
+const VERSION='0.104.1';
 // access password: changes every Monday 00:00 (local time). Only the hashes are stored here (one per week from PW_W0);
 // the password itself also keys the P2P room, so clients without the current one cannot connect. The plain list lives offline.
 const PW_KEY='knast_pw',PW_W0=Date.UTC(2026,10,16),PW_WH=[3239358969,4147130060,2718625794,3495965776,1618054998,4028240764,3044289461,1207180107,4242648729,353861226,2672313786,600614717,407529519,2270237167,3207113251,1525244515,870970040,319006638,3847934078,944313310,2153038366,3950944742,2733334548,4002544240,2736690288,645338530,1884329338,4268902487,2483246182,3828308270,2182929315,3152020422,1311886195,3461060417,3407580460,2544240283,1017220184,1277844250,4288535363,461397931,853058720,2065298771,219387161,3215594984,1108518435,2250837220,3171827014,1035538317,1537090466,1716649754,2848461661,1266925999,653943759,1307642793,3319845926,629631788,4180878311,1080582197,4114403588,2360104553,3811730973,3337788437,695971354,2424950805],MAX_ROOM=10,MAX_LOBBY=5;
@@ -2005,6 +2005,7 @@ function begin(){
 
 /* ===================== CONTROL SETTINGS ===================== */
 const CHANGELOG=[
+ ["0.104.1","2026-11-24","EP-Teilung: Alle Monster, die gegen das besiegte Gegner-Monster im Kampf waren (auch nur kurz per Wechsel), teilen sich die EP — niedrigere Level bekommen mehr, höhere weniger (nach Level-Abstand zum Gegner). Popups lassen sich mit Esc schließen (drückt Schließen/Abbrechen/Zurück; Pflichtdialoge bleiben offen)."],
  ["0.104.0","2026-11-24","Gericht: Kämpfe auf epischer Bühne — Publikum mit Blitzlichtern, schwenkende Scheinwerfer, goldener Ring, Waage-Emblem und Banner mit der Runde; der letzte Kampf ist der ★ ENDKAMPF ★ mit Goldfunken und Intro-Schriftzug. Nach dem Turnier steht ein Siegerpodest (1–3) mit Konfetti über dem Turnierbaum. Restliche „Arena“-Texte heißen jetzt Gericht bzw. Kampffeld. Lobby-Spiele: Starterwahl aus allen einzigartigen und legendären Monstern (außer den vier FEM-Legendären). TMs/VMs lassen sich direkt aus dem Beutel einsetzen („EINSETZEN“ → Monster wählen). Team-Reiter: kein Study-Knopf mehr (das läuft über die HfPol), dafür die Attacken als Liste mit Typ und Stärke und ▲/▼ zum Umsortieren (Reihenfolge = Tasten 1–4 im Kampf). Absturz bei Tastendrücken ohne Taste (z. B. Autofill) behoben. Turnierbaum mit Verbindungslinien wie bei der WM: jeder Spieler läuft per Linie zu seinem nächsten Kampf (Sieger gold, Verlierer grau gestrichelt, Freilos blau gepunktet). AP unter 20 %: Balken und Zahl rot, Sprinten nicht möglich; Regenerationspause nach dem Sprint von 3 s auf 1,2 s verkürzt."],
  ["0.103.0","2026-11-24","Gericht neu: Die Reihenfolge wird ausgelost (auf allen Geräten gleich) und als Turnierbaum angezeigt — Spalten = Runden, Kästen = Kämpfe, Linien wie im KO-System. Jeder kämpft einmal gegen jeden: Runde 1 nach Los, danach Sieger gegen Sieger und Verlierer gegen Verlierer (nur noch nicht gespielte Paarungen); bei ungerader Zahl setzt reihum einer mit Freilos aus — bei 3 Spielern also A–B, Sieger gegen C, dann die beiden Verlierer. Bereit-Knöpfe sitzen direkt am eigenen Kampf (auch in Runde 1, kein Bereitschaftsraum mehr); ein Kampf startet, wenn beide bereit sind (spätestens nach 90 s). Laufende Kämpfe haben einen 👁-Zuschauen-Knopf. Freilos gibt keinen Punkt mehr (jeder bekommt gleich viele)."],
  ["0.102.0","2026-11-24","Mitgegebene Items: Jedes Monster kann genau ein Item tragen (Trank, Supertrank, Beleber, AP-Drink, Super-Handschellen). Im Kampf lässt sich nur noch das Item des gerade aktiven Monsters benutzen — danach ist es verbraucht. Mitgeben im Beutel („MITGEBEN“), an der Monsterkarte im Team-Reiter (Auswahl + „zurück in Beutel“); Box-Fenster zeigt getragene Items. „GEBEN“ heißt jetzt „BENUTZEN“ (sofort anwenden außerhalb des Kampfes). Knapp vorbei: „KNAPP DANEBEN!“ bzw. „KNAPP AUSGEWICHEN!“ über dem Ziel, wenn ein Geschoss nur wenige Pixel verfehlt. PvP: „Sehr effektiv/Wenig effektiv/Keine Wirkung“ erscheint erst, wenn der Gegner den Treffer bestätigt (vorher manchmal Wirkung ohne Schaden). Tastenkürzel stehen jetzt auf allen Knöpfen; neu: L Lobby, K Team, I Beutel, U Spieler, P Dex, V Vollbild, O Einstellungen, im Kampf B Beutel, I Attacken-Info."],
@@ -5260,12 +5261,27 @@ function shockwave(x,y,R,col,dur){if(!B)return;const now=performance.now();dur=(
 // strikes from above already push outward (impactWave) – now they also show the wave; big explosions and 100+ hits too
 {const _iw=impactWave;impactWave=function(s,T,x,y){const r=_iw.apply(this,arguments);shockwave(x,y,(s.r||12)+36,TYPES[(MOVES[s.mid]||{}).t||'normal'].c,0.5);return r}}
 {const _sh=shotHit;shotHit=function(s,T){const r=_sh.apply(this,arguments);const mv=MOVES[s&&s.mid];if(mv&&T&&!s.wv&&!['jet','nova','dash','spin'].includes(mv.k)&&((mv.k==='big')||(mv.p||0)>=100)&&!(s.sw)){shockwave(T.x,T.y,mv.k==='big'?90:60,TYPES[mv.t].c,0.5)}return r}}
+/* EP-Teilung: Wer gegen das besiegte Gegner-Monster im Kampf war (auch nur kurz, per Wechsel), bekommt einen Teil der EP.
+   Gewichtung nach Level-Abstand zum Gegner: niedrigere Level bekommen mehr, höhere weniger (Faktor 0,35…3). Summe bleibt gleich. */
+let XP_LAST_REAL=null;
+function xpPartTick(){if(!B||!B.me||!B.foe||(B.mode!=='wild'&&B.mode!=='trainer'))return;const key=B.foe.a+'|'+(B.foe.team.length);
+  if(B.partKey!==key){B.partKey=key;B.part=new Set()}const F=B.me;if(F.out||F.faint>0||!(F.spawnT<=performance.now()))return;const a=act(F);if(a&&a.hp>0)B.part.add(F.a)}
+{const _kt=kindsTick;kindsTick=function(dt){_kt(dt);try{xpPartTick()}catch(e){}}}
+{const _gx=gainXp;gainXp=function(m,amt){XP_LAST_REAL=null;
+  try{if(B&&(B.mode==='wild'||B.mode==='trainer')&&RUN&&m&&m===RUN.team[B.me.a]&&B.part&&!gainXp._sharing){
+    const foeLv=(act(B.foe)||{}).l||m.l,ids=[...B.part].filter(i=>RUN.team[i]&&RUN.team[i].hp>0&&B.me.team[i]&&B.me.team[i].hp>0);if(!ids.includes(B.me.a))ids.push(B.me.a);
+    if(ids.length>1){const w=i=>clamp(Math.pow((foeLv+10)/(RUN.team[i].l+10),2),0.35,3),sw=ids.reduce((s,i)=>s+w(i),0);
+      const share=i=>Math.max(1,Math.round(amt*w(i)/sw));gainXp._sharing=1;let out;
+      try{for(const i of ids){if(i===B.me.a)continue;const o=RUN.team[i],msgs=_gx(o,share(i));msgs[0]=msgs[0].replace(' EP!',' EP (geteilt)!');msgs.forEach(t=>say(t));Object.assign(B.me.team[i],battler(o))}
+        out=_gx(m,share(B.me.a));out[0]=out[0].replace(' EP!',' EP (geteilt)!');XP_LAST_REAL=Math.round(share(B.me.a)*((RUN.cfg&&RUN.cfg.xp)||1))}finally{gainXp._sharing=0}
+      B.part=new Set();return out}}}catch(e){console.error(e)}
+  return _gx.apply(this,arguments)}}
 /* ===================== EP-GEWINN IM KAMPF =====================
    Wird ein Gegner besiegt, fliegen EP-Funken vom besiegten Monster in die neue EP-Leiste unten im eigenen Kampf-Panel;
    über dem Gegner steigt "+N EP" auf, die Leiste füllt sich sichtbar (bei Level-Up: voll, Blitz, von vorn). */
 function epBattleMon(){try{return B&&B.me&&B.me.ctrl!=='remote'&&RUN&&RUN.team?RUN.team[B.me.a]:null}catch(e){return null}}
 {const _gx=gainXp;gainXp=function(m,amt){const l0=m&&m.l,x0=m&&m.xp;const out=_gx.apply(this,arguments);
-  try{if(B&&m&&m===epBattleMon()&&B.state!=='count'){const now=performance.now(),real=Math.round(amt*((RUN.cfg&&RUN.cfg.xp)||1));
+  try{if(B&&m&&m===epBattleMon()&&B.state!=='count'){const now=performance.now(),real=XP_LAST_REAL!=null?XP_LAST_REAL:Math.round(amt*((RUN.cfg&&RUN.cfg.xp)||1));
     const src=B.foe?[B.foe.x,B.foe.y-18]:[AW/2,AH/2];const[sx,sy]=w2s(src[0],src[1]);
     const ps=[];for(let i=0;i<16;i++){const a=Math.random()*Math.PI*2,r=10+Math.random()*26;ps.push({dx:Math.cos(a)*r,dy:Math.sin(a)*r*.7-8,d:i*55,tx:.1+.8*Math.random(),col:i%3?'#7fd0ff':'#ffe14d'})}
     B.epFx={t0:now,x:sx/UI,y:sy/UI,amt:real,r0:x0/xpNeed(l0),l0,r1:m.xp/xpNeed(m.l),l1:m.l,ps};
@@ -7582,6 +7598,11 @@ addEventListener('keydown',e=>{if(e.ctrlKey||e.metaKey||e.altKey||typing()||PANI
   if(B){if(Object.values(SET.keys).includes(k))return;if(B.mode==='spec'||$('#modal').classList.contains('on')||$('#study').classList.contains('on')||(typeof pickMode==='function'&&pickMode()))return;
     if(k==='b'){e.preventDefault();bagTry()}else if(k==='i'){e.preventDefault();if(B.me)openMonInfo(act(B.me).s,act(B.me))}else if(k==='o'){e.preventDefault();openSettings()}return}
   if(!G||modalOpen())return;const m=TOP_KEYS.find(([,kk])=>kk===k&&k!=='m'&&k!=='t');if(!m)return;const b=document.querySelector('#topbar '+m[0]);if(b&&b.offsetParent!==null){e.preventDefault();b.click()}});
+// Esc schließt Popups: es wird der Schließen/Abbrechen/Zurück-Knopf des Fensters gedrückt (Pflicht-Dialoge ohne solchen Knopf bleiben offen)
+addEventListener('keydown',e=>{if(e.key!=='Escape'||capturing||PANIC)return;let box=null;if($('#modal').classList.contains('on'))box=$('#mbox');else if($('#study')&&$('#study').classList.contains('on'))box=$('#study');if(!box)return;
+  const bs=[...box.querySelectorAll('button')].filter(b=>b.offsetParent!==null&&!b.disabled);
+  const b=box.querySelector('#mno:not([disabled]),#mok:not([disabled]),#mback:not([disabled])')||bs.find(b=>/^(✕|×)|SCHLIESSEN|ABBRECHEN|ZURÜCK|WEITER TRAINIEREN|NICHTS MITNEHMEN|SPÄTER|NEIN/i.test(b.textContent.trim()));
+  if(!b)return;e.preventDefault();e.stopImmediatePropagation();b.click()},true);
 /* ===================== BOOT ===================== */
 applyControls();
 G=loadSave();

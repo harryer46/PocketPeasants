@@ -3,7 +3,7 @@
    über dem Gegner steigt "+N EP" auf, die Leiste füllt sich sichtbar (bei Level-Up: voll, Blitz, von vorn). */
 function epBattleMon(){try{return B&&B.me&&B.me.ctrl!=='remote'&&RUN&&RUN.team?RUN.team[B.me.a]:null}catch(e){return null}}
 {const _gx=gainXp;gainXp=function(m,amt){const l0=m&&m.l,x0=m&&m.xp;const out=_gx.apply(this,arguments);
-  try{if(B&&m&&m===epBattleMon()&&B.state!=='count'){const now=performance.now(),real=Math.round(amt*((RUN.cfg&&RUN.cfg.xp)||1));
+  try{if(B&&m&&m===epBattleMon()&&B.state!=='count'){const now=performance.now(),real=XP_LAST_REAL!=null?XP_LAST_REAL:Math.round(amt*((RUN.cfg&&RUN.cfg.xp)||1));
     const src=B.foe?[B.foe.x,B.foe.y-18]:[AW/2,AH/2];const[sx,sy]=w2s(src[0],src[1]);
     const ps=[];for(let i=0;i<16;i++){const a=Math.random()*Math.PI*2,r=10+Math.random()*26;ps.push({dx:Math.cos(a)*r,dy:Math.sin(a)*r*.7-8,d:i*55,tx:.1+.8*Math.random(),col:i%3?'#7fd0ff':'#ffe14d'})}
     B.epFx={t0:now,x:sx/UI,y:sy/UI,amt:real,r0:x0/xpNeed(l0),l0,r1:m.xp/xpNeed(m.l),l1:m.l,ps};
