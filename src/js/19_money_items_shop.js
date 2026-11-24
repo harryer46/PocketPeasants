@@ -145,7 +145,7 @@ function bagUse(key){if(!B)return;const[k,ix]=key.split(':'),F=B.me,a=act(F);if(
 function cfgOf(){return(RUN&&RUN.cfg)||DEF_CFG}
 function sanitizeCfg(c){c=c&&typeof c==='object'?c:{};const n=(v,d,a,b)=>Number.isFinite(+v)&&v!==''&&v!=null?clamp(Math.floor(+v),a,b):d;
   return{name:String(c.name||'').replace(/[\u0000-\u001f<>]/g,'').trim().slice(0,24),dur:n(c.dur,10,1,60),rounds:n(c.rounds,0,0,7),arena:ARENA_ZONES.includes(c.arena)?c.arena:'',team:n(c.team,3,1,4),kap:n(c.kap,10,0,50),xp:[1,2,3].includes(+c.xp)?+c.xp:1,enc:[0.6,1,1.6].includes(+c.enc)?+c.enc:1,leg:+c.leg===0?0:1,tb:+c.tb===1?1:0,alt:+c.alt===0?0:1,aim:[0,1,2].includes(+c.aim)?+c.aim:0,money:n(c.money,100,0,5000),fol:n(c.fol,3,0,4),kader:n(c.kader,4,1,4),host:typeof c.host==='string'?c.host.slice(0,40):''}}
-function cfgSummary(c){return`${c.tb?'rundenbasiert':'Echtzeit'} · ${c.rounds?'max. '+c.rounds+' Runde'+(c.rounds>1?'n':''):'jeder gegen jeden'} · Gerichts-Kampfplatz: ${c.arena?arenaName(c.arena):'zufällig'} · Kader ${c.kader??4} · Team aus ${c.team}${c.xp>1?` · ${c.xp}× EP`:''}${c.enc!==1?(c.enc>1?' · viele Begegnungen':' · wenige Begegnungen'):''}${c.leg?'':' · ohne Legendäre'} · ${c.kap} Handschellen · $${c.money??100} · ${c.aim===1?'Auto-Zielen':c.aim===2?'freies Zielen 360°':'Zielen in 8 Richtungen'}`}
+function cfgSummary(c){return`${c.tb?'rundenbasiert':'Echtzeit'} · KO-System · Gerichts-Kampfplatz: ${c.arena?arenaName(c.arena):'zufällig'} · Kader ${c.kader??4} · Team aus ${c.team}${c.xp>1?` · ${c.xp}× EP`:''}${c.enc!==1?(c.enc>1?' · viele Begegnungen':' · wenige Begegnungen'):''}${c.leg?'':' · ohne Legendäre'} · ${c.kap} Handschellen · $${c.money??100} · ${c.aim===1?'Auto-Zielen':c.aim===2?'freies Zielen 360°':'Zielen in 8 Richtungen'}`}
 function runningMatches(){const seen=new Map();for(const p of others()){const mt=p.presence.mt;if(!mt||typeof mt.id!=='string'||mt.id.length>=40||(RUN&&RUN.id===mt.id))continue;
   const open=mt.st==='lobby'||(mt.st==='train'&&+mt.end>Date.now()+10000);if(!open)continue;
   const e=seen.get(mt.id)||{id:mt.id,end:+mt.end||0,names:[],cfg:sanitizeCfg(mt.cfg),waiting:true,v:String(p.presence.v||'old').slice(0,12)};e.names.push(cleanName(p.presence.n));if(mt.st==='train'){e.waiting=false;e.end=Math.max(e.end,+mt.end)}seen.set(mt.id,e)}return[...seen.values()]}
@@ -197,7 +197,7 @@ function openCreate(){
    ${row('Kampfstil',sel('ctb',[[0,'⚡ Echtzeit'],[1,'⏳ Rundenbasiert']],c.tb))}
    ${row('Zielen',sel('caim',[[0,'🎯 Manuell (8 Richtungen)'],[2,'🎯 Frei (360°)'],[1,'Auto-Zielen']],c.aim||0))}
    ${row('Trainingszeit (Min.)',num('cdur',c.dur,1,60))}
-   ${row('Verhandlungsrunden (jeder gegen jeden)',sel('crounds',[[0,'Alle – jeder gegen jeden'],...[1,2,3,4,5,6,7].map(v=>[v,v])],c.rounds))}
+   <div style="display:none">${sel('crounds',[[0,'KO'],...[1,2,3,4,5,6,7].map(v=>[v,v])],c.rounds)}</div>
    ${row('Gericht: Kampfplatz',`<select id="carena" style="width:100%"><option value="">🎲 Zufällig (jeder Kampf neu)</option>${ARENA_ZONES.map(z=>`<option value="${z}" ${c.arena===z?'selected':''}>${esc(arenaName(z))}</option>`).join('')}</select>`)}
    ${row('Kader (aktive Monster, Rest in der Box)',sel('ckader',[1,2,3,4].map(v=>[v,v+(v===4?' (Standard)':'')]),c.kader??4))}
    ${row('Monster pro Gerichtskampf',sel('cteam',[1,2,3,4].map(v=>[v,v]),Math.min(4,c.team)))}

@@ -2,7 +2,7 @@
    Publikum mit Blitzlichtern, schwenkende Scheinwerfer, goldener Ring, Waage-Emblem, Banner mit Runde —
    im letzten Kampf des Turniers „★ ENDKAMPF ★“ mit Goldfunken und großem Intro-Schriftzug. */
 function courtEpic(){try{if(!B||!RUN||RUN.free)return null;if(!(B.mode==='duel'&&!B.spar)&&B.mode!=='spec')return null;
-  const p=String(B.id||'').split('-'),r=+p[1]||RUN.r||1,R=roundsOf();return{r,R,fin:r>=R}}catch(e){return null}}
+  const p=String(B.id||'').split('-'),r=+p[1]||RUN.r||1,R=roundsOf();return{r,R,fin:(()=>{const n=performance.now();if(B._finT==null||n-B._finT>1500){B._finT=n;B._fin=typeof koIsFinal==='function'?koIsFinal(B.id):r>=R}return B._fin})()}}catch(e){return null}}
 function courtCrowd(){if(B.crowd)return B.crowd;const rnd=mulberry32(hashStr(String(B.id)));const cols=['#c0392b','#2e86de','#f1c40f','#27ae60','#8e44ad','#e67e22','#ecf0f1','#34495e','#d35400','#16a085'];const skin=['#f1c27d','#e0ac69','#c68642','#8d5524','#ffdbac'];
   const out=[];for(let row=0;row<3;row++){const y=66+row*11;for(let x=4+row*5;x<AW-4;x+=10+Math.floor(rnd()*3)){const ex=(x-ACX)/ARX,ey=(y+10-ACY)/ARY;if(ex*ex+ey*ey<1.05)continue;out.push({x,y,c:cols[Math.floor(rnd()*cols.length)],s:skin[Math.floor(rnd()*skin.length)],ph:rnd()*6.28,sp:2+rnd()*3})}}
   for(const side of[-1,1])for(let i=0;i<10;i++){const y=AH-30+((i/5)|0)*11,x=side<0?6+(i%5)*11:AW-8-(i%5)*11;const ex=(x-ACX)/ARX,ey=(y-ACY)/ARY;if(ex*ex+ey*ey<1.05)continue;out.push({x,y,c:cols[Math.floor(rnd()*cols.length)],s:skin[Math.floor(rnd()*skin.length)],ph:rnd()*6.28,sp:2+rnd()*3})}
