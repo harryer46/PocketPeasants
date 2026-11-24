@@ -368,3 +368,10 @@ body.mob #study.on #sbox,body.mob #cquiz.on #cqbox{margin-right:96px}
 .boxCell .tag{position:absolute;left:3px;top:2px;font-family:'Press Start 2P',monospace;font-size:7px;background:var(--accent);color:#1b1300;padding:1px 3px}
 .boxCell .bar{margin-top:2px}
 .boxBar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:6px 0}
+.mvl{margin-top:4px;display:flex;flex-direction:column;gap:2px}
+.mvr{display:flex;align-items:center;gap:4px;font-family:VT323,monospace;font-size:16px;line-height:1;background:#0b0d16;border:1px solid #000;padding:1px 2px}
+.mvr .k{color:var(--muted);width:10px;text-align:center}
+.mvr .tb{font-size:7px;padding:1px 3px}
+.mvr .n{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mvr .p{color:var(--muted);font-size:14px;min-width:18px;text-align:right}
+.mvr .mini{padding:0 5px;margin:0;min-width:0;font-size:9px;line-height:14px}

@@ -382,6 +382,13 @@ body.mob #study.on #sbox,body.mob #cquiz.on #cqbox{margin-right:96px}
 .boxCell .tag{position:absolute;left:3px;top:2px;font-family:'Press Start 2P',monospace;font-size:7px;background:var(--accent);color:#1b1300;padding:1px 3px}
 .boxCell .bar{margin-top:2px}
 .boxBar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:6px 0}
+.mvl{margin-top:4px;display:flex;flex-direction:column;gap:2px}
+.mvr{display:flex;align-items:center;gap:4px;font-family:VT323,monospace;font-size:16px;line-height:1;background:#0b0d16;border:1px solid #000;padding:1px 2px}
+.mvr .k{color:var(--muted);width:10px;text-align:center}
+.mvr .tb{font-size:7px;padding:1px 3px}
+.mvr .n{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mvr .p{color:var(--muted);font-size:14px;min-width:18px;text-align:right}
+.mvr .mini{padding:0 5px;margin:0;min-width:0;font-size:9px;line-height:14px}
 </style>
 </head>
 <body>
@@ -477,7 +484,7 @@ const TURN_CONFIG = {
 
 /* ===================== VERSION ===================== */
 // bump with every release (MAJOR.MINOR.PATCH). Players can only share lobbies/duels with the same version.
-const VERSION='0.102.0';
+const VERSION='0.104.0';
 // access password: changes every Monday 00:00 (local time). Only the hashes are stored here (one per week from PW_W0);
 // the password itself also keys the P2P room, so clients without the current one cannot connect. The plain list lives offline.
 const PW_KEY='knast_pw',PW_W0=Date.UTC(2026,10,16),PW_WH=[3239358969,4147130060,2718625794,3495965776,1618054998,4028240764,3044289461,1207180107,4242648729,353861226,2672313786,600614717,407529519,2270237167,3207113251,1525244515,870970040,319006638,3847934078,944313310,2153038366,3950944742,2733334548,4002544240,2736690288,645338530,1884329338,4268902487,2483246182,3828308270,2182929315,3152020422,1311886195,3461060417,3407580460,2544240283,1017220184,1277844250,4288535363,461397931,853058720,2065298771,219387161,3215594984,1108518435,2250837220,3171827014,1035538317,1537090466,1716649754,2848461661,1266925999,653943759,1307642793,3319845926,629631788,4180878311,1080582197,4114403588,2360104553,3811730973,3337788437,695971354,2424950805],MAX_ROOM=10,MAX_LOBBY=5;
@@ -1998,6 +2005,8 @@ function begin(){
 
 /* ===================== CONTROL SETTINGS ===================== */
 const CHANGELOG=[
+ ["0.104.0","2026-11-24","Gericht: Kämpfe auf epischer Bühne — Publikum mit Blitzlichtern, schwenkende Scheinwerfer, goldener Ring, Waage-Emblem und Banner mit der Runde; der letzte Kampf ist der ★ ENDKAMPF ★ mit Goldfunken und Intro-Schriftzug. Nach dem Turnier steht ein Siegerpodest (1–3) mit Konfetti über dem Turnierbaum. Restliche „Arena“-Texte heißen jetzt Gericht bzw. Kampffeld. Lobby-Spiele: Starterwahl aus allen einzigartigen und legendären Monstern (außer den vier FEM-Legendären). TMs/VMs lassen sich direkt aus dem Beutel einsetzen („EINSETZEN“ → Monster wählen). Team-Reiter: kein Study-Knopf mehr (das läuft über die HfPol), dafür die Attacken als Liste mit Typ und Stärke und ▲/▼ zum Umsortieren (Reihenfolge = Tasten 1–4 im Kampf). Absturz bei Tastendrücken ohne Taste (z. B. Autofill) behoben. Turnierbaum mit Verbindungslinien wie bei der WM: jeder Spieler läuft per Linie zu seinem nächsten Kampf (Sieger gold, Verlierer grau gestrichelt, Freilos blau gepunktet). AP unter 20 %: Balken und Zahl rot, Sprinten nicht möglich; Regenerationspause nach dem Sprint von 3 s auf 1,2 s verkürzt."],
+ ["0.103.0","2026-11-24","Gericht neu: Die Reihenfolge wird ausgelost (auf allen Geräten gleich) und als Turnierbaum angezeigt — Spalten = Runden, Kästen = Kämpfe, Linien wie im KO-System. Jeder kämpft einmal gegen jeden: Runde 1 nach Los, danach Sieger gegen Sieger und Verlierer gegen Verlierer (nur noch nicht gespielte Paarungen); bei ungerader Zahl setzt reihum einer mit Freilos aus — bei 3 Spielern also A–B, Sieger gegen C, dann die beiden Verlierer. Bereit-Knöpfe sitzen direkt am eigenen Kampf (auch in Runde 1, kein Bereitschaftsraum mehr); ein Kampf startet, wenn beide bereit sind (spätestens nach 90 s). Laufende Kämpfe haben einen 👁-Zuschauen-Knopf. Freilos gibt keinen Punkt mehr (jeder bekommt gleich viele)."],
  ["0.102.0","2026-11-24","Mitgegebene Items: Jedes Monster kann genau ein Item tragen (Trank, Supertrank, Beleber, AP-Drink, Super-Handschellen). Im Kampf lässt sich nur noch das Item des gerade aktiven Monsters benutzen — danach ist es verbraucht. Mitgeben im Beutel („MITGEBEN“), an der Monsterkarte im Team-Reiter (Auswahl + „zurück in Beutel“); Box-Fenster zeigt getragene Items. „GEBEN“ heißt jetzt „BENUTZEN“ (sofort anwenden außerhalb des Kampfes). Knapp vorbei: „KNAPP DANEBEN!“ bzw. „KNAPP AUSGEWICHEN!“ über dem Ziel, wenn ein Geschoss nur wenige Pixel verfehlt. PvP: „Sehr effektiv/Wenig effektiv/Keine Wirkung“ erscheint erst, wenn der Gegner den Treffer bestätigt (vorher manchmal Wirkung ohne Schaden). Tastenkürzel stehen jetzt auf allen Knöpfen; neu: L Lobby, K Team, I Beutel, U Spieler, P Dex, V Vollbild, O Einstellungen, im Kampf B Beutel, I Attacken-Info."],
  ["0.101.1","2026-11-24","Umgebungs-Interaktion der Attacken (v0.101.0) wieder zurückgenommen – Kampf wie in v0.100.6."],
  ["0.100.6","2026-11-23","Fragenauswahl mit echtem Zufall (Krypto-Zufallsgenerator), gleichmäßig über den ganzen Fragenpool; eine Frage kommt erst wieder, wenn der Pool des Monsters durch ist (auch die Antwortreihenfolge ist echt zufällig). Optionaler Fehler-Fokus bringt die alte Gewichtung zurück. Neu ganz unten im Team-Reiter: Lernstand mit beantworteten, offenen, richtig/falsch beantworteten, sicheren und Problem-Fragen je Gesetz und gesamt, plus Zurücksetzen."],
@@ -2060,7 +2069,7 @@ const DIRS={up:[0,-1],down:[0,1],left:[-1,0],right:[1,0]};
 const KEYMAP={ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right',w:'up',s:'down',a:'left',d:'right',W:'up',S:'down',A:'left',D:'right'};
 const held=[],aimHeld=[];
 function typing(){const a=document.activeElement;return a&&(a.tagName==='INPUT'||a.tagName==='TEXTAREA'||a.tagName==='SELECT')}
-addEventListener('keydown',e=>{
+addEventListener('keydown',e=>{if(typeof e.key!=='string')return;
   // emergency mode first: Enter always toggles it and never also skips/confirms whatever is open underneath
   if(PANIC){e.preventDefault();e.stopImmediatePropagation();if(e.key==='Enter'&&!e.repeat)panicOff();return}
   if(e.key==='Enter'&&!typing()&&!capturing&&G){e.preventDefault();e.stopImmediatePropagation();if(!e.repeat)panicOn();return}
@@ -2164,7 +2173,7 @@ $('#hbag').addEventListener('click',e=>{e.currentTarget.blur();openBagMenu()});
 let RH=null;
 function reelHold(d,key){reelStop();reelSpin(d);let gap=320;const step=()=>{if(!RH)return;if(!B||!pickMode()){reelStop();return}reelSpin(d);gap=Math.max(55,gap*0.78);RH.t=setTimeout(step,gap)};RH={key,t:setTimeout(step,gap)}}
 function reelStop(){if(RH){clearTimeout(RH.t);RH=null}}
-addEventListener('keyup',e=>{if(RH&&RH.key!=='ptr'&&e.key.toLowerCase()===String(RH.key).toLowerCase())reelStop()});
+addEventListener('keyup',e=>{if(RH&&RH.key!=='ptr'&&String(e.key||'').toLowerCase()===String(RH.key).toLowerCase())reelStop()});
 // touch / mouse: the arrow buttons are redrawn on every step, so the hold ends on the window's pointerup, not on the button
 addEventListener('pointerup',()=>{if(RH&&RH.key==='ptr')reelStop()});addEventListener('pointercancel',()=>{if(RH&&RH.key==='ptr')reelStop()});
 addEventListener('blur',reelStop);
@@ -2817,7 +2826,7 @@ function bagUse(key){if(!B)return;const[k,ix]=key.split(':'),F=B.me,a=act(F);if(
 function cfgOf(){return(RUN&&RUN.cfg)||DEF_CFG}
 function sanitizeCfg(c){c=c&&typeof c==='object'?c:{};const n=(v,d,a,b)=>Number.isFinite(+v)&&v!==''&&v!=null?clamp(Math.floor(+v),a,b):d;
   return{name:String(c.name||'').replace(/[\u0000-\u001f<>]/g,'').trim().slice(0,24),dur:n(c.dur,10,1,60),rounds:n(c.rounds,0,0,7),arena:ARENA_ZONES.includes(c.arena)?c.arena:'',team:n(c.team,3,1,4),kap:n(c.kap,10,0,50),xp:[1,2,3].includes(+c.xp)?+c.xp:1,enc:[0.6,1,1.6].includes(+c.enc)?+c.enc:1,leg:+c.leg===0?0:1,tb:+c.tb===1?1:0,alt:+c.alt===0?0:1,aim:[0,1,2].includes(+c.aim)?+c.aim:0,money:n(c.money,100,0,5000),fol:n(c.fol,3,0,4),kader:n(c.kader,4,1,4),host:typeof c.host==='string'?c.host.slice(0,40):''}}
-function cfgSummary(c){return`${c.tb?'rundenbasiert':'Echtzeit'} · ${c.rounds?c.rounds+' Runde'+(c.rounds>1?'n':''):'Runden: auto'} · Arena: ${c.arena?arenaName(c.arena):'zufällig'} · Kader ${c.kader??4} · Team aus ${c.team}${c.xp>1?` · ${c.xp}× EP`:''}${c.enc!==1?(c.enc>1?' · viele Begegnungen':' · wenige Begegnungen'):''}${c.leg?'':' · ohne Legendäre'} · ${c.kap} Handschellen · $${c.money??100} · ${c.aim===1?'Auto-Zielen':c.aim===2?'freies Zielen 360°':'Zielen in 8 Richtungen'}`}
+function cfgSummary(c){return`${c.tb?'rundenbasiert':'Echtzeit'} · ${c.rounds?'max. '+c.rounds+' Runde'+(c.rounds>1?'n':''):'jeder gegen jeden'} · Gerichts-Kampfplatz: ${c.arena?arenaName(c.arena):'zufällig'} · Kader ${c.kader??4} · Team aus ${c.team}${c.xp>1?` · ${c.xp}× EP`:''}${c.enc!==1?(c.enc>1?' · viele Begegnungen':' · wenige Begegnungen'):''}${c.leg?'':' · ohne Legendäre'} · ${c.kap} Handschellen · $${c.money??100} · ${c.aim===1?'Auto-Zielen':c.aim===2?'freies Zielen 360°':'Zielen in 8 Richtungen'}`}
 function runningMatches(){const seen=new Map();for(const p of others()){const mt=p.presence.mt;if(!mt||typeof mt.id!=='string'||mt.id.length>=40||(RUN&&RUN.id===mt.id))continue;
   const open=mt.st==='lobby'||(mt.st==='train'&&+mt.end>Date.now()+10000);if(!open)continue;
   const e=seen.get(mt.id)||{id:mt.id,end:+mt.end||0,names:[],cfg:sanitizeCfg(mt.cfg),waiting:true,v:String(p.presence.v||'old').slice(0,12)};e.names.push(cleanName(p.presence.n));if(mt.st==='train'){e.waiting=false;e.end=Math.max(e.end,+mt.end)}seen.set(mt.id,e)}return[...seen.values()]}
@@ -2869,8 +2878,8 @@ function openCreate(){
    ${row('Kampfstil',sel('ctb',[[0,'⚡ Echtzeit'],[1,'⏳ Rundenbasiert']],c.tb))}
    ${row('Zielen',sel('caim',[[0,'🎯 Manuell (8 Richtungen)'],[2,'🎯 Frei (360°)'],[1,'Auto-Zielen']],c.aim||0))}
    ${row('Trainingszeit (Min.)',num('cdur',c.dur,1,60))}
-   ${row('Verhandlungsrunden (Schweizer System)',sel('crounds',[[0,'Auto – bis die Rangliste steht'],...[1,2,3,4,5,6,7].map(v=>[v,v])],c.rounds))}
-   ${row('Arena (Kampfplatz)',`<select id="carena" style="width:100%"><option value="">🎲 Zufällig (jeder Kampf neu)</option>${ARENA_ZONES.map(z=>`<option value="${z}" ${c.arena===z?'selected':''}>${esc(arenaName(z))}</option>`).join('')}</select>`)}
+   ${row('Verhandlungsrunden (jeder gegen jeden)',sel('crounds',[[0,'Alle – jeder gegen jeden'],...[1,2,3,4,5,6,7].map(v=>[v,v])],c.rounds))}
+   ${row('Gericht: Kampfplatz',`<select id="carena" style="width:100%"><option value="">🎲 Zufällig (jeder Kampf neu)</option>${ARENA_ZONES.map(z=>`<option value="${z}" ${c.arena===z?'selected':''}>${esc(arenaName(z))}</option>`).join('')}</select>`)}
    ${row('Kader (aktive Monster, Rest in der Box)',sel('ckader',[1,2,3,4].map(v=>[v,v+(v===4?' (Standard)':'')]),c.kader??4))}
    ${row('Monster pro Gerichtskampf',sel('cteam',[1,2,3,4].map(v=>[v,v]),Math.min(4,c.team)))}
    ${row('Begleiter in der Welt',sel('cfol',[[0,'keine'],[1,'1'],[2,'2'],[3,'3'],[4,'4']],c.fol??3))}
@@ -2885,11 +2894,20 @@ function openCreate(){
   $('#myes').onclick=()=>{const cfg=sanitizeCfg({name:$('#cname').value,dur:$('#cdur').value,rounds:$('#crounds').value,arena:$('#carena').value,team:$('#cteam').value,kap:$('#ckap').value,xp:$('#cxp').value,enc:$('#cenc').value,leg:$('#cleg').value,tb:$('#ctb').value,money:$('#cmoney').value,aim:$('#caim').value,fol:$('#cfol').value,kader:$('#ckader').value});G.lastCfg=cfg;save();closeModal();
     pickStarter(sid=>startRun('m'+Math.random().toString(36).slice(2,10),0,sid,null,Object.assign({},cfg,{host:MYPEER||'me'}),'lobby'),cfg)};
 }
-function pickStarter(cb,cfg){const alt=altOn(cfg||{alt:SET.alt==='0'?0:1});
+// lobby matches: every unique starter and every legendary (except the four FEM legends of the story) as base form
+function lobbyStarters(){const tgt=new Set(Object.values(SPECIES).filter(s=>s.evo).map(s=>s.evo[1]));const fem=typeof FEM!=='undefined'?FEM:['schlagstock','taser','pfefferspray','kelle'];
+  const ids=Object.keys(SPECIES).filter(s=>(RAR[s]==='unique'||RAR[s]==='legendary')&&!tgt.has(s)&&!fem.includes(s)&&!/[xm]$/.test(s)&&SPECIES[s].ls&&SPECIES[s].ls.length);
+  return ids.sort((a,b)=>(RAR[a]==='unique'?0:1)-(RAR[b]==='unique'?0:1))}
+function pickStarter(cb,cfg){if(cfg&&cfg.dur!=null)return pickStarterLobby(cb,cfg);const alt=altOn(cfg||{alt:SET.alt==='0'?0:1});
   openModal(`<h3>WÄHLE DEIN STARTER-MONSTER</h3><p>Alle beginnen mit Lv ${START_LV}. ${(()=>{const n=startersNow(cfg||{alt:SET.alt==='0'?0:1}).map(x=>SPECIES[x].n);return n.slice(0,-1).join(', ')+' und '+n[n.length-1]})()} sind einzigartig und werden ab Lv 14 zu ihrer goldenen Mega-Form.</p><div class="starters">${startersNow(cfg||{alt:SET.alt==='0'?0:1}).map(s=>`<button class="stc" data-s="${s}"><canvas width="56" height="56"></canvas><br>${nameHtml(s)}<br><span class="tb" style="background:${TYPES[SPECIES[s].t].c}">${TYPES[SPECIES[s].t].n.toUpperCase()}</span> <span class="tb" style="background:${rarOf(s).c};color:#14141f">${rarOf(s).n.toUpperCase()}</span></button>`).join('')}</div><div class="acts"><button class="btn ghost" id="mno">ABBRECHEN</button></div>`);
   document.querySelectorAll('.stc').forEach(b=>{{const cx=b.querySelector('canvas').getContext('2d');cx.imageSmoothingEnabled=false;cx.drawImage(monSprite(b.dataset.s,24),4,4,48,48)}b.onclick=()=>{closeModal();const s_=b.dataset.s;cb(s_);setTimeout(()=>{if(!B&&RUN&&RUN.team[0]&&!$('#modal').classList.contains('on'))dexReveal(s_,RUN.team[0],'★ DEIN STARTER ★')},700)}});
   $('#mno').onclick=closeModal;
 }
+function pickStarterLobby(cb,cfg){const list=lobbyStarters();
+  openModal(`<h3>WÄHLE DEIN STARTER-MONSTER</h3><p>Lobby-Spiel: alle einzigartigen und legendären Monster stehen zur Wahl (außer den vier FEM-Legendären). Alle beginnen mit Lv ${START_LV}.</p><div class="starters" style="max-height:56vh;overflow-y:auto;flex-wrap:wrap">${list.map(s=>`<button class="stc" data-s="${s}"><canvas width="56" height="56"></canvas><br>${nameHtml(s)}<br><span class="tb" style="background:${TYPES[SPECIES[s].t].c}">${TYPES[SPECIES[s].t].n.toUpperCase()}</span> <span class="tb" style="background:${rarOf(s).c};color:#14141f">${rarOf(s).n.toUpperCase()}</span></button>`).join('')}</div><div class="acts"><button class="btn ghost" id="mno">ABBRECHEN</button></div>`);
+  $('#mbox').style.maxWidth='760px';
+  document.querySelectorAll('.stc').forEach(b=>{{const cx=b.querySelector('canvas').getContext('2d');cx.imageSmoothingEnabled=false;cx.drawImage(monSprite(b.dataset.s,24),4,4,48,48)}b.onclick=()=>{closeModal();const s_=b.dataset.s;cb(s_);setTimeout(()=>{if(!B&&RUN&&RUN.team[0]&&!$('#modal').classList.contains('on'))dexReveal(s_,RUN.team[0],'★ DEIN STARTER ★')},700)}});
+  $('#mno').onclick=closeModal}
 function startRun(id,end,sid,prev,cfg,phase){
   phase=phase||'train';if(phase==='train'&&end<Date.now()+5000){toast('Dieses Spiel ist fast vorbei.');return}
   cfg=sanitizeCfg(cfg||DEF_CFG);
@@ -3160,6 +3178,173 @@ function bagGivePick(k){const all=RUN.team.concat(RUN.box);const ok=m=>{const st
   const list=all.filter(ok);if(!list.length){toast(k==='revive'?'Kein besiegtes Monster.':k==='candy'?'Keine Monster.':'Kein Monster braucht das gerade.');return}
   openModal(`<h3>${ITEMS[k].i} ${esc(ITEMS[k].n.toUpperCase())} GEBEN</h3><div style="display:flex;flex-direction:column;gap:6px">${list.map((m,i)=>`<button class="btn ghost" data-gm="${i}" style="font-family:VT323,monospace;font-size:19px;text-align:left">${esc(SPECIES[m.s].n)} · Lv ${m.l} · KP ${m.hp}/${stats(m).mhp}</button>`).join('')}</div><div class="acts" style="margin-top:8px"><button class="btn ghost" id="mno">ZURÜCK</button></div>`);
   document.querySelectorAll('[data-gm]').forEach(b=>b.onclick=()=>{useItemOn(k,list[+b.dataset.gm]);renderTeam();openBagMenu()});$('#mno').onclick=openBagMenu}
+/* ===================== GERICHT: JEDER GEGEN JEDEN MIT TURNIERBAUM =====================
+   - Reihenfolge wird ausgelost (aus der Lobby-ID abgeleitet → auf allen Geräten gleich).
+   - Jeder kämpft einmal gegen jeden. Runde 1 nach Los; danach Sieger gegen Sieger, Verlierer gegen Verlierer,
+     nur Gegner, gegen die man noch nicht gekämpft hat. Bei ungerader Zahl bekommt reihum der Schwächste ein Freilos.
+     Beispiel 3 Spieler: A–B, Sieger gegen C, dann die beiden Verlierer.
+   - Darstellung als Turnierbaum (Spalten = Runden, Kästen = Kämpfe), Bereit-Knöpfe direkt am eigenen Kampf,
+     Zuschauen bei laufenden Kämpfen. Start eines Kampfes, wenn beide bereit sind (nach 90 s automatisch, damit niemand blockiert). */
+const RDY_MS=90000;
+function drawRank(peer){return hashStr(String(RUN&&RUN.id)+'|'+peer)}
+// tiebreak by the draw instead of the peer id
+standings=function(parts,upto){
+  const sc={},bh={};for(const p of parts)sc[p.peer]=p.res.filter(x=>x[0]<upto).reduce((a,x)=>a+(x[1]==='bye'?0:x[2]),0);
+  for(const p of parts)bh[p.peer]=p.res.filter(x=>x[0]<upto&&x[1]!=='bot'&&x[1]!=='bye').reduce((a,x)=>a+(sc[x[1]]||0),0);
+  return parts.slice().sort((a,b)=>sc[b.peer]-sc[a.peer]||bh[b.peer]-bh[a.peer]||drawRank(a.peer)-drawRank(b.peer)).map(p=>Object.assign({},p,{score:sc[p.peer],bh:bh[p.peer]}))};
+function rrRounds(n){return n<2?1:n%2?n:n-1}
+roundsOf=function(){if(RUN&&RUN.R)return RUN.R;let n=2;try{n=participants().length}catch(e){}const rr=rrRounds(n),c=cfgOf().rounds;return c?Math.min(c,rr):rr};
+// pairing: score groups (winners vs winners), never a rematch if any complete pairing without one exists
+pairRound=function(parts,r){const list=standings(parts,r),pairs=[];if(!list.length)return pairs;
+  const played=(a,b)=>a.res.some(x=>x[0]<r&&x[1]===b.peer)||b.res.some(x=>x[0]<r&&x[1]===a.peer);
+  const hadBye=p=>p.res.some(x=>x[0]<r&&x[1]==='bye');const byeCands=list.length%2?list.map((p,i)=>i).reverse().sort((i,j)=>(hadBye(list[i])?1:0)-(hadBye(list[j])?1:0)):[-1];
+  const solve=(rest,allowRe)=>{if(!rest.length)return[];const p=rest[0];const cand=rest.slice(1).map((q,k)=>({q,k,d:Math.abs(p.score-q.score)})).sort((a,b)=>a.d-b.d||a.k-b.k);
+    for(const{q}of cand){if(!allowRe&&played(p,q))continue;const sub=solve(rest.filter(x=>x!==p&&x!==q),allowRe);if(sub)return[[p.peer,q.peer]].concat(sub)}return null};
+  for(const allowRe of[false,true])for(const bi of byeCands){const rest=list.filter((p,i)=>i!==bi);const m=solve(rest,allowRe);if(m)return(bi>=0?[[list[bi].peer,'bye']]:[]).concat(m)}
+  return pairs};
+// who belongs to round r (also those whose fight in r is already over)
+function inRound(parts,r){return parts.filter(p=>p.res.some(x=>x[0]===r)||(p.r>=r&&p.st!=='done'&&!['pick','train','lobby'].includes(p.st)))}
+function roundKnown(parts,r){if(r===1)return!parts.some(p=>['pick','train','lobby'].includes(p.st));const prev=inRound(parts,r-1);return prev.length>0&&prev.every(p=>p.res.some(x=>x[0]===r-1)||p.st==='done')}
+function duelIdOf(r,a,b){return RUN.id+'-'+r+'-'+[a,b].sort().join('-')}
+readyRoom=function(){return false};
+arenaTick=function(){
+  if(!RUN||RUN.free||RUN.phase!=='arena')return;
+  if(!B)showArena();
+  try{specAuto()}catch(e){}
+  if((B&&B.mode!=='spec')||RUN.st!=='wait')return;
+  const parts=participants();
+  const late=Date.now()>RUN.end+45000;
+  if(!late&&parts.some(p=>p.st==='train'||p.st==='pick'||p.st==='lobby'))return;
+  if(RUN.r===1&&!(RUN.res||[]).length&&Date.now()<RUN.end&&!(parts.length>1))return;
+  if(parts.length<2&&RUN.r===1&&!(RUN.res||[]).length){RUN.st='done';RUN.solo=1;save();pushMt();$('#abox').dataset.h='';showArena();return}
+  const decided=p=>{if(!parts.some(q=>q.res.some(x=>x[0]===p.r&&x[1]===p.peer)))return false;const k=p.peer+':'+p.r;if(!DECT.has(k))DECT.set(k,Date.now());return Date.now()-DECT.get(k)>20000};
+  if(parts.some(p=>p.st!=='done'&&p.r<RUN.r&&p.r>0&&!decided(p)&&!peerStale(p,150000)))return;
+  const me=MYPEER||'me';const pr=pairRound(inRound(parts,RUN.r),RUN.r).find(x=>x[0]===me||x[1]===me);if(!pr)return;
+  const opp=pr[0]===me?pr[1]:pr[0];
+  if(RUN.r===1&&!RUN.R){const n=inRound(parts,1).length,c=cfgOf().rounds;RUN.R=c?Math.min(c,rrRounds(n)):rrRounds(n);save()}
+  if(!RUN.pair||RUN.pair.r!==RUN.r||RUN.pair.opp!==opp){RUN.pair={r:RUN.r,opp,t:Date.now()};$('#abox').dataset.h=''}
+  if(opp!=='bye'){const op=parts.find(p=>p.peer===opp);const both=(+RUN.rdy||0)>=RUN.r&&op&&op.rd>=RUN.r;if(!both&&Date.now()-RUN.pair.t<RDY_MS)return}
+  if(B&&B.mode==='spec')specStop();
+  if(opp==='bye'){RUN.res=(RUN.res||[]).concat([[RUN.r,'bye',1]]);RUN.r++;RUN.st=RUN.r>roundsOf()?'done':'wait';sysChat(`Runde ${RUN.r-1}: Freilos — du setzt diese Runde aus und schaust zu.`);toast('Diese Runde hast du ein Freilos.');save();pushMt();$('#abox').dataset.h='';showArena();return}
+  startDuel(opp,duelIdOf(RUN.r,me,opp));
+};
+// ---------- Anzeige ----------
+(function(){const st=document.createElement('style');st.textContent=`
+.abox.wide{width:min(980px,100%)}
+.brk{position:relative;display:flex;gap:46px;overflow-x:auto;padding:6px 2px 10px;margin:8px 0}
+.brlines{position:absolute;left:0;top:0;pointer-events:none;z-index:0}.brcol,.brm{z-index:1}
+.brcol{display:flex;flex-direction:column;justify-content:space-around;gap:12px;min-width:200px;flex:0 0 auto}
+.brh{font-family:'Press Start 2P',monospace;font-size:8px;color:var(--muted);text-align:center;margin-bottom:2px}
+.brm{position:relative;background:var(--panel2);border:2px solid #000;box-shadow:3px 3px 0 #000;font-family:VT323,monospace}
+.brm.me{border-color:var(--accent)}.brm.live{border-color:#f0642a}.brm.fut{opacity:.55;border-style:dashed}
+.brn{font-size:11px;color:var(--muted);padding:2px 6px;border-bottom:1px solid #000;display:flex;justify-content:space-between}
+.brp{display:flex;align-items:center;gap:5px;padding:3px 6px;font-size:18px;line-height:1}
+.brp+.brp{border-top:1px solid #00000066}
+.brp .sw{width:9px;height:9px;border:2px solid #000;flex:0 0 auto}
+.brp .nm{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.brp.win{color:#3ddc6b}.brp.lose{color:#8a8ea6;text-decoration:line-through}
+.brp .rd{font-size:14px}
+.brf{padding:3px 6px 5px;font-size:15px;color:var(--muted)}
+.brf .btn{width:100%;padding:5px;margin-top:3px;font-size:9px}
+.drawroll{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
+.drawroll span{background:#0b0d16;border:2px solid #000;padding:2px 6px;font-family:VT323,monospace;font-size:18px;animation:drawin .5s steps(4) both}
+
+.podium{display:flex;align-items:flex-end;justify-content:center;gap:6px;margin:10px 0 6px;position:relative;min-height:170px;overflow:hidden}
+.pod{display:flex;flex-direction:column;align-items:center;width:110px}
+.pod .who{font-family:VT323,monospace;font-size:19px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:110px}
+.pod .fig{width:22px;height:30px;margin:2px 0;image-rendering:pixelated;animation:podjump 1s steps(2) infinite}
+.pod .step{width:100%;border:3px solid #000;box-shadow:3px 3px 0 #000;display:flex;align-items:flex-start;justify-content:center;font-family:'Press Start 2P',monospace;font-size:18px;color:#1b1300;padding-top:6px}
+.pod.p1 .step{height:86px;background:#ffcb3d}.pod.p2 .step{height:60px;background:#c8ccd8}.pod.p3 .step{height:42px;background:#cd8a4a}
+.pod.p1 .fig{animation-duration:.6s}
+@keyframes podjump{0%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+.conf{position:absolute;top:-8px;width:5px;height:5px;animation:conf 2.6s linear infinite}
+@keyframes conf{0%{transform:translateY(0) rotate(0)}100%{transform:translateY(190px) rotate(360deg)}}
+@keyframes drawin{0%{transform:translateY(-8px) rotate(-8deg);opacity:0}100%{transform:none;opacity:1}}`;document.head.appendChild(st)})();
+function bracketData(parts){const R=roundsOf(),N=Math.max(2,(RUN.R?inRound(parts,1).length:parts.length)),nm=id=>(parts.find(p=>p.peer===id)||{n:'(weg)'}),cols=[];let K=0;const label={};
+  const resOf=(a,b,r)=>{const pa=parts.find(p=>p.peer===a),pb=parts.find(p=>p.peer===b);const xa=pa&&pa.res.find(x=>x[0]===r&&x[1]===b),xb=pb&&pb.res.find(x=>x[0]===r&&x[1]===a);if(xa)return xa[2];if(xb)return 1-xb[2];return null};
+  const live=new Set(runningDuels().map(d=>d.id));let known=true;
+  for(let r=1;r<=R;r++){const col={r,ms:[]};known=known&&roundKnown(parts,r);
+    if(known){const prs=pairRound(inRound(parts,r),r);
+      for(const[a,b]of prs){if(b==='bye'){col.ms.push({k:'–',r,a,b,bye:1});continue}K++;const res=resOf(a,b,r),id=duelIdOf(r,a,b);
+        const st=res!=null?'done':(parts.some(p=>(p.peer===a||p.peer===b)&&p.st==='duel'&&p.r===r)||live.has(id))?'live':'ready';
+        col.ms.push({k:K,r,a,b,res,st,id});label[r+'|'+a]=label[r+'|'+b]=K}}
+    else{const per=Math.floor(N/2);const fut=[];
+      for(let i=0;i<per;i++){K++;let t=['?','?'];
+        if(N===3&&r===2)t=['Sieger K1',(cols[0]&&cols[0].ms.find(m=>m.bye))?nm(cols[0].ms.find(m=>m.bye).a).n:'Freilos-Spieler'];
+        else if(N===3&&r===3)t=['Verlierer K1','Verlierer K2'];
+        else if(N===4&&r===2)t=i===0?['Sieger K1','Sieger K2']:['Verlierer K1','Verlierer K2'];
+        else if(N===4&&r===3)t=i===0?['Sieger K1','Verlierer K2']:['Sieger K2','Verlierer K1'];
+        else if(r>1)t=i===0?['Bester','Zweitbester']:['nach Punkten','noch nicht gespielt'];
+        fut.push({k:K,r,fut:1,t})}
+      if(N%2)fut.push({k:'–',r,fut:1,bye:1,t:['Freilos','']});col.ms=fut}
+    cols.push(col)}
+  return cols}
+function podFig(col){const cv=mk(11,15),x=cv.getContext('2d'),F=(c,a,b,w,h)=>{x.fillStyle=c;x.fillRect(a,b,w,h)};
+  F('#14141f',2,0,7,15);F('#1f2a48',3,1,5,2);F('#ffcb3d',5,1,1,1);F('#ffdbac',3,3,5,3);F(col,2,6,7,5);F('#ffcb3d',1,6,1,2);F('#ffcb3d',9,6,1,2);F('#1f2a48',3,11,2,4);F('#1f2a48',6,11,2,4);return cv.toDataURL()}
+function podiumHtml(tab){const top=tab.slice(0,3),ord=[top[1],top[0],top[2]],cls=['p2','p1','p3'],num=['2','1','3'],med=['🥈','🏆','🥉'];
+  const conf=Array.from({length:22},(_,i)=>`<i class="conf" style="left:${(i*37)%100}%;background:${['#ffcb3d','#ef4444','#3b82f6','#3ddc6b','#fff'][i%5]};animation-delay:${(i*0.23)%2.6}s"></i>`).join('');
+  return`<div class="small" style="text-align:center;margin-top:8px">🏁 SIEGERPODEST</div><div class="podium">${conf}${ord.map((p,i)=>p?`<div class="pod ${cls[i]}"><div class="who">${med[i]} ${esc(p.n)}${p.me?' (du)':''}</div><img class="fig" src="${podFig(p.c)}" alt=""><div class="small">${p.score} Sieg${p.score===1?'':'e'}</div><div class="step">${num[i]}</div></div>`:`<div class="pod ${cls[i]}" style="opacity:0"></div>`).join('')}</div>`}
+function brMatchHtml(m,parts,me){const P=id=>parts.find(p=>p.peer===id)||{n:'(weg)',c:'#555',rd:0};
+  if(m.fut)return`<div class="brm fut" data-r="${m.r}"><div class="brn"><span>${m.bye?'Freilos':'Kampf '+m.k}</span><span>offen</span></div><div class="brp" data-ref="${esc(m.t[0])}"><span class="nm">${esc(m.t[0])}</span></div>${m.bye?'':`<div class="brp" data-ref="${esc(m.t[1])}"><span class="nm">${esc(m.t[1])}</span></div>`}</div>`;
+  if(m.bye){const a=P(m.a);return`<div class="brm${m.a===me?' me':''}" data-r="${m.r}" data-bye="1"><div class="brn"><span>Freilos</span><span>setzt aus</span></div><div class="brp" data-peer="${esc(m.a)}" data-out="b"><span class="sw" style="background:${a.c}"></span><span class="nm">${esc(a.n)}${m.a===me?' (du)':''}</span></div></div>`}
+  const a=P(m.a),b=P(m.b),mine=m.a===me||m.b===me;
+  const row=(p,id,w)=>`<div class="brp ${m.res==null?'':w?'win':'lose'}" data-peer="${esc(id)}" data-out="${m.res==null?'':w?'w':'l'}"><span class="sw" style="background:${p.c}"></span><span class="nm">${esc(p.n)}${id===me?' (du)':''}</span>${m.st==='ready'?`<span class="rd" title="${p.rd>=m.r?'bereit':'noch nicht bereit'}">${p.rd>=m.r?'✔':'☐'}</span>`:m.res!=null?`<span class="rd">${w?'🏆':''}</span>`:''}</div>`;
+  const wa=m.res==null?null:m.res===1,wb=m.res==null?null:m.res===0;
+  let foot='';
+  if(m.st==='live')foot=mine?'⚔ du kämpfst':`<button class="btn ghost" data-specid="${esc(m.id)}">👁 ZUSCHAUEN</button>`;
+  else if(m.st==='ready'){const left=RUN.pair&&RUN.pair.r===m.r&&mine?Math.max(0,RDY_MS-(Date.now()-RUN.pair.t)):null;const n=(a.rd>=m.r?1:0)+(b.rd>=m.r?1:0);
+    foot=`${n}/2 bereit${left!=null&&m.r===RUN.r?` · Start spätestens in ${fmt(left)}`:''}${mine&&RUN.st==='wait'&&RUN.r===m.r?`<button class="btn ${(+RUN.rdy||0)>=m.r?'ghost':'green'}" id="ardy">${(+RUN.rdy||0)>=m.r?'☐ DOCH NICHT BEREIT':'✔ BEREIT'}</button>`:''}`}
+  else if(m.res===0.5)foot='unentschieden';
+  return`<div class="brm${mine?' me':''}${m.st==='live'?' live':''}" data-r="${m.r}" data-k="${m.k}"><div class="brn"><span>Kampf ${m.k}</span><span>${m.st==='live'?'LÄUFT':m.st==='done'?'beendet':'wartet'}</span></div>${row(a,m.a,wa)}${row(b,m.b,wb)}<div class="brf">${foot}</div></div>`}
+showArena=function(){
+  const el=$('#arena');el.classList.add('on');$('#abox').classList.add('wide');
+  const parts=participants();const R=roundsOf();const allDone=parts.every(p=>p.st==='done');const me=MYPEER||'me';
+  const tab=standings(parts,99);
+  if(allDone&&!RUN.trophy&&!RUN.gaveUp&&!RUN.solo&&tab[0]&&tab[0].me&&parts.length>1){RUN.trophy=1;G.tro++;save();pres({tr:G.tro});updateHud();sysChat('🏆 Du hast das Turnier gewonnen!');earn(200,'Siegerprämie')}
+  let my;
+  if(RUN.solo)my='Keine Gegner — das Gericht ist nur PvP und braucht mindestens 2 Spieler. Verhandlung abgesagt.';
+  else if(RUN.gaveUp&&RUN.st==='done')my=allDone?`Du hast aufgegeben. Endergebnis: Platz ${tab.findIndex(p=>p.me)+1} von ${tab.length}.`:'Du hast das Turnier aufgegeben. Die anderen spielen weiter.';
+  else if(allDone)my=tab[0]&&tab[0].me&&parts.length>1?'🏆 Du hast das Turnier gewonnen!':`Turnier vorbei — du bist Platz ${tab.findIndex(p=>p.me)+1} von ${tab.length}.`;
+  else if(RUN.st==='done')my='Du hast alle Kämpfe gespielt. Warte auf die letzten Duelle…';
+  else if(parts.length>1&&Date.now()<=RUN.end+45000&&parts.some(p=>p.st==='train'||p.st==='lobby'))my=`Warte auf andere Spieler… (${parts.filter(p=>p.st!=='train'&&p.st!=='lobby').length}/${parts.length} im Gericht · Timer ${fmt(RUN.end-Date.now())})`;
+  else if(parts.length<=1&&Date.now()<RUN.end&&RUN.r===1&&!(RUN.res||[]).length)my=`Warte auf andere Spieler… Du bist allein — das Turnier beginnt, wenn der Timer abläuft (${fmt(RUN.end-Date.now())}).`;
+  else if(parts.some(p=>p.st==='pick'))my='Warte, bis alle ihr Gerichts-Team gewählt haben…';
+  else if(RUN.st==='wait'&&RUN.pair&&RUN.pair.r===RUN.r&&RUN.pair.opp!=='bye'&&!B){const op=parts.find(p=>p.peer===RUN.pair.opp);my=`Dein nächster Kampf: gegen ${op?op.n:'?'} — setze ✔ BEREIT an deinem Kampf.`}
+  else my=`Runde ${Math.min(RUN.r,R)} von ${R} — die nächste Paarung steht, sobald die laufenden Kämpfe vorbei sind.`;
+  const started=parts.some(p=>p.res.length)||parts.some(p=>p.st==='duel');if(!G._drawT||G._drawRun!==RUN.id){G._drawT=Date.now();G._drawRun=RUN.id}const anim=Date.now()-G._drawT<150;
+  const order=parts.slice().sort((a,b)=>drawRank(a.peer)-drawRank(b.peer));
+  const cols=parts.length>1?bracketData(parts):[];
+  const rec=p=>{const g=p.res.filter(x=>x[1]!=='bye'),w=g.filter(x=>x[2]===1).length,l=g.filter(x=>x[2]===0).length,d=g.filter(x=>x[2]===0.5).length;return`${w}-${l}${d?'-'+d:''}`};
+  const h=`<h2>⚖ DAS GERICHT</h2><div class="small">${cfgOf().tb?'Rundenbasiert':'Echtzeit'} · Jeder gegen jeden · ${R} Runde${R>1?'n':''} · je ${cfgOf().team} Monster · Teams voll geheilt</div><div class="st">${esc(my)}</div>
+   ${allDone&&parts.length>1&&!RUN.solo?podiumHtml(tab):''}
+   ${parts.length>1?`<div class="small">🎲 Ausgelost — Reihenfolge:</div><div class="drawroll">${order.map((p,i)=>`<span style="${started||!anim?'animation:none;':`animation-delay:${i*0.18}s;`}border-color:${p.me?'var(--accent)':'#000'}">${i+1}. ${esc(p.n)}</span>`).join('')}</div>`:''}
+   ${cols.length?`<div class="brk">${cols.map(c=>`<div class="brcol"><div class="brh">RUNDE ${c.r}</div>${c.ms.map(m=>brMatchHtml(m,parts,me)).join('')}</div>`).join('')}</div>`:''}
+   <div class="small" style="margin-top:4px">Tabelle (Siege · Buchholz · S-N):</div>
+   ${tab.map((p,i)=>`<div class="arow" ${p.me?'style="border-color:var(--accent)"':''}><span>${i+1}. <span class="sw" style="display:inline-block;width:10px;height:10px;background:${p.c};border:2px solid #000;margin:0 4px"></span>${esc(p.n)}${p.me?' (du)':''}</span><span>${p.score} · ${p.bh} · ${rec(p)}</span></div>`).join('')}
+   ${RUN.st!=='done'?'<div style="margin-top:10px"><button class="btn red" id="agiveup" style="width:100%">🏳 TURNIER AUFGEBEN</button></div>':''}${RUN.st==='done'?rematchHtml():''}${canGoBack()?'<div style="margin-top:10px"><button class="btn ghost" id="aback" style="width:100%">◀ ZURÜCK INS TRAINING</button></div>':''}`;
+  if($('#abox').dataset.h!==h){$('#abox').dataset.h=h;const sc=$('#abox').querySelector('.brk'),sl=sc?sc.scrollLeft:0;$('#abox').innerHTML=h;const sc2=$('#abox').querySelector('.brk');if(sc2){sc2.scrollLeft=sl;requestAnimationFrame(()=>brLines(sc2))}
+    const b=$('#aleave');if(b)b.onclick=leaveRun;const bk=$('#aback');if(bk)bk.onclick=backToTraining;const gu=$('#agiveup');if(gu)gu.onclick=giveUpArena;const rdb=$('#ardy');if(rdb)rdb.onclick=toggleReady;
+    document.querySelectorAll('[data-specid]').forEach(x=>x.onclick=()=>{const d=runningDuels().find(q=>q.id===x.dataset.specid);if(d){RUN.specOff=0;specStart(d)}else toast('Der Kampf ist schon vorbei.')});
+    const r=$('#arematch');if(r)r.onclick=()=>{const prev=RUN.id,cfg=Object.assign({},RUN.cfg,{host:MYPEER||'me'});pickStarter(sid=>startRun('m'+Math.random().toString(36).slice(2,10),0,sid,prev,cfg,'lobby'),cfg)};
+    document.querySelectorAll('[data-rjoin]').forEach(x=>x.onclick=()=>joinLobby(x.dataset.rjoin))}
+};
+
+// WM-style connector lines: every player row runs on to the box of their next fight (winner gold, loser grey dashed, Freilos blue dotted)
+function brLines(brk){try{if(!brk||!brk.isConnected)return;const old=brk.querySelector('svg.brlines');if(old)old.remove();
+  const W=brk.scrollWidth,H=brk.scrollHeight,ns='http://www.w3.org/2000/svg',svg=document.createElementNS(ns,'svg');svg.setAttribute('class','brlines');svg.setAttribute('width',W);svg.setAttribute('height',H);
+  const pos=(row,side)=>{const m=row.closest('.brm');return{x:m.offsetLeft+(side==='r'?m.offsetWidth:0),y:m.offsetTop+row.offsetTop+row.offsetHeight/2}};
+  const cols=[...brk.querySelectorAll('.brcol')];
+  const line=(a,b,col,dash,wd)=>{const mx=Math.round((a.x+b.x)/2),p=document.createElementNS(ns,'path');p.setAttribute('d',`M${a.x} ${a.y} H${mx} V${b.y} H${b.x}`);p.setAttribute('fill','none');p.setAttribute('stroke',col);p.setAttribute('stroke-width',wd||2);if(dash)p.setAttribute('stroke-dasharray',dash);p.setAttribute('shape-rendering','crispEdges');svg.appendChild(p)};
+  for(let i=0;i<cols.length-1;i++){const next=cols[i+1];
+    for(const row of cols[i].querySelectorAll('.brp[data-peer]')){const peer=row.dataset.peer,out=row.dataset.out;const tgt=[...next.querySelectorAll('.brp[data-peer]')].find(r=>r.dataset.peer===peer);
+      const k=row.closest('.brm').dataset.k;let to=tgt;
+      if(!to&&k){const want=out==='w'?'Sieger K'+k:out==='l'?'Verlierer K'+k:null;to=[...next.querySelectorAll('.brp[data-ref]')].find(r=>want?r.dataset.ref===want:false)}
+      if(!to&&out==='b'){const nmTxt=row.querySelector('.nm').textContent.replace(' (du)','');to=[...next.querySelectorAll('.brp[data-ref]')].find(r=>r.dataset.ref===nmTxt)}
+      if(!to&&!out&&k){const tos=[...next.querySelectorAll('.brp[data-ref]')].filter(r=>r.dataset.ref==='Sieger K'+k||r.dataset.ref==='Verlierer K'+k);tos.forEach(t=>line(pos(row,'r'),pos(t,'l'),'#4a4f6a','3 3'));continue}
+      if(!to)continue;
+      line(pos(row,'r'),pos(to,'l'),out==='w'?'#ffcb3d':out==='l'?'#8a8ea6':out==='b'?'#4aa3ff':'#4a4f6a',out==='l'?'5 4':out==='b'?'2 3':(!out?'3 3':null),out==='w'?3:2)}}
+  brk.insertBefore(svg,brk.firstChild)}catch(e){console.warn(e)}}
+addEventListener('resize',()=>{const b=document.querySelector('#abox .brk');if(b)brLines(b)});
 /* ===================== PLAYER CHALLENGES (during training) ===================== */
 let myCh=null,incoming=null;const handledCh=new Set();
 function canSpar(){return!!(RUN&&(RUN.phase==='train'||RUN.phase==='lobby')&&!B)}
@@ -3581,7 +3766,7 @@ function aiUpdate(F,dt){
     F.mvx=dx/d*rad+(-dy/d)*perp*0.8;F.mvy=dy/d*rad+(dx/d)*perp*0.8;const L=Math.hypot(F.mvx,F.mvy)||1;F.mvx/=L;F.mvy/=L;
     if(Math.random()<0.7&&aiMayFire()){const m=act(F);const ready=[0,1,2,3].filter(i=>{const mv=m.m[i]&&MOVES[m.m[i]];if(!mv||F.cd[i]>0||(F.ap??AP_MAX)<apCost(m.m[i]))return false;if(mv.k==='self')return mv.fx==='heal'?m.hp<m.mhp*0.45:Math.random()<0.4;return mv.k!=='melee'||d<34});if(ready.length)fire(F,ready[Math.floor(Math.random()*ready.length)])}
     if(B.mode==='ai'&&act(F).hp<act(F).mhp*0.2&&F.swCd<=0&&Math.random()<0.25){const n=F.team.findIndex((m,i)=>i!==F.a&&m.hp>act(F).hp*2);if(n>=0)doSwitch(F,n)}}
-  if(F.dashCd<=0&&(F.ap??AP_MAX)>=DASH_AP)for(const s of B.shots)if(s.side!==F.side&&!s.cap&&Math.hypot(s.x-F.x,s.y-F.y+10)<30&&Math.random()<0.06){F.ap=(F.ap??AP_MAX)-DASH_AP;F.noRegen=3;F.dashT=0.14;F.dashCd=1.6;F.inv=0.24;F.pdz=0.14+0.5;F.ddx=-s.vy/(Math.hypot(s.vx,s.vy)||1);F.ddy=s.vx/(Math.hypot(s.vx,s.vy)||1);break}
+  if(F.dashCd<=0&&(F.ap??AP_MAX)>=DASH_AP&&(F.ap??AP_MAX)>=AP_MAX*AP_CRIT)for(const s of B.shots)if(s.side!==F.side&&!s.cap&&Math.hypot(s.x-F.x,s.y-F.y+10)<30&&Math.random()<0.06){F.ap=(F.ap??AP_MAX)-DASH_AP;F.noRegen=DASH_NOREGEN;F.dashT=0.14;F.dashCd=1.6;F.inv=0.24;F.pdz=0.14+0.5;F.ddx=-s.vy/(Math.hypot(s.vx,s.vy)||1);F.ddy=s.vx/(Math.hypot(s.vx,s.vy)||1);break}
   move(F,F.mvx,F.mvy,dt);
 }
 function bUpdate(dt){if(B.mode==='spec'){specUpdate(dt);return}if(dt>0)B.fps=B.fps?B.fps*0.95+(1/dt)*0.05:1/dt;
@@ -3754,14 +3939,14 @@ function tbDuelSync(du){
 
 /* --- player actions --- */
 function battleMove(i){if(!B)return;if(B.tb){tbChoose({k:'move',i});return}if(B.state==='fight')fire(B.me,i)}
-const DASH_AP=0;
+const DASH_AP=0,AP_CRIT=0.2,DASH_NOREGEN=1.2;  // below 20 % AP: no sprint; regen pause after a sprint
 // squad size (lobby setting „Kader“, 1–4); everything else waits in the box
 function teamMax(){const k=+((RUN&&RUN.cfg&&RUN.cfg.kader)??4);return clamp(Number.isFinite(k)?k:4,1,4)}
 // the arena edge: fleeing and switching only work there
 function atEdge(F){const dx=(F.x-ACX)/ARX,dy=(F.y-ACY)/ARY;return Math.hypot(dx,dy)>=0.86}
-function battleDash(){if(!B||B.tb||B.state!=='fight')return;const F=B.me;if(F.dashCd>0||F.faint>0||F.out||F.st.stun>0||F.st.sleep>0||F.hitstun>0)return;if(!F.ddx&&!F.ddy){F.ddx=F.face>0?-1:1;F.ddy=0}let dx=0,dy=0;for(const d of held){dx+=DIRS[d][0];dy+=DIRS[d][1]}if(JOY.active&&Math.hypot(JOY.x,JOY.y)>0.2){dx=JOY.x;dy=JOY.y}const L=Math.hypot(dx,dy);if(L){F.ddx=dx/L;F.ddy=dy/L}if(DASH_AP&&(F.ap??AP_MAX)<DASH_AP){F.apShake=performance.now();const n=performance.now();if(!B.apMsgT||n-B.apMsgT>1200){B.apMsgT=n;say('Nicht genug AP zum Sprinten!')}return}F.ap=(F.ap??AP_MAX)-DASH_AP;F.dashT=0.15;F.dashCd=1.0;F.inv=0.26;F.noRegen=3;F.pdz=0.15+0.5}
+function battleDash(){if(!B||B.tb||B.state!=='fight')return;const F=B.me;if(F.dashCd>0||F.faint>0||F.out||F.st.stun>0||F.st.sleep>0||F.hitstun>0)return;if(!F.ddx&&!F.ddy){F.ddx=F.face>0?-1:1;F.ddy=0}let dx=0,dy=0;for(const d of held){dx+=DIRS[d][0];dy+=DIRS[d][1]}if(JOY.active&&Math.hypot(JOY.x,JOY.y)>0.2){dx=JOY.x;dy=JOY.y}const L=Math.hypot(dx,dy);if(L){F.ddx=dx/L;F.ddy=dy/L}if((F.ap??AP_MAX)<AP_MAX*AP_CRIT){F.apShake=performance.now();const n=performance.now();if(!B.apMsgT||n-B.apMsgT>1200){B.apMsgT=n;say('AP kritisch (unter 20 %) – kein Sprint möglich!')}return}if(DASH_AP&&(F.ap??AP_MAX)<DASH_AP){F.apShake=performance.now();const n=performance.now();if(!B.apMsgT||n-B.apMsgT>1200){B.apMsgT=n;say('Nicht genug AP zum Sprinten!')}return}F.ap=(F.ap??AP_MAX)-DASH_AP;F.dashT=0.15;F.dashCd=1.0;F.inv=0.26;F.noRegen=DASH_NOREGEN;F.pdz=0.15+0.5}
 function battleSwitch(){if(B&&B.tb){tbSwitchMenu();return}if(!B)return;if(B.state==='fight'&&B.qsel){reelConfirm();return}if(B.state!=='fight')return;const F=B.me;if(F.faint>0||F.out)return;if(!F.team.some((m,i)=>i!==F.a&&m.hp>0)){say('Kein anderes Monster einsatzbereit.');return}
-  if(!atEdge(F)){say('Zum Wechseln an den Rand der Arena laufen!');return}B.qsel=true;B.reel=null;held.length=0;$('#bpick').dataset.k=''}
+  if(!atEdge(F)){say('Zum Wechseln an den Rand des Kampffelds laufen!');return}B.qsel=true;B.reel=null;held.length=0;$('#bpick').dataset.k=''}
 function quickPick(i){const F=B.me;B.qsel=false;$('#bpick').dataset.k='';if(i===F.a||!F.team[i]||F.team[i].hp<=0)return;if(F.swCd>0){say('Wechsel gleich wieder möglich…');return}doSwitch(F,i)}
 // aiming: hold CAPSULE -> the aim line swings; release to throw. A pulsing ring on the target gives a throw bonus.
 function capPress(){if(!B||B.mode!=='wild'||B.aim)return;if(!(B.state==='fight'||(B.tb&&B.state==='tbChoose'))||B.capCd>0)return;if(RUN.kap<=0&&!B.capGreat){say('Keine Handschellen mehr!');return}B.aim={t0:performance.now()};say('Zielen… loslassen zum Werfen!')}
@@ -3781,7 +3966,7 @@ function tryRun(){if(!B||B.mode!=='wild'||CQ)return;
   if(B.state!=='fight')return;
   // real time: 1st press at the edge lets the paragraphs fall, 2nd press = the moment of escape (fleeFallPress)
   if(FF){fleeFallPress();return}
-  if(!atEdge(B.me)){say('Lauf an den Rand der Arena, um zu fliehen!');return}
+  if(!atEdge(B.me)){say('Lauf an den Rand des Kampffelds, um zu fliehen!');return}
   fleeFallStart()}
 // flee question: about your own active monster (its paragraph)
 function fleeQuiz(cb){const it=fleeItem(act(B.me).s),order=shuffleArr([0,1,2,3]);
@@ -4215,7 +4400,7 @@ function hudPanel(c,x,y,F,right,label){
   const r=clamp(mon.hp/mon.mhp,0,1);c.fillStyle=hpColor(r);c.fillRect(X+5,y+14,Math.round((w-10)*r),4);
   c.fillStyle='#ffffff55';c.fillRect(X+5,y+14,Math.round((w-10)*r),1);
   if(F.ctrl!=='remote'){const ap=clamp((F.ap??AP_MAX)/AP_MAX,0,1),sh=F.apShake&&performance.now()-F.apShake<300?Math.round(Math.sin(performance.now()/25)*1.5):0;
-    c.fillStyle='#14141f';c.fillRect(X+4+sh,y+21,62,4);c.fillStyle='#2b3350';c.fillRect(X+5+sh,y+22,60,2);const boost=(F.apMul||1)>1.2&&(F.ap??AP_MAX)<AP_MAX,frozen=F.noRegen>0;c.fillStyle=ap<0.2?'#ef4444':frozen?'#7a8094':boost?'#7fd8ff':'#4aa3ff';c.fillRect(X+5+sh,y+22,Math.round(60*ap),2);vtText(c,'AP '+Math.floor(F.ap??AP_MAX)+(frozen?' ⏸':boost?' ▲':''),X+68,y+25,frozen?'#7a8094':boost?'#1f8a3a':'#2b5fa8',8)}
+    c.fillStyle='#14141f';c.fillRect(X+4+sh,y+21,62,4);c.fillStyle='#2b3350';c.fillRect(X+5+sh,y+22,60,2);const boost=(F.apMul||1)>1.2&&(F.ap??AP_MAX)<AP_MAX,frozen=F.noRegen>0;c.fillStyle=ap<0.2?'#ef4444':frozen?'#7a8094':boost?'#7fd8ff':'#4aa3ff';c.fillRect(X+5+sh,y+22,Math.round(60*ap),2);vtText(c,'AP '+Math.floor(F.ap??AP_MAX)+(ap<0.2?' !':frozen?' ⏸':boost?' ▲':''),X+68,y+25,ap<0.2?'#d62828':frozen?'#7a8094':boost?'#1f8a3a':'#2b5fa8',8)}
   vtText(c,`${mon.hp}/${mon.mhp}`,X+4,y+31,'#4b4f63',9);
   for(let i=0;i<F.team.length;i++){c.fillStyle='#14141f';c.fillRect(X+w-6-i*7,y+25,6,6);c.fillStyle=F.team[i].hp>0?'#e8453c':'#8a8ea6';c.fillRect(X+w-5-i*7,y+26,4,4)}
 }
@@ -5119,6 +5304,44 @@ function nearTick(){if(!B||B.tb||!B.shots||!B.me||!B.foe)return;const now=perfor
   for(const[id,e]of B.nearT){if(live.has(id)&&!e.s.dead)continue;B.nearT.delete(id);if(e.hit||e.s.didHit||e.gap<=0||e.gap>NEAR_PX)continue;const T=e.T;if(!T||(T.nearLT&&now-T.nearLT<700))continue;T.nearLT=now;
     B.nums.push({x:T.x,y:T.y-58,t:e.mine?'KNAPP DANEBEN!':'KNAPP AUSGEWICHEN!',c:e.mine?'#ff9a3d':'#7fd0ff',at:now,sz:9,life:1000})}}
 {const _kt=kindsTick;kindsTick=function(dt){_kt(dt);try{nearTick()}catch(e){console.error(e)}}}
+/* Gericht-Kämpfe (Turnier-Duelle und Zuschauen) bekommen eine epische Bühne:
+   Publikum mit Blitzlichtern, schwenkende Scheinwerfer, goldener Ring, Waage-Emblem, Banner mit Runde —
+   im letzten Kampf des Turniers „★ ENDKAMPF ★“ mit Goldfunken und großem Intro-Schriftzug. */
+function courtEpic(){try{if(!B||!RUN||RUN.free)return null;if(!(B.mode==='duel'&&!B.spar)&&B.mode!=='spec')return null;
+  const p=String(B.id||'').split('-'),r=+p[1]||RUN.r||1,R=roundsOf();return{r,R,fin:r>=R}}catch(e){return null}}
+function courtCrowd(){if(B.crowd)return B.crowd;const rnd=mulberry32(hashStr(String(B.id)));const cols=['#c0392b','#2e86de','#f1c40f','#27ae60','#8e44ad','#e67e22','#ecf0f1','#34495e','#d35400','#16a085'];const skin=['#f1c27d','#e0ac69','#c68642','#8d5524','#ffdbac'];
+  const out=[];for(let row=0;row<3;row++){const y=66+row*11;for(let x=4+row*5;x<AW-4;x+=10+Math.floor(rnd()*3)){const ex=(x-ACX)/ARX,ey=(y+10-ACY)/ARY;if(ex*ex+ey*ey<1.05)continue;out.push({x,y,c:cols[Math.floor(rnd()*cols.length)],s:skin[Math.floor(rnd()*skin.length)],ph:rnd()*6.28,sp:2+rnd()*3})}}
+  for(const side of[-1,1])for(let i=0;i<10;i++){const y=AH-30+((i/5)|0)*11,x=side<0?6+(i%5)*11:AW-8-(i%5)*11;const ex=(x-ACX)/ARX,ey=(y-ACY)/ARY;if(ex*ex+ey*ey<1.05)continue;out.push({x,y,c:cols[Math.floor(rnd()*cols.length)],s:skin[Math.floor(rnd()*skin.length)],ph:rnd()*6.28,sp:2+rnd()*3})}
+  return B.crowd=out}
+{const _da=drawArenaEv;drawArenaEv=function(c,now,layer){_da.apply(this,arguments);const E=courtEpic();if(!E)return;try{
+  const gold=E.fin?'#ffcb3d':'#d9b45a',t=now/1000;
+  if(layer===0){
+    // dark stage floor edge + glowing ring
+    c.save();c.globalAlpha=0.22;c.fillStyle='#000';c.beginPath();c.rect(0,0,AW,AH);c.ellipse(ACX,ACY,ARX,ARY,0,0,Math.PI*2,true);c.fill('evenodd');c.restore();
+    const n=72;for(let i=0;i<n;i++){const a=i/n*Math.PI*2+t*(E.fin?0.35:0.15),x=ACX+Math.cos(a)*ARX,y=ACY+Math.sin(a)*ARY;c.fillStyle=i%2?gold:'#7a5a12';c.globalAlpha=0.55+0.35*Math.sin(t*3+i);c.fillRect(Math.round(x)-1,Math.round(y)-1,3,2)}c.globalAlpha=1;
+    // scales emblem on the floor
+    c.save();c.globalAlpha=E.fin?0.2:0.13;c.fillStyle=gold;const X=ACX,Y=ACY+4;c.fillRect(X-1,Y-18,2,26);c.fillRect(X-16,Y-16,32,2);c.fillRect(X-8,Y+8,16,2);
+    for(const s of[-1,1]){const px=X+s*14;c.fillRect(px,Y-14,1,9);c.fillRect(px-6,Y-5,13,2);c.fillRect(px-5,Y-3,11,1)}c.restore();
+    // light pools under the fighters
+    for(const F of[B.me,B.foe,B.pL&&B.vL,B.pR&&B.vR]){if(!F||F.out||typeof F.x!=='number')continue;c.save();c.globalAlpha=0.16;c.fillStyle='#fff7d0';c.beginPath();c.ellipse(F.x,F.y+2,22,8,0,0,Math.PI*2);c.fill();c.restore()}
+    return}
+  if(layer!==1)return;
+  // spotlights sweeping from the top corners
+  c.save();c.globalCompositeOperation='lighter';for(const s of[-1,1]){const ox=s<0?18:AW-18,oy=58,a=Math.PI/2+s*(-0.55)+Math.sin(t*0.7+(s>0?1.7:0))*0.35,L=AH,w=0.13;
+    c.globalAlpha=E.fin?0.11:0.08;c.fillStyle=E.fin?'#ffe8a0':'#d8e6ff';c.beginPath();c.moveTo(ox,oy);c.lineTo(ox+Math.cos(a-w)*L,oy+Math.sin(a-w)*L);c.lineTo(ox+Math.cos(a+w)*L,oy+Math.sin(a+w)*L);c.closePath();c.fill()}c.restore();
+  // crowd with camera flashes
+  for(const p of courtCrowd()){const bob=Math.round(Math.max(0,Math.sin(t*p.sp+p.ph))*(E.fin?3:2));c.fillStyle='#14141f';c.fillRect(p.x-4,p.y-bob-1,9,12);c.fillStyle=p.c;c.fillRect(p.x-3,p.y-bob+4,7,6);c.fillStyle=p.s;c.fillRect(p.x-2,p.y-bob,5,4);
+    if(Math.sin(t*p.sp*0.9+p.ph*7)>0.995||(E.fin&&Math.sin(t*5+p.ph*13)>0.997)){c.fillStyle='#ffffff';c.fillRect(p.x-1,p.y-bob-3,4,3);c.globalAlpha=0.25;c.fillRect(p.x-6,p.y-bob-6,13,10);c.globalAlpha=1}}
+  // gold embers in the final
+  if(E.fin){B.emb=B.emb||[];if(B.emb.length<40&&Math.random()<0.5)B.emb.push({x:Math.random()*AW,y:AH+4,v:12+Math.random()*20,ph:Math.random()*6});
+    B.emb=B.emb.filter(e=>{e.y-=e.v/60;const x=e.x+Math.sin(t*2+e.ph)*4;c.fillStyle=Math.sin(t*9+e.ph)>0?'#ffcb3d':'#ff9a3d';c.fillRect(Math.round(x),Math.round(e.y),2,2);return e.y>50})}
+  // banner
+  const txt=E.fin?'★ ENDKAMPF ★':`⚖ GERICHT · RUNDE ${E.r}/${E.R}`;c.save();c.font='7px "Press Start 2P",monospace';const w=c.measureText(txt).width+14,x=Math.round(ACX-w/2),y=ACY-ARY-14;
+  c.fillStyle='#14141f';c.fillRect(x-2,y-2,w+4,16);c.fillStyle=E.fin?'#5a1010':'#1f2a48';c.fillRect(x,y,w,12);c.fillStyle=gold;c.fillRect(x,y,w,1);c.fillRect(x,y+11,w,1);
+  c.restore();pxText(c,txt,ACX,y+9,E.fin&&Math.floor(now/400)%2?'#fff3c8':gold,6,'center');
+  // big intro text for the final
+  if(E.fin&&B.state!=='over'){B.finIntro=B.finIntro||now;const k=(now-B.finIntro)/2600;if(k<1){c.globalAlpha=k<.15?k/.15:k>.75?(1-k)/.25:1;pxText(c,'ENDKAMPF',ACX,ACY-4,'#ffcb3d',16,'center');pxText(c,'um den Turniersieg',ACX,ACY+14,'#fff3c8',6,'center');c.globalAlpha=1}}
+}catch(e){}}}
 /* ===================== COURT: arena choice, spectating =====================
    Spectators render a running tournament duel purely from the two duelists' presence ("du": positions, HP, shots),
    which is broadcast to the whole room anyway — watching costs no extra bandwidth. Nothing is simulated or hit here. */
@@ -5180,12 +5403,15 @@ function monCard(m,i,inTeam){
   const st=stats(m),sp=SPECIES[m.s],r=m.hp/st.mhp;const d=document.createElement('div');d.className='card';
   const cv=mk(52,52);{const cx=cv.getContext('2d');cx.imageSmoothingEnabled=false;cx.drawImage(monSprite(m.s,24),0,0,52,52)}d.appendChild(cv);
   const info=document.createElement('div');info.className='info';
-  info.innerHTML=`<div class="nm"><span>${nameHtml(m.s)}</span><span class="lv">Lv ${m.l}</span></div><span class="tb" style="background:${TYPES[sp.t].c}">${TYPES[sp.t].n.toUpperCase()}</span> <span class="tb" style="background:${rarOf(m.s).c};color:#14141f">${rarOf(m.s).n.toUpperCase()}</span> <span class="small">KP ${m.hp}/${st.mhp}</span><div class="bar"><i style="width:${r*100}%;background:${hpColor(r)}"></i></div><div class="bar xp"><i style="width:${Math.min(100,m.xp/xpNeed(m.l)*100)}%"></i></div><div class="small" style="margin-top:3px">${m.m.map(x=>MOVES[x].n).join(' · ')}</div>`;
+  info.innerHTML=`<div class="nm"><span>${nameHtml(m.s)}</span><span class="lv">Lv ${m.l}</span></div><span class="tb" style="background:${TYPES[sp.t].c}">${TYPES[sp.t].n.toUpperCase()}</span> <span class="tb" style="background:${rarOf(m.s).c};color:#14141f">${rarOf(m.s).n.toUpperCase()}</span> <span class="small">KP ${m.hp}/${st.mhp}</span><div class="bar"><i style="width:${r*100}%;background:${hpColor(r)}"></i></div><div class="bar xp"><i style="width:${Math.min(100,m.xp/xpNeed(m.l)*100)}%"></i></div><div class="mvl"></div>`;
+  {const L=info.querySelector('.mvl'),lock=!!B||(RUN&&RUN.phase==='arena');m.m.forEach((x,j)=>{const mv=MOVES[x];if(!mv)return;const r=document.createElement('div');r.className='mvr';
+    r.innerHTML=`<span class="k">${j+1}</span><span class="tb" style="background:${TYPES[mv.t].c}">${TYPES[mv.t].n.slice(0,3).toUpperCase()}</span><span class="n" title="${esc(moveDesc(x))}">${esc(mv.n)}</span><span class="p">${mv.p?mv.p:'–'}</span>`;
+    const mvb=(t,d,tt)=>{const b=document.createElement('button');b.className='mini';b.textContent=t;b.title=tt;b.disabled=lock||j+d<0||j+d>=m.m.length;b.onclick=()=>{const q=m.m[j+d];m.m[j+d]=m.m[j];m.m[j]=q;changed()};r.appendChild(b)};
+    mvb('▲',-1,'Nach oben (Attacke '+j+')');mvb('▼',1,'Nach unten');L.appendChild(r)})}
   const acts=document.createElement('div');const btn=(t,fn,dis)=>{const b=document.createElement('button');b.className='mini';b.textContent=t;b.disabled=!!dis||!!B||(RUN&&RUN.phase==='arena');b.onclick=fn;acts.appendChild(b)};
   if(inTeam){if(i>0)btn('↑ Nach vorn',()=>{RUN.team.unshift(RUN.team.splice(i,1)[0]);changed()});if(RUN.team.length>1)btn('→ Box',()=>{RUN.box.push(RUN.team.splice(i,1)[0]);changed()})}
   else btn('→ Team',()=>{RUN.team.push(RUN.box.splice(i,1)[0]);changed()},RUN.team.length>=teamMax());
   {const b=document.createElement('button');b.className='mini';b.textContent='ℹ Details';b.onclick=()=>openMonInfo(m.s,m);acts.appendChild(b)}
-  {const b=document.createElement('button');b.className='mini';b.textContent='📚 Study';b.disabled=!!B||RUN.phase==='arena';b.title=SPECIES[m.s].law?'Quiz zu '+SPECIES[m.s].law:'Quiz mit zufälligen Paragraphen';b.onclick=()=>openStudy(m);acts.appendChild(b)}
   if(RUN&&RUN.items&&['potion','superp','revive','candy'].some(k=>RUN.items[k]>0)){const b=document.createElement('button');b.className='mini';b.textContent='🎒 Item';b.disabled=!!B||RUN.phase==='arena';b.onclick=()=>openItemsFor(m);acts.appendChild(b)}
   if(RUN&&tmOwned().some(k=>tmOK(m,k))){const b=document.createElement('button');b.className='mini';b.textContent='💿 TM';b.disabled=!!B||RUN.phase==='arena';b.onclick=()=>openTMFor(m);acts.appendChild(b)}
   info.appendChild(acts);d.appendChild(info);return d;
@@ -6736,7 +6962,6 @@ function openBoxWin(){if(!RUN)return;const locked=!!B||RUN.phase==='arena';
     if(s.w==='t'){btn('→ Box',()=>move(s),locked||RUN.team.length<=1);btn('↑ Nach vorn',()=>{RUN.team.unshift(RUN.team.splice(s.i,1)[0]);BOXW.sel={w:'t',i:0};ref()},locked||s.i===0)}
     else btn('→ Kader',()=>move(s),locked||RUN.team.length>=teamMax());
     btn('ℹ Details',()=>{openMonInfo(m.s,m,true);const bk=$('#mback');if(bk){bk.textContent='ZURÜCK';bk.onclick=()=>openBoxWin()}});
-    btn('📚 Study',()=>openStudy(m),locked);
     if(['potion','superp','revive','candy'].some(k=>inv(k)>0))btn('🎒 Item',()=>openItemsFor(m),locked);
     if(tmOwned().some(k=>tmOK(m,k)))btn('💿 TM',()=>openTMFor(m),locked)};
   acts();
@@ -6795,7 +7020,7 @@ function openGiveHeld(k){const all=RUN.team.map((m,i)=>({m,w:'Kader'})).concat(R
   <div class="acts" style="margin-top:8px"><button class="btn ghost" id="mno">ZURÜCK</button></div>`);
   document.querySelectorAll('[data-hm]').forEach(b=>b.onclick=()=>{const m=all[+b.dataset.hm].m;if(giveHeld(m,k))toast(`${SPECIES[m.s].n} trägt jetzt ${heldName(k)}.`);renderTeam();openBagMenu(inv(k)?k:undefined)});$('#mno').onclick=()=>openBagMenu(k)}
 {const _ob=openBagMenu;openBagMenu=function(sel){_ob.apply(this,arguments);try{const d=$('#bagd');if(!d)return;
-  const add=()=>{const cur=$('#bagg .bagCell.sel');const k=cur&&cur.dataset.k;if(!k||k.startsWith('tm:'))return;const row=d.querySelector('.mvrow');if(!row||row.querySelector('[data-hold]'))return;
+  const add=()=>{const cur=$('#bagg .bagCell.sel');const k=cur&&cur.dataset.k;if(!k)return;if(k.startsWith('tm:')){const row=d.querySelector('.mvrow');if(!row||row.querySelector('[data-tmgive]'))return;const mk2=k.slice(3);const sm=row.querySelector('.small:last-of-type');if(sm&&/Einsetzen über/.test(sm.textContent))sm.textContent='Direkt einem Monster beibringen (Typ passend oder Normal).';const b=document.createElement('button');b.className='btn';b.dataset.tmgive=mk2;b.textContent='EINSETZEN';b.onclick=()=>openTMGive(mk2);row.appendChild(b);return}const row=d.querySelector('.mvrow');if(!row||row.querySelector('[data-hold]'))return;
     const g=row.querySelector('[data-give]');if(g){g.textContent='BENUTZEN';g.title='Jetzt (außerhalb des Kampfes) auf ein Monster anwenden'}
     if(HOLDABLE.includes(k)){const b=document.createElement('button');b.className='btn';b.dataset.hold=k;b.textContent='MITGEBEN';b.title='Einem Monster für den Kampf mitgeben (max. 1 Item je Monster)';b.onclick=()=>openGiveHeld(k);row.insertBefore(b,g||row.querySelector('[data-fav]'))}};
   add();new MutationObserver(add).observe(d,{childList:true,subtree:true});
@@ -6814,6 +7039,14 @@ openBag=function(){if(!B||B.state==='over')return;if(B.tb&&B.mode==='duel'){say(
   const opts=bagOpts();if(!opts.length){say('Im Beutel ist gerade nichts Nutzbares.');return}
   openModal(`<h3>🎒 MITGEGEBENES ITEM</h3><div style="display:flex;flex-direction:column;gap:6px">${opts.map(([k,t])=>`<button class="btn ghost" data-bag="${k}" style="font-family:VT323,monospace;font-size:19px">${ITEMS[k.split(':')[0]].i} ${esc(t)}</button>`).join('')}</div><div class="acts" style="margin-top:8px"><button class="btn" id="mok">SCHLIESSEN</button></div>`);
   document.querySelectorAll('[data-bag]').forEach(b=>b.onclick=()=>{closeModal();bagUse(b.dataset.bag)});$('#mok').onclick=closeModal};
+
+// TM/VM straight from the bag: pick the monster that should learn it
+function openTMGive(k){const all=RUN.team.map(m=>({m,w:'Kader'})).concat(RUN.box.map(m=>({m,w:'Box'})));const ok=all.filter(e=>tmOK(e.m,k)&&!e.m.m.includes(k)),no=all.filter(e=>!ok.includes(e));
+  openModal(`<h3>${VM_MOVES[k]?'📀 VM':'💿 TM'} ${esc(MOVES[k].n.toUpperCase())} EINSETZEN</h3><div class="small" style="margin-bottom:6px">${esc(TYPES[MOVES[k].t].n)} · Stärke ${MOVES[k].p||0} · ${VM_MOVES[k]?'VM, beliebig oft':'noch ×'+(RUN.tm[k]||0)}. Lernen können es Monster vom Typ ${esc(TYPES[MOVES[k].t].n)}${MOVES[k].t==='normal'?'':' (und Normal-Attacken alle)'}.</div>
+  <div style="display:flex;flex-direction:column;gap:5px;max-height:50vh;overflow-y:auto">${ok.length?ok.map((e,i)=>`<button class="btn ghost" data-tg="${i}" style="font-family:VT323,monospace;font-size:19px;text-align:left">${esc(SPECIES[e.m.s].n)} · Lv ${e.m.l} <span class="small">(${e.w}) · ${e.m.m.length}/4 Attacken</span></button>`).join(''):'<div class="small">Kein Monster kann diese Attacke lernen (oder alle können sie schon).</div>'}
+  ${no.length?`<div class="small" style="margin-top:4px;opacity:.6">Nicht möglich: ${no.map(e=>esc(SPECIES[e.m.s].n)+(e.m.m.includes(k)?' (kann sie schon)':'')).join(', ')}</div>`:''}</div>
+  <div class="acts" style="margin-top:8px"><button class="btn ghost" id="mno">ZURÜCK</button></div>`);
+  document.querySelectorAll('[data-tg]').forEach(b=>b.onclick=()=>tmTeach(ok[+b.dataset.tg].m,k));$('#mno').onclick=()=>openBagMenu('tm:'+k)}
 /* ===================== LOOP ===================== */
 let last=performance.now(),slow=0;
 function frame(now){bakeTick();const dt=Math.max(0,Math.min(0.05,(now-last)/1000));last=now;T+=dt;
@@ -7345,7 +7578,7 @@ function kbApply(){try{document.body.classList.toggle('touch',isMob());if(isMob(
   const mapZ=document.querySelectorAll('#mapov button');mapZ.forEach(b=>{const t=b.textContent.trim();if(t.startsWith('+'))kbSet(b,'+');else if(t.startsWith('−')||t.startsWith('-'))kbSet(b,'-');else if(/SCHLIESS|✕/.test(t))kbSet(b,'Esc')})}catch(e){}}
 setInterval(kbApply,400);
 {let busy=0;const mo=new MutationObserver(()=>{if(busy)return;busy=1;kbApply();busy=0});const hook=()=>{const el=$('#bact');if(el&&!el.dataset.kbmo){el.dataset.kbmo=1;mo.observe(el,{childList:true,subtree:true,characterData:true})}};setInterval(hook,500)}
-addEventListener('keydown',e=>{if(e.ctrlKey||e.metaKey||e.altKey||typing()||PANIC||capturing||e.repeat)return;const k=e.key.toLowerCase();
+addEventListener('keydown',e=>{if(e.ctrlKey||e.metaKey||e.altKey||typing()||PANIC||capturing||e.repeat)return;if(typeof e.key!=='string')return;const k=e.key.toLowerCase();
   if(B){if(Object.values(SET.keys).includes(k))return;if(B.mode==='spec'||$('#modal').classList.contains('on')||$('#study').classList.contains('on')||(typeof pickMode==='function'&&pickMode()))return;
     if(k==='b'){e.preventDefault();bagTry()}else if(k==='i'){e.preventDefault();if(B.me)openMonInfo(act(B.me).s,act(B.me))}else if(k==='o'){e.preventDefault();openSettings()}return}
   if(!G||modalOpen())return;const m=TOP_KEYS.find(([,kk])=>kk===k&&k!=='m'&&k!=='t');if(!m)return;const b=document.querySelector('#topbar '+m[0]);if(b&&b.offsetParent!==null){e.preventDefault();b.click()}});

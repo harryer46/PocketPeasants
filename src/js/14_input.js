@@ -3,7 +3,7 @@ const DIRS={up:[0,-1],down:[0,1],left:[-1,0],right:[1,0]};
 const KEYMAP={ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right',w:'up',s:'down',a:'left',d:'right',W:'up',S:'down',A:'left',D:'right'};
 const held=[],aimHeld=[];
 function typing(){const a=document.activeElement;return a&&(a.tagName==='INPUT'||a.tagName==='TEXTAREA'||a.tagName==='SELECT')}
-addEventListener('keydown',e=>{
+addEventListener('keydown',e=>{if(typeof e.key!=='string')return;
   // emergency mode first: Enter always toggles it and never also skips/confirms whatever is open underneath
   if(PANIC){e.preventDefault();e.stopImmediatePropagation();if(e.key==='Enter'&&!e.repeat)panicOff();return}
   if(e.key==='Enter'&&!typing()&&!capturing&&G){e.preventDefault();e.stopImmediatePropagation();if(!e.repeat)panicOn();return}
@@ -107,7 +107,7 @@ $('#hbag').addEventListener('click',e=>{e.currentTarget.blur();openBagMenu()});
 let RH=null;
 function reelHold(d,key){reelStop();reelSpin(d);let gap=320;const step=()=>{if(!RH)return;if(!B||!pickMode()){reelStop();return}reelSpin(d);gap=Math.max(55,gap*0.78);RH.t=setTimeout(step,gap)};RH={key,t:setTimeout(step,gap)}}
 function reelStop(){if(RH){clearTimeout(RH.t);RH=null}}
-addEventListener('keyup',e=>{if(RH&&RH.key!=='ptr'&&e.key.toLowerCase()===String(RH.key).toLowerCase())reelStop()});
+addEventListener('keyup',e=>{if(RH&&RH.key!=='ptr'&&String(e.key||'').toLowerCase()===String(RH.key).toLowerCase())reelStop()});
 // touch / mouse: the arrow buttons are redrawn on every step, so the hold ends on the window's pointerup, not on the button
 addEventListener('pointerup',()=>{if(RH&&RH.key==='ptr')reelStop()});addEventListener('pointercancel',()=>{if(RH&&RH.key==='ptr')reelStop()});
 addEventListener('blur',reelStop);

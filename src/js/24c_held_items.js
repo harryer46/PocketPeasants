@@ -25,7 +25,7 @@ function openGiveHeld(k){const all=RUN.team.map((m,i)=>({m,w:'Kader'})).concat(R
   <div class="acts" style="margin-top:8px"><button class="btn ghost" id="mno">ZURÜCK</button></div>`);
   document.querySelectorAll('[data-hm]').forEach(b=>b.onclick=()=>{const m=all[+b.dataset.hm].m;if(giveHeld(m,k))toast(`${SPECIES[m.s].n} trägt jetzt ${heldName(k)}.`);renderTeam();openBagMenu(inv(k)?k:undefined)});$('#mno').onclick=()=>openBagMenu(k)}
 {const _ob=openBagMenu;openBagMenu=function(sel){_ob.apply(this,arguments);try{const d=$('#bagd');if(!d)return;
-  const add=()=>{const cur=$('#bagg .bagCell.sel');const k=cur&&cur.dataset.k;if(!k||k.startsWith('tm:'))return;const row=d.querySelector('.mvrow');if(!row||row.querySelector('[data-hold]'))return;
+  const add=()=>{const cur=$('#bagg .bagCell.sel');const k=cur&&cur.dataset.k;if(!k)return;if(k.startsWith('tm:')){const row=d.querySelector('.mvrow');if(!row||row.querySelector('[data-tmgive]'))return;const mk2=k.slice(3);const sm=row.querySelector('.small:last-of-type');if(sm&&/Einsetzen über/.test(sm.textContent))sm.textContent='Direkt einem Monster beibringen (Typ passend oder Normal).';const b=document.createElement('button');b.className='btn';b.dataset.tmgive=mk2;b.textContent='EINSETZEN';b.onclick=()=>openTMGive(mk2);row.appendChild(b);return}const row=d.querySelector('.mvrow');if(!row||row.querySelector('[data-hold]'))return;
     const g=row.querySelector('[data-give]');if(g){g.textContent='BENUTZEN';g.title='Jetzt (außerhalb des Kampfes) auf ein Monster anwenden'}
     if(HOLDABLE.includes(k)){const b=document.createElement('button');b.className='btn';b.dataset.hold=k;b.textContent='MITGEBEN';b.title='Einem Monster für den Kampf mitgeben (max. 1 Item je Monster)';b.onclick=()=>openGiveHeld(k);row.insertBefore(b,g||row.querySelector('[data-fav]'))}};
   add();new MutationObserver(add).observe(d,{childList:true,subtree:true});
@@ -44,3 +44,11 @@ openBag=function(){if(!B||B.state==='over')return;if(B.tb&&B.mode==='duel'){say(
   const opts=bagOpts();if(!opts.length){say('Im Beutel ist gerade nichts Nutzbares.');return}
   openModal(`<h3>🎒 MITGEGEBENES ITEM</h3><div style="display:flex;flex-direction:column;gap:6px">${opts.map(([k,t])=>`<button class="btn ghost" data-bag="${k}" style="font-family:VT323,monospace;font-size:19px">${ITEMS[k.split(':')[0]].i} ${esc(t)}</button>`).join('')}</div><div class="acts" style="margin-top:8px"><button class="btn" id="mok">SCHLIESSEN</button></div>`);
   document.querySelectorAll('[data-bag]').forEach(b=>b.onclick=()=>{closeModal();bagUse(b.dataset.bag)});$('#mok').onclick=closeModal};
+
+// TM/VM straight from the bag: pick the monster that should learn it
+function openTMGive(k){const all=RUN.team.map(m=>({m,w:'Kader'})).concat(RUN.box.map(m=>({m,w:'Box'})));const ok=all.filter(e=>tmOK(e.m,k)&&!e.m.m.includes(k)),no=all.filter(e=>!ok.includes(e));
+  openModal(`<h3>${VM_MOVES[k]?'📀 VM':'💿 TM'} ${esc(MOVES[k].n.toUpperCase())} EINSETZEN</h3><div class="small" style="margin-bottom:6px">${esc(TYPES[MOVES[k].t].n)} · Stärke ${MOVES[k].p||0} · ${VM_MOVES[k]?'VM, beliebig oft':'noch ×'+(RUN.tm[k]||0)}. Lernen können es Monster vom Typ ${esc(TYPES[MOVES[k].t].n)}${MOVES[k].t==='normal'?'':' (und Normal-Attacken alle)'}.</div>
+  <div style="display:flex;flex-direction:column;gap:5px;max-height:50vh;overflow-y:auto">${ok.length?ok.map((e,i)=>`<button class="btn ghost" data-tg="${i}" style="font-family:VT323,monospace;font-size:19px;text-align:left">${esc(SPECIES[e.m.s].n)} · Lv ${e.m.l} <span class="small">(${e.w}) · ${e.m.m.length}/4 Attacken</span></button>`).join(''):'<div class="small">Kein Monster kann diese Attacke lernen (oder alle können sie schon).</div>'}
+  ${no.length?`<div class="small" style="margin-top:4px;opacity:.6">Nicht möglich: ${no.map(e=>esc(SPECIES[e.m.s].n)+(e.m.m.includes(k)?' (kann sie schon)':'')).join(', ')}</div>`:''}</div>
+  <div class="acts" style="margin-top:8px"><button class="btn ghost" id="mno">ZURÜCK</button></div>`);
+  document.querySelectorAll('[data-tg]').forEach(b=>b.onclick=()=>tmTeach(ok[+b.dataset.tg].m,k));$('#mno').onclick=()=>openBagMenu('tm:'+k)}

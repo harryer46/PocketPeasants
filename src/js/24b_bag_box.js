@@ -51,7 +51,6 @@ function openBoxWin(){if(!RUN)return;const locked=!!B||RUN.phase==='arena';
     if(s.w==='t'){btn('→ Box',()=>move(s),locked||RUN.team.length<=1);btn('↑ Nach vorn',()=>{RUN.team.unshift(RUN.team.splice(s.i,1)[0]);BOXW.sel={w:'t',i:0};ref()},locked||s.i===0)}
     else btn('→ Kader',()=>move(s),locked||RUN.team.length>=teamMax());
     btn('ℹ Details',()=>{openMonInfo(m.s,m,true);const bk=$('#mback');if(bk){bk.textContent='ZURÜCK';bk.onclick=()=>openBoxWin()}});
-    btn('📚 Study',()=>openStudy(m),locked);
     if(['potion','superp','revive','candy'].some(k=>inv(k)>0))btn('🎒 Item',()=>openItemsFor(m),locked);
     if(tmOwned().some(k=>tmOK(m,k)))btn('💿 TM',()=>openTMFor(m),locked)};
   acts();

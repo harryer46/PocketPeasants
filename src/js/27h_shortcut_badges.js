@@ -16,7 +16,7 @@ function kbApply(){try{document.body.classList.toggle('touch',isMob());if(isMob(
   const mapZ=document.querySelectorAll('#mapov button');mapZ.forEach(b=>{const t=b.textContent.trim();if(t.startsWith('+'))kbSet(b,'+');else if(t.startsWith('−')||t.startsWith('-'))kbSet(b,'-');else if(/SCHLIESS|✕/.test(t))kbSet(b,'Esc')})}catch(e){}}
 setInterval(kbApply,400);
 {let busy=0;const mo=new MutationObserver(()=>{if(busy)return;busy=1;kbApply();busy=0});const hook=()=>{const el=$('#bact');if(el&&!el.dataset.kbmo){el.dataset.kbmo=1;mo.observe(el,{childList:true,subtree:true,characterData:true})}};setInterval(hook,500)}
-addEventListener('keydown',e=>{if(e.ctrlKey||e.metaKey||e.altKey||typing()||PANIC||capturing||e.repeat)return;const k=e.key.toLowerCase();
+addEventListener('keydown',e=>{if(e.ctrlKey||e.metaKey||e.altKey||typing()||PANIC||capturing||e.repeat)return;if(typeof e.key!=='string')return;const k=e.key.toLowerCase();
   if(B){if(Object.values(SET.keys).includes(k))return;if(B.mode==='spec'||$('#modal').classList.contains('on')||$('#study').classList.contains('on')||(typeof pickMode==='function'&&pickMode()))return;
     if(k==='b'){e.preventDefault();bagTry()}else if(k==='i'){e.preventDefault();if(B.me)openMonInfo(act(B.me).s,act(B.me))}else if(k==='o'){e.preventDefault();openSettings()}return}
   if(!G||modalOpen())return;const m=TOP_KEYS.find(([,kk])=>kk===k&&k!=='m'&&k!=='t');if(!m)return;const b=document.querySelector('#topbar '+m[0]);if(b&&b.offsetParent!==null){e.preventDefault();b.click()}});

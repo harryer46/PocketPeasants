@@ -305,7 +305,7 @@ function aiUpdate(F,dt){
     F.mvx=dx/d*rad+(-dy/d)*perp*0.8;F.mvy=dy/d*rad+(dx/d)*perp*0.8;const L=Math.hypot(F.mvx,F.mvy)||1;F.mvx/=L;F.mvy/=L;
     if(Math.random()<0.7&&aiMayFire()){const m=act(F);const ready=[0,1,2,3].filter(i=>{const mv=m.m[i]&&MOVES[m.m[i]];if(!mv||F.cd[i]>0||(F.ap??AP_MAX)<apCost(m.m[i]))return false;if(mv.k==='self')return mv.fx==='heal'?m.hp<m.mhp*0.45:Math.random()<0.4;return mv.k!=='melee'||d<34});if(ready.length)fire(F,ready[Math.floor(Math.random()*ready.length)])}
     if(B.mode==='ai'&&act(F).hp<act(F).mhp*0.2&&F.swCd<=0&&Math.random()<0.25){const n=F.team.findIndex((m,i)=>i!==F.a&&m.hp>act(F).hp*2);if(n>=0)doSwitch(F,n)}}
-  if(F.dashCd<=0&&(F.ap??AP_MAX)>=DASH_AP)for(const s of B.shots)if(s.side!==F.side&&!s.cap&&Math.hypot(s.x-F.x,s.y-F.y+10)<30&&Math.random()<0.06){F.ap=(F.ap??AP_MAX)-DASH_AP;F.noRegen=3;F.dashT=0.14;F.dashCd=1.6;F.inv=0.24;F.pdz=0.14+0.5;F.ddx=-s.vy/(Math.hypot(s.vx,s.vy)||1);F.ddy=s.vx/(Math.hypot(s.vx,s.vy)||1);break}
+  if(F.dashCd<=0&&(F.ap??AP_MAX)>=DASH_AP&&(F.ap??AP_MAX)>=AP_MAX*AP_CRIT)for(const s of B.shots)if(s.side!==F.side&&!s.cap&&Math.hypot(s.x-F.x,s.y-F.y+10)<30&&Math.random()<0.06){F.ap=(F.ap??AP_MAX)-DASH_AP;F.noRegen=DASH_NOREGEN;F.dashT=0.14;F.dashCd=1.6;F.inv=0.24;F.pdz=0.14+0.5;F.ddx=-s.vy/(Math.hypot(s.vx,s.vy)||1);F.ddy=s.vx/(Math.hypot(s.vx,s.vy)||1);break}
   move(F,F.mvx,F.mvy,dt);
 }
 function bUpdate(dt){if(B.mode==='spec'){specUpdate(dt);return}if(dt>0)B.fps=B.fps?B.fps*0.95+(1/dt)*0.05:1/dt;
@@ -478,14 +478,14 @@ function tbDuelSync(du){
 
 /* --- player actions --- */
 function battleMove(i){if(!B)return;if(B.tb){tbChoose({k:'move',i});return}if(B.state==='fight')fire(B.me,i)}
-const DASH_AP=0;
+const DASH_AP=0,AP_CRIT=0.2,DASH_NOREGEN=1.2;  // below 20 % AP: no sprint; regen pause after a sprint
 // squad size (lobby setting „Kader“, 1–4); everything else waits in the box
 function teamMax(){const k=+((RUN&&RUN.cfg&&RUN.cfg.kader)??4);return clamp(Number.isFinite(k)?k:4,1,4)}
 // the arena edge: fleeing and switching only work there
 function atEdge(F){const dx=(F.x-ACX)/ARX,dy=(F.y-ACY)/ARY;return Math.hypot(dx,dy)>=0.86}
-function battleDash(){if(!B||B.tb||B.state!=='fight')return;const F=B.me;if(F.dashCd>0||F.faint>0||F.out||F.st.stun>0||F.st.sleep>0||F.hitstun>0)return;if(!F.ddx&&!F.ddy){F.ddx=F.face>0?-1:1;F.ddy=0}let dx=0,dy=0;for(const d of held){dx+=DIRS[d][0];dy+=DIRS[d][1]}if(JOY.active&&Math.hypot(JOY.x,JOY.y)>0.2){dx=JOY.x;dy=JOY.y}const L=Math.hypot(dx,dy);if(L){F.ddx=dx/L;F.ddy=dy/L}if(DASH_AP&&(F.ap??AP_MAX)<DASH_AP){F.apShake=performance.now();const n=performance.now();if(!B.apMsgT||n-B.apMsgT>1200){B.apMsgT=n;say('Nicht genug AP zum Sprinten!')}return}F.ap=(F.ap??AP_MAX)-DASH_AP;F.dashT=0.15;F.dashCd=1.0;F.inv=0.26;F.noRegen=3;F.pdz=0.15+0.5}
+function battleDash(){if(!B||B.tb||B.state!=='fight')return;const F=B.me;if(F.dashCd>0||F.faint>0||F.out||F.st.stun>0||F.st.sleep>0||F.hitstun>0)return;if(!F.ddx&&!F.ddy){F.ddx=F.face>0?-1:1;F.ddy=0}let dx=0,dy=0;for(const d of held){dx+=DIRS[d][0];dy+=DIRS[d][1]}if(JOY.active&&Math.hypot(JOY.x,JOY.y)>0.2){dx=JOY.x;dy=JOY.y}const L=Math.hypot(dx,dy);if(L){F.ddx=dx/L;F.ddy=dy/L}if((F.ap??AP_MAX)<AP_MAX*AP_CRIT){F.apShake=performance.now();const n=performance.now();if(!B.apMsgT||n-B.apMsgT>1200){B.apMsgT=n;say('AP kritisch (unter 20 %) – kein Sprint möglich!')}return}if(DASH_AP&&(F.ap??AP_MAX)<DASH_AP){F.apShake=performance.now();const n=performance.now();if(!B.apMsgT||n-B.apMsgT>1200){B.apMsgT=n;say('Nicht genug AP zum Sprinten!')}return}F.ap=(F.ap??AP_MAX)-DASH_AP;F.dashT=0.15;F.dashCd=1.0;F.inv=0.26;F.noRegen=DASH_NOREGEN;F.pdz=0.15+0.5}
 function battleSwitch(){if(B&&B.tb){tbSwitchMenu();return}if(!B)return;if(B.state==='fight'&&B.qsel){reelConfirm();return}if(B.state!=='fight')return;const F=B.me;if(F.faint>0||F.out)return;if(!F.team.some((m,i)=>i!==F.a&&m.hp>0)){say('Kein anderes Monster einsatzbereit.');return}
-  if(!atEdge(F)){say('Zum Wechseln an den Rand der Arena laufen!');return}B.qsel=true;B.reel=null;held.length=0;$('#bpick').dataset.k=''}
+  if(!atEdge(F)){say('Zum Wechseln an den Rand des Kampffelds laufen!');return}B.qsel=true;B.reel=null;held.length=0;$('#bpick').dataset.k=''}
 function quickPick(i){const F=B.me;B.qsel=false;$('#bpick').dataset.k='';if(i===F.a||!F.team[i]||F.team[i].hp<=0)return;if(F.swCd>0){say('Wechsel gleich wieder möglich…');return}doSwitch(F,i)}
 // aiming: hold CAPSULE -> the aim line swings; release to throw. A pulsing ring on the target gives a throw bonus.
 function capPress(){if(!B||B.mode!=='wild'||B.aim)return;if(!(B.state==='fight'||(B.tb&&B.state==='tbChoose'))||B.capCd>0)return;if(RUN.kap<=0&&!B.capGreat){say('Keine Handschellen mehr!');return}B.aim={t0:performance.now()};say('Zielen… loslassen zum Werfen!')}
@@ -505,7 +505,7 @@ function tryRun(){if(!B||B.mode!=='wild'||CQ)return;
   if(B.state!=='fight')return;
   // real time: 1st press at the edge lets the paragraphs fall, 2nd press = the moment of escape (fleeFallPress)
   if(FF){fleeFallPress();return}
-  if(!atEdge(B.me)){say('Lauf an den Rand der Arena, um zu fliehen!');return}
+  if(!atEdge(B.me)){say('Lauf an den Rand des Kampffelds, um zu fliehen!');return}
   fleeFallStart()}
 // flee question: about your own active monster (its paragraph)
 function fleeQuiz(cb){const it=fleeItem(act(B.me).s),order=shuffleArr([0,1,2,3]);
@@ -939,7 +939,7 @@ function hudPanel(c,x,y,F,right,label){
   const r=clamp(mon.hp/mon.mhp,0,1);c.fillStyle=hpColor(r);c.fillRect(X+5,y+14,Math.round((w-10)*r),4);
   c.fillStyle='#ffffff55';c.fillRect(X+5,y+14,Math.round((w-10)*r),1);
   if(F.ctrl!=='remote'){const ap=clamp((F.ap??AP_MAX)/AP_MAX,0,1),sh=F.apShake&&performance.now()-F.apShake<300?Math.round(Math.sin(performance.now()/25)*1.5):0;
-    c.fillStyle='#14141f';c.fillRect(X+4+sh,y+21,62,4);c.fillStyle='#2b3350';c.fillRect(X+5+sh,y+22,60,2);const boost=(F.apMul||1)>1.2&&(F.ap??AP_MAX)<AP_MAX,frozen=F.noRegen>0;c.fillStyle=ap<0.2?'#ef4444':frozen?'#7a8094':boost?'#7fd8ff':'#4aa3ff';c.fillRect(X+5+sh,y+22,Math.round(60*ap),2);vtText(c,'AP '+Math.floor(F.ap??AP_MAX)+(frozen?' ⏸':boost?' ▲':''),X+68,y+25,frozen?'#7a8094':boost?'#1f8a3a':'#2b5fa8',8)}
+    c.fillStyle='#14141f';c.fillRect(X+4+sh,y+21,62,4);c.fillStyle='#2b3350';c.fillRect(X+5+sh,y+22,60,2);const boost=(F.apMul||1)>1.2&&(F.ap??AP_MAX)<AP_MAX,frozen=F.noRegen>0;c.fillStyle=ap<0.2?'#ef4444':frozen?'#7a8094':boost?'#7fd8ff':'#4aa3ff';c.fillRect(X+5+sh,y+22,Math.round(60*ap),2);vtText(c,'AP '+Math.floor(F.ap??AP_MAX)+(ap<0.2?' !':frozen?' ⏸':boost?' ▲':''),X+68,y+25,ap<0.2?'#d62828':frozen?'#7a8094':boost?'#1f8a3a':'#2b5fa8',8)}
   vtText(c,`${mon.hp}/${mon.mhp}`,X+4,y+31,'#4b4f63',9);
   for(let i=0;i<F.team.length;i++){c.fillStyle='#14141f';c.fillRect(X+w-6-i*7,y+25,6,6);c.fillStyle=F.team[i].hp>0?'#e8453c':'#8a8ea6';c.fillRect(X+w-5-i*7,y+26,4,4)}
 }
