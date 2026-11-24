@@ -17,6 +17,7 @@ addEventListener('keydown',e=>{if(typeof e.key!=='string')return;
   const d=KEYMAP[e.key];if(d){e.preventDefault();if(e.key.startsWith('Arrow')&&B&&!B.tb){if(!aimHeld.includes(d))aimHeld.push(d);return}if(!held.includes(d))held.push(d);return}
   if(B&&CQ){const n=+e.key;if(n>=1&&n<=4&&!CQ.done){e.preventDefault();cqAnswer(CQ.order[n-1])}return}
   if(!B&&CQ&&$('#cquiz').classList.contains('on')){const n=+e.key;if(n>=1&&n<=4&&!CQ.done&&CQ_PICK){e.preventDefault();CQ_PICK(CQ.order[n-1])}else if((e.key===' '||e.key==='Enter')&&CQ.done&&$('#cqnext')){e.preventDefault();$('#cqnext').click()}return}
+  if(B&&B.state==='over'&&e.key===' '&&!$('#modal').classList.contains('on')&&finSkip()){e.preventDefault();return}
   if(B){if($('#modal').classList.contains('on')||$('#study').classList.contains('on'))return;const k=normKey(e.key),K=SET.keys;
     if(pickMode()){const kk=e.key.toLowerCase(),d=(kk==='a'||kk==='w'||e.key==='ArrowLeft'||e.key==='ArrowUp')?-1:(kk==='d'||kk==='s'||e.key==='ArrowRight'||e.key==='ArrowDown')?1:0;if(d){e.preventDefault();if(!e.repeat||!RH)reelHold(d,kk);return}if(k===K.sw){e.preventDefault();reelConfirm();return}if(e.key==='Escape'&&B.qsel){B.qsel=false;return}if(B.qsel)return}
     if((B.qsel&&B.state==='fight')||(B.leadWait&&B.state==='count')){const n=+e.key;if(n>=1&&n<=6){e.preventDefault();const alive=B.me.team.map((m,i)=>i).filter(i=>B.me.team[i].hp>0);const i=alive[n-1];if(i!=null){if(B.qsel)quickPick(i);else{const b=document.querySelector(`#bpick [data-pk="${i}"]`);if(b)b.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}))}}return}if(e.key==='Escape'&&B.qsel){B.qsel=false;return}}
@@ -34,6 +35,7 @@ addEventListener('keyup',e=>{const d=KEYMAP[e.key];if(d){const i=held.indexOf(d)
 addEventListener('blur',()=>{held.length=0;aimHeld.length=0});
 // intro screens: a tap anywhere on the screen skips (not only on the battle picture)
 addEventListener('pointerdown',e=>{if(!PANIC&&B&&(B.vs||B.wi)&&vsSkip()){e.preventDefault();e.stopPropagation()}},true);
+addEventListener('pointerdown',e=>{if(!PANIC&&B&&B.state==='over'&&e.target.closest&&e.target.closest('#bwrap,#bcv')&&finSkip()){e.preventDefault();e.stopPropagation()}},true);
 ['#stage','#battle'].forEach(sel=>{const el=$(sel);if(el)el.addEventListener('pointerdown',e=>{if(typing()&&!e.target.closest('input,select,textarea'))document.activeElement.blur()})});
 document.querySelectorAll('#dpad button').forEach(b=>{const d=b.dataset.d;
   b.addEventListener('pointerdown',e=>{e.preventDefault();if(!held.includes(d))held.push(d)});

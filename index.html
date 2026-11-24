@@ -485,7 +485,7 @@ const TURN_CONFIG = {
 
 /* ===================== VERSION ===================== */
 // bump with every release (MAJOR.MINOR.PATCH). Players can only share lobbies/duels with the same version.
-const VERSION='0.107.0';
+const VERSION='0.108.0';
 // access password: changes every Monday 00:00 (local time). Only the hashes are stored here (one per week from PW_W0);
 // the password itself also keys the P2P room, so clients without the current one cannot connect. The plain list lives offline.
 const PW_KEY='knast_pw',PW_W0=Date.UTC(2026,10,16),PW_WH=[3239358969,4147130060,2718625794,3495965776,1618054998,4028240764,3044289461,1207180107,4242648729,353861226,2672313786,600614717,407529519,2270237167,3207113251,1525244515,870970040,319006638,3847934078,944313310,2153038366,3950944742,2733334548,4002544240,2736690288,645338530,1884329338,4268902487,2483246182,3828308270,2182929315,3152020422,1311886195,3461060417,3407580460,2544240283,1017220184,1277844250,4288535363,461397931,853058720,2065298771,219387161,3215594984,1108518435,2250837220,3171827014,1035538317,1537090466,1716649754,2848461661,1266925999,653943759,1307642793,3319845926,629631788,4180878311,1080582197,4114403588,2360104553,3811730973,3337788437,695971354,2424950805],MAX_ROOM=10,MAX_LOBBY=5;
@@ -1016,6 +1016,8 @@ Object.assign(MOVES.whirlpool,{k:'whirl4',p:40,cd:8,fx:null});
 Object.assign(MOVES,{windkanal:{n:'Windkanal',t:'flying',p:30,k:'windstream',cd:6}});
 Object.assign(MOVES.gust,{kb:18});
 {for(const sid in SPECIES){const sp=SPECIES[sid];if(!Array.isArray(sp.ls)||sp.t!=='flying')continue;if(!sp.ls.some(x=>x[1]==='windkanal'))sp.ls.push([16,'windkanal']);sp.ls.sort((a,b)=>a[0]-b[0])}}
+// Erdbeben: Boden bebt, 10–20 Steine fallen vom Himmel
+Object.assign(MOVES.earthquake,{k:'quake',cd:7});
 /* ===================== COMBO MOVES (v0.99) =====================
    Three moves that set up or block combos (mechanics + the combo table in 22g_combos.js):
    Ölfleck   (Normal)  oil shot – the target is oiled for 6 s; a miss leaves a slippery oil slick that fire ignites
@@ -2031,6 +2033,7 @@ function begin(){
 
 /* ===================== CONTROL SETTINGS ===================== */
 const CHANGELOG=[
+ ["0.108.0","2026-11-24","Attacken-Vorschau nutzt jetzt die echte Kampf-Engine: echte Sprites, Geschosse, Effekte, Hindernisse und Schadenszahlen in einem Mini-Kampf (dein Monster gegen eine Übungspuppe), auch während eines Kampfes. Große Geschosse (Glut, Ofenexplosion, Dornenexplosion …) zerbersten in drei kleinere Splitter, wenn ein anderes Geschoss sie trifft. Erdbeben: Kamera bebt, 10–20 Steine fallen vom Himmel (Schatten → Einschlag, max. 3 Treffer), jeder dritte bleibt 8 s liegen (Munition für Felswurf). SIEG-/Niederlagen-Bildschirm mit Leertaste oder Tippen überspringen. Surfer-Welle kommt jetzt vom Rand des Kampffelds und rollt übers ganze Feld; wer hinter einem stabilen Hindernis (Fels, Säule …) steht, bekommt keinen Schaden — kleine Deckung wie Büsche reißt die Welle weg."],
  ["0.107.0","2026-11-24","Attacken-Vorschau: Beim Überfahren einer Attacke (Details, Team-Liste, TM-Menüs, Attacken-Knöpfe; am Handy antippen) läuft eine kleine Pixel-Animation mit deinem Monster und einer Zielpuppe — je Wirkungsart ein eigener Ablauf, Umgebungs-Attacken zeigen ihr Zusammenspiel (Fels anheben, Pfützen unter Strom, Welle reißt Busch mit, Brand springt über). Handschellen haben ein eigenes Pixel-Icon statt der Kette (HUD, Beutel, Laden, Festnahme)."],
  ["0.106.1","2026-11-24","Wind drückt: Neue Attacke Windkanal (Flug, ab Lv 16 und als TM) — 2,2 s Dauerwind in Zielrichtung, schiebt den Gegner mit, lenkt seine Geschosse um, schleudert ihn gegen Hindernisse (Extraschaden) oder in Feuer, Strompfützen und Wirbel; per Sprint kann man sich dagegenstemmen. Windstoß drückt den Gegner beim Treffer deutlich weiter weg."],
  ["0.106.0","2026-11-24","Neue Attacken, die mit dem Kampffeld zusammenspielen: Felswurf (Stein/Kampf) reißt einen Fels direkt neben dir heraus und wirft ihn (ohne Fels nur ein Kiesel); Kurzschluss (Elektro) jagt Strom durch alle Pfützen — wer drinsteht oder nass ist, bekommt den Schlag; Surfer wird zur riesigen Welle quer übers Feld, zerstört kleine Hindernisse, löscht Feuer und hinterlässt Pfützen (per Sprint durchquerbar); Whirlpool erzeugt vier wandernde Wasserwirbel, die den Gegner erfassen; Flächenbrand (Feuer) entzündet Pflanzen und Holz in der Nähe, das Feuer springt weiter; Orkan (Flug) treibt Feuer, Pfützen, Öl und Wirbel vor sich her und stößt den Gegner zurück. Allgemein: Wasser leitet Strom (Elektro-Geschoss durch Pfütze → Strompfütze) und Wasser löscht Feuer (auch Strahlen und Wellen). Lernbar per Level (Stein/Kampf, Elektro, Feuer, Flug, Wasser) und als TM."],
@@ -2115,6 +2118,7 @@ addEventListener('keydown',e=>{if(typeof e.key!=='string')return;
   const d=KEYMAP[e.key];if(d){e.preventDefault();if(e.key.startsWith('Arrow')&&B&&!B.tb){if(!aimHeld.includes(d))aimHeld.push(d);return}if(!held.includes(d))held.push(d);return}
   if(B&&CQ){const n=+e.key;if(n>=1&&n<=4&&!CQ.done){e.preventDefault();cqAnswer(CQ.order[n-1])}return}
   if(!B&&CQ&&$('#cquiz').classList.contains('on')){const n=+e.key;if(n>=1&&n<=4&&!CQ.done&&CQ_PICK){e.preventDefault();CQ_PICK(CQ.order[n-1])}else if((e.key===' '||e.key==='Enter')&&CQ.done&&$('#cqnext')){e.preventDefault();$('#cqnext').click()}return}
+  if(B&&B.state==='over'&&e.key===' '&&!$('#modal').classList.contains('on')&&finSkip()){e.preventDefault();return}
   if(B){if($('#modal').classList.contains('on')||$('#study').classList.contains('on'))return;const k=normKey(e.key),K=SET.keys;
     if(pickMode()){const kk=e.key.toLowerCase(),d=(kk==='a'||kk==='w'||e.key==='ArrowLeft'||e.key==='ArrowUp')?-1:(kk==='d'||kk==='s'||e.key==='ArrowRight'||e.key==='ArrowDown')?1:0;if(d){e.preventDefault();if(!e.repeat||!RH)reelHold(d,kk);return}if(k===K.sw){e.preventDefault();reelConfirm();return}if(e.key==='Escape'&&B.qsel){B.qsel=false;return}if(B.qsel)return}
     if((B.qsel&&B.state==='fight')||(B.leadWait&&B.state==='count')){const n=+e.key;if(n>=1&&n<=6){e.preventDefault();const alive=B.me.team.map((m,i)=>i).filter(i=>B.me.team[i].hp>0);const i=alive[n-1];if(i!=null){if(B.qsel)quickPick(i);else{const b=document.querySelector(`#bpick [data-pk="${i}"]`);if(b)b.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}))}}return}if(e.key==='Escape'&&B.qsel){B.qsel=false;return}}
@@ -2132,6 +2136,7 @@ addEventListener('keyup',e=>{const d=KEYMAP[e.key];if(d){const i=held.indexOf(d)
 addEventListener('blur',()=>{held.length=0;aimHeld.length=0});
 // intro screens: a tap anywhere on the screen skips (not only on the battle picture)
 addEventListener('pointerdown',e=>{if(!PANIC&&B&&(B.vs||B.wi)&&vsSkip()){e.preventDefault();e.stopPropagation()}},true);
+addEventListener('pointerdown',e=>{if(!PANIC&&B&&B.state==='over'&&e.target.closest&&e.target.closest('#bwrap,#bcv')&&finSkip()){e.preventDefault();e.stopPropagation()}},true);
 ['#stage','#battle'].forEach(sel=>{const el=$(sel);if(el)el.addEventListener('pointerdown',e=>{if(typing()&&!e.target.closest('input,select,textarea'))document.activeElement.blur()})});
 document.querySelectorAll('#dpad button').forEach(b=>{const d=b.dataset.d;
   b.addEventListener('pointerdown',e=>{e.preventDefault();if(!held.includes(d))held.push(d)});
@@ -3640,6 +3645,10 @@ function newBattle(o){try{if(typing())document.activeElement.blur()}catch(e){}
     B.introAt=performance.now()+introMs;const go=()=>{if(B===myB&&B.state==='intro'){if(!B.tb&&(realState==='fight'||realState==='count')){B.state='count';B.cntEnd=performance.now()+3000;B.leadDone=1;choiceOpen(true)}else B.state=realState}};B.introGo=go;B.introTO=setTimeout(go,introMs)},undefined,350);
 }
 function closeBattle(){const myB=B;if(!myB)return;myB.closing=true;if(CQ){CQ.done=true;CQ=null}$('#cquiz').classList.remove('on','lite');$('#bpick').classList.remove('on');transition('fade',()=>{if(B===myB)B=null;placeDpad();$('#battle').classList.remove('on');$('#stage').style.transform='';pres({bt:null,du:null,ld:leadInfo(),lf:folInfo()});renderTeam();updateHud()},300,350)}
+// large projectiles (Glut, Ofenexplosion, Erdbeben … or anything with a big radius) burst into 3 smaller ones when another projectile hits them
+function bigShot(s){const mv=MOVES[s.mid];return!s.frag&&mv&&(mv.k==='big'||s.mid==='ember'||(s.r||4)>=7)}
+function splitShot(s){const sp=Math.hypot(s.vx,s.vy)||120,a0=Math.atan2(s.vy,s.vx);for(let k=-1;k<=1;k++){const a=a0+k*0.45,f=Object.assign({},s,{id:s.id+'f'+(k+2),dead:0,frag:1,x:s.x+Math.cos(a)*6,y:s.y+Math.sin(a)*6,vx:Math.cos(a)*sp*1.1,vy:Math.sin(a)*sp*1.1,age:0,life:0.7,r:Math.max(2,Math.round((s.r||4)*0.45)),p:Math.max(4,Math.round((s.p||30)*0.38))});B.shots.push(f)}
+  burst(s.x,s.y,TYPES[MOVES[s.mid].t].c,12);if(!B.splitSaid||performance.now()-B.splitSaid>3000){B.splitSaid=performance.now();say(`${MOVES[s.mid].n} zerbirst in Splitter!`)}}
 function fire(F,i,remote){
   const bt=act(F);const mid=bt.m[i];if(!mid||F.cd[i]>0||F.faint>0||F.out||F.st.stun>0||F.st.sleep>0||F.hitstun>0||airBusy(F)||F.rq||(!remote&&F.landT&&performance.now()<F.landT))return;
   const cost=apCost(mid);if(F.ctrl!=='remote'){if((F.ap??AP_MAX)<cost){if(F===B.me){F.apShake=performance.now();const n=performance.now();if(!B.apMsgT||n-B.apMsgT>1200){B.apMsgT=n;say('Nicht genug AP!')}}return}F.ap=(F.ap??AP_MAX)-cost}
@@ -3848,7 +3857,7 @@ function bUpdate(dt){if(B.mode==='spec'){specUpdate(dt);return}if(dt>0)B.fps=B.f
   // opposing projectiles that meet cancel each other out (melee hits and capsules are unaffected)
   for(let i=0;i<B.shots.length;i++){const a=B.shots[i];if(a.dead||a.cap||a.mel||a.nm)continue;
     for(let j=i+1;j<B.shots.length;j++){const b=B.shots[j];if(b.dead||b.cap||b.mel||b.nm||b.side===a.side)continue;
-      if(Math.hypot(a.x-b.x,a.y-b.y)<(a.r||4)+(b.r||4)+2){a.dead=b.dead=1;const mx=(a.x+b.x)/2,my=(a.y+b.y)/2;burst(mx,my,'#ffffff',10);burst(mx,my,TYPES[MOVES[a.mid].t].c,5);burst(mx,my,TYPES[MOVES[b.mid].t].c,5);break}}}
+      if(Math.hypot(a.x-b.x,a.y-b.y)<(a.r||4)+(b.r||4)+2){a.dead=b.dead=1;const mx=(a.x+b.x)/2,my=(a.y+b.y)/2;burst(mx,my,'#ffffff',10);burst(mx,my,TYPES[MOVES[a.mid].t].c,5);burst(mx,my,TYPES[MOVES[b.mid].t].c,5);for(const q of[a,b])if(bigShot(q))splitShot(q);break}}}
   B.shots=B.shots.filter(s=>!s.dead);
   if(B.mode==='duel')publishDuel(false);
   checkEnd();
@@ -4051,13 +4060,13 @@ function startTrainer(t){
   say(`${t.n} will kämpfen!`);{const ty=trainerType(t);if(ty)say(`${t.n} setzt auf ${TYPES[ty].n}-Monster!`)}
 }
 function trainerKO(def){const idx=B.me.a;syncBack();const m=RUN.team[idx];if(m){const msgs=gainXp(m,Math.round(xpGain(def.s,def.l)*1.4));Object.assign(B.me.team[idx],battler(m));msgs.forEach(say)}}
-async function trainerWin(){B.state='over';finale(true);const t=B.trainer;RUN.beat[t.id]=1;if(t.toll){RUN.tollFw=RUN.tollFw||{};RUN.tollFw[t.toll]=1}RUN.kap+=t.reward;{const k=HM_FROM[t.id];if(k&&!hasHM(k)){RUN.hm=RUN.hm||{};RUN.hm[k]=1;say(k==='fly'||k==='swim'?`Lizenz ${HM[k].i} ${HM[k].n} + VM ${k==='fly'?'FLIEGEN':'SURFER und WHIRLPOOL'} erhalten! Bring die VM einem ${k==='fly'?'Flug':'Wasser'}-Monster bei (Team → 💿).`:`Du hast die VM ${HM[k].i} ${HM[k].n} bekommen! Einsetzbar mit einem ${hmNeed(k)} im Kader.`);try{setTimeout(renderTeam,50)}catch(e){}sysChat(`${t.n} hat dir ${HM[k].n} beigebracht: ${HM[k].d}`)}}earn(t.reward*40,'von '+t.n);{const tm=tmRandom(mulberry32((Date.now()^hashStr(t.id))>>>0),vmTier(t));if(tm){tmGive(tm);say(`Belohnung: 💿 TM ${MOVES[tm].n} (${TYPES[MOVES[tm].t].n})!`)}}syncBack();say(`Du hast ${t.n} besiegt!`);say(`Belohnung: ${t.reward} Handschellen.`);sysChat(`Du hast ${t.n} besiegt und ${t.reward} Handschellen bekommen.`);updateHud();const myB=B;await sleep(2400);while(B===myB&&epBusy())await sleep(100);if(B===myB)endWild()}
+async function trainerWin(){B.state='over';finale(true);const t=B.trainer;RUN.beat[t.id]=1;if(t.toll){RUN.tollFw=RUN.tollFw||{};RUN.tollFw[t.toll]=1}RUN.kap+=t.reward;{const k=HM_FROM[t.id];if(k&&!hasHM(k)){RUN.hm=RUN.hm||{};RUN.hm[k]=1;say(k==='fly'||k==='swim'?`Lizenz ${HM[k].i} ${HM[k].n} + VM ${k==='fly'?'FLIEGEN':'SURFER und WHIRLPOOL'} erhalten! Bring die VM einem ${k==='fly'?'Flug':'Wasser'}-Monster bei (Team → 💿).`:`Du hast die VM ${HM[k].i} ${HM[k].n} bekommen! Einsetzbar mit einem ${hmNeed(k)} im Kader.`);try{setTimeout(renderTeam,50)}catch(e){}sysChat(`${t.n} hat dir ${HM[k].n} beigebracht: ${HM[k].d}`)}}earn(t.reward*40,'von '+t.n);{const tm=tmRandom(mulberry32((Date.now()^hashStr(t.id))>>>0),vmTier(t));if(tm){tmGive(tm);say(`Belohnung: 💿 TM ${MOVES[tm].n} (${TYPES[MOVES[tm].t].n})!`)}}syncBack();say(`Du hast ${t.n} besiegt!`);say(`Belohnung: ${t.reward} Handschellen.`);sysChat(`Du hast ${t.n} besiegt und ${t.reward} Handschellen bekommen.`);updateHud();const myB=B;await finSleep(2400);while(B===myB&&epBusy()&&!B.skipFin)await sleep(100);if(B===myB)endWild()}
 function syncBack(){if(B&&(B.mode==='wild'||B.mode==='trainer'))B.me.team.forEach((b,i)=>{if(RUN.team[i])RUN.team[i].hp=b.hp})}
 async function wildWin(){
   if(B.legend&&typeof FEM!=='undefined'&&FEM.includes(B.legend)){B.state='over';finale(false);syncBack();const n=SPECIES[B.legend].n;say(`${n} ist geflohen!`);setTimeout(()=>sysChat(`${n} lässt sich nicht besiegen – fang es, bevor seine KP auf 0 sinken!`),900);const myB=B;setTimeout(()=>{if(B===myB)endWild(`${n} ist geflohen – versuch es nochmal!`)},2600);return}
   B.state='over';finale(true);const idx=B.me.a;syncBack();const m=RUN.team[idx];earn(B.legend?150:6+B.wild.l*3,'Preisgeld');if(B.legend){RUN.leg[B.legend]=1;say(`${SPECIES[B.legend].n} verschwindet im Licht…`)}
   const msgs=m?gainXp(m,xpGain(B.wild.s,B.wild.l)):[];if(m)Object.assign(B.me.team[idx],battler(m));
-  const myB=B;for(const t of msgs){say(t);await sleep(1000);if(B!==myB)return}await sleep(700);while(B===myB&&epBusy())await sleep(100);if(B===myB)endWild();
+  const myB=B;for(const t of msgs){say(t);await finSleep(1000);if(B!==myB)return}await finSleep(700);while(B===myB&&epBusy()&&!B.skipFin)await sleep(100);if(B===myB)endWild();
 }
 // second chance (once per battle): lost against a paragraph monster → name its paragraph within 5 s → 25 % HP back after a 3-2-1
 function lawTitle(sid){const L=(SPECIES[sid]&&SPECIES[sid].law)||'';const i=L.indexOf(' · ');return i>0?{head:L.slice(0,i),title:L.slice(i+3)}:null}
@@ -4085,7 +4094,7 @@ async function wildLose(){
       if(B.mode==='wild'||B.mode==='trainer'){const rm=RUN.team[i];if(rm)rm.hp=m.hp}
       say(`${SPECIES[m.s].n} rappelt sich mit 10 % KP wieder auf!`);if(B.tb){B.state='tbChoose'}else{B.state='count';B.leadDone=1;B.leadWait=false;B.cntEnd=performance.now()+3000}return}
     B.state='fight'}
-  B.state='over';finale(false);say('Alle deine Monster sind besiegt…');const myB=B;await sleep(2400);if(B!==myB)return;endWild();respawnHeal()}
+  B.state='over';finale(false);say('Alle deine Monster sind besiegt…');const myB=B;await finSleep(2400);if(B!==myB)return;endWild();respawnHeal()}
 function throwBonus(){const r=ringR(performance.now());if(r<8){say('Hervorragender Wurf!');return 1.6}if(r<11.5){say('Toller Wurf!');return 1.3}return 1}
 // catch chance: low HP + weak (low level / common) -> high; full HP / strong / rare -> low. Three shake checks decide.
 function catchChance(w,bonus){const hpF=1-(w.hp/w.mhp)*0.85,lvF=clamp(1.15-w.l*0.03,0.35,1.1);return clamp(hpF*lvF*rarOf(w.s).cm*(bonus||1)+0.04,0.02,0.97)}
@@ -4410,6 +4419,9 @@ function drawEncounter(c,now){const E=B.enc,e=now-E.t0;if(e>E.dur+200){B.enc=nul
   if(e>520&&e<640){c.fillStyle='#ffffff';c.globalAlpha=1-(e-520)/120;c.fillRect(0,0,UW,UH);c.globalAlpha=1}
 }
 const WSPR={};function whiteSprite(sid,N){const k=sid+':'+N;if(WSPR[k])return WSPR[k];const src=monSprite(sid,N);const c=mk(src.width,src.height),x=c.getContext('2d');x.drawImage(src,0,0);x.globalCompositeOperation='source-in';x.fillStyle='#ffffff';x.fillRect(0,0,src.width,src.height);WSPR[k]=c;return c}
+// end screens can be skipped with Space / click (like the other countdowns)
+function finSleep(ms){return new Promise(r=>{const t0=performance.now(),b=B;const iv=setInterval(()=>{if(B!==b||!B||B.skipFin||performance.now()-t0>=ms){clearInterval(iv);r()}},40)})}
+function finSkip(){if(!B||B.state!=='over'||!B.fin||performance.now()-B.fin.t0<500)return false;B.skipFin=1;if(B.epFx)B.epFx.t0=-1e9;return true}
 function finale(win){if(!B||B.fin)return;const now=performance.now();B.fin={t0:now,win};B.shakeUntil=now+400;
   if(win===true){const W=B.me;for(let i=0;i<70;i++)B.parts.push({x:Math.random()*AW,y:-10-Math.random()*60,vx:(Math.random()-.5)*30,vy:40+Math.random()*60,life:3,age:0,c:['#ffcb3d','#3ddc6b','#4aa3ff','#ef4444','#c27bff','#ffffff'][i%6],conf:1})}}
 function drawFinale(c,now){const f=B.fin,k=(now-f.t0)/1000;
@@ -4418,7 +4430,7 @@ function drawFinale(c,now){const f=B.fin,k=(now-f.t0)/1000;
   const txt=f.win===true?'SIEG!':f.win===false?'NIEDERLAGE…':'UNENTSCHIEDEN',col=f.win===true?'#ffcb3d':f.win===false?'#ef4444':'#ffffff';
   const sk=clamp((k-0.35)/0.45,0,1),ease=1-Math.pow(1-sk,3);const bx=-140+(UW/2+140)*ease+Math.sin(k*8)*(1-sk)*6;
   if(k>0.35){c.fillStyle='#0b0d16d8';c.fillRect(0,86,UW,26);c.fillStyle=col;c.fillRect(0,86,UW,2);c.fillRect(0,110,UW,2);
-    const sc=1+Math.max(0,0.25-Math.abs(k-0.8))*1.2;c.save();c.translate(bx,104);c.scale(sc,sc);pxText(c,txt,0,0,col,14,'center');c.restore()}
+    const sc=1+Math.max(0,0.25-Math.abs(k-0.8))*1.2;c.save();c.translate(bx,104);c.scale(sc,sc);pxText(c,txt,0,0,col,14,'center');c.restore();if(k>0.6&&!B.skipFin&&(B.mode==='wild'||B.mode==='trainer')){c.globalAlpha=0.6+0.4*Math.sin(now/200);vtText(c,isMob()?'Tippen: weiter':'LEERTASTE: weiter',UW/2,124,'#ffffff',9,'center');c.globalAlpha=1}}
   if(f.win===true&&B.me&&act(B.me).hp>0&&k>0.4){const[wx_,wy_]=w2s(B.me.x,B.me.y),X=Math.round(wx_/UI),Y=Math.round(wy_/UI);c.fillStyle='#ffe14d';for(let i=0;i<8;i++){const a=i/8*6.28+k*3;c.fillRect(Math.round(X+Math.cos(a)*22),Math.round(Y-20+Math.sin(a)*14),2,2)}}
 }
 // sleeping: three Z's drifting up and swaying; confused: birds and question marks circling the head
@@ -4450,7 +4462,7 @@ function sizeBattle(){
   return W/AW;
 }
 function drawBattle(){
-  if(!B)return;const c=bc;const K=sizeBattle();const CM=updateCam(performance.now());c.setTransform(K*CM.z,0,0,K*CM.z,K*(AW/2-CM.x*CM.z),K*(CAMY-CM.y*CM.z));const _n=performance.now();if(B.shakeUntil&&_n<B.shakeUntil)c.translate(Math.round((Math.random()-.5)*4),Math.round((Math.random()-.5)*4));c.imageSmoothingEnabled=false;const now=performance.now();
+  if(!B)return;const c=B.pvCtx||bc;const K=B.pvCtx?B.pvK:sizeBattle();const CM=updateCam(performance.now());c.setTransform(K*CM.z,0,0,K*CM.z,K*(AW/2-CM.x*CM.z),K*(CAMY-CM.y*CM.z));const _n=performance.now();if(B.shakeUntil&&_n<B.shakeUntil)c.translate(Math.round((Math.random()-.5)*4),Math.round((Math.random()-.5)*4));c.imageSmoothingEnabled=false;const now=performance.now();
   c.drawImage(battleBG(B.zone||'arena'),0,0,AW,AH);
 
   drawHazards(c,_n);drawArenaEv(c,_n,0);drawRings(c,_n);
@@ -4526,6 +4538,7 @@ function drawBattle(){
     for(let i=2;i<10;i++){const d=i*8;c.fillRect(Math.round(F.x+a.x*d)-1,Math.round(F.y-14+a.y*d)-1,2,2)}
     const tx=F.x+a.x*82,ty=F.y-14+a.y*82,px=-a.y,py=a.x;for(let k=0;k<5;k++){c.fillRect(Math.round(tx-a.x*k*2+px*k*1.5)-1,Math.round(ty-a.y*k*2+py*k*1.5)-1,2,2);c.fillRect(Math.round(tx-a.x*k*2-px*k*1.5)-1,Math.round(ty-a.y*k*2-py*k*1.5)-1,2,2)}}
   // ---- UI layer: drawn 1.5x larger than the battlefield pixels ----
+  if(B.pv){c.setTransform(K*UI,0,0,K*UI,0,0);for(const n of B.nums){const k=(now-n.at)/(n.life||900),[sx,sy]=w2s(n.x,n.y);vtText(c,n.t,Math.round(sx/UI),Math.round(sy/UI-k*14),n.c,n.sz||12,'center')}return}
   c.setTransform(K*UI,0,0,K*UI,0,0);c.imageSmoothingEnabled=false;
   c.fillStyle='#0b0d16b8';c.fillRect(0,0,UW,58/UI);c.fillStyle='#14141f';c.fillRect(0,58/UI,UW,2/UI);
   for(const n of B.nums){const k=(now-n.at)/(n.life||900),[sx,sy]=w2s(n.x,n.y);vtText(c,n.t,Math.round(sx/UI),Math.round(sy/UI-k*14),n.c,n.sz||12,'center')}
@@ -5399,7 +5412,7 @@ function courtCrowd(){if(B.crowd)return B.crowd;const rnd=mulberry32(hashStr(Str
    - Wasser leitet Strom: Elektro-Geschosse, die eine Pfütze berühren, setzen sie unter Strom (3 s, Schläge für alle darin)
    - Wasser löscht Feuer: Wasser-Geschosse, Strahlen und Wellen löschen brennenden Boden (Dampf) */
 {const _sp0=shotParams0;shotParams0=function(mid){const mv=MOVES[mid]||MOVES.bump;
-  const P={rockthrow:{life:1.6},shortcircuit:{life:0.9},wildfire:{life:2.4},gale:{life:0.6},bigwave:{life:3.2},whirl4:{life:0.05}}[mv.k];
+  const P={rockthrow:{life:1.6},shortcircuit:{life:0.9},wildfire:{life:2.4},gale:{life:0.6},bigwave:{life:3.4},whirl4:{life:0.05}}[mv.k];
   if(P)return Object.assign({k:mv.k,nm:1,sp:1,r:8,p:mv.p,n:1},P);return _sp0(mid)}}
 const ROCKY=new Set(['rock','boulder','pillar','coral','crystal']);
 function envLocal(F){return F&&F.ctrl!=='remote'&&!F.out&&!(F.faint>0)}
@@ -5449,14 +5462,16 @@ const ENVK={
       if(s.age>s.life)s.dead=1},
     draw(c,s,col,now){if(s.ox==null)return;const k=s.age/s.life;c.save();c.globalAlpha=0.8*(1-k);for(let i=0;i<22;i++){const t=((i*0.137+k*1.6)%1),d=t*200,w=((i*37)%120)-60,x=s.ox+s.ux*d-s.uy*w,y=s.oy+s.uy*d+s.ux*w*0.75;c.fillStyle=i%3?'#e8f4ff':'#b8d8f0';c.fillRect(Math.round(x),Math.round(y),6,1)}c.restore()}},
   bigwave:{tick(s,dt,T,alive){const A=sideF(s.side);if(!A){s.dead=1;return}
-      if(!s.init){s.init=1;dkLock(A,400);const[ux,uy]=nkDir(s);s.ux=ux;s.uy=uy;s.cx=A.x-ux*20;s.cy=A.y-uy*20;s.L=300;s.lastP=0;say(`${SPECIES[act(A).s].n} reitet eine riesige Welle! (Sprinte hindurch, um auszuweichen)`)}
-      const sp=135;s.cx+=s.ux*sp*dt;s.cy+=s.uy*sp*dt;s.x=s.cx;s.y=s.cy-10;const now=performance.now();
+      if(!s.init){s.init=1;dkLock(A,400);const[ux,uy]=nkDir(s);s.ux=ux;s.uy=uy;const te=1/Math.hypot(ux/ARX,uy/ARY);s.cx=ACX-ux*(te+8);s.cy=ACY-uy*(te+8);s.L=440;s.lastP=0;say(`${SPECIES[act(A).s].n} ruft eine riesige Welle vom Rand des Feldes! (Hinter Deckung oder per Sprint ausweichen)`)}
+      const sp=165;s.cx+=s.ux*sp*dt;s.cy+=s.uy*sp*dt;s.x=s.cx;s.y=s.cy-10;const now=performance.now();
       const onWave=(x,y,pad)=>{const dx=x-s.cx,dy=y-s.cy,along=dx*s.ux+dy*s.uy,lat=dx*-s.uy+dy*s.ux;return Math.abs(along)<10+pad&&Math.abs(lat)<s.L/2};
       for(const o of B.obs||[]){if(o.dead||o.ind||!onWave(o.x,o.y,o.r))continue;if(o.hp<=60||o.tmp||(o.mat||'')!=='rock'){breakObs(o);burst(o.x,o.y-6,'#8fc8f0',10)}}
       for(const h of B.haz||[]){if(h.k==='fire'&&onWave(h.x,h.y,h.r)){h.until=now;steamPuff(h.x,h.y)}}
       if(s.age-s.lastP>0.6){s.lastP=s.age;for(const i of[-1,1]){const x=s.cx-s.uy*i*70-s.ux*20,y=s.cy+s.ux*i*45-s.uy*14;if(!outArena(x,y))hazPush({k:'puddle',x:clamp(x,24,AW-24),y:clamp(y,24,AH-16),r:15,t0:now,until:now+6000,seed:Math.floor(Math.random()*1e6)})}}
-      if(!s.hit&&alive&&!airBusy(T)&&onWave(T.x,T.y,8)){if(T.inv>0||T.dashT>0){if(!s.dodged){s.dodged=1;say(`${SPECIES[act(T).s].n} sprintet durch die Welle!`)}}else{s.hit=1;nkHit(s,T,T.x,T.y-12,{vx:s.ux,vy:s.uy,kb:22});if(T.ctrl!=='remote'){T.st.wet=Math.max(T.st.wet||0,3)}}}
-      if(s.age>s.life||outArena(s.cx+s.ux*60,s.cy+s.uy*60)&&s.age>1.2)s.dead=1},
+      const covered=F=>(B.obs||[]).some(o=>{if(o.dead)return false;const dx=F.x-o.x,dy=F.y-o.y,al=dx*s.ux+dy*s.uy,lat=Math.abs(dx*-s.uy+dy*s.ux);return al>0&&al<o.r+34&&lat<o.r+4});
+      if(!s.hit&&alive&&!airBusy(T)&&onWave(T.x,T.y,8)&&covered(T)){if(!s.cov){s.cov=1;say(`${SPECIES[act(T).s].n} geht hinter Deckung — die Welle bricht am Hindernis!`)}}
+      else if(!s.hit&&alive&&!airBusy(T)&&onWave(T.x,T.y,8)){if(T.inv>0||T.dashT>0){if(!s.dodged){s.dodged=1;say(`${SPECIES[act(T).s].n} sprintet durch die Welle!`)}}else{s.hit=1;nkHit(s,T,T.x,T.y-12,{vx:s.ux,vy:s.uy,kb:22});if(T.ctrl!=='remote'){T.st.wet=Math.max(T.st.wet||0,3)}}}
+      if(s.age>s.life||(Math.hypot((s.cx-ACX)/ARX,(s.cy-ACY)/ARY)>1.08&&s.age>0.8))s.dead=1},
     draw(c,s,col,now){if(s.cx==null)return;const n=Math.ceil(s.L/4);for(let i=0;i<n;i++){const lat=-s.L/2+i*4,x=s.cx-s.uy*lat,y=s.cy+s.ux*lat*0.75,h=14+Math.round(Math.sin(now/90+i*0.5)*3);if(outArena(x,y+4))continue;
       for(const d of[14,7,0]){const X=Math.round(x-s.ux*d),Y=Math.round(y-s.uy*d*0.75),hh=Math.round(h*(1-d/30));c.fillStyle='#14141f';c.fillRect(X-4,Y-hh-1,8,hh+2);c.fillStyle=d?'#1f5fa8':'#2f7fd0';c.fillRect(X-3,Y-hh,6,hh);c.fillStyle=d?'#3d8bf2':'#5aa8ff';c.fillRect(X-3,Y-hh,6,Math.round(hh*0.45))}c.fillStyle=(i+Math.floor(now/120))%3?'#ffffff':'#d8f0ff';c.fillRect(Math.round(x)-3,Math.round(y)-h-2,6,3)}}},
   whirl4:{tick(s,dt,T,alive){s.dead=1;const A=sideF(s.side);if(!A)return;const now=performance.now(),rnd=mulberry32(hashStr(String(s.id||now)));
@@ -5502,6 +5517,21 @@ NK.windstream={tick(s,dt,T,alive){const A=sideF(s.side);if(!A||A.out||A.faint>0)
   draw(c,s,col,now){if(s.ox==null)return;c.save();const k=s.age/s.life;c.globalAlpha=0.85*Math.min(1,(1-k)*4);for(let i=0;i<34;i++){const t=((i*0.173+s.age*1.9)%1),d=t*230,w=(((i*53)%100)/100-0.5)*2*(34+d*0.15),x=s.ox+s.ux*d-s.uy*w,y=s.oy+s.uy*d+s.ux*w*0.75;
     c.fillStyle=i%4?'#e8f4ff':'#9fd0f0';c.fillRect(Math.round(x-s.ux*4),Math.round(y-s.uy*3),Math.abs(s.ux)>0.5?8:2,Math.abs(s.ux)>0.5?1:6)}c.restore()}};
 {const _hl=hitLocal;hitLocal=function(T,s){const mv=s&&MOVES[s.mid];if(mv&&mv.kb&&s.kb==null)s=Object.assign({},s,{kb:mv.kb});return _hl.call(this,T,s)}}
+// Erdbeben: Kamera bebt 1,6 s, 10–20 Steine fallen verteilt aufs Feld (Schatten → Einschlag). Treffer am Gegner, jeder dritte Stein bleibt 8 s liegen (→ Felswurf!)
+{const _sp0=shotParams0;shotParams0=function(mid){const mv=MOVES[mid]||MOVES.bump;if(mv.k==='quake')return{k:'quake',nm:1,sp:1,r:8,p:mv.p,n:1,life:2.2};return _sp0(mid)}}
+NK.quake={tick(s,dt,T,alive){const A=sideF(s.side);if(!A){s.dead=1;return}const now=performance.now();
+    if(!s.init){s.init=1;dkLock(A,500);B.shakeUntil=now+1600;const rnd=mulberry32(hashStr(String(s.id)));const n=10+Math.floor(rnd()*11);s.rocks=[];
+      for(let i=0;i<n;i++){let x,y,tries=0;do{const a=rnd()*6.283,q=Math.sqrt(rnd())*0.92;x=ACX+Math.cos(a)*ARX*q;y=ACY+Math.sin(a)*ARY*q;tries++}while(Math.hypot(x-A.x,y-A.y)<26&&tries<8);
+        if(i<3&&alive){x=T.x+(rnd()-0.5)*40;y=T.y+(rnd()-0.5)*26}s.rocks.push({x,y,t:0.1+rnd()*1.3,done:0,stay:i%3===0,sz:6+Math.floor(rnd()*4)})}
+      say(`ERDBEBEN! ${s.rocks.length} Steine stürzen vom Himmel!`)}
+    if(now<B.shakeUntil-200&&Math.random()<0.4)B.parts.push({x:ACX+(Math.random()-.5)*ARX*2,y:ACY+(Math.random()-.5)*ARY*2,vx:0,vy:-14,life:0.4,age:0,c:'#a07848'});
+    for(const r of s.rocks){if(r.done||s.age<r.t+0.55)continue;r.done=1;burst(r.x,r.y,'#8a8a8a',8);burst(r.x,r.y,'#a07848',5);B.shakeUntil=Math.max(B.shakeUntil,now+90);
+      if(alive&&(s.hits||0)<3&&!airBusy(T)&&!(T.inv>0)&&Math.hypot(T.x-r.x,(T.y-r.y)*1.3)<r.sz+12&&(s.hits=(s.hits||0)+1))nkHit(s,T,T.x,T.y-12,{p:Math.round(s.p*0.32),kb:5});
+      if(r.stay&&!outArena(r.x,r.y+6)){B.obs=B.obs||[];if(!B.obs.some(o=>!o.dead&&Math.hypot(o.x-r.x,o.y-r.y)<22)&&Math.hypot(A.x-r.x,A.y-r.y)>20&&Math.hypot(T.x-r.x,T.y-r.y)>20)B.obs.push({id:s.id+'q'+B.obs.length,kind:'rock',mat:'rock',ind:0,x:r.x,y:r.y,r:9,hp:40,max:40,v:0,tmp:now+8000})}}
+    if(s.age>s.life)s.dead=1},
+  draw(c,s,col,now){if(!s.rocks)return;for(const r of s.rocks){if(r.done)continue;const k=(s.age-r.t)/0.55;if(k<-0.5)continue;const kk=Math.max(0,k),X=Math.round(r.x),Y=Math.round(r.y);
+      c.fillStyle='#00000055';const w=Math.round(r.sz*(0.5+kk*0.8));c.fillRect(X-w,Y-1,2*w,3);
+      if(k>0){const h=Math.round((1-kk)*(1-kk)*170),sz=r.sz;c.fillStyle='#14141f';c.fillRect(X-sz-1,Y-h-2*sz-1,2*sz+2,2*sz+2);c.fillStyle='#7d838c';c.fillRect(X-sz,Y-h-2*sz,2*sz,2*sz);c.fillStyle='#9aa0a6';c.fillRect(X-sz+1,Y-h-2*sz+1,sz,sz-1);c.fillStyle='#5a5f68';c.fillRect(X,Y-h-sz,sz-1,sz-1)}}}};
 /* ===================== COURT: arena choice, spectating =====================
    Spectators render a running tournament duel purely from the two duelists' presence ("du": positions, HP, shots),
    which is broadcast to the whole room anyway — watching costs no extra bandwidth. Nothing is simulated or hit here. */
@@ -7212,7 +7242,7 @@ function openTMGive(k){const all=RUN.team.map(m=>({m,w:'Kader'})).concat(RUN.box
 let PREV_SID=null,MVP=null;
 {const _omi=openMonInfo;openMonInfo=function(s){PREV_SID=s;return _omi.apply(this,arguments)}}
 (function(){const st=document.createElement('style');st.textContent=`#mvprev{position:fixed;z-index:60;pointer-events:none;background:#14141f;border:3px solid #000;box-shadow:4px 4px 0 #000;padding:3px;display:none}
-#mvprev canvas{display:block;width:264px;height:144px;image-rendering:pixelated}#mvprev .cap{font-family:VT323,monospace;font-size:15px;color:#e8e8f0;padding:2px 2px 0;display:flex;justify-content:space-between;gap:8px}`;document.head.appendChild(st)})();
+#mvprev canvas{display:block;image-rendering:pixelated;max-width:92vw;height:auto!important}#mvprev .cap{font-family:VT323,monospace;font-size:15px;color:#e8e8f0;padding:2px 2px 0;display:flex;justify-content:space-between;gap:8px}`;document.head.appendChild(st)})();
 const PW=176,PH=96,PAX=34,PTX=142,PGY=70;
 function pvDummy(c,x,y,shake,hit){x+=shake;c.fillStyle='#14141f';c.fillRect(x-2,y-2,4,6);c.fillRect(x-7,y-24,14,20);c.fillRect(x-5,y-30,10,7);
   c.fillStyle='#6b4a2a';c.fillRect(x-1,y-4,2,6);c.fillStyle=hit?'#ffffff':'#d9b45a';c.fillRect(x-6,y-23,12,18);c.fillStyle=hit?'#ffffff':'#e8c878';c.fillRect(x-4,y-29,8,6);c.fillStyle='#a0552a';c.fillRect(x-6,y-16,12,2);c.fillStyle='#ef4444';c.fillRect(x-2,y-19,4,4)}
@@ -7280,6 +7310,32 @@ document.addEventListener('mouseover',e=>{const p=pvTarget(e);if(p)pvShow(p.el,p
 document.addEventListener('mouseout',e=>{const p=pvTarget(e);if(p&&!(e.relatedTarget&&p.el.contains(e.relatedTarget)))pvHide()});
 document.addEventListener('touchstart',e=>{const p=pvTarget(e);if(p&&!(B&&B.state==='fight')){pvShow(p.el,p.mid,p.sid);clearTimeout(pvShow.to);pvShow.to=setTimeout(pvHide,2600)}},{passive:true});
 {const _cm=closeModal;closeModal=function(){pvHide();return _cm.apply(this,arguments)}}
+// ---- echte Kampf-Engine im Miniformat: eigener Sandkasten-Kampf, der pro Frame kurz als B eingesetzt wird ----
+const PV_H=230;
+function pvTargetSid(){return['pruegelklops','zellbaer','harrymon'].find(s=>SPECIES[s])||Object.keys(SPECIES)[0]}
+function pvMakeB(mid,sid,ctx){const atk=newMon(sid&&SPECIES[sid]?sid:'harrymon',30);atk.m=[mid];const tgt=newMon(pvTargetSid(),30);
+  const A=mkFighter('R',[battler(atk)],ACX-70,'none'),T=mkFighter('L',[battler(tgt)],ACX+70,'none');A.x=ACX-70;A.y=ACY-28;T.x=ACX+70;T.y=ACY-28;A.spawnT=0;T.spawnT=0;A.ap=AP_MAX;
+  const PB={shots:[],parts:[],nums:[],log:[],state:'fight',ptr:null,capCd:0,sid:0,vshots:[],mode:'pv',pv:1,tb:false,zone:'north',me:T,foe:A,obs:[],haz:[],pvCtx:ctx,pvK:1,enterT:performance.now(),leadDone:1};
+  const mv=MOVES[mid]||{},now=performance.now(),k=mv.k;
+  const ob=(id,kind,x,y)=>{const O=OBK[kind]||{r:10,hp:50,mat:'rock'};PB.obs.push({id,kind,mat:O.mat,ind:0,x,y,r:O.r,hp:O.hp,max:O.hp,v:0})};
+  if(k==='rockthrow')ob('pr','boulder',A.x+20,A.y+10);
+  if(k==='wildfire'){ob('p1','bush',A.x+30,A.y-18);ob('p2','bush',ACX,A.y+16);ob('p3','bush',T.x-26,T.y-14)}
+  if(k==='bigwave'){ob('p1','bush',ACX,A.y-10);ob('p2','crate',ACX+10,A.y+20)}
+  if(k==='shortcircuit'||(mv.t==='electric'&&k!=='self')){PB.haz.push({k:'puddle',x:ACX,y:A.y+8,r:18,t0:now,until:now+9e9,seed:1},{k:'puddle',x:T.x,y:T.y+2,r:18,t0:now,until:now+9e9,seed:2})}
+  if(k==='windstream'||k==='gale')ob('w1','boulder',T.x+46,T.y+4);
+  return PB}
+function pvEngineLoop(mid,sid){const cv=MVP.querySelector('canvas');cv.width=AW;cv.height=PV_H;cv.style.width=AW+'px';cv.style.height=PV_H+'px';const ctx=cv.getContext('2d');ctx.imageSmoothingEnabled=false;
+  let PB=null,t0=0,last=performance.now(),fired=false;const CYC=2600;
+  const frame=()=>{if(MVP.style.display==='none'||MVP.dataset.mid!==mid)return;const now=performance.now(),dt=Math.min(0.05,(now-last)/1000);last=now;
+    if(!PB||now-t0>CYC){PB=pvMakeB(mid,sid,ctx);t0=now;fired=false}
+    const saved=B,savedHeld=held.slice();B=PB;
+    try{if(!fired&&now-t0>350){fired=true;PB.foe.cd=[0,0,0,0];PB.foe.landT=0;fire(PB.foe,0)}
+      for(const F of[PB.me,PB.foe]){const a=act(F);if(a.hp<a.mhp*0.5)a.hp=a.mhp;F.faint=0;F.out=false}
+      bUpdate(dt);PB.cam=PB.cam||null;drawBattle()}catch(e){console.warn('preview',e)}finally{B=saved;held.length=0;savedHeld.forEach(x=>held.push(x))}
+    MVP.raf=requestAnimationFrame(frame)};frame()}
+{const _ps=pvShow;pvShow=function(el,mid,sid){_ps.apply(this,arguments);if(!MVP||!MOVES[mid])return;cancelAnimationFrame(MVP.raf);
+  const r=el.getBoundingClientRect(),w=AW+12,h=PV_H+30;let x=r.right+8,y=r.top;if(x+w>innerWidth)x=Math.max(4,r.left-w-8);if(x<4)x=4;if(y+h>innerHeight)y=innerHeight-h-4;MVP.style.left=x+'px';MVP.style.top=Math.max(4,y)+'px';
+  try{pvEngineLoop(mid,sid)}catch(e){console.warn(e);_ps.apply(this,arguments)}}}
 /* ===================== LOOP ===================== */
 let last=performance.now(),slow=0;
 function frame(now){bakeTick();const dt=Math.max(0,Math.min(0.05,(now-last)/1000));last=now;T+=dt;

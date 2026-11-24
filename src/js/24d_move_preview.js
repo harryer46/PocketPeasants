@@ -3,7 +3,7 @@
 let PREV_SID=null,MVP=null;
 {const _omi=openMonInfo;openMonInfo=function(s){PREV_SID=s;return _omi.apply(this,arguments)}}
 (function(){const st=document.createElement('style');st.textContent=`#mvprev{position:fixed;z-index:60;pointer-events:none;background:#14141f;border:3px solid #000;box-shadow:4px 4px 0 #000;padding:3px;display:none}
-#mvprev canvas{display:block;width:264px;height:144px;image-rendering:pixelated}#mvprev .cap{font-family:VT323,monospace;font-size:15px;color:#e8e8f0;padding:2px 2px 0;display:flex;justify-content:space-between;gap:8px}`;document.head.appendChild(st)})();
+#mvprev canvas{display:block;image-rendering:pixelated;max-width:92vw;height:auto!important}#mvprev .cap{font-family:VT323,monospace;font-size:15px;color:#e8e8f0;padding:2px 2px 0;display:flex;justify-content:space-between;gap:8px}`;document.head.appendChild(st)})();
 const PW=176,PH=96,PAX=34,PTX=142,PGY=70;
 function pvDummy(c,x,y,shake,hit){x+=shake;c.fillStyle='#14141f';c.fillRect(x-2,y-2,4,6);c.fillRect(x-7,y-24,14,20);c.fillRect(x-5,y-30,10,7);
   c.fillStyle='#6b4a2a';c.fillRect(x-1,y-4,2,6);c.fillStyle=hit?'#ffffff':'#d9b45a';c.fillRect(x-6,y-23,12,18);c.fillStyle=hit?'#ffffff':'#e8c878';c.fillRect(x-4,y-29,8,6);c.fillStyle='#a0552a';c.fillRect(x-6,y-16,12,2);c.fillStyle='#ef4444';c.fillRect(x-2,y-19,4,4)}
@@ -71,3 +71,29 @@ document.addEventListener('mouseover',e=>{const p=pvTarget(e);if(p)pvShow(p.el,p
 document.addEventListener('mouseout',e=>{const p=pvTarget(e);if(p&&!(e.relatedTarget&&p.el.contains(e.relatedTarget)))pvHide()});
 document.addEventListener('touchstart',e=>{const p=pvTarget(e);if(p&&!(B&&B.state==='fight')){pvShow(p.el,p.mid,p.sid);clearTimeout(pvShow.to);pvShow.to=setTimeout(pvHide,2600)}},{passive:true});
 {const _cm=closeModal;closeModal=function(){pvHide();return _cm.apply(this,arguments)}}
+// ---- echte Kampf-Engine im Miniformat: eigener Sandkasten-Kampf, der pro Frame kurz als B eingesetzt wird ----
+const PV_H=230;
+function pvTargetSid(){return['pruegelklops','zellbaer','harrymon'].find(s=>SPECIES[s])||Object.keys(SPECIES)[0]}
+function pvMakeB(mid,sid,ctx){const atk=newMon(sid&&SPECIES[sid]?sid:'harrymon',30);atk.m=[mid];const tgt=newMon(pvTargetSid(),30);
+  const A=mkFighter('R',[battler(atk)],ACX-70,'none'),T=mkFighter('L',[battler(tgt)],ACX+70,'none');A.x=ACX-70;A.y=ACY-28;T.x=ACX+70;T.y=ACY-28;A.spawnT=0;T.spawnT=0;A.ap=AP_MAX;
+  const PB={shots:[],parts:[],nums:[],log:[],state:'fight',ptr:null,capCd:0,sid:0,vshots:[],mode:'pv',pv:1,tb:false,zone:'north',me:T,foe:A,obs:[],haz:[],pvCtx:ctx,pvK:1,enterT:performance.now(),leadDone:1};
+  const mv=MOVES[mid]||{},now=performance.now(),k=mv.k;
+  const ob=(id,kind,x,y)=>{const O=OBK[kind]||{r:10,hp:50,mat:'rock'};PB.obs.push({id,kind,mat:O.mat,ind:0,x,y,r:O.r,hp:O.hp,max:O.hp,v:0})};
+  if(k==='rockthrow')ob('pr','boulder',A.x+20,A.y+10);
+  if(k==='wildfire'){ob('p1','bush',A.x+30,A.y-18);ob('p2','bush',ACX,A.y+16);ob('p3','bush',T.x-26,T.y-14)}
+  if(k==='bigwave'){ob('p1','bush',ACX,A.y-10);ob('p2','crate',ACX+10,A.y+20)}
+  if(k==='shortcircuit'||(mv.t==='electric'&&k!=='self')){PB.haz.push({k:'puddle',x:ACX,y:A.y+8,r:18,t0:now,until:now+9e9,seed:1},{k:'puddle',x:T.x,y:T.y+2,r:18,t0:now,until:now+9e9,seed:2})}
+  if(k==='windstream'||k==='gale')ob('w1','boulder',T.x+46,T.y+4);
+  return PB}
+function pvEngineLoop(mid,sid){const cv=MVP.querySelector('canvas');cv.width=AW;cv.height=PV_H;cv.style.width=AW+'px';cv.style.height=PV_H+'px';const ctx=cv.getContext('2d');ctx.imageSmoothingEnabled=false;
+  let PB=null,t0=0,last=performance.now(),fired=false;const CYC=2600;
+  const frame=()=>{if(MVP.style.display==='none'||MVP.dataset.mid!==mid)return;const now=performance.now(),dt=Math.min(0.05,(now-last)/1000);last=now;
+    if(!PB||now-t0>CYC){PB=pvMakeB(mid,sid,ctx);t0=now;fired=false}
+    const saved=B,savedHeld=held.slice();B=PB;
+    try{if(!fired&&now-t0>350){fired=true;PB.foe.cd=[0,0,0,0];PB.foe.landT=0;fire(PB.foe,0)}
+      for(const F of[PB.me,PB.foe]){const a=act(F);if(a.hp<a.mhp*0.5)a.hp=a.mhp;F.faint=0;F.out=false}
+      bUpdate(dt);PB.cam=PB.cam||null;drawBattle()}catch(e){console.warn('preview',e)}finally{B=saved;held.length=0;savedHeld.forEach(x=>held.push(x))}
+    MVP.raf=requestAnimationFrame(frame)};frame()}
+{const _ps=pvShow;pvShow=function(el,mid,sid){_ps.apply(this,arguments);if(!MVP||!MOVES[mid])return;cancelAnimationFrame(MVP.raf);
+  const r=el.getBoundingClientRect(),w=AW+12,h=PV_H+30;let x=r.right+8,y=r.top;if(x+w>innerWidth)x=Math.max(4,r.left-w-8);if(x<4)x=4;if(y+h>innerHeight)y=innerHeight-h-4;MVP.style.left=x+'px';MVP.style.top=Math.max(4,y)+'px';
+  try{pvEngineLoop(mid,sid)}catch(e){console.warn(e);_ps.apply(this,arguments)}}}

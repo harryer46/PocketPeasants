@@ -141,6 +141,10 @@ function newBattle(o){try{if(typing())document.activeElement.blur()}catch(e){}
     B.introAt=performance.now()+introMs;const go=()=>{if(B===myB&&B.state==='intro'){if(!B.tb&&(realState==='fight'||realState==='count')){B.state='count';B.cntEnd=performance.now()+3000;B.leadDone=1;choiceOpen(true)}else B.state=realState}};B.introGo=go;B.introTO=setTimeout(go,introMs)},undefined,350);
 }
 function closeBattle(){const myB=B;if(!myB)return;myB.closing=true;if(CQ){CQ.done=true;CQ=null}$('#cquiz').classList.remove('on','lite');$('#bpick').classList.remove('on');transition('fade',()=>{if(B===myB)B=null;placeDpad();$('#battle').classList.remove('on');$('#stage').style.transform='';pres({bt:null,du:null,ld:leadInfo(),lf:folInfo()});renderTeam();updateHud()},300,350)}
+// large projectiles (Glut, Ofenexplosion, Erdbeben … or anything with a big radius) burst into 3 smaller ones when another projectile hits them
+function bigShot(s){const mv=MOVES[s.mid];return!s.frag&&mv&&(mv.k==='big'||s.mid==='ember'||(s.r||4)>=7)}
+function splitShot(s){const sp=Math.hypot(s.vx,s.vy)||120,a0=Math.atan2(s.vy,s.vx);for(let k=-1;k<=1;k++){const a=a0+k*0.45,f=Object.assign({},s,{id:s.id+'f'+(k+2),dead:0,frag:1,x:s.x+Math.cos(a)*6,y:s.y+Math.sin(a)*6,vx:Math.cos(a)*sp*1.1,vy:Math.sin(a)*sp*1.1,age:0,life:0.7,r:Math.max(2,Math.round((s.r||4)*0.45)),p:Math.max(4,Math.round((s.p||30)*0.38))});B.shots.push(f)}
+  burst(s.x,s.y,TYPES[MOVES[s.mid].t].c,12);if(!B.splitSaid||performance.now()-B.splitSaid>3000){B.splitSaid=performance.now();say(`${MOVES[s.mid].n} zerbirst in Splitter!`)}}
 function fire(F,i,remote){
   const bt=act(F);const mid=bt.m[i];if(!mid||F.cd[i]>0||F.faint>0||F.out||F.st.stun>0||F.st.sleep>0||F.hitstun>0||airBusy(F)||F.rq||(!remote&&F.landT&&performance.now()<F.landT))return;
   const cost=apCost(mid);if(F.ctrl!=='remote'){if((F.ap??AP_MAX)<cost){if(F===B.me){F.apShake=performance.now();const n=performance.now();if(!B.apMsgT||n-B.apMsgT>1200){B.apMsgT=n;say('Nicht genug AP!')}}return}F.ap=(F.ap??AP_MAX)-cost}
@@ -349,7 +353,7 @@ function bUpdate(dt){if(B.mode==='spec'){specUpdate(dt);return}if(dt>0)B.fps=B.f
   // opposing projectiles that meet cancel each other out (melee hits and capsules are unaffected)
   for(let i=0;i<B.shots.length;i++){const a=B.shots[i];if(a.dead||a.cap||a.mel||a.nm)continue;
     for(let j=i+1;j<B.shots.length;j++){const b=B.shots[j];if(b.dead||b.cap||b.mel||b.nm||b.side===a.side)continue;
-      if(Math.hypot(a.x-b.x,a.y-b.y)<(a.r||4)+(b.r||4)+2){a.dead=b.dead=1;const mx=(a.x+b.x)/2,my=(a.y+b.y)/2;burst(mx,my,'#ffffff',10);burst(mx,my,TYPES[MOVES[a.mid].t].c,5);burst(mx,my,TYPES[MOVES[b.mid].t].c,5);break}}}
+      if(Math.hypot(a.x-b.x,a.y-b.y)<(a.r||4)+(b.r||4)+2){a.dead=b.dead=1;const mx=(a.x+b.x)/2,my=(a.y+b.y)/2;burst(mx,my,'#ffffff',10);burst(mx,my,TYPES[MOVES[a.mid].t].c,5);burst(mx,my,TYPES[MOVES[b.mid].t].c,5);for(const q of[a,b])if(bigShot(q))splitShot(q);break}}}
   B.shots=B.shots.filter(s=>!s.dead);
   if(B.mode==='duel')publishDuel(false);
   checkEnd();
@@ -552,13 +556,13 @@ function startTrainer(t){
   say(`${t.n} will kämpfen!`);{const ty=trainerType(t);if(ty)say(`${t.n} setzt auf ${TYPES[ty].n}-Monster!`)}
 }
 function trainerKO(def){const idx=B.me.a;syncBack();const m=RUN.team[idx];if(m){const msgs=gainXp(m,Math.round(xpGain(def.s,def.l)*1.4));Object.assign(B.me.team[idx],battler(m));msgs.forEach(say)}}
-async function trainerWin(){B.state='over';finale(true);const t=B.trainer;RUN.beat[t.id]=1;if(t.toll){RUN.tollFw=RUN.tollFw||{};RUN.tollFw[t.toll]=1}RUN.kap+=t.reward;{const k=HM_FROM[t.id];if(k&&!hasHM(k)){RUN.hm=RUN.hm||{};RUN.hm[k]=1;say(k==='fly'||k==='swim'?`Lizenz ${HM[k].i} ${HM[k].n} + VM ${k==='fly'?'FLIEGEN':'SURFER und WHIRLPOOL'} erhalten! Bring die VM einem ${k==='fly'?'Flug':'Wasser'}-Monster bei (Team → 💿).`:`Du hast die VM ${HM[k].i} ${HM[k].n} bekommen! Einsetzbar mit einem ${hmNeed(k)} im Kader.`);try{setTimeout(renderTeam,50)}catch(e){}sysChat(`${t.n} hat dir ${HM[k].n} beigebracht: ${HM[k].d}`)}}earn(t.reward*40,'von '+t.n);{const tm=tmRandom(mulberry32((Date.now()^hashStr(t.id))>>>0),vmTier(t));if(tm){tmGive(tm);say(`Belohnung: 💿 TM ${MOVES[tm].n} (${TYPES[MOVES[tm].t].n})!`)}}syncBack();say(`Du hast ${t.n} besiegt!`);say(`Belohnung: ${t.reward} Handschellen.`);sysChat(`Du hast ${t.n} besiegt und ${t.reward} Handschellen bekommen.`);updateHud();const myB=B;await sleep(2400);while(B===myB&&epBusy())await sleep(100);if(B===myB)endWild()}
+async function trainerWin(){B.state='over';finale(true);const t=B.trainer;RUN.beat[t.id]=1;if(t.toll){RUN.tollFw=RUN.tollFw||{};RUN.tollFw[t.toll]=1}RUN.kap+=t.reward;{const k=HM_FROM[t.id];if(k&&!hasHM(k)){RUN.hm=RUN.hm||{};RUN.hm[k]=1;say(k==='fly'||k==='swim'?`Lizenz ${HM[k].i} ${HM[k].n} + VM ${k==='fly'?'FLIEGEN':'SURFER und WHIRLPOOL'} erhalten! Bring die VM einem ${k==='fly'?'Flug':'Wasser'}-Monster bei (Team → 💿).`:`Du hast die VM ${HM[k].i} ${HM[k].n} bekommen! Einsetzbar mit einem ${hmNeed(k)} im Kader.`);try{setTimeout(renderTeam,50)}catch(e){}sysChat(`${t.n} hat dir ${HM[k].n} beigebracht: ${HM[k].d}`)}}earn(t.reward*40,'von '+t.n);{const tm=tmRandom(mulberry32((Date.now()^hashStr(t.id))>>>0),vmTier(t));if(tm){tmGive(tm);say(`Belohnung: 💿 TM ${MOVES[tm].n} (${TYPES[MOVES[tm].t].n})!`)}}syncBack();say(`Du hast ${t.n} besiegt!`);say(`Belohnung: ${t.reward} Handschellen.`);sysChat(`Du hast ${t.n} besiegt und ${t.reward} Handschellen bekommen.`);updateHud();const myB=B;await finSleep(2400);while(B===myB&&epBusy()&&!B.skipFin)await sleep(100);if(B===myB)endWild()}
 function syncBack(){if(B&&(B.mode==='wild'||B.mode==='trainer'))B.me.team.forEach((b,i)=>{if(RUN.team[i])RUN.team[i].hp=b.hp})}
 async function wildWin(){
   if(B.legend&&typeof FEM!=='undefined'&&FEM.includes(B.legend)){B.state='over';finale(false);syncBack();const n=SPECIES[B.legend].n;say(`${n} ist geflohen!`);setTimeout(()=>sysChat(`${n} lässt sich nicht besiegen – fang es, bevor seine KP auf 0 sinken!`),900);const myB=B;setTimeout(()=>{if(B===myB)endWild(`${n} ist geflohen – versuch es nochmal!`)},2600);return}
   B.state='over';finale(true);const idx=B.me.a;syncBack();const m=RUN.team[idx];earn(B.legend?150:6+B.wild.l*3,'Preisgeld');if(B.legend){RUN.leg[B.legend]=1;say(`${SPECIES[B.legend].n} verschwindet im Licht…`)}
   const msgs=m?gainXp(m,xpGain(B.wild.s,B.wild.l)):[];if(m)Object.assign(B.me.team[idx],battler(m));
-  const myB=B;for(const t of msgs){say(t);await sleep(1000);if(B!==myB)return}await sleep(700);while(B===myB&&epBusy())await sleep(100);if(B===myB)endWild();
+  const myB=B;for(const t of msgs){say(t);await finSleep(1000);if(B!==myB)return}await finSleep(700);while(B===myB&&epBusy()&&!B.skipFin)await sleep(100);if(B===myB)endWild();
 }
 // second chance (once per battle): lost against a paragraph monster → name its paragraph within 5 s → 25 % HP back after a 3-2-1
 function lawTitle(sid){const L=(SPECIES[sid]&&SPECIES[sid].law)||'';const i=L.indexOf(' · ');return i>0?{head:L.slice(0,i),title:L.slice(i+3)}:null}
@@ -586,7 +590,7 @@ async function wildLose(){
       if(B.mode==='wild'||B.mode==='trainer'){const rm=RUN.team[i];if(rm)rm.hp=m.hp}
       say(`${SPECIES[m.s].n} rappelt sich mit 10 % KP wieder auf!`);if(B.tb){B.state='tbChoose'}else{B.state='count';B.leadDone=1;B.leadWait=false;B.cntEnd=performance.now()+3000}return}
     B.state='fight'}
-  B.state='over';finale(false);say('Alle deine Monster sind besiegt…');const myB=B;await sleep(2400);if(B!==myB)return;endWild();respawnHeal()}
+  B.state='over';finale(false);say('Alle deine Monster sind besiegt…');const myB=B;await finSleep(2400);if(B!==myB)return;endWild();respawnHeal()}
 function throwBonus(){const r=ringR(performance.now());if(r<8){say('Hervorragender Wurf!');return 1.6}if(r<11.5){say('Toller Wurf!');return 1.3}return 1}
 // catch chance: low HP + weak (low level / common) -> high; full HP / strong / rare -> low. Three shake checks decide.
 function catchChance(w,bonus){const hpF=1-(w.hp/w.mhp)*0.85,lvF=clamp(1.15-w.l*0.03,0.35,1.1);return clamp(hpF*lvF*rarOf(w.s).cm*(bonus||1)+0.04,0.02,0.97)}
@@ -911,6 +915,9 @@ function drawEncounter(c,now){const E=B.enc,e=now-E.t0;if(e>E.dur+200){B.enc=nul
   if(e>520&&e<640){c.fillStyle='#ffffff';c.globalAlpha=1-(e-520)/120;c.fillRect(0,0,UW,UH);c.globalAlpha=1}
 }
 const WSPR={};function whiteSprite(sid,N){const k=sid+':'+N;if(WSPR[k])return WSPR[k];const src=monSprite(sid,N);const c=mk(src.width,src.height),x=c.getContext('2d');x.drawImage(src,0,0);x.globalCompositeOperation='source-in';x.fillStyle='#ffffff';x.fillRect(0,0,src.width,src.height);WSPR[k]=c;return c}
+// end screens can be skipped with Space / click (like the other countdowns)
+function finSleep(ms){return new Promise(r=>{const t0=performance.now(),b=B;const iv=setInterval(()=>{if(B!==b||!B||B.skipFin||performance.now()-t0>=ms){clearInterval(iv);r()}},40)})}
+function finSkip(){if(!B||B.state!=='over'||!B.fin||performance.now()-B.fin.t0<500)return false;B.skipFin=1;if(B.epFx)B.epFx.t0=-1e9;return true}
 function finale(win){if(!B||B.fin)return;const now=performance.now();B.fin={t0:now,win};B.shakeUntil=now+400;
   if(win===true){const W=B.me;for(let i=0;i<70;i++)B.parts.push({x:Math.random()*AW,y:-10-Math.random()*60,vx:(Math.random()-.5)*30,vy:40+Math.random()*60,life:3,age:0,c:['#ffcb3d','#3ddc6b','#4aa3ff','#ef4444','#c27bff','#ffffff'][i%6],conf:1})}}
 function drawFinale(c,now){const f=B.fin,k=(now-f.t0)/1000;
@@ -919,7 +926,7 @@ function drawFinale(c,now){const f=B.fin,k=(now-f.t0)/1000;
   const txt=f.win===true?'SIEG!':f.win===false?'NIEDERLAGE…':'UNENTSCHIEDEN',col=f.win===true?'#ffcb3d':f.win===false?'#ef4444':'#ffffff';
   const sk=clamp((k-0.35)/0.45,0,1),ease=1-Math.pow(1-sk,3);const bx=-140+(UW/2+140)*ease+Math.sin(k*8)*(1-sk)*6;
   if(k>0.35){c.fillStyle='#0b0d16d8';c.fillRect(0,86,UW,26);c.fillStyle=col;c.fillRect(0,86,UW,2);c.fillRect(0,110,UW,2);
-    const sc=1+Math.max(0,0.25-Math.abs(k-0.8))*1.2;c.save();c.translate(bx,104);c.scale(sc,sc);pxText(c,txt,0,0,col,14,'center');c.restore()}
+    const sc=1+Math.max(0,0.25-Math.abs(k-0.8))*1.2;c.save();c.translate(bx,104);c.scale(sc,sc);pxText(c,txt,0,0,col,14,'center');c.restore();if(k>0.6&&!B.skipFin&&(B.mode==='wild'||B.mode==='trainer')){c.globalAlpha=0.6+0.4*Math.sin(now/200);vtText(c,isMob()?'Tippen: weiter':'LEERTASTE: weiter',UW/2,124,'#ffffff',9,'center');c.globalAlpha=1}}
   if(f.win===true&&B.me&&act(B.me).hp>0&&k>0.4){const[wx_,wy_]=w2s(B.me.x,B.me.y),X=Math.round(wx_/UI),Y=Math.round(wy_/UI);c.fillStyle='#ffe14d';for(let i=0;i<8;i++){const a=i/8*6.28+k*3;c.fillRect(Math.round(X+Math.cos(a)*22),Math.round(Y-20+Math.sin(a)*14),2,2)}}
 }
 // sleeping: three Z's drifting up and swaying; confused: birds and question marks circling the head
@@ -951,7 +958,7 @@ function sizeBattle(){
   return W/AW;
 }
 function drawBattle(){
-  if(!B)return;const c=bc;const K=sizeBattle();const CM=updateCam(performance.now());c.setTransform(K*CM.z,0,0,K*CM.z,K*(AW/2-CM.x*CM.z),K*(CAMY-CM.y*CM.z));const _n=performance.now();if(B.shakeUntil&&_n<B.shakeUntil)c.translate(Math.round((Math.random()-.5)*4),Math.round((Math.random()-.5)*4));c.imageSmoothingEnabled=false;const now=performance.now();
+  if(!B)return;const c=B.pvCtx||bc;const K=B.pvCtx?B.pvK:sizeBattle();const CM=updateCam(performance.now());c.setTransform(K*CM.z,0,0,K*CM.z,K*(AW/2-CM.x*CM.z),K*(CAMY-CM.y*CM.z));const _n=performance.now();if(B.shakeUntil&&_n<B.shakeUntil)c.translate(Math.round((Math.random()-.5)*4),Math.round((Math.random()-.5)*4));c.imageSmoothingEnabled=false;const now=performance.now();
   c.drawImage(battleBG(B.zone||'arena'),0,0,AW,AH);
 
   drawHazards(c,_n);drawArenaEv(c,_n,0);drawRings(c,_n);
@@ -1027,6 +1034,7 @@ function drawBattle(){
     for(let i=2;i<10;i++){const d=i*8;c.fillRect(Math.round(F.x+a.x*d)-1,Math.round(F.y-14+a.y*d)-1,2,2)}
     const tx=F.x+a.x*82,ty=F.y-14+a.y*82,px=-a.y,py=a.x;for(let k=0;k<5;k++){c.fillRect(Math.round(tx-a.x*k*2+px*k*1.5)-1,Math.round(ty-a.y*k*2+py*k*1.5)-1,2,2);c.fillRect(Math.round(tx-a.x*k*2-px*k*1.5)-1,Math.round(ty-a.y*k*2-py*k*1.5)-1,2,2)}}
   // ---- UI layer: drawn 1.5x larger than the battlefield pixels ----
+  if(B.pv){c.setTransform(K*UI,0,0,K*UI,0,0);for(const n of B.nums){const k=(now-n.at)/(n.life||900),[sx,sy]=w2s(n.x,n.y);vtText(c,n.t,Math.round(sx/UI),Math.round(sy/UI-k*14),n.c,n.sz||12,'center')}return}
   c.setTransform(K*UI,0,0,K*UI,0,0);c.imageSmoothingEnabled=false;
   c.fillStyle='#0b0d16b8';c.fillRect(0,0,UW,58/UI);c.fillStyle='#14141f';c.fillRect(0,58/UI,UW,2/UI);
   for(const n of B.nums){const k=(now-n.at)/(n.life||900),[sx,sy]=w2s(n.x,n.y);vtText(c,n.t,Math.round(sx/UI),Math.round(sy/UI-k*14),n.c,n.sz||12,'center')}
