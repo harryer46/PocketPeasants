@@ -288,8 +288,12 @@ const QBAG=new Map();
 function qBagPick(pool,avoid){let b=QBAG.get(pool);if(!b||!b.length){const u=new Map();for(const q of pool)if(!u.has(q[0]))u.set(q[0],q);b=qShuffle([...u.values()]);QBAG.set(pool,b)}
   for(let i=b.length-1;i>=0;i--){const q=b[i];if(!avoid||!avoid.has(q[0])){b.splice(i,1);return q}}
   const rest=pool.filter(q=>!avoid||!avoid.has(q[0]));return rest.length?rest[qRndInt(rest.length)]:pool[qRndInt(pool.length)]}
+// "seltener, je öfter gestellt": weight 1/(1+n)^2 with n = how often this device was already asked the question (persistent)
+function qAskedW(q){const r=qsLoad()[qsId(q[0])];const n=r?r[0]+r[1]:0;return 1/((1+n)*(1+n))}
+function qFreshPick(pool,avoid){const u=new Map();for(const q of pool)if(!u.has(q[0])&&(!avoid||!avoid.has(q[0])))u.set(q[0],q);let a=[...u.values()];if(!a.length)a=pool.slice();
+  const w=a.map(qAskedW),tot=w.reduce((x,y)=>x+y,0);let x=qRnd()*tot;for(let i=0;i<a.length;i++){x-=w[i];if(x<=0)return a[i]}return a[a.length-1]}
 function qzPick(sid,avoid){const own=QZ[sid]||[],L=(SPECIES[sid]&&SPECIES[sid].law)||'',bm=L.match(/^(?:§|Art\.)\s*\d+[a-z]?\s+([A-Za-zÄÖÜäöü]+)/),bk=(bm&&typeof VAULT_BOOK!=='undefined'&&VAULT_BOOK[bm[1]])||[];
-  const pool=bk.length&&(!own.length||qRnd()<0.35)?bk:own;if(!pool.length)return null;return qFocus()?qwPick(pool,avoid):qBagPick(pool,avoid)}
+  const pool=bk.length&&(!own.length||qRnd()<0.35)?bk:own;if(!pool.length)return null;return qFocus()?qwPick(pool,avoid):qFreshPick(pool,avoid)}
 function qzHas(sid){return!!qzPick(sid)}
 // answer time: at least 10 s; longer questions get reading time (≈16 characters per second for question + all four answers,
 // plus 2 s to decide), at most 22 s
@@ -303,7 +307,7 @@ function qsLog(text,ok){if(!text)return;const S=qsLoad(),k=qsId(text),r=S[k]||(S
 function qsW(text){const r=qsLoad()[qsId(text)];if(!r)return 1;return Math.max(0.06,(1+1.5*Math.min(r[1],4))*Math.pow(0.5,r[2]))}
 function qwPick(arr,avoid){if(!arr||!arr.length)return null;let tot=0;const ws=arr.map(q=>{const w=avoid&&avoid.has(q[0])?0:qsW(q[0]);tot+=w;return w});if(tot<=0)return arr[qRndInt(arr.length)];let x=qRnd()*tot;for(let i=0;i<arr.length;i++){x-=ws[i];if(x<=0&&ws[i]>0)return arr[i]}return arr[arr.length-1]}
 // weighted sample without repeats of {src,q} items
-function qwSample(items,n){if(!qFocus())return qShuffle(items.slice()).slice(0,n);const a=items.slice(),out=[];while(out.length<n&&a.length){const q=qwPick(a.map(it=>it.q));const i=a.findIndex(it=>it.q===q);out.push(a[i]);a.splice(i,1)}return out}
+function qwSample(items,n){if(!qFocus()){const out=[],av=new Set(),get=it=>it.q?it.q[0]:it[0];for(let k=0;k<n*4&&out.length<n;k++){const ws=items.filter(it=>!av.has(get(it)));if(!ws.length)break;const w=ws.map(it=>qAskedW(it.q||it)),tot=w.reduce((a,b)=>a+b,0);let x=qRnd()*tot,pick=ws[ws.length-1];for(let i=0;i<ws.length;i++){x-=w[i];if(x<=0){pick=ws[i];break}}av.add(get(pick));out.push(pick)}return out}const a=items.slice(),out=[];while(out.length<n&&a.length){const q=qwPick(a.map(it=>it.q));const i=a.findIndex(it=>it.q===q);out.push(a[i]);a.splice(i,1)}return out}
 function qsSummary(){const S=qsLoad();let seen=0,sure=0,weak=0;for(const k in S){const r=S[k];seen++;if(r[2]>=3)sure++;else if(r[2]===0&&r[1]>0)weak++}return{seen,sure,weak}}
 function qReal(q){if(!q||q.length<4)return q;const mx=Math.max(...q[2].map(w=>w.length)),okC=q[1].filter(c=>c.length*0.9<=mx),cs=okC.length?okC:[q[1].slice().sort((a,b)=>a.length-b.length)[0]];
   const c=cs[qRndInt(cs.length)],L=c.length,ws=qShuffle(q[2].slice());

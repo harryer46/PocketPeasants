@@ -484,7 +484,7 @@ const TURN_CONFIG = {
 
 /* ===================== VERSION ===================== */
 // bump with every release (MAJOR.MINOR.PATCH). Players can only share lobbies/duels with the same version.
-const VERSION='0.105.0';
+const VERSION='0.105.1';
 // access password: changes every Monday 00:00 (local time). Only the hashes are stored here (one per week from PW_W0);
 // the password itself also keys the P2P room, so clients without the current one cannot connect. The plain list lives offline.
 const PW_KEY='knast_pw',PW_W0=Date.UTC(2026,10,16),PW_WH=[3239358969,4147130060,2718625794,3495965776,1618054998,4028240764,3044289461,1207180107,4242648729,353861226,2672313786,600614717,407529519,2270237167,3207113251,1525244515,870970040,319006638,3847934078,944313310,2153038366,3950944742,2733334548,4002544240,2736690288,645338530,1884329338,4268902487,2483246182,3828308270,2182929315,3152020422,1311886195,3461060417,3407580460,2544240283,1017220184,1277844250,4288535363,461397931,853058720,2065298771,219387161,3215594984,1108518435,2250837220,3171827014,1035538317,1537090466,1716649754,2848461661,1266925999,653943759,1307642793,3319845926,629631788,4180878311,1080582197,4114403588,2360104553,3811730973,3337788437,695971354,2424950805],MAX_ROOM=10,MAX_LOBBY=5;
@@ -817,8 +817,12 @@ const QBAG=new Map();
 function qBagPick(pool,avoid){let b=QBAG.get(pool);if(!b||!b.length){const u=new Map();for(const q of pool)if(!u.has(q[0]))u.set(q[0],q);b=qShuffle([...u.values()]);QBAG.set(pool,b)}
   for(let i=b.length-1;i>=0;i--){const q=b[i];if(!avoid||!avoid.has(q[0])){b.splice(i,1);return q}}
   const rest=pool.filter(q=>!avoid||!avoid.has(q[0]));return rest.length?rest[qRndInt(rest.length)]:pool[qRndInt(pool.length)]}
+// "seltener, je öfter gestellt": weight 1/(1+n)^2 with n = how often this device was already asked the question (persistent)
+function qAskedW(q){const r=qsLoad()[qsId(q[0])];const n=r?r[0]+r[1]:0;return 1/((1+n)*(1+n))}
+function qFreshPick(pool,avoid){const u=new Map();for(const q of pool)if(!u.has(q[0])&&(!avoid||!avoid.has(q[0])))u.set(q[0],q);let a=[...u.values()];if(!a.length)a=pool.slice();
+  const w=a.map(qAskedW),tot=w.reduce((x,y)=>x+y,0);let x=qRnd()*tot;for(let i=0;i<a.length;i++){x-=w[i];if(x<=0)return a[i]}return a[a.length-1]}
 function qzPick(sid,avoid){const own=QZ[sid]||[],L=(SPECIES[sid]&&SPECIES[sid].law)||'',bm=L.match(/^(?:§|Art\.)\s*\d+[a-z]?\s+([A-Za-zÄÖÜäöü]+)/),bk=(bm&&typeof VAULT_BOOK!=='undefined'&&VAULT_BOOK[bm[1]])||[];
-  const pool=bk.length&&(!own.length||qRnd()<0.35)?bk:own;if(!pool.length)return null;return qFocus()?qwPick(pool,avoid):qBagPick(pool,avoid)}
+  const pool=bk.length&&(!own.length||qRnd()<0.35)?bk:own;if(!pool.length)return null;return qFocus()?qwPick(pool,avoid):qFreshPick(pool,avoid)}
 function qzHas(sid){return!!qzPick(sid)}
 // answer time: at least 10 s; longer questions get reading time (≈16 characters per second for question + all four answers,
 // plus 2 s to decide), at most 22 s
@@ -832,7 +836,7 @@ function qsLog(text,ok){if(!text)return;const S=qsLoad(),k=qsId(text),r=S[k]||(S
 function qsW(text){const r=qsLoad()[qsId(text)];if(!r)return 1;return Math.max(0.06,(1+1.5*Math.min(r[1],4))*Math.pow(0.5,r[2]))}
 function qwPick(arr,avoid){if(!arr||!arr.length)return null;let tot=0;const ws=arr.map(q=>{const w=avoid&&avoid.has(q[0])?0:qsW(q[0]);tot+=w;return w});if(tot<=0)return arr[qRndInt(arr.length)];let x=qRnd()*tot;for(let i=0;i<arr.length;i++){x-=ws[i];if(x<=0&&ws[i]>0)return arr[i]}return arr[arr.length-1]}
 // weighted sample without repeats of {src,q} items
-function qwSample(items,n){if(!qFocus())return qShuffle(items.slice()).slice(0,n);const a=items.slice(),out=[];while(out.length<n&&a.length){const q=qwPick(a.map(it=>it.q));const i=a.findIndex(it=>it.q===q);out.push(a[i]);a.splice(i,1)}return out}
+function qwSample(items,n){if(!qFocus()){const out=[],av=new Set(),get=it=>it.q?it.q[0]:it[0];for(let k=0;k<n*4&&out.length<n;k++){const ws=items.filter(it=>!av.has(get(it)));if(!ws.length)break;const w=ws.map(it=>qAskedW(it.q||it)),tot=w.reduce((a,b)=>a+b,0);let x=qRnd()*tot,pick=ws[ws.length-1];for(let i=0;i<ws.length;i++){x-=w[i];if(x<=0){pick=ws[i];break}}av.add(get(pick));out.push(pick)}return out}const a=items.slice(),out=[];while(out.length<n&&a.length){const q=qwPick(a.map(it=>it.q));const i=a.findIndex(it=>it.q===q);out.push(a[i]);a.splice(i,1)}return out}
 function qsSummary(){const S=qsLoad();let seen=0,sure=0,weak=0;for(const k in S){const r=S[k];seen++;if(r[2]>=3)sure++;else if(r[2]===0&&r[1]>0)weak++}return{seen,sure,weak}}
 function qReal(q){if(!q||q.length<4)return q;const mx=Math.max(...q[2].map(w=>w.length)),okC=q[1].filter(c=>c.length*0.9<=mx),cs=okC.length?okC:[q[1].slice().sort((a,b)=>a.length-b.length)[0]];
   const c=cs[qRndInt(cs.length)],L=c.length,ws=qShuffle(q[2].slice());
@@ -2005,6 +2009,7 @@ function begin(){
 
 /* ===================== CONTROL SETTINGS ===================== */
 const CHANGELOG=[
+ ["0.105.1","2026-11-24","Fragenauswahl überall (PÄD, HfPol, Flucht, Klausuren): Je öfter eine Frage auf diesem Gerät schon gestellt wurde, desto seltener kommt sie (Gewicht 1/(1+n)²) — der Zähler bleibt auch nach Neuladen erhalten, deshalb keine ständigen Wiederholungen mehr beim PÄD."],
  ["0.105.0","2026-11-24","Gericht als KO-Turnier wie bei der WM: Setzliste wird ausgelost, Pyramide mit linker und rechter Hälfte und dem Finale in der Mitte, Verbindungslinien (Sieger gold, Weg zum Spiel um Platz 3 gestrichelt). Fehlen Spieler zur Zweierpotenz, kommen die ersten Gesetzten per Freilos kampflos weiter. Spiel um Platz 3 für die Halbfinal-Verlierer; bei 3 Spielern Spiel um Platz 2 (A–B, Sieger gegen C, dann die beiden Verlierer → jeder gegen jeden). Bereit-Knöpfe und Zuschauen direkt am Kampf, ★ ENDKAMPF ★ nur im Finale, Podest nach Platzierung. Ausgeschiedene schauen zu; wer aufgibt oder weg ist, verliert kampflos."],
  ["0.104.1","2026-11-24","EP-Teilung: Alle Monster, die gegen das besiegte Gegner-Monster im Kampf waren (auch nur kurz per Wechsel), teilen sich die EP — niedrigere Level bekommen mehr, höhere weniger (nach Level-Abstand zum Gegner). Popups lassen sich mit Esc schließen (drückt Schließen/Abbrechen/Zurück; Pflichtdialoge bleiben offen)."],
  ["0.104.0","2026-11-24","Gericht: Kämpfe auf epischer Bühne — Publikum mit Blitzlichtern, schwenkende Scheinwerfer, goldener Ring, Waage-Emblem und Banner mit der Runde; der letzte Kampf ist der ★ ENDKAMPF ★ mit Goldfunken und Intro-Schriftzug. Nach dem Turnier steht ein Siegerpodest (1–3) mit Konfetti über dem Turnierbaum. Restliche „Arena“-Texte heißen jetzt Gericht bzw. Kampffeld. Lobby-Spiele: Starterwahl aus allen einzigartigen und legendären Monstern (außer den vier FEM-Legendären). TMs/VMs lassen sich direkt aus dem Beutel einsetzen („EINSETZEN“ → Monster wählen). Team-Reiter: kein Study-Knopf mehr (das läuft über die HfPol), dafür die Attacken als Liste mit Typ und Stärke und ▲/▼ zum Umsortieren (Reihenfolge = Tasten 1–4 im Kampf). Absturz bei Tastendrücken ohne Taste (z. B. Autofill) behoben. Turnierbaum mit Verbindungslinien wie bei der WM: jeder Spieler läuft per Linie zu seinem nächsten Kampf (Sieger gold, Verlierer grau gestrichelt, Freilos blau gepunktet). AP unter 20 %: Balken und Zahl rot, Sprinten nicht möglich; Regenerationspause nach dem Sprint von 3 s auf 1,2 s verkürzt."],
@@ -2277,7 +2282,7 @@ function healQuiz(){RUN.kap=Math.max(RUN.kap,10);updateHud();for(const m of RUN.
   const keys=Object.keys(QZ).filter(k=>SPECIES[k]&&QZ[k].length);let n=0,cur=null;const seen=new Set();
   // questions are about the monster being healed (its own paragraph); monsters without one get random ones
   const pickQ=()=>{const own=cur&&qzHas(cur.s)?cur.s:null;if(own){const q=qzPick(own,seen);seen.add(q[0]);return{src:own,q:qReal(q)}}
-    for(let t=0;t<40;t++){const k=keys[Math.floor(Math.random()*keys.length)],q=qwPick(QZ[k],seen);if(!seen.has(q[0])){seen.add(q[0]);return{src:k,q:qReal(q)}}}return{src:keys[0],q:qReal(QZ[keys[0]][0])}};
+    for(let t=0;t<40;t++){const k=keys[Math.floor(Math.random()*keys.length)],q=(qFocus()?qwPick:qFreshPick)(QZ[k],seen);if(!seen.has(q[0])){seen.add(q[0]);return{src:k,q:qReal(q)}}}return{src:keys[0],q:qReal(QZ[keys[0]][0])}};
   const img={};const pic=m=>img[m.s]||(img[m.s]=(()=>{const c=mk(48,48),x=c.getContext('2d');x.imageSmoothingEnabled=false;x.drawImage(monSprite(m.s,24),0,0,48,48);return c.toDataURL()})());
   const card=(m,i,big)=>{const mx=stats(m).mhp,r=m.hp/mx,col=r>0.5?'#3ddc6b':r>0.2?'#ffcb3d':'#ef4444',hurt=m.hp<mx,inT=i<RUN.team.length;
     return`<div class="pcard${hurt?'':' fit'}" ${big?'':`data-pm="${i}"`} style="display:flex;gap:8px;align-items:center;text-align:left;background:#f6f1e1;color:#14141f;border:3px solid #14141f;box-shadow:3px 3px 0 #000;padding:6px 8px;cursor:${hurt&&!big?'pointer':'default'};opacity:${hurt||big?1:0.6};font-family:VT323,monospace;font-size:18px;width:100%;box-sizing:border-box">
@@ -7000,7 +7005,7 @@ function qsOverviewEl(){const d=document.createElement('div');const{all,per}=qOv
   <div style="overflow-x:auto"><table class="qstat" style="width:100%;border-collapse:collapse;font-family:VT323,monospace;font-size:15px;text-align:right">
   <tr style="color:var(--muted)"><th style="text-align:left">Gesetz</th><th title="Fragen insgesamt">ges.</th><th title="mindestens einmal beantwortet">beantw.</th><th title="noch nie gestellt">offen</th><th title="richtige Antworten insgesamt">✓</th><th title="falsche Antworten insgesamt">✗</th><th title="Trefferquote">Quote</th><th title="3× in Folge richtig">sitzt</th><th title="zuletzt falsch beantwortet">Problem</th></tr>
   ${books.map(b=>row(esc(b),per[b])).join('')}${row('Gesamt',all,1)}</table></div>
-  <div class="small" style="margin-top:4px">Auswahl: echter Zufall (Krypto-Zufallsgenerator), gleichmäßig über alle Fragen — keine Wiederholung, bevor der Fragenpool eines Monsters durch ist.</div>
+  <div class="small" style="margin-top:4px">Auswahl: echter Zufall (Krypto-Zufallsgenerator) — je öfter eine Frage schon gestellt wurde, desto seltener kommt sie (Gewicht 1/(1+n)²); noch nie gestellte Fragen sind am wahrscheinlichsten.</div>
   <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:5px"><button class="mini" id="qfocus" title="An: falsch beantwortete Fragen kommen deutlich häufiger, sichere seltener">🎯 Fehler-Fokus: ${fo?'AN':'AUS'}</button><button class="mini" id="qreset" title="Lernstand dieses Geräts löschen">↺ Lernstand zurücksetzen</button></div>`;
   d.querySelector('#qfocus').onclick=()=>{try{localStorage.setItem('pp_qfocus',fo?'0':'1')}catch(e){}renderTeam()};
   d.querySelector('#qreset').onclick=e=>{const b=e.currentTarget;if(!b.dataset.sure){b.dataset.sure=1;b.textContent='⚠ Wirklich alles löschen? Nochmal klicken';b.style.background='var(--red,#ff5a5a)';setTimeout(()=>{if(b.isConnected){delete b.dataset.sure;b.textContent='↺ Lernstand zurücksetzen';b.style.background=''}},4000);return}QSTAT={};try{localStorage.removeItem(QS_KEY)}catch(e){}renderTeam()};
