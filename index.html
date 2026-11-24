@@ -484,7 +484,7 @@ const TURN_CONFIG = {
 
 /* ===================== VERSION ===================== */
 // bump with every release (MAJOR.MINOR.PATCH). Players can only share lobbies/duels with the same version.
-const VERSION='0.106.0';
+const VERSION='0.106.1';
 // access password: changes every Monday 00:00 (local time). Only the hashes are stored here (one per week from PW_W0);
 // the password itself also keys the P2P room, so clients without the current one cannot connect. The plain list lives offline.
 const PW_KEY='knast_pw',PW_W0=Date.UTC(2026,10,16),PW_WH=[3239358969,4147130060,2718625794,3495965776,1618054998,4028240764,3044289461,1207180107,4242648729,353861226,2672313786,600614717,407529519,2270237167,3207113251,1525244515,870970040,319006638,3847934078,944313310,2153038366,3950944742,2733334548,4002544240,2736690288,645338530,1884329338,4268902487,2483246182,3828308270,2182929315,3152020422,1311886195,3461060417,3407580460,2544240283,1017220184,1277844250,4288535363,461397931,853058720,2065298771,219387161,3215594984,1108518435,2250837220,3171827014,1035538317,1537090466,1716649754,2848461661,1266925999,653943759,1307642793,3319845926,629631788,4180878311,1080582197,4114403588,2360104553,3811730973,3337788437,695971354,2424950805],MAX_ROOM=10,MAX_LOBBY=5;
@@ -1011,6 +1011,10 @@ Object.assign(MOVES.surf,{k:'bigwave',p:90,cd:6});
 Object.assign(MOVES.whirlpool,{k:'whirl4',p:40,cd:8,fx:null});
 {const ADD={rock:[[27,'felswurf']],fighting:[[26,'felswurf']],electric:[[23,'kurzschluss']],fire:[[25,'flaechenbrand']],flying:[[24,'orkan']],water:[[20,'whirlpool']]};
  for(const sid in SPECIES){const sp=SPECIES[sid];if(!Array.isArray(sp.ls))continue;for(const e of ADD[sp.t]||[])if(!sp.ls.some(x=>x[1]===e[1]))sp.ls.push(e.slice());sp.ls.sort((a,b)=>a[0]-b[0])}}
+// Wind, die den Gegner in eine Richtung drückt
+Object.assign(MOVES,{windkanal:{n:'Windkanal',t:'flying',p:30,k:'windstream',cd:6}});
+Object.assign(MOVES.gust,{kb:18});
+{for(const sid in SPECIES){const sp=SPECIES[sid];if(!Array.isArray(sp.ls)||sp.t!=='flying')continue;if(!sp.ls.some(x=>x[1]==='windkanal'))sp.ls.push([16,'windkanal']);sp.ls.sort((a,b)=>a[0]-b[0])}}
 /* ===================== COMBO MOVES (v0.99) =====================
    Three moves that set up or block combos (mechanics + the combo table in 22g_combos.js):
    Ölfleck   (Normal)  oil shot – the target is oiled for 6 s; a miss leaves a slippery oil slick that fire ignites
@@ -2026,6 +2030,7 @@ function begin(){
 
 /* ===================== CONTROL SETTINGS ===================== */
 const CHANGELOG=[
+ ["0.106.1","2026-11-24","Wind drückt: Neue Attacke Windkanal (Flug, ab Lv 16 und als TM) — 2,2 s Dauerwind in Zielrichtung, schiebt den Gegner mit, lenkt seine Geschosse um, schleudert ihn gegen Hindernisse (Extraschaden) oder in Feuer, Strompfützen und Wirbel; per Sprint kann man sich dagegenstemmen. Windstoß drückt den Gegner beim Treffer deutlich weiter weg."],
  ["0.106.0","2026-11-24","Neue Attacken, die mit dem Kampffeld zusammenspielen: Felswurf (Stein/Kampf) reißt einen Fels direkt neben dir heraus und wirft ihn (ohne Fels nur ein Kiesel); Kurzschluss (Elektro) jagt Strom durch alle Pfützen — wer drinsteht oder nass ist, bekommt den Schlag; Surfer wird zur riesigen Welle quer übers Feld, zerstört kleine Hindernisse, löscht Feuer und hinterlässt Pfützen (per Sprint durchquerbar); Whirlpool erzeugt vier wandernde Wasserwirbel, die den Gegner erfassen; Flächenbrand (Feuer) entzündet Pflanzen und Holz in der Nähe, das Feuer springt weiter; Orkan (Flug) treibt Feuer, Pfützen, Öl und Wirbel vor sich her und stößt den Gegner zurück. Allgemein: Wasser leitet Strom (Elektro-Geschoss durch Pfütze → Strompfütze) und Wasser löscht Feuer (auch Strahlen und Wellen). Lernbar per Level (Stein/Kampf, Elektro, Feuer, Flug, Wasser) und als TM."],
  ["0.105.1","2026-11-24","Fragenauswahl überall (PÄD, HfPol, Flucht, Klausuren): Je öfter eine Frage auf diesem Gerät schon gestellt wurde, desto seltener kommt sie (Gewicht 1/(1+n)²) — der Zähler bleibt auch nach Neuladen erhalten, deshalb keine ständigen Wiederholungen mehr beim PÄD."],
  ["0.105.0","2026-11-24","Gericht als KO-Turnier wie bei der WM: Setzliste wird ausgelost, Pyramide mit linker und rechter Hälfte und dem Finale in der Mitte, Verbindungslinien (Sieger gold, Weg zum Spiel um Platz 3 gestrichelt). Fehlen Spieler zur Zweierpotenz, kommen die ersten Gesetzten per Freilos kampflos weiter. Spiel um Platz 3 für die Halbfinal-Verlierer; bei 3 Spielern Spiel um Platz 2 (A–B, Sieger gegen C, dann die beiden Verlierer → jeder gegen jeden). Bereit-Knöpfe und Zuschauen direkt am Kampf, ★ ENDKAMPF ★ nur im Finale, Podest nach Platzierung. Ausgeschiedene schauen zu; wer aufgibt oder weg ist, verliert kampflos."],
@@ -5471,6 +5476,20 @@ function envMovesTick(dt){if(!B||B.tb||!B.haz)return;const now=performance.now()
   if(h.k==='zap'){c.fillStyle='#3d8bf2a0';pxEl(c,X,Y,h.r,h.r*0.5,1);for(let i=0;i<5;i++){const t=now/60+i*1.7,x=X+Math.round(Math.cos(t*1.3)*h.r*0.7),y=Y+Math.round(Math.sin(t)*h.r*0.3);c.fillStyle=i%2?'#ffe14d':'#ffffff';c.fillRect(x-1,y-2,2,4);c.fillRect(x,y-1,3,1)}}
   else if(h.k==='vortex'){for(let i=0;i<14;i++){const t=i/14*Math.PI*4+now/150*(h.w>0?1:-1),r=2+i*1.1;c.fillStyle=i%3?'#3d8bf2':'#d8f0ff';c.fillRect(Math.round(X+Math.cos(t)*r)-1,Math.round(Y+Math.sin(t)*r*0.55)-1,3,2)}c.fillStyle='#14141f';c.fillRect(X-1,Y-1,2,2)}
   c.restore()}}}
+// Windkanal: 2,2 s Dauerwind in Zielrichtung – drückt den Gegner (und seine Geschosse) mit, schleudert ihn gegen Hindernisse und in Gefahrenfelder
+{const _sp0=shotParams0;shotParams0=function(mid){const mv=MOVES[mid]||MOVES.bump;if(mv.k==='windstream')return{k:'windstream',nm:1,sp:1,r:8,p:mv.p,n:1,life:2.2};const r=_sp0(mid);if(mv.kb&&r)r.kb=mv.kb;return r}}
+NK.windstream={tick(s,dt,T,alive){const A=sideF(s.side);if(!A||A.out||A.faint>0){s.dead=1;return}
+    if(!s.init){s.init=1;const[ux,uy]=nkDir(s);s.ux=ux;s.uy=uy;s.nt=0;dkLock(A,350);say(`${SPECIES[act(A).s].n} entfesselt einen Windkanal!`)}
+    s.ox=A.x;s.oy=A.y-10;const L=230,W=34,inCh=(x,y)=>{const dx=x-s.ox,dy=y-s.oy,al=dx*s.ux+dy*s.uy,lat=Math.abs(dx*s.uy-dy*s.ux);return al>0&&al<L&&lat<W+al*0.15};
+    for(const b of B.shots||[]){if(b.dead||b.side===s.side||b.nm||b.cap)continue;if(inCh(b.x,b.y)){const sp=Math.hypot(b.vx,b.vy)||1;b.vx+=s.ux*500*dt;b.vy+=s.uy*500*dt;const n=Math.hypot(b.vx,b.vy);b.vx*=sp/n;b.vy*=sp/n}}
+    if(alive&&!airBusy(T)&&inCh(T.x,T.y-10)){
+      if(T.ctrl!=='remote'&&!(T.dashT>0)){const x0=T.x,y0=T.y;T.x+=s.ux*210*dt;T.y+=s.uy*150*dt;arenaClamp(T);obsPush(T);
+        const moved=Math.hypot(T.x-x0,T.y-y0);if(moved<210*dt*0.35&&!s.slam){s.slam=1;const d=Math.max(1,Math.round(calcDmg(act(A),act(T),s.mid,s.p*1.6).d));dealDamage(T,d,'#ffffff','-'+d);B.shakeUntil=performance.now()+140;burst(T.x,T.y-12,'#e8f4ff',12);say(`${SPECIES[act(T).s].n} wird gegen das Hindernis geschleudert!`)}}
+      if(s.age>=s.nt){s.nt=s.age+0.45;nkHit(s,T,T.x,T.y-12,{p:s.p*0.35,vx:s.ux,vy:s.uy,kb:0})}}
+    if(s.age>s.life)s.dead=1},
+  draw(c,s,col,now){if(s.ox==null)return;c.save();const k=s.age/s.life;c.globalAlpha=0.85*Math.min(1,(1-k)*4);for(let i=0;i<34;i++){const t=((i*0.173+s.age*1.9)%1),d=t*230,w=(((i*53)%100)/100-0.5)*2*(34+d*0.15),x=s.ox+s.ux*d-s.uy*w,y=s.oy+s.uy*d+s.ux*w*0.75;
+    c.fillStyle=i%4?'#e8f4ff':'#9fd0f0';c.fillRect(Math.round(x-s.ux*4),Math.round(y-s.uy*3),Math.abs(s.ux)>0.5?8:2,Math.abs(s.ux)>0.5?1:6)}c.restore()}};
+{const _hl=hitLocal;hitLocal=function(T,s){const mv=s&&MOVES[s.mid];if(mv&&mv.kb&&s.kb==null)s=Object.assign({},s,{kb:mv.kb});return _hl.call(this,T,s)}}
 /* ===================== COURT: arena choice, spectating =====================
    Spectators render a running tournament duel purely from the two duelists' presence ("du": positions, HP, shots),
    which is broadcast to the whole room anyway — watching costs no extra bandwidth. Nothing is simulated or hit here. */

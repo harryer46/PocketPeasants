@@ -15,3 +15,7 @@ Object.assign(MOVES.surf,{k:'bigwave',p:90,cd:6});
 Object.assign(MOVES.whirlpool,{k:'whirl4',p:40,cd:8,fx:null});
 {const ADD={rock:[[27,'felswurf']],fighting:[[26,'felswurf']],electric:[[23,'kurzschluss']],fire:[[25,'flaechenbrand']],flying:[[24,'orkan']],water:[[20,'whirlpool']]};
  for(const sid in SPECIES){const sp=SPECIES[sid];if(!Array.isArray(sp.ls))continue;for(const e of ADD[sp.t]||[])if(!sp.ls.some(x=>x[1]===e[1]))sp.ls.push(e.slice());sp.ls.sort((a,b)=>a[0]-b[0])}}
+// Wind, die den Gegner in eine Richtung drückt
+Object.assign(MOVES,{windkanal:{n:'Windkanal',t:'flying',p:30,k:'windstream',cd:6}});
+Object.assign(MOVES.gust,{kb:18});
+{for(const sid in SPECIES){const sp=SPECIES[sid];if(!Array.isArray(sp.ls)||sp.t!=='flying')continue;if(!sp.ls.some(x=>x[1]==='windkanal'))sp.ls.push([16,'windkanal']);sp.ls.sort((a,b)=>a[0]-b[0])}}

@@ -91,3 +91,17 @@ function envMovesTick(dt){if(!B||B.tb||!B.haz)return;const now=performance.now()
   if(h.k==='zap'){c.fillStyle='#3d8bf2a0';pxEl(c,X,Y,h.r,h.r*0.5,1);for(let i=0;i<5;i++){const t=now/60+i*1.7,x=X+Math.round(Math.cos(t*1.3)*h.r*0.7),y=Y+Math.round(Math.sin(t)*h.r*0.3);c.fillStyle=i%2?'#ffe14d':'#ffffff';c.fillRect(x-1,y-2,2,4);c.fillRect(x,y-1,3,1)}}
   else if(h.k==='vortex'){for(let i=0;i<14;i++){const t=i/14*Math.PI*4+now/150*(h.w>0?1:-1),r=2+i*1.1;c.fillStyle=i%3?'#3d8bf2':'#d8f0ff';c.fillRect(Math.round(X+Math.cos(t)*r)-1,Math.round(Y+Math.sin(t)*r*0.55)-1,3,2)}c.fillStyle='#14141f';c.fillRect(X-1,Y-1,2,2)}
   c.restore()}}}
+// Windkanal: 2,2 s Dauerwind in Zielrichtung – drückt den Gegner (und seine Geschosse) mit, schleudert ihn gegen Hindernisse und in Gefahrenfelder
+{const _sp0=shotParams0;shotParams0=function(mid){const mv=MOVES[mid]||MOVES.bump;if(mv.k==='windstream')return{k:'windstream',nm:1,sp:1,r:8,p:mv.p,n:1,life:2.2};const r=_sp0(mid);if(mv.kb&&r)r.kb=mv.kb;return r}}
+NK.windstream={tick(s,dt,T,alive){const A=sideF(s.side);if(!A||A.out||A.faint>0){s.dead=1;return}
+    if(!s.init){s.init=1;const[ux,uy]=nkDir(s);s.ux=ux;s.uy=uy;s.nt=0;dkLock(A,350);say(`${SPECIES[act(A).s].n} entfesselt einen Windkanal!`)}
+    s.ox=A.x;s.oy=A.y-10;const L=230,W=34,inCh=(x,y)=>{const dx=x-s.ox,dy=y-s.oy,al=dx*s.ux+dy*s.uy,lat=Math.abs(dx*s.uy-dy*s.ux);return al>0&&al<L&&lat<W+al*0.15};
+    for(const b of B.shots||[]){if(b.dead||b.side===s.side||b.nm||b.cap)continue;if(inCh(b.x,b.y)){const sp=Math.hypot(b.vx,b.vy)||1;b.vx+=s.ux*500*dt;b.vy+=s.uy*500*dt;const n=Math.hypot(b.vx,b.vy);b.vx*=sp/n;b.vy*=sp/n}}
+    if(alive&&!airBusy(T)&&inCh(T.x,T.y-10)){
+      if(T.ctrl!=='remote'&&!(T.dashT>0)){const x0=T.x,y0=T.y;T.x+=s.ux*210*dt;T.y+=s.uy*150*dt;arenaClamp(T);obsPush(T);
+        const moved=Math.hypot(T.x-x0,T.y-y0);if(moved<210*dt*0.35&&!s.slam){s.slam=1;const d=Math.max(1,Math.round(calcDmg(act(A),act(T),s.mid,s.p*1.6).d));dealDamage(T,d,'#ffffff','-'+d);B.shakeUntil=performance.now()+140;burst(T.x,T.y-12,'#e8f4ff',12);say(`${SPECIES[act(T).s].n} wird gegen das Hindernis geschleudert!`)}}
+      if(s.age>=s.nt){s.nt=s.age+0.45;nkHit(s,T,T.x,T.y-12,{p:s.p*0.35,vx:s.ux,vy:s.uy,kb:0})}}
+    if(s.age>s.life)s.dead=1},
+  draw(c,s,col,now){if(s.ox==null)return;c.save();const k=s.age/s.life;c.globalAlpha=0.85*Math.min(1,(1-k)*4);for(let i=0;i<34;i++){const t=((i*0.173+s.age*1.9)%1),d=t*230,w=(((i*53)%100)/100-0.5)*2*(34+d*0.15),x=s.ox+s.ux*d-s.uy*w,y=s.oy+s.uy*d+s.ux*w*0.75;
+    c.fillStyle=i%4?'#e8f4ff':'#9fd0f0';c.fillRect(Math.round(x-s.ux*4),Math.round(y-s.uy*3),Math.abs(s.ux)>0.5?8:2,Math.abs(s.ux)>0.5?1:6)}c.restore()}};
+{const _hl=hitLocal;hitLocal=function(T,s){const mv=s&&MOVES[s.mid];if(mv&&mv.kb&&s.kb==null)s=Object.assign({},s,{kb:mv.kb});return _hl.call(this,T,s)}}
