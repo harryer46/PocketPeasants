@@ -667,7 +667,7 @@ function duelSync(dt){
   const F=B.foe;const P_=netPos(now)||{x:+du.x?fx_(+du.x):F.x,y:+du.y?fy_(+du.y):F.y,old:1};arenaClamp(P_);if(P_.snap){F.x=P_.x;F.y=P_.y}else{const k=Math.min(1,dt*(P_.old?14:28));F.x+=(P_.x-F.x)*k;F.y+=(P_.y-F.y)*k}F.face=B.me.x<F.x?-1:1;netFast(F);
   if(Array.isArray(du.ob)&&B.obs)for(const id of du.ob){const o=B.obs.find(o=>o.id===+id);if(o&&!o.dead)breakObs(o)}
   const a=Math.floor(+du.a);if(a>=0&&a<F.team.length&&a!==F.a){F.a=a;say(`${B.oppName} schickt ${SPECIES[act(F).s].n} in den Kampf!`)}
-  if(Array.isArray(du.hp))F.team.forEach((m,i)=>{const v=clamp(Math.floor(+du.hp[i]),0,m.mhp);if(Number.isFinite(v)&&v<m.hp){F.hurtT=performance.now();B.nums.push({x:F.x,y:F.y-34,t:'-'+(m.hp-v),c:'#fff',at:performance.now()});F.flash=0.25;if(v===0)say(`${SPECIES[m.s].n} ist besiegt!`)}if(Number.isFinite(v))m.hp=v});
+  if(Array.isArray(du.hp))F.team.forEach((m,i)=>{const v=clamp(Math.floor(+du.hp[i]),0,m.mhp);if(Number.isFinite(v)&&v<m.hp){F.hurtT=performance.now();B.nums.push({x:F.x,y:F.y-34,t:'-'+(m.hp-v),c:'#fff',at:performance.now()});F.flash=0.25;if(i===F.a&&typeof effConfirm==='function')effConfirm(F);if(v===0)say(`${SPECIES[m.s].n} ist besiegt!`)}if(Number.isFinite(v))m.hp=v});
   if(Array.isArray(du.sg))F.stg={a:clamp(du.sg[0]|0,-4,4),d:clamp(du.sg[1]|0,-4,4),s:clamp(du.sg[2]|0,-4,4)};
   F.stShow=Array.isArray(du.fx)?du.fx.filter(k=>typeof k==='string'&&k in F.st):[];
   F.out=F.team.every(m=>m.hp<=0);F.faint=act(F).hp<=0?1:0;
@@ -770,7 +770,7 @@ function updateBattleUI(){if(B.mode==='spec')return;try{renderPick()}catch(e){co
   if(key!==B.uiKey){B.uiKey=key;btns.forEach((b,i)=>{const mid=mon.m[i];b.style.visibility=mid?'visible':'hidden';if(!mid)return;const mv=MOVES[mid];b.style.background=TYPES[mv.t].c;b.querySelector('.lbl').innerHTML=`<span class="k">${isMob()?'':esc(keyLabel(SET.keys['a'+(i+1)]))}</span> ${esc(mv.n)}<small>${esc(moveDesc(mid).replace(/^\w+ · /,''))}</small>`})}
   const lock=B.tb&&B.state!=='tbChoose';document.querySelectorAll('#bact button').forEach(b=>{if(b.textContent!=='⚙')b.disabled=lock});
   btns.forEach((b,i)=>{const mid=mon.m[i];if(!mid)return;b.querySelector('.cd').style.width=B.tb||pi!=null?'0%':(F.cd[i]/cdOf(mid)*100)+'%';const have=B.tb?Math.min(AP_MAX,(F.ap??AP_MAX)+TB_AP_REGEN):(F.ap??AP_MAX);b.style.filter=have<apCost(mid)?'grayscale(.8) brightness(.7)':''});
-  const cap=$('#bcap');if(cap)cap.textContent=B.aim?'LOSLASSEN ZUM WERFEN!':B.capGreat?'HALTEN: SUPER-HANDSCHELLEN':`HALTEN: HANDSCHELLEN (${RUN.kap})`;
+  const cap=$('#bcap');if(cap){const ct=B.aim?'LOSLASSEN ZUM WERFEN!':B.capGreat?'HALTEN: SUPER-HANDSCHELLEN':`HALTEN: HANDSCHELLEN (${RUN.kap})`;if(cap.dataset.ct!==ct){cap.dataset.ct=ct;cap.textContent=ct}}
   if(B.aim&&performance.now()-B.aim.t0>4500)capRelease();
 }
 const bcv=$('#bcv'),bc=bcv.getContext('2d');

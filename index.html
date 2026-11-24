@@ -477,7 +477,7 @@ const TURN_CONFIG = {
 
 /* ===================== VERSION ===================== */
 // bump with every release (MAJOR.MINOR.PATCH). Players can only share lobbies/duels with the same version.
-const VERSION='0.101.1';
+const VERSION='0.102.0';
 // access password: changes every Monday 00:00 (local time). Only the hashes are stored here (one per week from PW_W0);
 // the password itself also keys the P2P room, so clients without the current one cannot connect. The plain list lives offline.
 const PW_KEY='knast_pw',PW_W0=Date.UTC(2026,10,16),PW_WH=[3239358969,4147130060,2718625794,3495965776,1618054998,4028240764,3044289461,1207180107,4242648729,353861226,2672313786,600614717,407529519,2270237167,3207113251,1525244515,870970040,319006638,3847934078,944313310,2153038366,3950944742,2733334548,4002544240,2736690288,645338530,1884329338,4268902487,2483246182,3828308270,2182929315,3152020422,1311886195,3461060417,3407580460,2544240283,1017220184,1277844250,4288535363,461397931,853058720,2065298771,219387161,3215594984,1108518435,2250837220,3171827014,1035538317,1537090466,1716649754,2848461661,1266925999,653943759,1307642793,3319845926,629631788,4180878311,1080582197,4114403588,2360104553,3811730973,3337788437,695971354,2424950805],MAX_ROOM=10,MAX_LOBBY=5;
@@ -1998,6 +1998,7 @@ function begin(){
 
 /* ===================== CONTROL SETTINGS ===================== */
 const CHANGELOG=[
+ ["0.102.0","2026-11-24","Mitgegebene Items: Jedes Monster kann genau ein Item tragen (Trank, Supertrank, Beleber, AP-Drink, Super-Handschellen). Im Kampf lässt sich nur noch das Item des gerade aktiven Monsters benutzen — danach ist es verbraucht. Mitgeben im Beutel („MITGEBEN“), an der Monsterkarte im Team-Reiter (Auswahl + „zurück in Beutel“); Box-Fenster zeigt getragene Items. „GEBEN“ heißt jetzt „BENUTZEN“ (sofort anwenden außerhalb des Kampfes). Knapp vorbei: „KNAPP DANEBEN!“ bzw. „KNAPP AUSGEWICHEN!“ über dem Ziel, wenn ein Geschoss nur wenige Pixel verfehlt. PvP: „Sehr effektiv/Wenig effektiv/Keine Wirkung“ erscheint erst, wenn der Gegner den Treffer bestätigt (vorher manchmal Wirkung ohne Schaden). Tastenkürzel stehen jetzt auf allen Knöpfen; neu: L Lobby, K Team, I Beutel, U Spieler, P Dex, V Vollbild, O Einstellungen, im Kampf B Beutel, I Attacken-Info."],
  ["0.101.1","2026-11-24","Umgebungs-Interaktion der Attacken (v0.101.0) wieder zurückgenommen – Kampf wie in v0.100.6."],
  ["0.100.6","2026-11-23","Fragenauswahl mit echtem Zufall (Krypto-Zufallsgenerator), gleichmäßig über den ganzen Fragenpool; eine Frage kommt erst wieder, wenn der Pool des Monsters durch ist (auch die Antwortreihenfolge ist echt zufällig). Optionaler Fehler-Fokus bringt die alte Gewichtung zurück. Neu ganz unten im Team-Reiter: Lernstand mit beantworteten, offenen, richtig/falsch beantworteten, sicheren und Problem-Fragen je Gesetz und gesamt, plus Zurücksetzen."],
  ["0.100.5","2026-11-23","EP-Gewinn läuft langsamer (Funken ~1,4 s, Füllen ~2,4 s) und wird über dem SIEG-Bildschirm gezeichnet, also immer im Vordergrund. Der Kampf schließt erst, wenn die EP-Animation fertig ist."],
@@ -3942,7 +3943,7 @@ function duelSync(dt){
   const F=B.foe;const P_=netPos(now)||{x:+du.x?fx_(+du.x):F.x,y:+du.y?fy_(+du.y):F.y,old:1};arenaClamp(P_);if(P_.snap){F.x=P_.x;F.y=P_.y}else{const k=Math.min(1,dt*(P_.old?14:28));F.x+=(P_.x-F.x)*k;F.y+=(P_.y-F.y)*k}F.face=B.me.x<F.x?-1:1;netFast(F);
   if(Array.isArray(du.ob)&&B.obs)for(const id of du.ob){const o=B.obs.find(o=>o.id===+id);if(o&&!o.dead)breakObs(o)}
   const a=Math.floor(+du.a);if(a>=0&&a<F.team.length&&a!==F.a){F.a=a;say(`${B.oppName} schickt ${SPECIES[act(F).s].n} in den Kampf!`)}
-  if(Array.isArray(du.hp))F.team.forEach((m,i)=>{const v=clamp(Math.floor(+du.hp[i]),0,m.mhp);if(Number.isFinite(v)&&v<m.hp){F.hurtT=performance.now();B.nums.push({x:F.x,y:F.y-34,t:'-'+(m.hp-v),c:'#fff',at:performance.now()});F.flash=0.25;if(v===0)say(`${SPECIES[m.s].n} ist besiegt!`)}if(Number.isFinite(v))m.hp=v});
+  if(Array.isArray(du.hp))F.team.forEach((m,i)=>{const v=clamp(Math.floor(+du.hp[i]),0,m.mhp);if(Number.isFinite(v)&&v<m.hp){F.hurtT=performance.now();B.nums.push({x:F.x,y:F.y-34,t:'-'+(m.hp-v),c:'#fff',at:performance.now()});F.flash=0.25;if(i===F.a&&typeof effConfirm==='function')effConfirm(F);if(v===0)say(`${SPECIES[m.s].n} ist besiegt!`)}if(Number.isFinite(v))m.hp=v});
   if(Array.isArray(du.sg))F.stg={a:clamp(du.sg[0]|0,-4,4),d:clamp(du.sg[1]|0,-4,4),s:clamp(du.sg[2]|0,-4,4)};
   F.stShow=Array.isArray(du.fx)?du.fx.filter(k=>typeof k==='string'&&k in F.st):[];
   F.out=F.team.every(m=>m.hp<=0);F.faint=act(F).hp<=0?1:0;
@@ -4045,7 +4046,7 @@ function updateBattleUI(){if(B.mode==='spec')return;try{renderPick()}catch(e){co
   if(key!==B.uiKey){B.uiKey=key;btns.forEach((b,i)=>{const mid=mon.m[i];b.style.visibility=mid?'visible':'hidden';if(!mid)return;const mv=MOVES[mid];b.style.background=TYPES[mv.t].c;b.querySelector('.lbl').innerHTML=`<span class="k">${isMob()?'':esc(keyLabel(SET.keys['a'+(i+1)]))}</span> ${esc(mv.n)}<small>${esc(moveDesc(mid).replace(/^\w+ · /,''))}</small>`})}
   const lock=B.tb&&B.state!=='tbChoose';document.querySelectorAll('#bact button').forEach(b=>{if(b.textContent!=='⚙')b.disabled=lock});
   btns.forEach((b,i)=>{const mid=mon.m[i];if(!mid)return;b.querySelector('.cd').style.width=B.tb||pi!=null?'0%':(F.cd[i]/cdOf(mid)*100)+'%';const have=B.tb?Math.min(AP_MAX,(F.ap??AP_MAX)+TB_AP_REGEN):(F.ap??AP_MAX);b.style.filter=have<apCost(mid)?'grayscale(.8) brightness(.7)':''});
-  const cap=$('#bcap');if(cap)cap.textContent=B.aim?'LOSLASSEN ZUM WERFEN!':B.capGreat?'HALTEN: SUPER-HANDSCHELLEN':`HALTEN: HANDSCHELLEN (${RUN.kap})`;
+  const cap=$('#bcap');if(cap){const ct=B.aim?'LOSLASSEN ZUM WERFEN!':B.capGreat?'HALTEN: SUPER-HANDSCHELLEN':`HALTEN: HANDSCHELLEN (${RUN.kap})`;if(cap.dataset.ct!==ct){cap.dataset.ct=ct;cap.textContent=ct}}
   if(B.aim&&performance.now()-B.aim.t0>4500)capRelease();
 }
 const bcv=$('#bcv'),bc=bcv.getContext('2d');
@@ -5102,6 +5103,22 @@ function epTop(c,K,now){try{const fx=B.epFx;if(!fx||now-fx.t0>=EP_END||B.me.spaw
   for(const p of fx.ps){const u=(t-p.d)/EP_FLY;if(u<0||u>1)continue;const tx=bx+bw*p.tx,ty=by+1;let px,py;
     if(u<.3){const e=u/.3;px=fx.x+p.dx*e;py=fx.y+p.dy*e}else{const e=(u-.3)/.7,ee=e*e;px=fx.x+p.dx+(tx-fx.x-p.dx)*ee;py=fx.y+p.dy+(ty-fx.y-p.dy)*ee}
     const sz=u<.85?3:2;c.fillStyle='#14141f';c.fillRect(Math.round(px)-1,Math.round(py)-1,sz+2,sz+2);c.fillStyle=p.col;c.fillRect(Math.round(px),Math.round(py),sz,sz)}}catch(e){}}
+/* Treffer-Rückmeldung:
+   - PvP: "SEHR EFFEKTIV" usw. erst, wenn der Gegner-Client den Treffer bestätigt (KP sinken). Vorher zeigte der lokale
+     Schuss-Kontakt die Wirkung auch dann, wenn der Gegner auf seinem Bildschirm schon ausgewichen war → Wirkung ohne Schaden.
+   - "KNAPP DANEBEN!" / "KNAPP AUSGEWICHEN!", wenn ein Geschoss das Ziel um wenige Pixel verfehlt. */
+{const _el=effLabel;effLabel=function(s,T){if(B&&B.mode==='duel'&&T===B.foe&&s&&B.me&&s.side===B.me.side){T.pendEff={mid:s.mid,t:performance.now()};return}return _el.apply(this,arguments)}
+ window.effConfirm=function(F){const p=F&&F.pendEff;if(!p||performance.now()-p.t>1500)return;F.pendEff=null;F.effT=0;_el({side:B.me.side,mid:p.mid},F)}}
+{const _sh=shotHit;shotHit=function(s,T){if(s)s.didHit=1;return _sh.apply(this,arguments)}}
+const NEAR_PX=12;
+function nearTick(){if(!B||B.tb||!B.shots||!B.me||!B.foe)return;const now=performance.now();B.nearT=B.nearT||new Map();
+  const live=new Set();
+  for(const s of B.shots){if(s.cap||!s.mid||!MOVES[s.mid]||(MOVES[s.mid].p||0)<=0||s.mel||s.nm)continue;const T=s.side===B.me.side?B.foe:B.me;if(!T||T.out||T.faint>0)continue;
+    const id=s.id||s;live.add(id);const gap=Math.hypot(s.x-T.x,s.y-(T.y-12))-((s.r||4)+11);let e=B.nearT.get(id);if(!e){e={gap,T,mine:s.side===B.me.side,s};B.nearT.set(id,e)}
+    if(gap<e.gap)e.gap=gap;if(s.didHit)e.hit=1}
+  for(const[id,e]of B.nearT){if(live.has(id)&&!e.s.dead)continue;B.nearT.delete(id);if(e.hit||e.s.didHit||e.gap<=0||e.gap>NEAR_PX)continue;const T=e.T;if(!T||(T.nearLT&&now-T.nearLT<700))continue;T.nearLT=now;
+    B.nums.push({x:T.x,y:T.y-58,t:e.mine?'KNAPP DANEBEN!':'KNAPP AUSGEWICHEN!',c:e.mine?'#ff9a3d':'#7fd0ff',at:now,sz:9,life:1000})}}
+{const _kt=kindsTick;kindsTick=function(dt){_kt(dt);try{nearTick()}catch(e){console.error(e)}}}
 /* ===================== COURT: arena choice, spectating =====================
    Spectators render a running tournament duel purely from the two duelists' presence ("du": positions, HP, shots),
    which is broadcast to the whole room anyway — watching costs no extra bandwidth. Nothing is simulated or hit here. */
@@ -6751,6 +6768,52 @@ function qsOverviewEl(){const d=document.createElement('div');const{all,per}=qOv
   d.querySelector('#qreset').onclick=e=>{const b=e.currentTarget;if(!b.dataset.sure){b.dataset.sure=1;b.textContent='⚠ Wirklich alles löschen? Nochmal klicken';b.style.background='var(--red,#ff5a5a)';setTimeout(()=>{if(b.isConnected){delete b.dataset.sure;b.textContent='↺ Lernstand zurücksetzen';b.style.background=''}},4000);return}QSTAT={};try{localStorage.removeItem(QS_KEY)}catch(e){}renderTeam()};
   return d}
 {const _rt=renderTeam;renderTeam=function(){const r=_rt.apply(this,arguments);try{const el=$('#pane-team');if(el&&RUN&&!el.querySelector('.qstat'))el.appendChild(qsOverviewEl())}catch(e){console.warn(e)}return r}}
+// v0.102.0 — Mitgegebene Items: Im Kampf kann nur das Item benutzt werden, das dem aktiven Monster mitgegeben wurde (max. 1 je Monster).
+const HOLDABLE=['potion','superp','revive','ether','great'];
+const HELD_NONE='Kein Item mitgegeben — im Beutel „Mitgeben“ (1 Item je Monster).';
+function heldMon(F){try{if(!B||!F||F!==B.me||!RUN)return null;const m=RUN.team[F.a],a=act(F);return m&&a&&m.s===a.s?m:null}catch(e){return null}}
+function heldName(k){return k&&ITEMS[k]?ITEMS[k].i+' '+ITEMS[k].n:''}
+function giveHeld(m,k){if(!m||!HOLDABLE.includes(k)||!inv(k))return false;if(m.held&&ITEMS[m.held])RUN.items[m.held]=(RUN.items[m.held]||0)+1;RUN.items[k]--;m.held=k;save();return true}
+function takeHeld(m){if(!m||!m.held)return;if(ITEMS[m.held])RUN.items[m.held]=(RUN.items[m.held]||0)+1;m.held=null;save()}
+// battle bag: only the active monster's held item
+function bagOpts(){if(!B||!B.me)return[];const F=B.me,a=act(F),m=heldMon(F),k=m&&m.held,opts=[];if(!k||!ITEMS[k])return opts;
+  if((k==='potion'||k==='superp')&&a.hp>0&&a.hp<a.mhp)opts.push([k,`${ITEMS[k].n} → ${SPECIES[a.s].n}`]);
+  if(k==='revive')F.team.forEach((t,i)=>{if(i!==F.a&&t.hp<=0)opts.push(['revive:'+i,`Beleber → ${SPECIES[t.s].n}`])});
+  if(k==='ether'&&!B.tb&&(F.ap??AP_MAX)<AP_MAX)opts.push(['ether','AP-Drink → volle AP']);
+  if(k==='great'&&B.mode==='wild'&&!B.capGreat)opts.push(['great','Super-Handschellen → nächster Wurf']);
+  return opts}
+{const _bu=bagUse;bagUse=function(key){if(!B)return;const k=key.split(':')[0],m=heldMon(B.me);if(!m||m.held!==k){say(HELD_NONE);return}
+  const before=inv(k);RUN.items[k]=before+1;_bu.apply(this,arguments);
+  if(inv(k)<=before){RUN.items[k]=before;m.held=null;save();try{bagLabel(true)}catch(e){}}else RUN.items[k]=before}}
+{const _say=say;say=function(t){if(t==='Im Beutel ist gerade nichts Nutzbares.'&&B&&B.me){const m=heldMon(B.me);t=m&&m.held?`${heldName(m.held)} (mitgegeben) passt gerade nicht.`:HELD_NONE}return _say.apply(this,[t,...[].slice.call(arguments,1)])}}
+{const _bl=bagLabel;bagLabel=function(force){_bl.apply(this,arguments);try{if(!B||bagCur())return;const m=heldMon(B.me),k=m&&m.held;const t=k?`${ITEMS[k].i} ${ITEMS[k].n} (wartet)`:'kein Item';
+  const b=$('#bbag'),h=`🎒 ${esc(t)}`;if(b&&b.dataset.hl!==h){b.dataset.hl=h;b.innerHTML=h}const tb=$('#tbag span'),h2=k?`${ITEMS[k].i}<br>·`:'🎒<br>–';if(tb&&tb.innerHTML!==h2)tb.innerHTML=h2}catch(e){}}}
+// out of battle: pick a monster to hold the item
+function openGiveHeld(k){const all=RUN.team.map((m,i)=>({m,w:'Kader'})).concat(RUN.box.map(m=>({m,w:'Box'})));
+  openModal(`<h3>${ITEMS[k].i} ${esc(ITEMS[k].n.toUpperCase())} MITGEBEN</h3><div class="small" style="margin-bottom:6px">Jedes Monster trägt höchstens ein Item. Im Kampf kann nur das Item des aktiven Monsters benutzt werden. Ein bereits getragenes Item kommt zurück in den Beutel.</div>
+  <div style="display:flex;flex-direction:column;gap:5px;max-height:50vh;overflow-y:auto">${all.map((e,i)=>`<button class="btn ghost" data-hm="${i}" style="font-family:VT323,monospace;font-size:19px;text-align:left">${esc(SPECIES[e.m.s].n)} · Lv ${e.m.l} <span class="small">(${e.w})</span>${e.m.held?` <span style="float:right">trägt ${heldName(e.m.held)}</span>`:''}</button>`).join('')}</div>
+  <div class="acts" style="margin-top:8px"><button class="btn ghost" id="mno">ZURÜCK</button></div>`);
+  document.querySelectorAll('[data-hm]').forEach(b=>b.onclick=()=>{const m=all[+b.dataset.hm].m;if(giveHeld(m,k))toast(`${SPECIES[m.s].n} trägt jetzt ${heldName(k)}.`);renderTeam();openBagMenu(inv(k)?k:undefined)});$('#mno').onclick=()=>openBagMenu(k)}
+{const _ob=openBagMenu;openBagMenu=function(sel){_ob.apply(this,arguments);try{const d=$('#bagd');if(!d)return;
+  const add=()=>{const cur=$('#bagg .bagCell.sel');const k=cur&&cur.dataset.k;if(!k||k.startsWith('tm:'))return;const row=d.querySelector('.mvrow');if(!row||row.querySelector('[data-hold]'))return;
+    const g=row.querySelector('[data-give]');if(g){g.textContent='BENUTZEN';g.title='Jetzt (außerhalb des Kampfes) auf ein Monster anwenden'}
+    if(HOLDABLE.includes(k)){const b=document.createElement('button');b.className='btn';b.dataset.hold=k;b.textContent='MITGEBEN';b.title='Einem Monster für den Kampf mitgeben (max. 1 Item je Monster)';b.onclick=()=>openGiveHeld(k);row.insertBefore(b,g||row.querySelector('[data-fav]'))}};
+  add();new MutationObserver(add).observe(d,{childList:true,subtree:true});
+  const carriers=RUN.team.concat(RUN.box).filter(m=>m.held&&ITEMS[m.held]);if(carriers.length)d.insertAdjacentHTML('afterend',`<div class="small" style="margin-top:6px">Mitgegeben: ${carriers.map(m=>`${esc(SPECIES[m.s].n)} ${ITEMS[m.held].i}`).join(' · ')}</div>`)}catch(e){console.warn(e)}}}
+// team card: show the held item with a take-back button
+{const _mc=monCard;monCard=function(m,i,inTeam){const d=_mc.apply(this,arguments);try{const info=d.querySelector('.info')||d;const row=document.createElement('div');row.className='small';row.style.cssText='margin:2px 0;display:flex;gap:6px;align-items:center';
+  if(m.held&&ITEMS[m.held]){row.innerHTML=`Trägt: <b>${heldName(m.held)}</b>`;const b=document.createElement('button');b.className='mini';b.textContent='zurück in Beutel';b.disabled=!!B;b.onclick=()=>{takeHeld(m);changed()};row.appendChild(b)}
+  else{row.innerHTML='<span style="opacity:.6">Trägt kein Item</span>';const ks=HOLDABLE.filter(k=>inv(k)>0);if(ks.length&&!B){const sel=document.createElement('select');sel.className='mini';sel.innerHTML='<option value="">+ mitgeben…</option>'+ks.map(k=>`<option value="${k}">${ITEMS[k].i} ${esc(ITEMS[k].n)} (×${inv(k)})</option>`).join('');sel.onchange=()=>{if(sel.value&&giveHeld(m,sel.value))changed()};row.appendChild(sel)}}
+  info.appendChild(row)}catch(e){console.warn(e)}return d}}
+// box cells: small icon of the held item
+{const _obw=openBoxWin;openBoxWin=function(){_obw.apply(this,arguments);try{const list=boxAll();const tm=list.filter(e=>e.w==='t');let bx=list.filter(e=>e.w==='b');
+  const cells=[...document.querySelectorAll('#boxg .boxCell')];const srt={box:null,lv:(a,b)=>b.m.l-a.m.l,name:(a,b)=>SPECIES[a.m.s].n.localeCompare(SPECIES[b.m.s].n),typ:(a,b)=>SPECIES[a.m.s].t.localeCompare(SPECIES[b.m.s].t)||b.m.l-a.m.l}[BOXW.sort];if(srt)bx.sort(srt);
+  tm.concat(bx).forEach((e,i)=>{if(e.m.held&&ITEMS[e.m.held]&&cells[i])cells[i].insertAdjacentHTML('beforeend',`<span title="trägt ${esc(ITEMS[e.m.held].n)}" style="position:absolute;right:3px;top:1px;font-size:15px">${ITEMS[e.m.held].i}</span>`)})}catch(e){}}}
+// classic bag modal in battle (turn-based / button): same rule
+openBag=function(){if(!B||B.state==='over')return;if(B.tb&&B.mode==='duel'){say('Keine Items in rundenbasierten Duellen.');return}if(B.tb&&B.state!=='tbChoose')return;if(!B.tb&&(B.itemCd||0)>performance.now()){say('Warte kurz vor dem nächsten Item.');return}
+  const opts=bagOpts();if(!opts.length){say('Im Beutel ist gerade nichts Nutzbares.');return}
+  openModal(`<h3>🎒 MITGEGEBENES ITEM</h3><div style="display:flex;flex-direction:column;gap:6px">${opts.map(([k,t])=>`<button class="btn ghost" data-bag="${k}" style="font-family:VT323,monospace;font-size:19px">${ITEMS[k.split(':')[0]].i} ${esc(t)}</button>`).join('')}</div><div class="acts" style="margin-top:8px"><button class="btn" id="mok">SCHLIESSEN</button></div>`);
+  document.querySelectorAll('[data-bag]').forEach(b=>b.onclick=()=>{closeModal();bagUse(b.dataset.bag)});$('#mok').onclick=closeModal};
 /* ===================== LOOP ===================== */
 let last=performance.now(),slow=0;
 function frame(now){bakeTick();const dt=Math.max(0,Math.min(0.05,(now-last)/1000));last=now;T+=dt;
@@ -7264,6 +7327,28 @@ function epCenter(){const st=$('#stage'),r=st?st.getBoundingClientRect():{left:0
     const now=clamp(ST.m.xp/xpNeed(ST.m.l),0,1),lv=ST.m.l,ol=ST._xpL;ST._xpR=now;ST._xpL=lv;if(old==null||(old===now&&ol===lv))return r;
     bar.style.transition='none';bar.style.width=(old*100)+'%';void bar.offsetWidth;bar.style.transition='';
     if(ol!=null&&lv>ol){bar.style.width='100%';setTimeout(()=>{if(!bar.isConnected)return;bar.style.transition='none';bar.style.width='0%';void bar.offsetWidth;bar.style.transition='';bar.style.width=(now*100)+'%'},720)}else bar.style.width=(now*100)+'%'}catch(e){}return r}}
+/* Tastenkürzel sichtbar auf allen Knöpfen (nicht auf Touch-Geräten) + neue Kürzel für die Kopfleiste und Beutel/Info im Kampf.
+   Kopfleiste: L Lobby · K Team (Kader) · I Beutel (Inventar) · U Spieler · T Chat · P Monster-Dex · M Karte · V Vollbild · O Einstellungen
+   Kampf: Attacken/Sprint/Wechseln/Handschellen/Fliehen wie in den Einstellungen · B Beutel benutzen · I Attacken-Info · O Einstellungen */
+const TOP_KEYS=[['[data-t="lobby"]','l'],['[data-t="team"]','k'],['#hbag','i'],['[data-t="players"]','u'],['[data-t="chat"]','t'],['#hdex','p'],['#hmap','m'],['#hfs','v'],['#hset','o']];
+(function(){const st=document.createElement('style');st.textContent=`.kb{display:inline-block;font-family:'Press Start 2P',monospace;font-size:7px;line-height:1;background:#0009;color:#ffcb3d;border:1px solid #ffcb3d66;padding:2px 3px 1px;margin-left:4px;vertical-align:middle;border-radius:2px;pointer-events:none;text-transform:uppercase;letter-spacing:0}
+#topbar button .kb{position:absolute;right:-2px;bottom:-3px;margin:0;font-size:6px;padding:1px 2px}#topbar button{position:relative}
+body.touch .kb{display:none!important}`;document.head.appendChild(st)})();
+function kbSet(el,k){if(!el||!k)return;const lab=keyLabel(k)==='LEERTASTE'?'␣':keyLabel(k);let s=el.querySelector(':scope > .kb');if(s&&s.textContent===lab)return;if(!s){s=document.createElement('span');s.className='kb';el.appendChild(s)}s.textContent=lab;
+  if(el.title&&!/\(Taste /.test(el.title))el.title+=` (Taste ${keyLabel(k)})`}
+function kbApply(){try{document.body.classList.toggle('touch',isMob());if(isMob())return;
+  for(const[sel,k]of TOP_KEYS)document.querySelectorAll('#topbar '+sel).forEach(b=>kbSet(b,k));
+  document.querySelectorAll('#side .tabs button').forEach(b=>{const m=TOP_KEYS.find(([s])=>s==='[data-t="'+b.dataset.t+'"]');if(m)kbSet(b,m[1])});
+  document.querySelectorAll('[data-hmuse="fly"]').forEach(b=>kbSet(b,'f'));document.querySelectorAll('[data-gear="bike"]').forEach(b=>kbSet(b,'b'));
+  const K=SET.keys;document.querySelectorAll('#bact .brow button').forEach(b=>{const t=b.textContent;
+    const k=t.startsWith('SPRINT')?K.dash:t.startsWith('WECHSELN')?K.sw:b.id==='bcap'?K.cap:t.startsWith('FLIEHEN')?K.run:b.id==='bbag'?'b':t.startsWith('ℹ')?'i':t.startsWith('⚙')?'o':null;if(k)kbSet(b,k)});
+  const mapZ=document.querySelectorAll('#mapov button');mapZ.forEach(b=>{const t=b.textContent.trim();if(t.startsWith('+'))kbSet(b,'+');else if(t.startsWith('−')||t.startsWith('-'))kbSet(b,'-');else if(/SCHLIESS|✕/.test(t))kbSet(b,'Esc')})}catch(e){}}
+setInterval(kbApply,400);
+{let busy=0;const mo=new MutationObserver(()=>{if(busy)return;busy=1;kbApply();busy=0});const hook=()=>{const el=$('#bact');if(el&&!el.dataset.kbmo){el.dataset.kbmo=1;mo.observe(el,{childList:true,subtree:true,characterData:true})}};setInterval(hook,500)}
+addEventListener('keydown',e=>{if(e.ctrlKey||e.metaKey||e.altKey||typing()||PANIC||capturing||e.repeat)return;const k=e.key.toLowerCase();
+  if(B){if(Object.values(SET.keys).includes(k))return;if(B.mode==='spec'||$('#modal').classList.contains('on')||$('#study').classList.contains('on')||(typeof pickMode==='function'&&pickMode()))return;
+    if(k==='b'){e.preventDefault();bagTry()}else if(k==='i'){e.preventDefault();if(B.me)openMonInfo(act(B.me).s,act(B.me))}else if(k==='o'){e.preventDefault();openSettings()}return}
+  if(!G||modalOpen())return;const m=TOP_KEYS.find(([,kk])=>kk===k&&k!=='m'&&k!=='t');if(!m)return;const b=document.querySelector('#topbar '+m[0]);if(b&&b.offsetParent!==null){e.preventDefault();b.click()}});
 /* ===================== BOOT ===================== */
 applyControls();
 G=loadSave();
