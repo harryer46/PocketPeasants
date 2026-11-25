@@ -30,7 +30,7 @@ main.mv{display:block}table{width:100%;border-collapse:collapse;background:var(-
 <header><h1 id="ttl">MONSTER-ÜBERSICHT</h1><div class="tabs"><button data-pg="mon" class="on">MONSTER</button><button data-pg="mv">ATTACKEN</button><button data-pg="q">FRAGEN</button></div>
 <input id="q" placeholder="Suche: Name, §, Frage …" size="26">
 <select id="ty"><option value="">alle Typen</option></select>
-<select id="qk" style="display:none"><option value="">alle Arten</option><option value="mon">Monster-Fragen</option><option value="book">allgemeine Fragen</option><option value="case">Fallfragen</option><option value="stvo">StVO-Prüfung</option></select>
+<select id="qk" style="display:none"><option value="">alle Arten</option><option value="mon">Monster-/Fangfragen (Festnahme, PÄD, Zoll, HfPol, Beförderung)</option><option value="book">allgemeine Fragen (Professoren, PMLK-Klausur)</option><option value="case">Fallfragen (Lernen, Schlaf, Doppelt oder nichts)</option><option value="stvo">StVO-Fragen (Prof.-Zwischenprüfung)</option></select>
 <select id="bk"><option value="">alle Gesetze</option><option>StGB</option><option>StPO</option><option>PolG</option><option>GG</option><option>OWiG</option><option>BtMG</option><option>ZollVG</option><option>StVO</option><option value="-">ohne Paragraf</option></select>
 <span class="stat" id="st"></span></header>
 <main id="m"></main>
@@ -50,10 +50,10 @@ function qAll(){if(QALL)return QALL;const M=new Map();const add=(t,a,ex,src,book
   return QALL=[...M.values()]}
 function renderQ(){const q=document.getElementById('q').value.trim().toLowerCase(),bk=document.getElementById('bk').value,kd=document.getElementById('qk').value;
   const L=qAll().filter(e=>(!bk||(bk==='-'?!e.book:e.book===bk))&&(!kd||e.kind===kd)&&(!q||(e.t+' '+e.a+' '+e.ex+' '+e.src.join(' ')).toLowerCase().includes(q)));
-  const KIND={mon:'Monster',book:'allgemein',case:'Fall',stvo:'StVO-Prüfung'};
+  const KIND={mon:'Monster · Fangfrage',book:'allgemein',case:'Fallfrage',stvo:'StVO'};const cnt={};for(const e of qAll())cnt[e.kind]=(cnt[e.kind]||0)+1;
   document.getElementById('m').innerHTML=`<div class="card"><ol class="qall">${L.slice(0,QMAX).map(e=>`<li>${esc(e.t)}<br><span class="a">✓ ${esc(e.a)}</span>${e.ex?` <span class="src">${esc(e.ex)}</span>`:''}<div class="qmeta"><span class="chip" style="background:#3a3f5c">${esc(e.book||'–')}</span><span class="chip" style="background:#2b4a3a">${KIND[e.kind]}</span>${e.src.length?esc(e.src.slice(0,6).join(', '))+(e.src.length>6?` +${e.src.length-6}`:''):''}</div></li>`).join('')}</ol>${L.length>QMAX?`<button id="qmore" class="more">${Math.min(200,L.length-QMAX)} weitere anzeigen (${L.length-QMAX} übrig)</button>`:''}${L.length?'':'<div class="none">Nichts gefunden.</div>'}</div>`;
   const mb=document.getElementById('qmore');if(mb)mb.onclick=()=>{QMAX+=200;renderQ()};
-  document.getElementById('st').textContent=`${L.length} von ${qAll().length} Fragen (doppelte zusammengefasst) · Stand v${D.ver}`}
+  document.getElementById('st').textContent=`${L.length} von ${qAll().length} Fragen · ${cnt.mon||0} Monster/Fang · ${cnt.book||0} allgemein · ${cnt.case||0} Fälle · ${cnt.stvo||0} StVO · Stand v${D.ver}`}
 function renderMv(){const q=document.getElementById('q').value.trim().toLowerCase(),ty=document.getElementById('ty').value;let L=D.mv.filter(m=>(!ty||m.t===ty)&&(!q||(m.n+' '+m.t+' '+m.kind+' '+m.line+' '+m.by.map(b=>b[0]).join(' ')).toLowerCase().includes(q)));
   const [k,dir]=SORT;L=L.slice().sort((a,b)=>{const x=a[k],y=b[k];return (typeof x==='number'?x-y:String(x).localeCompare(String(y)))*dir||a.n.localeCompare(b.n)});
   const th=(key,lab,cls)=>`<th data-k="${key}" class="${(SORT[0]===key?'s ':'')+(cls||'')}">${lab}</th>`;
@@ -88,7 +88,7 @@ document.getElementById('m').addEventListener('click',e=>{const h=e.target.close
 document.getElementById('zoom').addEventListener('click',()=>document.getElementById('zoom').classList.remove('on'));
 addEventListener('keydown',e=>{if(e.key==='Escape')document.getElementById('zoom').classList.remove('on')});
 function groupLines(){const seen=new Set(),out=[];for(const s of D.sp){if(seen.has(s.id))continue;for(const x of lineOf(s)){if(!seen.has(x.id)){seen.add(x.id);out.push(x)}}}D.sp=out}
-fetch('data.json').then(r=>r.json()).then(d=>{D=d;groupLines();const ts=[...new Set(d.sp.map(s=>s.t))].sort();const sel=document.getElementById('ty');for(const t of ts)sel.insertAdjacentHTML('beforeend',`<option>${esc(t)}</option>`);
+fetch('data.json?v='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(d=>{D=d;groupLines();const ts=[...new Set(d.sp.map(s=>s.t))].sort();const sel=document.getElementById('ty');for(const t of ts)sel.insertAdjacentHTML('beforeend',`<option>${esc(t)}</option>`);
   document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{PG=b.dataset.pg;document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('on',x===b));const mv=PG==='mv',qp=PG==='q';QMAX=200;document.getElementById('m').className=mv||qp?'mv':'';document.getElementById('bk').style.display=mv?'none':'';document.getElementById('ty').style.display=qp?'none':'';document.getElementById('qk').style.display=qp?'':'none';document.getElementById('ttl').textContent=mv?'ATTACKEN-ÜBERSICHT':qp?'FRAGEN-ÜBERSICHT':'MONSTER-ÜBERSICHT';document.getElementById('q').placeholder=mv?'Suche: Attacke, Typ, Monster …':qp?'Suche: Frage, Antwort, §, Monster …':'Suche: Name, §, Frage …';if(location.hash!=='#'+PG)history.replaceState(null,'','#'+PG);render()});if(location.hash==='#mv'||location.hash==='#q')document.querySelector('[data-pg='+location.hash.slice(1)+']').click();
   for(const id of['q','ty','bk','qk'])document.getElementById(id).addEventListener('input',render);render()}).catch(e=>{document.getElementById('m').textContent='Daten konnten nicht geladen werden.'});
 </script></body></html>
