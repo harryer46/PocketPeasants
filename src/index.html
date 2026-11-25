@@ -12,6 +12,20 @@
 </style>
 </head>
 <body>
+<div id="loadov" style="position:fixed;inset:0;z-index:100000;background:#0b0d16;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;font-family:monospace;color:#e9e6dc">
+ <div style="font:bold 20px monospace;color:#ffcb3d;letter-spacing:2px">POCKET PEASANTS</div>
+ <div style="width:min(70vw,360px);height:18px;border:3px solid #000;background:#1b2033;box-shadow:3px 3px 0 #000"><div id="loadbar" style="height:100%;width:4%;background:#ffcb3d;transition:width .15s"></div></div>
+ <div id="loadtx" style="font-size:14px;color:#8d93a8">Lade Spiel …</div></div>
+<script>/* loading bar: counts every image the game creates and hides once all of them (and the fonts) are ready */
+(function(){const N={c:0,d:0},Img=window.Image,t0=Date.now();let done=false;
+ const L=[];window.Image=function(w,h){const im=new Img(w,h);L.push(im);im.addEventListener('load',()=>upd());return im};window.Image.prototype=Img.prototype;
+ const cnt=()=>{N.c=L.length;N.d=L.filter(i=>!i.src||i.complete).length};
+ const bar=()=>document.getElementById('loadbar'),tx=()=>document.getElementById('loadtx');
+ function upd(){if(done)return;cnt();const p=window.__ppReady?(N.c?N.d/N.c:1):0;const b=bar();if(b)b.style.width=Math.max(4,Math.round(8+p*92))+'%';const t=tx();if(t)t.textContent=window.__ppReady?`Lade Grafiken … ${N.d}/${N.c}`:'Lade Spiel …';
+   if(window.__ppReady&&N.d>=N.c&&(!document.fonts||document.fonts.status==='loaded'))finish()}
+ function finish(){if(done)return;done=true;const b=bar();if(b)b.style.width='100%';setTimeout(()=>{const o=document.getElementById('loadov');if(o){o.style.transition='opacity .3s';o.style.opacity='0';setTimeout(()=>o.remove(),320)}},Math.max(150,400-(Date.now()-t0)))}
+ window.__ppLoadUpd=upd;setInterval(upd,150);setTimeout(finish,15000);   // never block the game for more than 15 s
+ if(document.fonts)document.fonts.ready.then(upd)})();</script>
 <div id="app">
 <div id="mainc">
   <div id="topbar"><span class="tbrand">POCKET PEASANTS</span><span class="chip timer" id="htimer">LOBBY</span><button id="tupd" style="display:none;background:#ef4444;color:#fff">⬆ NEUE VERSION — NEU LADEN</button><span class="tsp"></span><button data-t="lobby" title="Lobby">🏟<span class="tl"> LOBBY</span></button><button data-t="team" title="Team">🐾<span class="tl"> TEAM</span></button><button id="hbag" title="Beutel">🎒<span class="tl"> BEUTEL</span></button><button id="hbox" title="Box – alle Monster">📦</button><button data-t="players" title="Spieler">👥<span class="tl"> SPIELER</span><span id="pcount"></span></button><button data-t="chat" title="Chat">💬<span class="tl"> CHAT</span><span id="cbadge"></span></button><button id="hdex" title="Monster-Dex">📖<span class="tl"> DEX</span></button><button id="hmap" title="Karte">🗺<span class="tl"> KARTE</span></button><button id="hfs" title="Vollbild" style="display:none">⛶</button><button id="hset">⚙</button><span id="tver"></span></div>
@@ -137,7 +151,9 @@
 //@inc js/27j_promotion_double.js
 //@inc js/27k_gg_dex.js
 //@inc js/27l_zoll.js
+//@inc js/27m_shop_stock.js
 //@inc js/28_boot.js
+window.__ppReady=1;if(window.__ppLoadUpd)window.__ppLoadUpd();
 </script>
 </body>
 </html>

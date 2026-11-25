@@ -393,6 +393,20 @@ body.mob #study.on #sbox,body.mob #cquiz.on #cqbox{margin-right:96px}
 </style>
 </head>
 <body>
+<div id="loadov" style="position:fixed;inset:0;z-index:100000;background:#0b0d16;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;font-family:monospace;color:#e9e6dc">
+ <div style="font:bold 20px monospace;color:#ffcb3d;letter-spacing:2px">POCKET PEASANTS</div>
+ <div style="width:min(70vw,360px);height:18px;border:3px solid #000;background:#1b2033;box-shadow:3px 3px 0 #000"><div id="loadbar" style="height:100%;width:4%;background:#ffcb3d;transition:width .15s"></div></div>
+ <div id="loadtx" style="font-size:14px;color:#8d93a8">Lade Spiel …</div></div>
+<script>/* loading bar: counts every image the game creates and hides once all of them (and the fonts) are ready */
+(function(){const N={c:0,d:0},Img=window.Image,t0=Date.now();let done=false;
+ const L=[];window.Image=function(w,h){const im=new Img(w,h);L.push(im);im.addEventListener('load',()=>upd());return im};window.Image.prototype=Img.prototype;
+ const cnt=()=>{N.c=L.length;N.d=L.filter(i=>!i.src||i.complete).length};
+ const bar=()=>document.getElementById('loadbar'),tx=()=>document.getElementById('loadtx');
+ function upd(){if(done)return;cnt();const p=window.__ppReady?(N.c?N.d/N.c:1):0;const b=bar();if(b)b.style.width=Math.max(4,Math.round(8+p*92))+'%';const t=tx();if(t)t.textContent=window.__ppReady?`Lade Grafiken … ${N.d}/${N.c}`:'Lade Spiel …';
+   if(window.__ppReady&&N.d>=N.c&&(!document.fonts||document.fonts.status==='loaded'))finish()}
+ function finish(){if(done)return;done=true;const b=bar();if(b)b.style.width='100%';setTimeout(()=>{const o=document.getElementById('loadov');if(o){o.style.transition='opacity .3s';o.style.opacity='0';setTimeout(()=>o.remove(),320)}},Math.max(150,400-(Date.now()-t0)))}
+ window.__ppLoadUpd=upd;setInterval(upd,150);setTimeout(finish,15000);   // never block the game for more than 15 s
+ if(document.fonts)document.fonts.ready.then(upd)})();</script>
 <div id="app">
 <div id="mainc">
   <div id="topbar"><span class="tbrand">POCKET PEASANTS</span><span class="chip timer" id="htimer">LOBBY</span><button id="tupd" style="display:none;background:#ef4444;color:#fff">⬆ NEUE VERSION — NEU LADEN</button><span class="tsp"></span><button data-t="lobby" title="Lobby">🏟<span class="tl"> LOBBY</span></button><button data-t="team" title="Team">🐾<span class="tl"> TEAM</span></button><button id="hbag" title="Beutel">🎒<span class="tl"> BEUTEL</span></button><button id="hbox" title="Box – alle Monster">📦</button><button data-t="players" title="Spieler">👥<span class="tl"> SPIELER</span><span id="pcount"></span></button><button data-t="chat" title="Chat">💬<span class="tl"> CHAT</span><span id="cbadge"></span></button><button id="hdex" title="Monster-Dex">📖<span class="tl"> DEX</span></button><button id="hmap" title="Karte">🗺<span class="tl"> KARTE</span></button><button id="hfs" title="Vollbild" style="display:none">⛶</button><button id="hset">⚙</button><span id="tver"></span></div>
@@ -485,7 +499,7 @@ const TURN_CONFIG = {
 
 /* ===================== VERSION ===================== */
 // bump with every release (MAJOR.MINOR.PATCH). Players can only share lobbies/duels with the same version.
-const VERSION='0.114.1';
+const VERSION='0.115.0';
 // access password: changes every Monday 00:00 (local time). Only the hashes are stored here (one per week from PW_W0);
 // the password itself also keys the P2P room, so clients without the current one cannot connect. The plain list lives offline.
 const PW_KEY='knast_pw',PW_W0=Date.UTC(2026,10,16),PW_WH=[3239358969,4147130060,2718625794,3495965776,1618054998,4028240764,3044289461,1207180107,4242648729,353861226,2672313786,600614717,407529519,2270237167,3207113251,1525244515,870970040,319006638,3847934078,944313310,2153038366,3950944742,2733334548,4002544240,2736690288,645338530,1884329338,4268902487,2483246182,3828308270,2182929315,3152020422,1311886195,3461060417,3407580460,2544240283,1017220184,1277844250,4288535363,461397931,853058720,2065298771,219387161,3215594984,1108518435,2250837220,3171827014,1035538317,1537090466,1716649754,2848461661,1266925999,653943759,1307642793,3319845926,629631788,4180878311,1080582197,4114403588,2360104553,3811730973,3337788437,695971354,2424950805],MAX_ROOM=10,MAX_LOBBY=5;
@@ -2181,6 +2195,7 @@ function begin(){
 
 /* ===================== CONTROL SETTINGS ===================== */
 const CHANGELOG=[
+["0.115.0","2026-11-25","Ladebalken beim Start (Spiel und Grafiken). Sonderbonbon kostet jetzt 800 $ statt 250 $. Copshop mit begrenztem Lager je Laden (z. B. Trank 10, Beleber 3, Sonderbonbon 1, jede TM 1); ausverkaufte Waren füllen sich mit der Zeit Stück für Stück wieder auf (Trank alle 3 min, Sonderbonbon alle 30 min, TMs alle 20 min)."],
 ["0.114.1","2026-11-25","Echte Sprites für alle 18 Eis- und Gift-Monster (Aussetzling-, Kaltherz-, Notruffrost-, Dealermolch-, Giftmischer- und Kloakenkröten-Linie) statt der Platzhalter – im Pixelraster der übrigen Monster, breite Endformen flacher statt kleiner."],
 ["0.114.0","2026-11-25","Zollkontrollen: An jeder dritten Route (17 Stück) steht ein Zollbeamter am Straßenrand. Wer vorbeikommt, beantwortet pro Monster im Team eine Frage zu dessen Paragrafen. Alles richtig → weiter. Ein Fehler → 100 $ Zollgeld oder Kampf gegen 1–3 Zollwächter (neues Zoll-Monster, § 10 ZollVG, eigenes Pixel-Artwork). Jede Kontrolle einmal pro Spiel."],
 ["0.113.2","2026-11-25","PÄD: Heilen ohne Frage (➕ 10 %) entfernt. HfPol/IAuT: Lernen ohne Frage (📖 +5 %) entfernt – Fortschritt gibt es nur noch über Fragen (bzw. 💊 $100 / Nachhilfe). Performance: Namensschilder messen Text nicht mehr jedes Bild neu, Touch-Erkennung gecacht."],
@@ -2891,7 +2906,7 @@ const ITEMS={
  superp:{n:'Supertrank',p:60,d:'Heilt 60 KP.',i:'🧪',heal:60},
  revive:{n:'Beleber',p:100,d:'Holt ein besiegtes Monster mit halben KP zurück.',i:'✚'},
  ether:{n:'AP-Drink',p:40,d:'Nur im Kampf: füllt alle AP sofort auf.',i:'⚡'},
- candy:{n:'Sonderbonbon',p:250,d:'Hebt ein Monster um ein Level an.',i:'🍬'}};
+ candy:{n:'Sonderbonbon',p:800,d:'Hebt ein Monster um ein Level an.',i:'🍬'}};
 function money(){return RUN?(RUN.money||0):0}
 function inv(k){return RUN&&RUN.items?(RUN.items[k]||0):0}
 function earn(n,why){if(!RUN||!(n>0))return;RUN.money=(RUN.money||0)+Math.round(n);save();updateHud();const t=`+$${Math.round(n)}${why?' '+why:''}`;if(B)say(t);else toast(t)}
@@ -8652,6 +8667,24 @@ function zollFail(t,err){const money=RUN.money||0,can=money>=ZOLL_FEE;
   $('#zfight').onclick=()=>{closeModal();const top=Math.max(...RUN.team.map(m=>m.l)),n=Math.min(3,err);
     startTrainer({id:t.id,zoll:1,n:t.n,c:t.c,x:t.x,y:t.y,d:t.d,fixed:true,team:Array.from({length:n},(_,i)=>['zollwaechter',clamp(top+(i===n-1?1:0),3,70)]),reward:1,line:'Dann eben auf die harte Tour!',after:t.after})}}
 {const _sp=spotted;spotted=function(t){if(t&&t.zoll)return zollSpotted(t);return _sp.apply(this,arguments)}}
+// ===== Copshop stock: every shop has a limited stock per product, refilled one unit at a time over (real) time =====
+const STOCK={cap:[20,2],cap5:[3,6],great:[5,6],potion:[10,3],superp:[5,5],revive:[3,8],ether:[4,5],candy:[1,30]};   // [max, minutes per unit]
+const STOCK_TM=[1,20];
+function stockKey(){try{return shopTown().n}catch(e){return'shop'}}
+function stockOf(k,tm){if(!RUN)return 0;const S=(RUN.stock=RUN.stock||{}),key=stockKey(),T=(S[key]=S[key]||{}),id=tm?'tm:'+k:k,[mx,min]=tm?STOCK_TM:(STOCK[k]||[99,1]),now=Date.now();
+  let e=T[id];if(!e)e=T[id]={n:mx,t:now};
+  if(e.n<mx){const add=Math.floor((now-e.t)/(min*60000));if(add>0){e.n=Math.min(mx,e.n+add);e.t=e.n>=mx?now:e.t+add*min*60000}}else e.t=now;
+  return e.n}
+function stockTake(k,tm){const S=RUN.stock[stockKey()],id=tm?'tm:'+k:k;const e=S[id];if(e.n>=(tm?STOCK_TM:(STOCK[k]||[99]))[0])e.t=Date.now();e.n--}
+function stockNext(k,tm){const e=((RUN.stock||{})[stockKey()]||{})[tm?'tm:'+k:k];if(!e)return 0;const min=(tm?STOCK_TM:(STOCK[k]||[99,1]))[1];return Math.max(0,Math.ceil((e.t+min*60000-Date.now())/60000))}
+{const _b=buy;buy=function(k){if(!RUN||!ITEMS[k])return;if(stockOf(k)<=0){toast(`${ITEMS[k].n} ist ausverkauft – Nachschub in ca. ${stockNext(k)} min.`);return}const m0=money(),e=RUN.stock[stockKey()][k],sv={n:e.n,t:e.t};stockTake(k);_b.apply(this,arguments);if(money()>=m0){Object.assign(e,sv);if($('#modal').classList.contains('on'))openShop()}}}
+{const _b=buyTM;buyTM=function(k){if(!RUN)return;if(stockOf(k,1)<=0){toast(`TM ${MOVES[k].n} ist ausverkauft – Nachschub in ca. ${stockNext(k,1)} min.`);return}const m0=money(),e=RUN.stock[stockKey()]['tm:'+k],sv={n:e.n,t:e.t};stockTake(k,1);_b.apply(this,arguments);if(money()>=m0){Object.assign(e,sv);if($('#modal').classList.contains('on'))openShop()}}}
+// shop window: stock next to every product, sold-out buttons disabled
+{const _o=openShop;openShop=function(){const r=_o.apply(this,arguments);try{if(!$('#modal').classList.contains('on'))return r;
+  document.querySelectorAll('#mbox [data-buy]').forEach(b=>{const k=b.dataset.buy,n=stockOf(k),mx=(STOCK[k]||[99])[0];const row=b.closest('.mvrow');const tag=document.createElement('span');tag.className='small';
+    tag.style.cssText='display:block;color:'+(n?'#9aa1bd':'#ef4444');tag.textContent=n?`Lager ${n}/${mx}`:`ausverkauft · Nachschub in ${stockNext(k)} min`;b.insertAdjacentElement('afterend',tag);
+    if(!n){b.disabled=true;b.classList.add('ghost')}if(row)row.style.flexWrap='wrap'});
+  document.querySelectorAll('#mbox [data-btm]').forEach(b=>{const k=b.dataset.btm,n=stockOf(k,1);if(!n){b.disabled=true;b.classList.add('ghost');const tag=document.createElement('span');tag.className='small';tag.style.color='#ef4444';tag.textContent=`ausverkauft · ${stockNext(k,1)} min`;b.insertAdjacentElement('afterend',tag)}})}catch(e){console.warn(e)}return r}}
 /* ===================== BOOT ===================== */
 applyControls();
 G=loadSave();
@@ -8665,6 +8698,7 @@ setInterval(()=>{try{if(typeof curTab!=='undefined'&&curTab==='team'&&sideOpen()
 function playTime(){const m=Math.floor((G&&G.play||0)/60000);return m<60?`${m} min`:`${Math.floor(m/60)} h ${String(m%60).padStart(2,'0')} min`}
 setInterval(()=>{try{if(G){try{pushSb();tradeTick()}catch(e){console.error(e)}matchTick();arenaTick();checkChallenges();if(!RUN||RUN.free||RUN.phase==='lobby')renderLobby();renderPlayers();renderLobbyPane()}}catch(e){console.error(e)}},400);
 initRoom();
+window.__ppReady=1;if(window.__ppLoadUpd)window.__ppLoadUpd();
 </script>
 </body>
 </html>

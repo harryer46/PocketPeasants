@@ -7,7 +7,7 @@ const ITEMS={
  superp:{n:'Supertrank',p:60,d:'Heilt 60 KP.',i:'🧪',heal:60},
  revive:{n:'Beleber',p:100,d:'Holt ein besiegtes Monster mit halben KP zurück.',i:'✚'},
  ether:{n:'AP-Drink',p:40,d:'Nur im Kampf: füllt alle AP sofort auf.',i:'⚡'},
- candy:{n:'Sonderbonbon',p:250,d:'Hebt ein Monster um ein Level an.',i:'🍬'}};
+ candy:{n:'Sonderbonbon',p:800,d:'Hebt ein Monster um ein Level an.',i:'🍬'}};
 function money(){return RUN?(RUN.money||0):0}
 function inv(k){return RUN&&RUN.items?(RUN.items[k]||0):0}
 function earn(n,why){if(!RUN||!(n>0))return;RUN.money=(RUN.money||0)+Math.round(n);save();updateHud();const t=`+$${Math.round(n)}${why?' '+why:''}`;if(B)say(t);else toast(t)}
