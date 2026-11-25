@@ -24,6 +24,8 @@ function mapCenter(ts){const w=$('#mapwrap'),cv=$('#mapcv');if(!w)return;const f
   const dg=P.fy>=MH?(dungeonAt(P.x,P.y)||caveAt(P.x,P.y)):null,px=((dg?dg.ex:P.fx)+.5)*ts,py=((dg?dg.ey:P.fy)+.5)*ts;w.scrollLeft=px-w.clientWidth/2;w.scrollTop=py-w.clientHeight/2}
 function bindMapZoom(){if(bindMapZoom.done)return;bindMapZoom.done=1;$('#mzin').onclick=()=>mapZoom(1);$('#mzout').onclick=()=>mapZoom(-1);
   $('#mapwrap').addEventListener('wheel',e=>{if(!e.ctrlKey&&!e.metaKey)return;e.preventDefault();const r=$('#mapwrap').getBoundingClientRect();mapZoom(e.deltaY<0?1:-1,e.clientX-r.left,e.clientY-r.top)},{passive:false})}
+// where an area's name sits on the world map: its centre, or just below a town that would cover it
+function zoneLabelPos(k){const p0=BIO_C[k];if(!p0)return{x:0,y:0};const T=TOWNS.find(t=>Math.abs(t.x-p0.x)<24&&Math.abs(t.y-p0.y)<18);return T?{x:T.x,y:T.y+7}:{x:p0.x,y:p0.y}}
 function drawMap(){bindMapZoom();
   if(!mapOpen())return;const cv=$('#mapcv'),st=$('#stage');
   const ts0=Math.max(1.4,Math.min((st.clientWidth-40)/MW,(st.clientHeight*0.7)/MH)),ts=ts0*MAPZ,tf=ts0*Math.min(MAPZ,2);
@@ -32,10 +34,14 @@ function drawMap(){bindMapZoom();
   const c=cv.getContext('2d');c.setTransform(dpr,0,0,dpr,0,0);c.imageSmoothingEnabled=false;c.drawImage(miniMap(),0,0,W,H);
   try{drawLocked(c,W,H,ts)}catch(e){console.error(e)}
   c.textAlign='center';const F=Math.max(10,tf*5);
-  for(const[k,p]of Object.entries(BIO_C)){if(!ZONES[k])continue;const L=ZLV[k];c.font=`${Math.max(7,Math.round(tf*3.2))}px "Press Start 2P",monospace`;const t=ZONES[k].n.toUpperCase();c.fillStyle='#000000a0';c.fillText(t,p.x*ts+1,p.y*ts+1);c.fillStyle='#ffffff';c.fillText(t,p.x*ts,p.y*ts);
-  }
+  for(const[k,p0]of Object.entries(BIO_C)){if(!ZONES[k])continue;const L=ZLV[k];
+    // keep the area name clear of towns: move it below a town that sits on its centre
+    const p=zoneLabelPos(k);
+    c.font=`${Math.max(7,Math.round(tf*3.2))}px "Press Start 2P",monospace`;const t=ZONES[k].n.toUpperCase(),sub=`Lv ${L.lo}–${L.hi}`;const w=c.measureText(t).width+8;
+    c.fillStyle='#14141fb8';c.fillRect(p.x*ts-w/2,p.y*ts-tf*3.6,w,tf*7.6);c.fillStyle='#ffffff';c.fillText(t,p.x*ts,p.y*ts);
+    c.font=`${Math.max(9,Math.round(tf*3.4))}px VT323,monospace`;c.fillStyle='#ffcb3d';c.fillText(sub,p.x*ts,p.y*ts+tf*3.2)}
   // route names only (the level ranges are on the signs)
-  {c.font=`${Math.max(9,Math.round(tf*3.8))}px VT323,monospace`;for(let n=1;n<=ROUTE_N;n++){const R=ROUTES[n];if(!R||R.pix.length<6)continue;const i=R.pix[R.pix.length>>1],x=i%MW,y=(i-x)/MW,t=`R ${n}`;
+  if(MAPZ>=2){c.font=`${Math.max(9,Math.round(tf*3.6))}px VT323,monospace`;for(let n=1;n<=ROUTE_N;n++){const R=ROUTES[n];if(!R||R.pix.length<6)continue;const i=R.pix[R.pix.length>>1],x=i%MW,y=(i-x)/MW,t=routeShort(n);
     const w=c.measureText(t).width+4;c.fillStyle='#14141fd0';c.fillRect(x*ts-w/2,y*ts-tf*2.4,w,tf*3.2);c.fillStyle='#ffcb3d';c.fillText(t,x*ts,y*ts)}}
   const mark=(x,y,txt,col,f)=>{c.font=`${f||F}px VT323,monospace`;c.fillStyle='#000';c.fillText(txt,(x+.5)*ts+1,(y+.5)*ts+(f||F)/3+1);c.fillStyle=col;c.fillText(txt,(x+.5)*ts,(y+.5)*ts+(f||F)/3)};
   for(const T of TOWNS){const vis=T.id==='vil'||(RUN&&RUN.towns&&RUN.towns[T.id]);c.fillStyle='#000';c.fillRect((T.x-6)*ts-1,(T.y-7)*ts-1,12*ts+2,8*ts+2);c.fillStyle=vis?'#ffcb3d':'#dcc690';c.fillRect((T.x-6)*ts,(T.y-7)*ts,12*ts,8*ts);
@@ -57,8 +63,9 @@ function drawMap(){bindMapZoom();
 function renderMapLegend(){
   let h='';
   for(const[k,z]of Object.entries(ZONES)){
-    h+=`<div class="mleg"><b style="color:${z.col==='#2f7a2c'?'#5fb04a':z.col}">${z.n.toUpperCase()}</b><br><span class="small">Monster verstecken sich in: ${z.enc}</span><br>${poolOf(k).map(sp=>{const seen=G.dex[sp]!==undefined;const r=rarOf(sp);return`<span style="color:${r.c}">${seen?nameHtml(sp):'???'}</span>`}).join(' · ')}</div>`}
-  h+=`<div class="mleg"><b style="color:var(--accent)">LEGENDE</b><br>⚕ PÄD · ⚖ Gericht · 🛒 Copshop · 🎓 HfPol / IAuT (Lernen)<br>★ Legendärer Schrein · ⛓ Knast · ■ Cop (grau = besiegt) · <span style="color:#ffcb3d">□</span> Lizenz-Trainer (grün = Lizenz erhalten) · <span style="color:#c27bff">■</span> Prof. (grün = bestanden)<br>Städte: gelb = besucht (Schnellreise möglich). Jede Stadt hat PÄD, Copshop und HfPol; das Gericht steht in Villingen.<br>Farben: <span style="color:${RARITY.common.c}">häufig</span> · <span style="color:${RARITY.uncommon.c}">ungewöhnlich</span> · <span style="color:${RARITY.rare.c}">selten</span></div>`;
+    const pl=poolOf(k)||[],got=pl.filter(s=>G.dex[s]).length,L=ZLV[k]||{lo:'?',hi:'?'};
+    h+=`<div class="mleg"><b style="color:${z.col==='#2f7a2c'?'#5fb04a':z.col}">${z.n.toUpperCase()}</b> <span class="small" style="color:#ffcb3d">Lv ${L.lo}–${L.hi}</span><br><span class="small">📖 ${got}/${pl.length} festgenommen · Monster verstecken sich in: ${z.enc}</span><br>${poolOf(k).map(sp=>{const seen=G.dex[sp]!==undefined;const r=rarOf(sp);return`<span style="color:${r.c}">${seen?nameHtml(sp):'???'}</span>`}).join(' · ')}</div>`}
+  h+=`<div class="mleg"><b style="color:var(--accent)">LEGENDE</b><br>⚕ PÄD · ⚖ Gericht · 🛒 Copshop · 🎓 HfPol / IAuT (Lernen)<br>★ Legendärer Schrein · ⛓ Knast · ■ Cop (grau = besiegt) · <span style="color:#ffcb3d">□</span> Lizenz-Trainer (grün = Lizenz erhalten) · <span style="color:#c27bff">■</span> Prof. (grün = bestanden)<br>Städte und 🚓 Polizeiposten: gelb = besucht (Schnellreise möglich). Routennamen erscheinen ab Zoom 2×. ❗ = aktuelles Ziel, 🔎 = Fallakte. Jede Stadt hat PÄD, Copshop und HfPol; das Gericht steht in Villingen.<br>Farben: <span style="color:${RARITY.common.c}">häufig</span> · <span style="color:${RARITY.uncommon.c}">ungewöhnlich</span> · <span style="color:${RARITY.rare.c}">selten</span></div>`;
   h+=`<div class="mleg"><b style="color:var(--accent)">LIZENZEN (FELDFÄHIGKEITEN / VMs)</b><br><span class="small">Gibt es nur durch einen Sieg gegen diese Trainer — gelber Rahmen auf der Karte:</span><br>${Object.entries(HM_FROM).map(([tid,k])=>{const t=TRAINERS.find(q=>q.id===tid);if(!t)return'';const z=ZONES[zoneAt(t.x,t.y)],got=hasHM(k),vm=Object.keys(VM_MOVES).filter(m=>VM_MOVES[m]===k).map(m=>MOVES[m]&&MOVES[m].n).filter(Boolean);
     return`<span style="color:${got?'#3ddc6b':'var(--text)'}">${HM[k].i} <b>${HM[k].n}</b>${got?' ✓':''}</span> — ${esc(t.n)}${z?' · '+z.n:''}<br><span class="small">${esc(HM[k].d)}${vm.length?' VM: '+vm.join(', ')+'.':''} Einsatz braucht ${esc(hmNeed(k))} im Kader.</span>`}).join('<br>')}</div>`;
   $('#mapleg').innerHTML=h;
@@ -87,8 +94,8 @@ function drawLocked(c,W,H,ts){const L=lockedBiomes();if(!L.length)return;const k
     for(let i=0;i<MW*MH;i++){if(!set.has(BIOME[i]))continue;const tx=i%MW,ty=(i-tx)/MW;const st=((tx+ty)%6)<2;d[i*4]=20;d[i*4+1]=20;d[i*4+2]=31;d[i*4+3]=st?175:60}
     x.putImageData(id,0,0);drawLocked.cv=m;
     // one padlock per locked area, at its middle
-    drawLocked.pos=L.map(b=>{let sx=0,sy=0,n=0;for(let i=0;i<MW*MH;i++)if(BIOME[i]===b){const tx=i%MW;sx+=tx;sy+=(i-tx)/MW;n++}return n?{x:sx/n,y:sy/n}:null}).filter(Boolean)}
+    drawLocked.pos=L.map(b=>{const k=BKEYS[b];if(k&&BIO_C[k]){const q=zoneLabelPos(k);return{x:q.x,y:q.y+5.5}}let sx=0,sy=0,n=0;for(let i=0;i<MW*MH;i++)if(BIOME[i]===b){const tx=i%MW;sx+=tx;sy+=(i-tx)/MW;n++}return n?{x:sx/n,y:sy/n}:null}).filter(Boolean)}
   c.drawImage(drawLocked.cv,0,0,W,H);
-  const px=Math.max(2,Math.round(ts*1.6));for(const p of drawLocked.pos){const x0=Math.round(p.x*ts-px*4.5),y0=Math.round(p.y*ts+px*2);
+  const px=Math.max(1,Math.round(ts*0.9));for(const p of drawLocked.pos){const x0=Math.round(p.x*ts-px*4.5),y0=Math.round(p.y*ts);
     c.fillStyle='#000';c.fillRect(x0-px,y0-px,px*11,px*12);
     for(let y=0;y<LOCK_PX.length;y++)for(let x=0;x<9;x++){const ch=LOCK_PX[y][x];if(ch==='.')continue;c.fillStyle=ch==='X'?(y<4?'#c9ccd6':'#7a5a12'):ch==='Y'?'#ffcb3d':'#14141f';c.fillRect(x0+x*px,y0+y*px,px,px)}}}

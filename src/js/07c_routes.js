@@ -5,6 +5,7 @@
    Every overworld tile belongs to the nearest stretch between two consecutive stops (only stretches whose
    shortest path crosses the tile's area count) and gets its route from the progress along that stretch. */
 const ROUTE_CHAIN=[{id:'vil'},{id:'mar',r:3},{id:'dam',r:9},{id:'lah',r:15},{pt:[135,26],r:19},{id:'unt',r:24},{id:'mos',r:31}];
+const AREA_BAND={north:[1,12],south:[8,24],east:[18,38],snow:[30,54],west:[40,60],desert:[50,70],jungle:[60,82]};
 let ROUTE_N=0;const ROUTES=[null],ROUTE_NODES=[],ROUTE_EDGES=[];   // ROUTES[n] = {n,lv:[lo,hi],pix,a,b}
 const PROG=new Float32Array(MW*MH);   // progress along the town chain (0 = Villingen … 31 = Mostbach)
 function routeRange(k){const R=ROUTES[k];return R?R.lv:[1,5]}
@@ -31,14 +32,23 @@ const ROUTE_STRETCH=[];                  // per stretch: path tiles, first/last 
     for(let j=0;j<MW*MH;j++){const a=A[j],b=Bd[j];if(a<0||b<0||!bio.has(BIOME[j]))continue;const e=a+b-L;if(e<best[j]-0.5){best[j]=e;prog[j]=r0+(r1-r0)*a/(a+b)}}}
   for(let j=0;j<MW*MH;j++)PROG[j]=prog[j];
   buildRouteNet();
+  // fixed level band per area (following the story chain Villingen → Marderach → Damental → Lahribar → Felsenhöhen → Unterwertheim → Mostbach):
+  // a route takes the band of the area most of its road runs through, so every area has a clear, predictable level range
+  for(let n=1;n<=ROUTE_N;n++){const R=ROUTES[n];if(!R)continue;const cnt={};for(const j of R.pix){const z=BKEYS[BIOME[j]]||'north';cnt[z]=(cnt[z]||0)+1}
+    const z=Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a])[0],B=AREA_BAND[z]||AREA_BAND.north;const lo=clamp(R.lv[0],B[0],B[1]-4);R.lv=[lo,lo+4];R.area=z}
   // show the new ranges per area (world map labels, pass signs)
   for(const z in ZLV){ZLV[z].lo=999;ZLV[z].hi=0}
-  for(let j=0;j<MW*MH;j++){if(!ENC.has(MAP[j]))continue;const z=BKEYS[BIOME[j]];if(!z||!ZLV[z])continue;const x=j%MW,y=(j-x)/MW,lo=storyLv(x,y)||routeRange(ROUTE_OF[j])[0];ZLV[z].lo=Math.min(ZLV[z].lo,lo);ZLV[z].hi=Math.max(ZLV[z].hi,lo+4)}
+  for(let j=0;j<MW*MH;j++){if(!ENC.has(MAP[j]))continue;const z=BKEYS[BIOME[j]];if(!z||!ZLV[z])continue;const x=j%MW,y=(j-x)/MW,lo=storyLv(x,y)||routeLo(x,y);ZLV[z].lo=Math.min(ZLV[z].lo,lo);ZLV[z].hi=Math.max(ZLV[z].hi,lo+4)}
   ZLV.knast.lo=KNAST_LV[0];ZLV.knast.hi=KNAST_LV[1];
   for(const z in ZLV){if(ZLV[z].lo===999){ZLV[z].lo=1;ZLV[z].hi=5}BIO_MIN[z]=ZLV[z].lo}
 })();
+const AREA_RT={north:['Landstraße','L'],south:['Küstenweg','K'],east:['Waldweg','W'],snow:['Bergpfad','B'],west:['Felsweg','F'],desert:['Canyonpfad','C'],jungle:['Dschungelpfad','D']};
+let ROUTE_NM=null;function routeNames(){if(ROUTE_NM)return ROUTE_NM;ROUTE_NM={};const by={};for(let n=1;n<=ROUTE_N;n++){const R=ROUTES[n];if(!R)continue;(by[R.area||'north']=by[R.area||'north']||[]).push(n)}
+  for(const z in by)by[z].sort((a,b)=>ROUTES[a].lv[0]-ROUTES[b].lv[0]||a-b).forEach((n,i)=>{const A=AREA_RT[z]||AREA_RT.north;ROUTE_NM[n]={full:A[0]+' '+(i+1),short:A[1]+(i+1)}});return ROUTE_NM}
+function routeName(n){const r=routeNames()[n];return r?r.full:'Route '+n}
+function routeShort(n){const r=routeNames()[n];return r?r.short:'R'+n}
 function routeAt(x,y){if(x<0||y<0||x>=MW||y>=MH)return 0;return ROUTE_OF[y*MW+x]}
-function routeLo(x,y){return routeRange(routeAt(x,y))[0]}
+function routeLo(x,y){const lo=routeRange(routeAt(x,y))[0];if(x<0||y<0||x>=MW||y>=MH)return lo;const B=AREA_BAND[BKEYS[BIOME[y*MW+x]]]||AREA_BAND.north;return clamp(lo,B[0],B[1]-4)}
 /* The routes are the ways between the towns: the walking paths between neighbouring towns are traced (later paths
    prefer to follow earlier ones, so they merge) and split at towns and crossings. Long pieces are cut into several
    routes (≈ every 26 tiles or when the difficulty rises by a level band). Routes are numbered by difficulty;

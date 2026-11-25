@@ -16,7 +16,7 @@ function femCaught(){return FEM.filter(s=>G&&G.dex&&G.dex[s])}
 function lawRoster(){return rosterIds().filter(s=>SPECIES[s]&&(SPECIES[s].law||FEM.includes(s)))}
 function rankOf(){if(G&&G.ewig)return{k:2,n:'Polizist auf Ewigkeit',i:'👑'};if(femCaught().length>=4)return{k:1,n:'Einsatzbereit – Anwärter auf Gnade',i:'🛡'};return{k:0,n:'Anwärter auf Gnade',i:'🎓'}}
 function dungeonFor(law){return DUNGEONS.find(d=>d.law===law)}
-function routesTo(id){const ch=['vil','mar','dam','lah','fel','unt','mos'],k=ch.indexOf(id);const rs=k>0?routeWay(ch[k-1],id):[];return rs.length?'Route '+rs.join(' → '):''}
+function routesTo(id){const ch=['vil','mar','dam','lah','fel','unt','mos'],k=ch.indexOf(id);const rs=k>0?routeWay(ch[k-1],id):[];return rs.length?rs.map(routeName).join(' → '):''}
 function townName(id){const T=TOWNS.find(t=>t.id===id);return T?T.n:id}
 // ---- career advisor
 const BERATER_TXT=[
