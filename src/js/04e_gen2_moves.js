@@ -21,7 +21,7 @@ Object.assign(MOVES.scratch,{combo:3});                                 // Kratz
 Object.assign(MOVES.tackle,{k:'dash',cd:1.4});                         // Tackle: charges at the target
 Object.assign(MOVES.watercannon,{k:'jet',cd:5});                       // Wasserwerfer: steady jet that pushes back
 Object.assign(MOVES.aurorabeam,{fx:'slow'});                            // Aurorastrahl: chills (slow)
-Object.assign(MOVES.bubblebeam,{k:'rapid',rn:7});                       // Blubbstrahl: a stream of bubbles
+Object.assign(MOVES.bubblebeam,{k:'rapid',rn:16});                       // Blubbstrahl: a stream of bubbles
 Object.assign(MOVES.stormcrack,{k:'nova',cd:4});                       // Sturmknall: shock ring around you
 Object.assign(MOVES.emberrain,{n3:1});                                  // Glutregen: three embers
 Object.assign(MOVES.wingattack,{combo:2});                              // Flügelschlag: two wing beats

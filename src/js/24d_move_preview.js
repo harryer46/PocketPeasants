@@ -100,3 +100,4 @@ function pvEngineLoop(mid,sid){const cv=MVP.querySelector('canvas');cv.width=AW;
   const r=el.getBoundingClientRect(),w=AW+12,h=PV_H+30;let x=r.right+8,y=r.top;if(x+w>innerWidth)x=Math.max(4,r.left-w-8);if(x<4)x=4;if(y+h>innerHeight)y=innerHeight-h-4;MVP.style.left=x+'px';MVP.style.top=Math.max(4,y)+'px';
   try{pvEngineLoop(mid,sid)}catch(e){console.warn(e);_ps.apply(this,arguments)}}}
 if(!KIND_TXT.vortex)KIND_TXT.vortex='Strudel — schlängelt sich vorwärts und zieht an';
+if(!KIND_TXT.rootrap)KIND_TXT.rootrap='Wurzelfalle — Wurzeln brechen unter dem Ziel hervor und halten es fest';

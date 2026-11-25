@@ -24,7 +24,7 @@ function shotParams0(mid){const mv=MOVES[mid]||MOVES.bump;const k=mv.k||(mv.t===
   if(k==='melee'){const cb=mv.combo||1;return{mel:1,sp:270,life:0.17,r:10,p:cb>1?Math.max(4,Math.round(mv.p*1.35*1.2/cb)):Math.round(mv.p*1.35),n:1,combo:cb}}  // melee hits harder
   if(mid==='surf')return{sp:84,life:2.5,r:10,p:Math.round(mv.p*0.85),n:1,wave:1};
   if(MOVE_VIS[mid]==='wave'&&(k==='spread'||k==='shot'))return{sp:100,life:1.8,r:6,p:Math.round(mv.p*0.85),n:1,wave:1};
-  if(k==='rapid'){const n=clamp(mv.rn||6,5,10);return{rapid:n,int:0.085,sp:215,life:1.8,r:2.5,p:Math.max(3,Math.round(mv.p*0.8/n)),n:1}}
+  if(k==='rapid'){const n=clamp(mv.rn||6,5,24);return{rapid:n,int:0.085,sp:215,life:1.8,r:2.5,p:Math.max(n>10?1:3,Math.round(mv.p*0.8/n)),n:1}}
   if(k==='arc')return{k:'lob',nm:1,h:30,life:0.85,r:mv.split?16:12,p:mv.n3?Math.round(mv.p*0.5):mv.p,n:mv.n3?3:1,ang:0.24};
   if(k==='rain')return{k:'air',nm:1,sp:0,life:0.9,r:12,p:Math.round(mv.p*0.36),n:1,rain:5};
   if(k==='fly')return{k:'fly',nm:1,sp:0,life:1.25,r:20,p:mv.p,n:1};
@@ -330,7 +330,7 @@ function bUpdate(dt){if(B.mode==='spec'){specUpdate(dt);return}if(dt>0)B.fps=B.f
   B.capCd=Math.max(0,B.capCd-dt);
   if(B.state==='fight'&&!B.tb)for(const F of[B.me,B.foe])if(F&&F.ctrl!=='remote'){const sp=Math.hypot(F.vx||0,F.vy||0);if(sp<6&&!(F.dashT>0))F.stillT=(F.stillT||0)+dt;else F.stillT=0;
     // standing still: after 0.6 s the regeneration ramps up to 3× within ~1.3 s
-    if(F.noRegen>0){F.noRegen-=dt;F.stillT=0;F.apMul=0;continue}const mul=F.stillT<0.6?1:1+Math.min(2,(F.stillT-0.6)*1.5);F.apMul=mul;F.ap=Math.min(AP_MAX,(F.ap??AP_MAX)+AP_REGEN*mul*dt)}
+    if(F.noRegen>0){F.noRegen-=dt;F.stillT=0;F.apMul=0;continue}const mul=F.stillT<0.6?1:1+Math.min(2,(F.stillT-0.6)*1.5);F.apMul=mul;const gm=act(F);F.ap=Math.min(AP_MAX,(F.ap??AP_MAX)+AP_REGEN*mul*dt*(gm&&gm.gw&&gm._gwB===B?1+0.1*gm.gw:1))}
   if(B.state==='fight')for(const F of[B.me,B.foe]){if(!F||!F.st)continue;for(const k in F.st)F.st[k]=Math.max(0,F.st[k]-dt);
     if(F.st.burn>0&&F.ctrl!=='remote'&&act(F).hp>0){F.burnT+=dt;if(F.burnT>=0.5){F.burnT=0;dealDamage(F,Math.max(1,Math.round(act(F).mhp*0.03)),'#ff8a3d')}if(Math.random()<0.3)B.parts.push({x:F.x+(Math.random()*16-8),y:F.y-20,vx:0,vy:-20,life:0.4,age:0,c:'#ff8a3d'})}}
   if(B.state!=='fight'&&B.state!=='break')for(const F of[B.me,B.foe])if(F&&F.faint>0&&act(F).hp<=0)F.faint=Math.max(0,F.faint-dt);
@@ -552,7 +552,7 @@ function startLegend(L){
 }
 // trainers teach their monsters TMs (type-bound): own type or Normal; stronger trainers get stronger moves
 function vmTier(t){const b=Math.round(baseLvAt(t.x,t.y))+1;return b>=10?3:b>=5?2:1}
-function vmPick(type,lo,hi,r,not){const c=Object.keys(MOVES).filter(m=>{const v=MOVES[m];return v.t===type&&v.k!=='self'&&(v.p||0)>=lo&&(v.p||0)<=hi&&!not.includes(m)});return c.length?c[Math.floor(r()*c.length)]:null}
+function vmPick(type,lo,hi,r,not){const c=Object.keys(MOVES).filter(m=>{const v=MOVES[m];return !v.hidden&&v.t===type&&v.k!=='self'&&(v.p||0)>=lo&&(v.p||0)<=hi&&!not.includes(m)});return c.length?c[Math.floor(r()*c.length)]:null}
 function giveVMs(t,mon,i){const r=mulberry32(hashStr(t.id+':'+i)),tier=vmTier(t),own=SPECIES[mon.s].t,cov='normal',vms=[];
   if(tier===1){const m=vmPick(cov,30,55,r,mon.m);if(m)vms.push(m)}
   else if(tier===2){const a=vmPick(own,60,85,r,mon.m),b=vmPick(cov,50,75,r,mon.m);if(a)vms.push(a);if(b)vms.push(b)}
@@ -985,7 +985,7 @@ function drawBattle(){
     let sc=1,white=0,yoff=0,clipY=null;const ssc=SPECIES[mon.s].sc||1;
     const sk=F.spawnT?(now-F.spawnT)/380:1;if(sk<1){sc=0.2+0.8*sk;white=1-sk}
     if(catchK>=0){sc=1-catchK*0.9;white=1}
-    sc*=ssc;
+    sc*=ssc;if(mon.gw&&mon._gwB===B)sc*=1+0.1*mon.gw;
     if(mon.hp<=0&&F.ctrl!=='remote'){const fk=1-clamp(F.faint/0.9,0,1);yoff=fk*fk*80;clipY=Y+2;if(fk<0.97&&Math.random()<0.5)B.parts.push({x:X+(Math.random()-.5)*26,y:Y-1,vx:(Math.random()-.5)*40,vy:-20-Math.random()*30,life:0.5,age:0,c:Math.random()<.5?'#8a6a48':'#b8946a'})}else if(mon.hp<=0)yoff=80;
     if(B.evoFx&&now-B.evoFx<1800&&F===B.me)white=Math.max(white,Math.abs(Math.sin((now-B.evoFx)/90))*0.9);
     const az=flyZ(F,now),dv=stOn(F,'dive');
@@ -1013,6 +1013,7 @@ function drawBattle(){
     const col=TYPES[MOVES[s.mid].t].c;
     if(s.nm){drawSpecial(c,s,col,now);continue}
     if(s.mel&&typeof meleeSwing==='function'){meleeSwing(c,s,col,now);continue}
+    if(s.mid==='gigadrain'&&!s.nm&&typeof drawGiga==='function'){drawGiga(c,s,now);continue}
     if(s.mel){c.fillStyle='#ffffff';const a=Math.atan2(s.vy,s.vx);for(let i=-3;i<=3;i++){const aa=a+i*0.25;c.fillRect(Math.round(s.x+Math.cos(aa)*6)-1,Math.round(s.y+Math.sin(aa)*6)-1,2,2)}continue}
     if(s.r>=6&&!s.wave)drawOrbit(c,s,col,now);
     if(drawVis(c,s,col,now))continue;

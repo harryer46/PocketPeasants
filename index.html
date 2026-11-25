@@ -395,7 +395,7 @@ body.mob #study.on #sbox,body.mob #cquiz.on #cqbox{margin-right:96px}
 <body>
 <div id="app">
 <div id="mainc">
-  <div id="topbar"><span class="tbrand">POCKET PEASANTS</span><span class="chip timer" id="htimer">LOBBY</span><button id="tupd" style="display:none;background:#ef4444;color:#fff">⬆ NEUE VERSION — NEU LADEN</button><span class="tsp"></span><button data-t="lobby" title="Lobby">🏟<span class="tl"> LOBBY</span></button><button data-t="team" title="Team">🐾<span class="tl"> TEAM</span></button><button id="hbag" title="Beutel">🎒<span class="tl"> BEUTEL</span></button><button data-t="players" title="Spieler">👥<span class="tl"> SPIELER</span><span id="pcount"></span></button><button data-t="chat" title="Chat">💬<span class="tl"> CHAT</span><span id="cbadge"></span></button><button id="hdex" title="Monster-Dex">📖<span class="tl"> DEX</span></button><button id="hmap" title="Karte">🗺<span class="tl"> KARTE</span></button><button id="hfs" title="Vollbild" style="display:none">⛶</button><button id="hset">⚙</button><span id="tver"></span></div>
+  <div id="topbar"><span class="tbrand">POCKET PEASANTS</span><span class="chip timer" id="htimer">LOBBY</span><button id="tupd" style="display:none;background:#ef4444;color:#fff">⬆ NEUE VERSION — NEU LADEN</button><span class="tsp"></span><button data-t="lobby" title="Lobby">🏟<span class="tl"> LOBBY</span></button><button data-t="team" title="Team">🐾<span class="tl"> TEAM</span></button><button id="hbag" title="Beutel">🎒<span class="tl"> BEUTEL</span></button><button id="hbox" title="Box – alle Monster">📦</button><button data-t="players" title="Spieler">👥<span class="tl"> SPIELER</span><span id="pcount"></span></button><button data-t="chat" title="Chat">💬<span class="tl"> CHAT</span><span id="cbadge"></span></button><button id="hdex" title="Monster-Dex">📖<span class="tl"> DEX</span></button><button id="hmap" title="Karte">🗺<span class="tl"> KARTE</span></button><button id="hfs" title="Vollbild" style="display:none">⛶</button><button id="hset">⚙</button><span id="tver"></span></div>
   <div id="stage">
     <canvas id="world"></canvas>
     <div class="hud"><span class="chip" id="hzone">Stadt</span><span class="chip" id="hkap">Handschellen -</span><span class="chip" id="hon"><span class="dot"></span>Solo</span></div>
@@ -485,7 +485,7 @@ const TURN_CONFIG = {
 
 /* ===================== VERSION ===================== */
 // bump with every release (MAJOR.MINOR.PATCH). Players can only share lobbies/duels with the same version.
-const VERSION='0.111.5';
+const VERSION='0.112.0';
 // access password: changes every Monday 00:00 (local time). Only the hashes are stored here (one per week from PW_W0);
 // the password itself also keys the P2P room, so clients without the current one cannot connect. The plain list lives offline.
 const PW_KEY='knast_pw',PW_W0=Date.UTC(2026,10,16),PW_WH=[3239358969,4147130060,2718625794,3495965776,1618054998,4028240764,3044289461,1207180107,4242648729,353861226,2672313786,600614717,407529519,2270237167,3207113251,1525244515,870970040,319006638,3847934078,944313310,2153038366,3950944742,2733334548,4002544240,2736690288,645338530,1884329338,4268902487,2483246182,3828308270,2182929315,3152020422,1311886195,3461060417,3407580460,2544240283,1017220184,1277844250,4288535363,461397931,853058720,2065298771,219387161,3215594984,1108518435,2250837220,3171827014,1035538317,1537090466,1716649754,2848461661,1266925999,653943759,1307642793,3319845926,629631788,4180878311,1080582197,4114403588,2360104553,3811730973,3337788437,695971354,2424950805],MAX_ROOM=10,MAX_LOBBY=5;
@@ -546,7 +546,7 @@ const MOVES={
  staticnet:{n:'Static Net',t:'electric',p:35,k:'shot',fx:'stun'},boltstrike:{n:'Volt Lance',t:'electric',p:75,k:'beam'},stormcrack:{n:'Storm Crack',t:'electric',p:105,k:'air',fx:'stun'},
  rocktoss:{n:'Rock Toss',t:'rock',p:50,k:'arc'},gravel:{n:'Gravel Spray',t:'rock',p:55,k:'spread'},stoneskin:{n:'Stone Skin',t:'rock',p:0,k:'self',fx:'shield'},
  quakestomp:{n:'Quake Stomp',t:'rock',p:70,k:'melee',fx:'slow'},boulder:{n:'Boulder Hurl',t:'rock',p:80,k:'lob',fx:'knock'},meteor:{n:'Meteor Drop',t:'rock',p:110,k:'air',fx:'knock'},
- gust:{n:'Breeze Blast',t:'flying',p:40,k:'shot'},featherdarts:{n:'Feather Darts',t:'flying',p:45,k:'rapid',rn:6},galecutter:{n:'Gale Cutter',t:'flying',p:60,k:'shot',fx:'knock'},
+ gust:{n:'Breeze Blast',t:'flying',p:40,k:'shot'},featherdarts:{n:'Feather Darts',t:'flying',p:45,k:'rapid',rn:14},galecutter:{n:'Gale Cutter',t:'flying',p:60,k:'shot',fx:'knock'},
  updraft:{n:'Updraft',t:'flying',p:0,k:'self',fx:'haste'},divebomb:{n:'Dive Bomb',t:'flying',p:70,k:'melee'},skyslam:{n:'Sky Slam',t:'flying',p:90,k:'melee',fx:'knock'}
 };
 const FX_TXT={buff:'stärkt dich',debuff:'schwächt das Ziel',selfbuff:'kann dich stärken',sleep:'schläfert ein',conf:'verwirrt',burn:'verbrennt',slow:'verlangsamt',stun:'betäubt',drain:'heilt dich',heal:'heilt 30%',shield:'halbiert Schaden',haste:'beschleunigt',knock:'Rückstoß'};
@@ -617,7 +617,7 @@ Object.assign(MOVES,{
  flamethrower:{n:'Flammenwurf',t:'fire',p:90,k:'breath',fx:'burn'},fireblast:{n:'Feuersturm',t:'fire',p:110,k:'air',fx:'burn'},sunnyday:{n:'Sonnentag',t:'fire',p:0,k:'self',fx:'buff',bs:{a:1,s:1}},
  hydropump:{n:'Hydropumpe',t:'water',p:110,k:'beam',fx:'knock'},surf:{n:'Surfer',t:'water',p:90,k:'spread'},bubblebeam:{n:'Blubbstrahl',t:'water',p:65,k:'beam',fx:'debuff',bs:{s:-1},stc:0.4},
  aurorabeam:{n:'Aurorastrahl',t:'water',p:65,k:'beam',fx:'debuff',bs:{a:-1},stc:0.4},withdraw:{n:'Panzerschutz',t:'water',p:0,k:'self',fx:'buff',bs:{d:1}},
- razorleaf:{n:'Rasierblatt',t:'grass',p:55,k:'rapid',rn:8},solarbeam:{n:'Solarstrahl',t:'grass',p:120,k:'beam',cd:5},gigadrain:{n:'Gigasauger',t:'grass',p:60,k:'shot',fx:'drain'},
+ razorleaf:{n:'Rasierblatt',t:'grass',p:55,k:'rapid',rn:20},solarbeam:{n:'Solarstrahl',t:'grass',p:120,k:'beam',cd:5},gigadrain:{n:'Gigasauger',t:'grass',p:60,k:'shot',fx:'drain'},
  sleeppowder:{n:'Schlafpuder',t:'grass',p:10,k:'spread',fx:'sleep'},growth:{n:'Wachstum',t:'grass',p:0,k:'self',fx:'buff',bs:{a:1}},stringshot:{n:'Fadenschuss',t:'grass',p:10,k:'spread',fx:'debuff',bs:{s:-2}},
  thunderbolt:{n:'Donnerblitz',t:'electric',p:90,k:'beam',fx:'stun'},thunder:{n:'Donner',t:'electric',p:110,k:'air',fx:'stun'},thunderwave:{n:'Donnerwelle',t:'electric',p:10,k:'shot',fx:'stun'},
  charge:{n:'Ladevorgang',t:'electric',p:0,k:'self',fx:'buff',bs:{a:1,d:1}},
@@ -947,7 +947,7 @@ Object.assign(MOVES.scratch,{combo:3});                                 // Kratz
 Object.assign(MOVES.tackle,{k:'dash',cd:1.4});                         // Tackle: charges at the target
 Object.assign(MOVES.watercannon,{k:'jet',cd:5});                       // Wasserwerfer: steady jet that pushes back
 Object.assign(MOVES.aurorabeam,{fx:'slow'});                            // Aurorastrahl: chills (slow)
-Object.assign(MOVES.bubblebeam,{k:'rapid',rn:7});                       // Blubbstrahl: a stream of bubbles
+Object.assign(MOVES.bubblebeam,{k:'rapid',rn:16});                       // Blubbstrahl: a stream of bubbles
 Object.assign(MOVES.stormcrack,{k:'nova',cd:4});                       // Sturmknall: shock ring around you
 Object.assign(MOVES.emberrain,{n3:1});                                  // Glutregen: three embers
 Object.assign(MOVES.wingattack,{combo:2});                              // Flügelschlag: two wing beats
@@ -1183,7 +1183,7 @@ zap:'Kleiner statischer Schlag auf Distanz.',sparkchain:'Funkenkette, die mehrfa
 staticnet:'Stromnetz, das betäuben kann.',boltstrike:'Voltlanze als Strahl – erst zielen, dann feuern.',stormcrack:'Elektrische Explosion rundherum, betäubt.',
 rocktoss:'Stein im Bogen geworfen.',gravel:'Fächer aus Kieseln.',stoneskin:'Steinhaut halbiert kurz den erlittenen Schaden.',
 quakestomp:'Stampfer reißt den Boden auf, verlangsamt.',boulder:'Hochgeworfener Fels mit Rückstoß.',meteor:'Meteor stürzt vom Himmel – vorher Schatten.',
-gust:'Leichter Windstoß.',featherdarts:'Schnelle Salve aus Federpfeilen.',galecutter:'Scharfer Windschnitt mit Rückstoß.',updraft:'Aufwind macht dich schneller.',
+gust:'Leichter Windstoß.',featherdarts:'Lange Salve aus 14 Federpfeilen.',schlammspritzer:'Spritzer der Schlammbombe.',galecutter:'Scharfer Windschnitt mit Rückstoß.',updraft:'Aufwind macht dich schneller.',
 divebomb:'Sturzflug von oben auf das Ziel.',skyslam:'Wuchtiger Schlag aus der Luft, betäubt.',bottletoss:'Flasche im hohen Bogen, verwirrt.',
 canewhack:'Hieb mit dem Gehstock, verlangsamt.',flexpunch:'Muskelfaust mit Rückstoß.',painkiller:'Schmerzmittel heilt 30 % KP.',dawncrow:'Weckruf macht dich schneller.',
 goldrush:'Salve aus Münzen.',heartspore:'Herzförmige Sporen, schläfern ein.',noodlelash:'Dreifache Nudelpeitsche, verlangsamt.',
@@ -1193,9 +1193,9 @@ harden:'Erhöht deine Verteidigung.',growl:'Heulen schwächt die Gegner im Fäch
 furyswipes:'Bis zu fünf Kratzer in schneller Folge.',screech:'Kreischen schwächt die Gegner im Fächer.',scaryface:'Grimasse schwächt das Ziel.',
 recover:'Regeneriert 30 % KP.',confuseray:'Flackernder Strahl, der verwirrt.',flamethrower:'Feueratem, kann verbrennen.',fireblast:'Feuersturm schlägt von oben ein.',
 sunnyday:'Lässt die Sonne scheinen – stärkt Feuer.',hydropump:'Mächtiger Wasserstrahl mit Rückstoß.',surf:'Riesige Welle vom Arenarand – Deckung schützt.',
-bubblebeam:'Blubbersalve, schwächt das Ziel.',aurorabeam:'Farbiger Strahl, verlangsamt.',withdraw:'Zieht sich in den Panzer zurück und stärkt sich.',
-razorleaf:'Salve aus scharfen Blättern.',solarbeam:'Sonnenstrahl, prallt zweimal von Hindernissen ab.',gigadrain:'Saugt kräftig Energie ab und heilt dich.',
-sleeppowder:'Schlafpuder im Fächer.',growth:'Wachstum stärkt deine Angriffe.',stringshot:'Fäden schwächen die Gegner im Fächer.',thunderbolt:'Blitzstrahl, kann betäuben.',
+bubblebeam:'Lange Blubbersalve (16 Blasen), schwächt das Ziel.',aurorabeam:'Farbiger Strahl, verlangsamt.',withdraw:'Zieht sich in den Panzer zurück und stärkt sich.',
+razorleaf:'Lange Salve aus 20 scharfen Blättern – wenig Schaden je Blatt.',solarbeam:'Sonnenstrahl, prallt zweimal von Hindernissen ab.',gigadrain:'Langsame Energiekugel, die das Ziel immer verfolgt – heilt dich.',
+sleeppowder:'Schlafpuder im Fächer.',growth:'Du wächst: +10 % Größe, KP und AP-Regeneration (bis 3×), stärkt Angriffe.',stringshot:'Fäden schwächen die Gegner im Fächer.',thunderbolt:'Blitzstrahl, kann betäuben.',
 thunder:'Blitz schlägt von oben ein, betäubt.',thunderwave:'Schwache Welle, die sicher betäubt.',charge:'Lädt sich auf und stärkt sich.',
 rockslide:'Steine regnen herab, können betäuben.',earthquake:'Erdbeben: 10–20 Steine fallen vom Himmel.',irontail:'Harter Schweifhieb, senkt die Verteidigung.',
 metalclaw:'Doppelte Metallklaue, kann dich stärken.',crunch:'Kräftiger Knirscher, senkt die Verteidigung.',defcurl:'Rollt sich ein – mehr Verteidigung.',
@@ -1220,12 +1220,13 @@ erdung:'Erdung macht immun gegen Strom.',strafschaerfung:'Jeder Treffer in Folge
 sturzflut:'Breite Flutwelle rollt über das Feld.',ueberspannung:'Ladungen kreisen um dich und treffen Nahe.',rankennetz:'Ranke fesselt das Ziel an dich.',
 felswand:'Errichtet eine Felswand als Deckung.',luftsog:'Saugt das Ziel zu dir heran.',schattenschleier:'Macht dich kurz unsichtbar.',
 giftstachel:'Giftiger Stachel, kann vergiften.',giftpuder:'Giftpuder im Atemkegel, vergiftet.',saeurespray:'Säure im Fächer, senkt die Verteidigung.',
-schlammbombe:'Schlammbombe im Bogen, vergiftet.',giftwolke:'Giftwolke bleibt liegen – Feuer bringt sie zur Explosion.',
+schlammbombe:'Schlammbombe im Bogen, zerplatzt in 6 Spritzer – vergiftet.',giftwolke:'Giftwolke bleibt liegen – Feuer bringt sie zur Explosion.',
 eissplitter:'Schneller Eissplitter, verlangsamt.',frostatem:'Eisiger Atem, verlangsamt.',eiszapfen:'Eiszapfen fallen herab, können betäuben.',
 eisstrahl:'Eisstrahl, kann betäuben.',blizzard:'Schwerer Schneesturm, verlangsamt – hinterlässt Eis.',bonemerang:'Knochen fliegt hin und zurück.',
 rollout:'Rollt los und wird mit jeder Runde stärker.',spikes:'Streut Stacheln, die verlangsamen.',leechseed:'Samen saugt dem Ziel KP ab.',
 firespin:'Feuerring hält das Ziel fest, verbrennt.',mirrorcoat:'Spiegelt Fernkampfschaden doppelt zurück.',magnetbomb:'Mine, die bei Nähe explodiert und betäubt.',
 whirlwind:'Wirbelwind bläst das Ziel weit weg.',substitute:'Erschafft einen Doppelgänger, der Treffer abfängt.'};
+MOVE_LINE.wurzelfalle='Wurzeln brechen unter dem Ziel hervor und halten es 1,6 s fest.';
 function moveLine(mid){return MOVE_LINE[mid]||''}
 /* ===================== UTIL ===================== */
 const $=s=>document.querySelector(s);
@@ -2157,6 +2158,7 @@ function begin(){
 
 /* ===================== CONTROL SETTINGS ===================== */
 const CHANGELOG=[
+["0.112.0","2026-11-25","Stärke der Natur: Pflanzen-Treffer lassen Wurzeln aus dem Boden brechen, Wurzelfelder wachsen sichtbar. Rankenhieb, Nudelpeitsche, Rankennetz und Dornenexplosion halten kurz fest. Neue Attacke Wurzelfalle (Pflanze, Lv 20 / TM): Boden reißt unter dem Ziel auf, Wurzeln halten 1,6 s fest. Gigasauger: langsame Energiekugel, die immer verfolgt – grüne Energie schwebt zum Anwender zurück (auch bei Saftsauger). Wachstum: +10 % Größe, KP und AP-Regeneration (bis 3×). Lange Salven: Rasierblatt 20, Blubbstrahl 16, Federpfeile 14 Geschosse – weniger Schaden je Geschoss. Schlammbombe zerplatzt in 6 Giftspritzer. Box-Knopf oben in der Kopfleiste (Taste X). Monster-Übersicht hat jetzt eine Attacken-Seite."],
 ["0.111.5","2026-11-25","Pfützen, die sich berühren, fließen zu einer größeren Pfütze zusammen (max. ca. 3-fache Fläche). Eine Pfütze unter Spannung lädt berührende Pfützen mit auf."],
 ["0.111.4","2026-11-25","Attacken-Vorschau: Pfützen nur noch bei Kurzschluss, nicht mehr bei jeder Elektro-Attacke."],
 ["0.111.3","2026-11-25","Dex-Fix: Monster im Kader oder in der Box (Starter, Lobby-Starter, Geschenke, Tausch, Entwicklungen) gelten jetzt immer als festgenommen – inklusive ihrer Vorstufen – und zeigen alle Details."],
@@ -3316,7 +3318,7 @@ function hfpolSpriteOld(){if(HFSPR0)return HFSPR0;const W=112,H=64,c=mk(W,H),x=c
 
 // ===== TMs: random regular attacks, type-bound (the monster's own type, Normal moves for everyone). From trainers and regional shop offers
 const TM_SHOP={vil:['normal','electric'],lah:['water','rock'],unt:['fire','rock'],dam:['grass','normal'],mos:['grass','flying'],mar:['water','flying']};
-function tmMoves(){return Object.keys(MOVES).filter(k=>{const v=MOVES[k];return v.k!=='self'&&(v.p||0)>=25&&TYPES[v.t]})}
+function tmMoves(){return Object.keys(MOVES).filter(k=>{const v=MOVES[k];return !v.hidden&&v.k!=='self'&&(v.p||0)>=25&&TYPES[v.t]})}
 function tmRandom(r,tier){const lo=[0,30,55,80][tier||1],hi=[0,60,85,130][tier||1];const c=tmMoves().filter(k=>MOVES[k].p>=lo&&MOVES[k].p<=hi);return c.length?c[Math.floor(r()*c.length)]:null}
 function tmGive(k){RUN.tm=RUN.tm||{};RUN.tm[k]=(RUN.tm[k]||0)+1;save()}
 function tmOK(m,k){const v=MOVES[k];return!!v&&!m.m.includes(k)&&(v.t===SPECIES[m.s].t||v.t==='normal')}
@@ -3662,7 +3664,7 @@ function shotParams0(mid){const mv=MOVES[mid]||MOVES.bump;const k=mv.k||(mv.t===
   if(k==='melee'){const cb=mv.combo||1;return{mel:1,sp:270,life:0.17,r:10,p:cb>1?Math.max(4,Math.round(mv.p*1.35*1.2/cb)):Math.round(mv.p*1.35),n:1,combo:cb}}  // melee hits harder
   if(mid==='surf')return{sp:84,life:2.5,r:10,p:Math.round(mv.p*0.85),n:1,wave:1};
   if(MOVE_VIS[mid]==='wave'&&(k==='spread'||k==='shot'))return{sp:100,life:1.8,r:6,p:Math.round(mv.p*0.85),n:1,wave:1};
-  if(k==='rapid'){const n=clamp(mv.rn||6,5,10);return{rapid:n,int:0.085,sp:215,life:1.8,r:2.5,p:Math.max(3,Math.round(mv.p*0.8/n)),n:1}}
+  if(k==='rapid'){const n=clamp(mv.rn||6,5,24);return{rapid:n,int:0.085,sp:215,life:1.8,r:2.5,p:Math.max(n>10?1:3,Math.round(mv.p*0.8/n)),n:1}}
   if(k==='arc')return{k:'lob',nm:1,h:30,life:0.85,r:mv.split?16:12,p:mv.n3?Math.round(mv.p*0.5):mv.p,n:mv.n3?3:1,ang:0.24};
   if(k==='rain')return{k:'air',nm:1,sp:0,life:0.9,r:12,p:Math.round(mv.p*0.36),n:1,rain:5};
   if(k==='fly')return{k:'fly',nm:1,sp:0,life:1.25,r:20,p:mv.p,n:1};
@@ -3968,7 +3970,7 @@ function bUpdate(dt){if(B.mode==='spec'){specUpdate(dt);return}if(dt>0)B.fps=B.f
   B.capCd=Math.max(0,B.capCd-dt);
   if(B.state==='fight'&&!B.tb)for(const F of[B.me,B.foe])if(F&&F.ctrl!=='remote'){const sp=Math.hypot(F.vx||0,F.vy||0);if(sp<6&&!(F.dashT>0))F.stillT=(F.stillT||0)+dt;else F.stillT=0;
     // standing still: after 0.6 s the regeneration ramps up to 3× within ~1.3 s
-    if(F.noRegen>0){F.noRegen-=dt;F.stillT=0;F.apMul=0;continue}const mul=F.stillT<0.6?1:1+Math.min(2,(F.stillT-0.6)*1.5);F.apMul=mul;F.ap=Math.min(AP_MAX,(F.ap??AP_MAX)+AP_REGEN*mul*dt)}
+    if(F.noRegen>0){F.noRegen-=dt;F.stillT=0;F.apMul=0;continue}const mul=F.stillT<0.6?1:1+Math.min(2,(F.stillT-0.6)*1.5);F.apMul=mul;const gm=act(F);F.ap=Math.min(AP_MAX,(F.ap??AP_MAX)+AP_REGEN*mul*dt*(gm&&gm.gw&&gm._gwB===B?1+0.1*gm.gw:1))}
   if(B.state==='fight')for(const F of[B.me,B.foe]){if(!F||!F.st)continue;for(const k in F.st)F.st[k]=Math.max(0,F.st[k]-dt);
     if(F.st.burn>0&&F.ctrl!=='remote'&&act(F).hp>0){F.burnT+=dt;if(F.burnT>=0.5){F.burnT=0;dealDamage(F,Math.max(1,Math.round(act(F).mhp*0.03)),'#ff8a3d')}if(Math.random()<0.3)B.parts.push({x:F.x+(Math.random()*16-8),y:F.y-20,vx:0,vy:-20,life:0.4,age:0,c:'#ff8a3d'})}}
   if(B.state!=='fight'&&B.state!=='break')for(const F of[B.me,B.foe])if(F&&F.faint>0&&act(F).hp<=0)F.faint=Math.max(0,F.faint-dt);
@@ -4190,7 +4192,7 @@ function startLegend(L){
 }
 // trainers teach their monsters TMs (type-bound): own type or Normal; stronger trainers get stronger moves
 function vmTier(t){const b=Math.round(baseLvAt(t.x,t.y))+1;return b>=10?3:b>=5?2:1}
-function vmPick(type,lo,hi,r,not){const c=Object.keys(MOVES).filter(m=>{const v=MOVES[m];return v.t===type&&v.k!=='self'&&(v.p||0)>=lo&&(v.p||0)<=hi&&!not.includes(m)});return c.length?c[Math.floor(r()*c.length)]:null}
+function vmPick(type,lo,hi,r,not){const c=Object.keys(MOVES).filter(m=>{const v=MOVES[m];return !v.hidden&&v.t===type&&v.k!=='self'&&(v.p||0)>=lo&&(v.p||0)<=hi&&!not.includes(m)});return c.length?c[Math.floor(r()*c.length)]:null}
 function giveVMs(t,mon,i){const r=mulberry32(hashStr(t.id+':'+i)),tier=vmTier(t),own=SPECIES[mon.s].t,cov='normal',vms=[];
   if(tier===1){const m=vmPick(cov,30,55,r,mon.m);if(m)vms.push(m)}
   else if(tier===2){const a=vmPick(own,60,85,r,mon.m),b=vmPick(cov,50,75,r,mon.m);if(a)vms.push(a);if(b)vms.push(b)}
@@ -4623,7 +4625,7 @@ function drawBattle(){
     let sc=1,white=0,yoff=0,clipY=null;const ssc=SPECIES[mon.s].sc||1;
     const sk=F.spawnT?(now-F.spawnT)/380:1;if(sk<1){sc=0.2+0.8*sk;white=1-sk}
     if(catchK>=0){sc=1-catchK*0.9;white=1}
-    sc*=ssc;
+    sc*=ssc;if(mon.gw&&mon._gwB===B)sc*=1+0.1*mon.gw;
     if(mon.hp<=0&&F.ctrl!=='remote'){const fk=1-clamp(F.faint/0.9,0,1);yoff=fk*fk*80;clipY=Y+2;if(fk<0.97&&Math.random()<0.5)B.parts.push({x:X+(Math.random()-.5)*26,y:Y-1,vx:(Math.random()-.5)*40,vy:-20-Math.random()*30,life:0.5,age:0,c:Math.random()<.5?'#8a6a48':'#b8946a'})}else if(mon.hp<=0)yoff=80;
     if(B.evoFx&&now-B.evoFx<1800&&F===B.me)white=Math.max(white,Math.abs(Math.sin((now-B.evoFx)/90))*0.9);
     const az=flyZ(F,now),dv=stOn(F,'dive');
@@ -4651,6 +4653,7 @@ function drawBattle(){
     const col=TYPES[MOVES[s.mid].t].c;
     if(s.nm){drawSpecial(c,s,col,now);continue}
     if(s.mel&&typeof meleeSwing==='function'){meleeSwing(c,s,col,now);continue}
+    if(s.mid==='gigadrain'&&!s.nm&&typeof drawGiga==='function'){drawGiga(c,s,now);continue}
     if(s.mel){c.fillStyle='#ffffff';const a=Math.atan2(s.vy,s.vx);for(let i=-3;i<=3;i++){const aa=a+i*0.25;c.fillRect(Math.round(s.x+Math.cos(aa)*6)-1,Math.round(s.y+Math.sin(aa)*6)-1,2,2)}continue}
     if(s.r>=6&&!s.wave)drawOrbit(c,s,col,now);
     if(drawVis(c,s,col,now))continue;
@@ -5897,6 +5900,89 @@ function puddleMerge(){const now=performance.now(),H=(B.haz||[]).filter(h=>h.unt
     b.gone=1;burst(a.x,a.y,'#8fc8f0',6);if(!B.pudSaid||now-B.pudSaid>4000){B.pudSaid=now;say('Die Pfützen fließen zusammen!')}}}
   if(H.some(h=>h.gone))B.haz=B.haz.filter(h=>!h.gone)}
 {const _kt=kindsTick;kindsTick=function(dt){_kt(dt);if(!B||!B.haz||!B.haz.length)return;B.pudT=(B.pudT||0)+dt;if(B.pudT<0.25)return;B.pudT=0;try{puddleMerge()}catch(e){}}}
+// ===== Stärke der Natur: grass attacks make roots burst out of the ground,
+// Gigasauger is a slow, fully homing energy orb whose stolen energy floats back to the user,
+// Wachstum makes the monster bigger (+10 % size, max HP, AP regeneration; stacks up to 3x).
+const ROOT_HOLD={vinelash:0.5,noodlelash:0.4,rankennetz:0.6,brambleburst:0.7};
+function rootBurst(x,y,big){if(!B)return;const nw=performance.now();if(!big&&B.rfx&&B.rfx.length&&nw-B.rfx[B.rfx.length-1].t0<260)return;(B.rfx=B.rfx||[]).push({x,y,t0:performance.now(),dur:big?900:650,n:big?9:6,R:big?24:15,seed:Math.random()*99});if(B.rfx.length>10)B.rfx.shift()}
+// one tendril: grows up out of the ground in a curl, thorn nubs, then sinks back
+function drawTendril(c,x,y,ang,len,k,seed){const grow=k<0.35?k/0.35:k>0.75?1-(k-0.75)/0.25:1,L=len*grow,dir=Math.cos(ang)>0?1:-1;let px=x,py=y;
+  for(let t=0;t<L;t+=1.5){const q=t/len,nx=x+Math.cos(ang)*t*0.35+dir*Math.sin(q*3.2+seed)*q*6,ny=y-t+Math.sin(q*2)*1;
+    const w=Math.max(1,Math.round(3*(1-q)+0.5));c.fillStyle='#2a1a08';c.fillRect(Math.round(nx)-1,Math.round(ny),w+1,2);c.fillStyle=q<0.6?'#7a4e22':'#4f8a2a';c.fillRect(Math.round(nx),Math.round(ny),w,2);
+    if(((t*7+seed*3)|0)%9===0){c.fillStyle='#c8e070';c.fillRect(Math.round(nx)+dir*w,Math.round(ny),1,1)}px=nx;py=ny}
+  if(grow>0.8){c.fillStyle='#6fc23a';c.fillRect(Math.round(px)-1,Math.round(py)-1,3,2);c.fillStyle='#a8e070';c.fillRect(Math.round(px),Math.round(py)-1,1,1)}}
+function drawRootFx(c,now){if(!B||!B.rfx||!B.rfx.length)return;B.rfx=B.rfx.filter(e=>now-e.t0<e.dur);
+  for(const e of B.rfx){const k=(now-e.t0)/e.dur;
+    // cracked earth under the target
+    c.globalAlpha=k>0.7?(1-k)/0.3:1;c.fillStyle='#3a2a10b0';pxEl(c,e.x,e.y+2,e.R*Math.min(1,k*5),e.R*0.4*Math.min(1,k*5),1);
+    for(let i=0;i<e.n;i++){const a=e.seed+i*6.283/e.n,rx=e.x+Math.cos(a)*e.R*0.8,ry=e.y+2+Math.sin(a)*e.R*0.32,kk=clamp(k-i*0.025,0,1);
+      drawTendril(c,rx,ry,a,(e.R>20?30:22)+((i*5)%7),kk,e.seed+i)}
+    if(k<0.25)for(let i=0;i<4;i++){c.fillStyle='#8a6a48';c.fillRect(Math.round(e.x+Math.cos(e.seed+i)*e.R*k*4),Math.round(e.y-k*30+i*2),2,2)}
+    c.globalAlpha=1}}
+// roots hazards: tendrils sway up out of them
+function drawRootHaz(c,now){for(const h of (B&&B.haz)||[]){if(h.k!=='roots'||h.until<now)continue;const n=4,life=Math.min(1,(now-h.t0)/400,(h.until-now)/600);
+  for(let i=0;i<n;i++){const a=(h.seed%100)/16+i*1.57,x=h.x+Math.cos(a)*h.r*0.6,y=h.y+Math.sin(a)*h.r*0.25;drawTendril(c,x,y,a+Math.sin(now/600+i)*0.4,12*life,0.5,i+h.seed%7)}}}
+
+// --- Gigasauger: slow orb that always homes in on the target ---
+const GIGA_SP=125;
+{const _sp0=shotParams0;shotParams0=function(mid){const r=_sp0(mid);if(mid==='gigadrain'&&r){r.sp=GIGA_SP/1.2;r.life=4.5;r.r=7;r.giga=1}return r}}
+function gigaSteer(dt){for(const s of (B&&B.shots)||[]){if(s.mid!=='gigadrain'||s.dead||s.nm)continue;const T=s.side===B.me.side?B.foe:B.me;if(!T||T.out||T.faint>0)continue;
+  const a=Math.atan2(T.y-12-s.y,T.x-s.x),cur=Math.atan2(s.vy,s.vx);let d=a-cur;while(d>Math.PI)d-=6.283;while(d<-Math.PI)d+=6.283;
+  const na=cur+clamp(d,-5*dt,5*dt);s.vx=Math.cos(na)*GIGA_SP;s.vy=Math.sin(na)*GIGA_SP;
+  if(Math.random()<dt*30)B.parts.push({x:s.x+(Math.random()-.5)*6,y:s.y+(Math.random()-.5)*6,vx:-s.vx*0.1,vy:-s.vy*0.1,life:0.4,age:0,c:Math.random()<.5?'#7dff6a':'#d8ffb0'})}}
+function drawGiga(c,s,now){const X=Math.round(s.x),Y=Math.round(s.y),p=1+Math.sin(now/90)*0.15;
+  c.fillStyle='#2e8a1f70';pxEl(c,X,Y,9*p,9*p,1);c.fillStyle='#5fd24a';pxEl(c,X,Y,6*p,6*p,1);c.fillStyle='#c8ffa0';pxEl(c,X,Y,3,3,1);c.fillStyle='#ffffff';c.fillRect(X-1,Y-2,2,2);
+  for(let i=0;i<4;i++){const a=now/150+i*1.57;c.fillStyle='#b8ff90';c.fillRect(Math.round(X+Math.cos(a)*10),Math.round(Y+Math.sin(a)*10),2,2)}}
+// drained energy: green orbs float from the target back to the user on a curvy path
+function drainOrbs(T,A,n){if(!B||!T||!A)return;const now=performance.now();(B.dfx=B.dfx||[]);for(let i=0;i<n;i++)B.dfx.push({x0:T.x+(Math.random()-.5)*14,y0:T.y-14+(Math.random()-.5)*10,A,t0:now+i*70,dur:850,bend:(Math.random()-.5)*60})
+  if(B.dfx.length>30)B.dfx.splice(0,B.dfx.length-30)}
+function drawDrain(c,now){if(!B||!B.dfx||!B.dfx.length)return;B.dfx=B.dfx.filter(o=>now-o.t0<o.dur);
+  for(const o of B.dfx){const k=(now-o.t0)/o.dur;if(k<0)continue;const e=k*k*(3-2*k),tx=o.A.x,ty=o.A.y-14,dx=tx-o.x0,dy=ty-o.y0,L=Math.hypot(dx,dy)||1;
+    const x=o.x0+dx*e+(-dy/L)*o.bend*Math.sin(e*Math.PI),y=o.y0+dy*e+(dx/L)*o.bend*Math.sin(e*Math.PI)-Math.sin(e*Math.PI)*10;
+    c.fillStyle='#2e8a1f';c.fillRect(Math.round(x)-2,Math.round(y)-2,5,5);c.fillStyle='#7dff6a';c.fillRect(Math.round(x)-1,Math.round(y)-1,3,3);c.fillStyle='#ffffff';c.fillRect(Math.round(x),Math.round(y)-1,1,1)}}
+
+// hooks
+{const _sh=shotHit;shotHit=function(s,T){const r=_sh.apply(this,arguments);try{const mv=s&&MOVES[s.mid];if(mv&&T){
+  if(mv.t==='grass'&&(mv.p||0)>0&&!s.wv){rootBurst(T.x,T.y,mv.k==='big'||s.mid==='solarbeam'||s.mid==='rankennetz');
+    const h=ROOT_HOLD[s.mid];if(h&&T.ctrl!=='remote'&&!airBusy(T)){if(!(T.st.root>0)){T.rx=T.x;T.ry=T.y}T.st.root=Math.max(T.st.root||0,h)}}
+  if(mv.fx==='drain'){const A=s.side===B.me.side?B.me:B.foe;drainOrbs(T,A,s.mid==='gigadrain'?9:5)}}}catch(e){}return r}}
+{const _kt=kindsTick;kindsTick=function(dt){_kt(dt);try{gigaSteer(dt)}catch(e){}}}
+{const _da=drawArenaEv;drawArenaEv=function(c,now,top){const r=_da.apply(this,arguments);try{if(!top){drawRootHaz(c,now);drawRootFx(c,now)}else drawDrain(c,now)}catch(e){}return r}}
+
+// --- Wachstum ---
+{const _st=stats;stats=function(m){const r=_st(m);if(m&&m.gw){if(m._gwB&&m._gwB===B&&B)r.mhp=Math.round(r.mhp*(1+0.1*m.gw));else{delete m.gw;delete m._gwB;if(m.hp>r.mhp)m.hp=r.mhp}}return r}}
+{const _sm=selfMove;selfMove=function(F,mv){const r=_sm.apply(this,arguments);if(B&&mv===MOVES.growth){const m=act(F);if(m){if(m._gwB!==B){m.gw=0;m._gwB=B}
+  if(m.gw<3){const o=stats(m).mhp;m.gw++;const n=stats(m).mhp;if(F.ctrl!=='remote'){m.hp=Math.min(n,m.hp+(n-o));F.ap=Math.min(AP_MAX,(F.ap??AP_MAX)+10)}
+    rootBurst(F.x,F.y,1);say(`${SPECIES[m.s].n} wächst! (+10 % Größe, KP und AP)`)}else say(`${SPECIES[m.s].n} kann nicht weiter wachsen.`)}}return r}}
+
+// ===== Schlammbombe: on impact it bursts into 6 mud splatters that fly outward
+MOVES.schlammspritzer={n:'Schlammspritzer',t:'poison',p:16,k:'shot',fx:'psn',ch:.12,hidden:1};
+{const _ss=specialShot;specialShot=function(s,dt){const r=_ss.apply(this,arguments);
+  if(s.mid==='schlammbombe'&&s.k==='lob'&&s.dead&&!s.splat&&B&&B.state==='fight'){s.splat=1;let h=0;for(const ch of String(s.id))h=(h*31+ch.charCodeAt(0))|0;const a0=(Math.abs(h)%628)/100,x=s.x,y=s.y+2;
+    for(let i=0;i<6;i++){const a=a0+i*1.047;B.shots.push({id:s.id+'m'+i,side:s.side,att:s.att,mid:'schlammspritzer',x:x+Math.cos(a)*8,y:y+Math.sin(a)*5,vx:Math.cos(a)*165,vy:Math.sin(a)*120,age:0,life:0.42,r:3,p:MOVES.schlammspritzer.p,frag:1})}
+    for(let i=0;i<10;i++)B.parts.push({x:x+(Math.random()-.5)*10,y:y,vx:(Math.random()-.5)*90,vy:-30-Math.random()*50,life:0.5,age:0,c:Math.random()<.5?'#7a3d8a':'#5a4a28'})}
+  return r}}
+
+// ===== Wurzelfalle: the ground under the target cracks, then roots burst out and hold it tight
+MOVES.wurzelfalle={n:'Wurzelfalle',t:'grass',p:40,k:'rootrap',cd:4.5};
+{for(const sid in SPECIES){const sp=SPECIES[sid];if(sp.t!=='grass'||!Array.isArray(sp.ls)||sp.ls.some(x=>x[1]==='wurzelfalle'))continue;sp.ls.push([20,'wurzelfalle']);sp.ls.sort((a,b)=>a[0]-b[0])}}
+const RT_WARN=0.55,RT_HOLD=1.6,RT_R=22;
+{const _sp0=shotParams0;shotParams0=function(mid){const mv=MOVES[mid]||MOVES.bump;if(mv.k==='rootrap')return{k:'rootrap',nm:1,sp:1,r:RT_R,p:mv.p,n:1,life:RT_WARN+0.9};return _sp0(mid)}}
+NK.rootrap={tick(s,dt,T,alive){
+    if(!s.init){s.init=1;const A=sideF(s.side);if(T&&alive){s.tx=T.x;s.ty=T.y}else{s.tx=A?A.x+(A.face||1)*60:AW/2;s.ty=A?A.y:AH/2}s.tx=clamp(s.tx,24,AW-24);s.ty=clamp(s.ty,24,AH-16)}
+    if(!s.fired&&s.age>=RT_WARN){s.fired=1;rootBurst(s.tx,s.ty,1);B.shakeUntil=Math.max(B.shakeUntil||0,performance.now()+120);
+      if(alive&&Math.hypot(T.x-s.tx,(T.y-s.ty)*1.3)<RT_R+6&&!airBusy(T)){nkHit(s,T,T.x,T.y-12,{});if(T.ctrl!=='remote'){T.rx=T.x;T.ry=T.y;T.st.root=Math.max(T.st.root||0,RT_HOLD)}
+        say(`${SPECIES[act(T).s].n} hängt in der Wurzelfalle fest!`)}
+      hazPush({k:'roots',x:s.tx,y:s.ty,r:18,t0:performance.now(),until:performance.now()+5000,seed:Math.floor(Math.random()*1e6)})}
+    if(s.age>s.life)s.dead=1},
+  draw(c,s,col,now){if(s.tx==null)return;const k=s.age/RT_WARN;
+    if(!s.fired){// warning: cracks spread on the ground where the trap will spring
+      c.fillStyle='#3a2a1060';pxEl(c,s.tx,s.ty,RT_R*k,RT_R*0.45*k,1);
+      for(let i=0;i<6;i++){const a=i*1.047+0.3;let px=s.tx,py=s.ty;for(let j=1;j<=3;j++){const L=RT_R*Math.min(1,k)*j/3,nx=s.tx+Math.cos(a+(j%2?0.3:-0.3))*L,ny=s.ty+Math.sin(a)*L*0.45;mLine(c,px,py,nx,ny,'#2a1a08',1);px=nx;py=ny}}
+      if(Math.floor(now/120)%2){c.fillStyle='#6fc23a';c.fillRect(Math.round(s.tx)-1,Math.round(s.ty)-1,3,2)}}
+    else{// the held target: roots coil around it
+      const T=s.side===B.me.side?B.foe:B.me;if(T&&T.st&&T.st.root>0&&Math.hypot(T.x-s.tx,T.y-s.ty)<30)for(let i=0;i<5;i++){const a=i*1.257+now/900;drawTendril(c,T.x+Math.cos(a)*11,T.y+Math.sin(a)*4,a,20,0.5,i)}}}};
+{const _md=moveDesc;moveDesc=function(mid){const r=_md(mid);return MOVES[mid]&&MOVES[mid].k==='rootrap'?r.replace('Fernkampf','Bodenfalle am Ziel · hält 1,6 s fest'):r}}
 /* ===================== COURT: arena choice, spectating =====================
    Spectators render a running tournament duel purely from the two duelists' presence ("du": positions, HP, shots),
    which is broadcast to the whole room anyway — watching costs no extra bandwidth. Nothing is simulated or hit here. */
@@ -7709,6 +7795,8 @@ function qsOverviewEl(){const d=document.createElement('div');const{all,per}=qOv
   d.querySelector('#qreset').onclick=e=>{const b=e.currentTarget;if(!b.dataset.sure){b.dataset.sure=1;b.textContent='⚠ Wirklich alles löschen? Nochmal klicken';b.style.background='var(--red,#ff5a5a)';setTimeout(()=>{if(b.isConnected){delete b.dataset.sure;b.textContent='↺ Lernstand zurücksetzen';b.style.background=''}},4000);return}QSTAT={};try{localStorage.removeItem(QS_KEY)}catch(e){}renderTeam()};
   return d}
 {const _rt=renderTeam;renderTeam=function(){const r=_rt.apply(this,arguments);try{const el=$('#pane-team');if(el&&RUN&&!el.querySelector('.qstat'))el.appendChild(qsOverviewEl())}catch(e){console.warn(e)}return r}}
+// Box button in the top bar
+{const b=$('#hbox');if(b)b.addEventListener('click',e=>{e.currentTarget.blur();if(!RUN){toast('Noch kein Spiel gestartet.');return}openBoxWin()})}
 // v0.102.0 — Mitgegebene Items: Im Kampf kann nur das Item benutzt werden, das dem aktiven Monster mitgegeben wurde (max. 1 je Monster).
 const HOLDABLE=['potion','superp','revive','ether','great'];
 const HELD_NONE='Kein Item mitgegeben — im Beutel „Mitgeben“ (1 Item je Monster).';
@@ -7865,6 +7953,7 @@ function pvEngineLoop(mid,sid){const cv=MVP.querySelector('canvas');cv.width=AW;
   const r=el.getBoundingClientRect(),w=AW+12,h=PV_H+30;let x=r.right+8,y=r.top;if(x+w>innerWidth)x=Math.max(4,r.left-w-8);if(x<4)x=4;if(y+h>innerHeight)y=innerHeight-h-4;MVP.style.left=x+'px';MVP.style.top=Math.max(4,y)+'px';
   try{pvEngineLoop(mid,sid)}catch(e){console.warn(e);_ps.apply(this,arguments)}}}
 if(!KIND_TXT.vortex)KIND_TXT.vortex='Strudel — schlängelt sich vorwärts und zieht an';
+if(!KIND_TXT.rootrap)KIND_TXT.rootrap='Wurzelfalle — Wurzeln brechen unter dem Ziel hervor und halten es fest';
 /* ===================== LOOP ===================== */
 let last=performance.now(),slow=0;
 function frame(now){bakeTick();const dt=Math.max(0,Math.min(0.05,(now-last)/1000));last=now;T+=dt;
@@ -8379,9 +8468,9 @@ function epCenter(){const st=$('#stage'),r=st?st.getBoundingClientRect():{left:0
     bar.style.transition='none';bar.style.width=(old*100)+'%';void bar.offsetWidth;bar.style.transition='';
     if(ol!=null&&lv>ol){bar.style.width='100%';setTimeout(()=>{if(!bar.isConnected)return;bar.style.transition='none';bar.style.width='0%';void bar.offsetWidth;bar.style.transition='';bar.style.width=(now*100)+'%'},720)}else bar.style.width=(now*100)+'%'}catch(e){}return r}}
 /* Tastenkürzel sichtbar auf allen Knöpfen (nicht auf Touch-Geräten) + neue Kürzel für die Kopfleiste und Beutel/Info im Kampf.
-   Kopfleiste: L Lobby · K Team (Kader) · I Beutel (Inventar) · U Spieler · T Chat · P Monster-Dex · M Karte · V Vollbild · O Einstellungen
+   Kopfleiste: L Lobby · K Team (Kader) · I Beutel (Inventar) · X Box · U Spieler · T Chat · P Monster-Dex · M Karte · V Vollbild · O Einstellungen
    Kampf: Attacken/Sprint/Wechseln/Handschellen/Fliehen wie in den Einstellungen · B Beutel benutzen · I Attacken-Info · O Einstellungen */
-const TOP_KEYS=[['[data-t="lobby"]','l'],['[data-t="team"]','k'],['#hbag','i'],['[data-t="players"]','u'],['[data-t="chat"]','t'],['#hdex','p'],['#hmap','m'],['#hfs','v'],['#hset','o']];
+const TOP_KEYS=[['[data-t="lobby"]','l'],['[data-t="team"]','k'],['#hbag','i'],['#hbox','x'],['[data-t="players"]','u'],['[data-t="chat"]','t'],['#hdex','p'],['#hmap','m'],['#hfs','v'],['#hset','o']];
 (function(){const st=document.createElement('style');st.textContent=`.kb{display:inline-block;font-family:'Press Start 2P',monospace;font-size:7px;line-height:1;background:#0009;color:#ffcb3d;border:1px solid #ffcb3d66;padding:2px 3px 1px;margin-left:4px;vertical-align:middle;border-radius:2px;pointer-events:none;text-transform:uppercase;letter-spacing:0}
 #topbar button .kb{position:absolute;right:-2px;bottom:-3px;margin:0;font-size:6px;padding:1px 2px}#topbar button{position:relative}
 body.touch .kb{display:none!important}`;document.head.appendChild(st)})();

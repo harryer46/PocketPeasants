@@ -21,9 +21,12 @@ main{padding:14px;display:grid;grid-template-columns:repeat(auto-fill,minmax(340
 .law{color:#c9b8ff}.evo{color:var(--muted);font-size:17px;margin-top:4px}.dex{margin-top:6px;font-size:17px;color:#cfd3e0}
 details{margin-top:8px}summary{cursor:pointer;color:var(--accent)}ol{margin:6px 0 0;padding-left:22px}li{margin-bottom:6px}
 .a{color:#3ddc6b}.src{color:var(--muted);font-size:15px}.none{color:var(--muted);font-size:17px;margin-top:8px}
-section.book{grid-column:1/-1}h2{font:12px "Press Start 2P",monospace;color:var(--accent);margin:18px 0 6px}
+section.book{grid-column:1/-1}
+.tabs{display:flex;gap:6px}.tabs button{font:10px "Press Start 2P",monospace;background:#0b0d16;color:var(--muted);border:2px solid #000;padding:7px 9px;cursor:pointer;box-shadow:2px 2px 0 #000}.tabs button.on{background:var(--accent);color:#000}
+main.mv{display:block}table{width:100%;border-collapse:collapse;background:var(--panel);border:3px solid #000;box-shadow:3px 3px 0 #000}th,td{padding:5px 8px;border-bottom:2px solid #0b0d16;text-align:left;vertical-align:top}th{position:sticky;top:58px;background:#0f1322;font:9px "Press Start 2P",monospace;color:var(--accent);cursor:pointer;white-space:nowrap;z-index:2}th.s::after{content:' ▾'}td.num{text-align:right;white-space:nowrap}.ln{color:#cfd3e0}.ds{color:var(--muted);font-size:16px}.by{color:var(--muted);font-size:16px}.tm{font:8px "Press Start 2P",monospace;background:#3a3f5c;color:#fff;padding:2px 4px;border:2px solid #000}
+@media(max-width:760px){.hide-s{display:none}}h2{font:12px "Press Start 2P",monospace;color:var(--accent);margin:18px 0 6px}
 </style></head><body>
-<header><h1>MONSTER-ÜBERSICHT</h1>
+<header><h1 id="ttl">MONSTER-ÜBERSICHT</h1><div class="tabs"><button data-pg="mon" class="on">MONSTER</button><button data-pg="mv">ATTACKEN</button></div>
 <input id="q" placeholder="Suche: Name, §, Frage …" size="26">
 <select id="ty"><option value="">alle Typen</option></select>
 <select id="bk"><option value="">alle Gesetze</option><option>StGB</option><option>StPO</option><option>PolG</option><option>GG</option><option>OWiG</option><option value="-">ohne Paragraf</option></select>
@@ -36,7 +39,13 @@ const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',
 let D=null;
 function bookOf(l){const m=(l||'').match(/^(?:§|Art\.)\s*\d+[a-z]?\s+([A-Za-zÄÖÜäöü]+)/);return m?m[1]:''}
 function qList(qs){return`<ol>${qs.map(q=>`<li>${esc(q[0])}<br><span class="a">✓ ${esc(q[1])}</span>${q[2]?` <span class="src">${esc(q[2])}</span>`:''}</li>`).join('')}</ol>`}
-function render(){const q=document.getElementById('q').value.trim().toLowerCase(),ty=document.getElementById('ty').value,bk=document.getElementById('bk').value;
+let PG='mon',SORT=['t',1];
+function renderMv(){const q=document.getElementById('q').value.trim().toLowerCase(),ty=document.getElementById('ty').value;let L=D.mv.filter(m=>(!ty||m.t===ty)&&(!q||(m.n+' '+m.t+' '+m.kind+' '+m.line+' '+m.by.map(b=>b[0]).join(' ')).toLowerCase().includes(q)));
+  const [k,dir]=SORT;L=L.slice().sort((a,b)=>{const x=a[k],y=b[k];return (typeof x==='number'?x-y:String(x).localeCompare(String(y)))*dir||a.n.localeCompare(b.n)});
+  const th=(key,lab,cls)=>`<th data-k="${key}" class="${(SORT[0]===key?'s ':'')+(cls||'')}">${lab}</th>`;
+  document.getElementById('m').innerHTML=`<table><thead><tr>${th('n','ATTACKE')}${th('t','TYP')}${th('kind','ART','hide-s')}${th('p','STÄRKE')}${th('ap','AP')}${th('cd','ABKL.','hide-s')}<th class="hide-s">LERNEN</th></tr></thead><tbody>${L.map(m=>`<tr><td><b>${esc(m.n)}</b>${m.tm?' <span class="tm">TM</span>':''}<div class="ln">${esc(m.line)}</div><div class="ds">${esc(m.desc)}</div></td><td><span class="chip" style="background:${m.tc}">${esc(m.t.toUpperCase())}</span></td><td class="hide-s">${esc(m.kind)}</td><td class="num">${m.p||'–'}</td><td class="num">${m.ap}</td><td class="num hide-s">${m.cd}s</td><td class="by hide-s">${m.by.length?m.by.slice(0,8).map(b=>esc(b[0])+' (Lv '+b[1]+')').join(', ')+(m.by.length>8?` +${m.by.length-8}`:''):(m.tm?'nur per TM':'–')}</td></tr>`).join('')}</tbody></table>`;
+  document.getElementById('st').textContent=`${L.length} von ${D.mv.length} Attacken · Stand v${D.ver}`}
+function render(){if(PG==='mv')return renderMv();const q=document.getElementById('q').value.trim().toLowerCase(),ty=document.getElementById('ty').value,bk=document.getElementById('bk').value;
   let h='',n=0,nq=0;
   for(const s of D.sp){const b=bookOf(s.law);if(ty&&s.t!==ty)continue;if(bk&&(bk==='-'?b:b!==bk))continue;
     const hay=(s.n+' '+s.law+' '+s.t+' '+s.q.map(x=>x[0]+' '+x[1]).join(' ')).toLowerCase();if(q&&!hay.includes(q))continue;n++;nq+=s.q.length;
@@ -59,10 +68,11 @@ function zoom(id){const s=D.sp.find(x=>x.id===id);if(!s)return;const L=lineOf(s)
   const ims=[...z.querySelectorAll('figure img')];let left=ims.length;const fit=()=>{const ws=ims.map(i=>i.naturalWidth),hs=ims.map(i=>i.naturalHeight);
     const k=Math.max(2,Math.floor(Math.min((innerWidth*0.92-ims.length*40)/ws.reduce((a,b)=>a+b,0),(innerHeight*0.62)/Math.max(...hs))));ims.forEach(i=>{i.style.width=i.naturalWidth*k+'px';i.style.height=i.naturalHeight*k+'px'})};
   ims.forEach(i=>{if(i.complete)--left||fit();else i.onload=()=>--left||fit()});z.classList.add('on')}
-document.getElementById('m').addEventListener('click',e=>{const p=e.target.closest('.pic')||e.target.closest('.strip img');if(p)zoom(p.dataset.id)});
+document.getElementById('m').addEventListener('click',e=>{const h=e.target.closest('th[data-k]');if(h){const k=h.dataset.k;SORT=[k,SORT[0]===k?-SORT[1]:(k==='p'||k==='ap'||k==='cd'?-1:1)];renderMv();return}const p=e.target.closest('.pic')||e.target.closest('.strip img');if(p)zoom(p.dataset.id)});
 document.getElementById('zoom').addEventListener('click',()=>document.getElementById('zoom').classList.remove('on'));
 addEventListener('keydown',e=>{if(e.key==='Escape')document.getElementById('zoom').classList.remove('on')});
 function groupLines(){const seen=new Set(),out=[];for(const s of D.sp){if(seen.has(s.id))continue;for(const x of lineOf(s)){if(!seen.has(x.id)){seen.add(x.id);out.push(x)}}}D.sp=out}
 fetch('data.json').then(r=>r.json()).then(d=>{D=d;groupLines();const ts=[...new Set(d.sp.map(s=>s.t))].sort();const sel=document.getElementById('ty');for(const t of ts)sel.insertAdjacentHTML('beforeend',`<option>${esc(t)}</option>`);
+  document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{PG=b.dataset.pg;document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('on',x===b));const mv=PG==='mv';document.getElementById('m').className=mv?'mv':'';document.getElementById('bk').style.display=mv?'none':'';document.getElementById('ttl').textContent=mv?'ATTACKEN-ÜBERSICHT':'MONSTER-ÜBERSICHT';document.getElementById('q').placeholder=mv?'Suche: Attacke, Typ, Monster …':'Suche: Name, §, Frage …';if(location.hash!=='#'+PG)history.replaceState(null,'','#'+PG);render()});if(location.hash==='#mv')document.querySelector('[data-pg=mv]').click();
   for(const id of['q','ty','bk'])document.getElementById(id).addEventListener('input',render);render()}).catch(e=>{document.getElementById('m').textContent='Daten konnten nicht geladen werden.'});
 </script></body></html>

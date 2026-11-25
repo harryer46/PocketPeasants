@@ -464,7 +464,7 @@ function hfpolSpriteOld(){if(HFSPR0)return HFSPR0;const W=112,H=64,c=mk(W,H),x=c
 
 // ===== TMs: random regular attacks, type-bound (the monster's own type, Normal moves for everyone). From trainers and regional shop offers
 const TM_SHOP={vil:['normal','electric'],lah:['water','rock'],unt:['fire','rock'],dam:['grass','normal'],mos:['grass','flying'],mar:['water','flying']};
-function tmMoves(){return Object.keys(MOVES).filter(k=>{const v=MOVES[k];return v.k!=='self'&&(v.p||0)>=25&&TYPES[v.t]})}
+function tmMoves(){return Object.keys(MOVES).filter(k=>{const v=MOVES[k];return !v.hidden&&v.k!=='self'&&(v.p||0)>=25&&TYPES[v.t]})}
 function tmRandom(r,tier){const lo=[0,30,55,80][tier||1],hi=[0,60,85,130][tier||1];const c=tmMoves().filter(k=>MOVES[k].p>=lo&&MOVES[k].p<=hi);return c.length?c[Math.floor(r()*c.length)]:null}
 function tmGive(k){RUN.tm=RUN.tm||{};RUN.tm[k]=(RUN.tm[k]||0)+1;save()}
 function tmOK(m,k){const v=MOVES[k];return!!v&&!m.m.includes(k)&&(v.t===SPECIES[m.s].t||v.t==='normal')}

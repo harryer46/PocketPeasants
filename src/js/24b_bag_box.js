@@ -82,3 +82,5 @@ function qsOverviewEl(){const d=document.createElement('div');const{all,per}=qOv
   d.querySelector('#qreset').onclick=e=>{const b=e.currentTarget;if(!b.dataset.sure){b.dataset.sure=1;b.textContent='⚠ Wirklich alles löschen? Nochmal klicken';b.style.background='var(--red,#ff5a5a)';setTimeout(()=>{if(b.isConnected){delete b.dataset.sure;b.textContent='↺ Lernstand zurücksetzen';b.style.background=''}},4000);return}QSTAT={};try{localStorage.removeItem(QS_KEY)}catch(e){}renderTeam()};
   return d}
 {const _rt=renderTeam;renderTeam=function(){const r=_rt.apply(this,arguments);try{const el=$('#pane-team');if(el&&RUN&&!el.querySelector('.qstat'))el.appendChild(qsOverviewEl())}catch(e){console.warn(e)}return r}}
+// Box button in the top bar
+{const b=$('#hbox');if(b)b.addEventListener('click',e=>{e.currentTarget.blur();if(!RUN){toast('Noch kein Spiel gestartet.');return}openBoxWin()})}

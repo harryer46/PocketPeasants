@@ -16,7 +16,7 @@ const MOVES={
  staticnet:{n:'Static Net',t:'electric',p:35,k:'shot',fx:'stun'},boltstrike:{n:'Volt Lance',t:'electric',p:75,k:'beam'},stormcrack:{n:'Storm Crack',t:'electric',p:105,k:'air',fx:'stun'},
  rocktoss:{n:'Rock Toss',t:'rock',p:50,k:'arc'},gravel:{n:'Gravel Spray',t:'rock',p:55,k:'spread'},stoneskin:{n:'Stone Skin',t:'rock',p:0,k:'self',fx:'shield'},
  quakestomp:{n:'Quake Stomp',t:'rock',p:70,k:'melee',fx:'slow'},boulder:{n:'Boulder Hurl',t:'rock',p:80,k:'lob',fx:'knock'},meteor:{n:'Meteor Drop',t:'rock',p:110,k:'air',fx:'knock'},
- gust:{n:'Breeze Blast',t:'flying',p:40,k:'shot'},featherdarts:{n:'Feather Darts',t:'flying',p:45,k:'rapid',rn:6},galecutter:{n:'Gale Cutter',t:'flying',p:60,k:'shot',fx:'knock'},
+ gust:{n:'Breeze Blast',t:'flying',p:40,k:'shot'},featherdarts:{n:'Feather Darts',t:'flying',p:45,k:'rapid',rn:14},galecutter:{n:'Gale Cutter',t:'flying',p:60,k:'shot',fx:'knock'},
  updraft:{n:'Updraft',t:'flying',p:0,k:'self',fx:'haste'},divebomb:{n:'Dive Bomb',t:'flying',p:70,k:'melee'},skyslam:{n:'Sky Slam',t:'flying',p:90,k:'melee',fx:'knock'}
 };
 const FX_TXT={buff:'stärkt dich',debuff:'schwächt das Ziel',selfbuff:'kann dich stärken',sleep:'schläfert ein',conf:'verwirrt',burn:'verbrennt',slow:'verlangsamt',stun:'betäubt',drain:'heilt dich',heal:'heilt 30%',shield:'halbiert Schaden',haste:'beschleunigt',knock:'Rückstoß'};
@@ -87,7 +87,7 @@ Object.assign(MOVES,{
  flamethrower:{n:'Flammenwurf',t:'fire',p:90,k:'breath',fx:'burn'},fireblast:{n:'Feuersturm',t:'fire',p:110,k:'air',fx:'burn'},sunnyday:{n:'Sonnentag',t:'fire',p:0,k:'self',fx:'buff',bs:{a:1,s:1}},
  hydropump:{n:'Hydropumpe',t:'water',p:110,k:'beam',fx:'knock'},surf:{n:'Surfer',t:'water',p:90,k:'spread'},bubblebeam:{n:'Blubbstrahl',t:'water',p:65,k:'beam',fx:'debuff',bs:{s:-1},stc:0.4},
  aurorabeam:{n:'Aurorastrahl',t:'water',p:65,k:'beam',fx:'debuff',bs:{a:-1},stc:0.4},withdraw:{n:'Panzerschutz',t:'water',p:0,k:'self',fx:'buff',bs:{d:1}},
- razorleaf:{n:'Rasierblatt',t:'grass',p:55,k:'rapid',rn:8},solarbeam:{n:'Solarstrahl',t:'grass',p:120,k:'beam',cd:5},gigadrain:{n:'Gigasauger',t:'grass',p:60,k:'shot',fx:'drain'},
+ razorleaf:{n:'Rasierblatt',t:'grass',p:55,k:'rapid',rn:20},solarbeam:{n:'Solarstrahl',t:'grass',p:120,k:'beam',cd:5},gigadrain:{n:'Gigasauger',t:'grass',p:60,k:'shot',fx:'drain'},
  sleeppowder:{n:'Schlafpuder',t:'grass',p:10,k:'spread',fx:'sleep'},growth:{n:'Wachstum',t:'grass',p:0,k:'self',fx:'buff',bs:{a:1}},stringshot:{n:'Fadenschuss',t:'grass',p:10,k:'spread',fx:'debuff',bs:{s:-2}},
  thunderbolt:{n:'Donnerblitz',t:'electric',p:90,k:'beam',fx:'stun'},thunder:{n:'Donner',t:'electric',p:110,k:'air',fx:'stun'},thunderwave:{n:'Donnerwelle',t:'electric',p:10,k:'shot',fx:'stun'},
  charge:{n:'Ladevorgang',t:'electric',p:0,k:'self',fx:'buff',bs:{a:1,d:1}},

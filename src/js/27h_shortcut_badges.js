@@ -1,7 +1,7 @@
 /* Tastenkürzel sichtbar auf allen Knöpfen (nicht auf Touch-Geräten) + neue Kürzel für die Kopfleiste und Beutel/Info im Kampf.
-   Kopfleiste: L Lobby · K Team (Kader) · I Beutel (Inventar) · U Spieler · T Chat · P Monster-Dex · M Karte · V Vollbild · O Einstellungen
+   Kopfleiste: L Lobby · K Team (Kader) · I Beutel (Inventar) · X Box · U Spieler · T Chat · P Monster-Dex · M Karte · V Vollbild · O Einstellungen
    Kampf: Attacken/Sprint/Wechseln/Handschellen/Fliehen wie in den Einstellungen · B Beutel benutzen · I Attacken-Info · O Einstellungen */
-const TOP_KEYS=[['[data-t="lobby"]','l'],['[data-t="team"]','k'],['#hbag','i'],['[data-t="players"]','u'],['[data-t="chat"]','t'],['#hdex','p'],['#hmap','m'],['#hfs','v'],['#hset','o']];
+const TOP_KEYS=[['[data-t="lobby"]','l'],['[data-t="team"]','k'],['#hbag','i'],['#hbox','x'],['[data-t="players"]','u'],['[data-t="chat"]','t'],['#hdex','p'],['#hmap','m'],['#hfs','v'],['#hset','o']];
 (function(){const st=document.createElement('style');st.textContent=`.kb{display:inline-block;font-family:'Press Start 2P',monospace;font-size:7px;line-height:1;background:#0009;color:#ffcb3d;border:1px solid #ffcb3d66;padding:2px 3px 1px;margin-left:4px;vertical-align:middle;border-radius:2px;pointer-events:none;text-transform:uppercase;letter-spacing:0}
 #topbar button .kb{position:absolute;right:-2px;bottom:-3px;margin:0;font-size:6px;padding:1px 2px}#topbar button{position:relative}
 body.touch .kb{display:none!important}`;document.head.appendChild(st)})();
