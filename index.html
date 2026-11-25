@@ -499,7 +499,7 @@ const TURN_CONFIG = {
 
 /* ===================== VERSION ===================== */
 // bump with every release (MAJOR.MINOR.PATCH). Players can only share lobbies/duels with the same version.
-const VERSION='0.115.4';
+const VERSION='0.115.5';
 // access password: changes every Monday 00:00 (local time). Only the hashes are stored here (one per week from PW_W0);
 // the password itself also keys the P2P room, so clients without the current one cannot connect. The plain list lives offline.
 const PW_KEY='knast_pw',PW_W0=Date.UTC(2026,10,16),PW_WH=[3239358969,4147130060,2718625794,3495965776,1618054998,4028240764,3044289461,1207180107,4242648729,353861226,2672313786,600614717,407529519,2270237167,3207113251,1525244515,870970040,319006638,3847934078,944313310,2153038366,3950944742,2733334548,4002544240,2736690288,645338530,1884329338,4268902487,2483246182,3828308270,2182929315,3152020422,1311886195,3461060417,3407580460,2544240283,1017220184,1277844250,4288535363,461397931,853058720,2065298771,219387161,3215594984,1108518435,2250837220,3171827014,1035538317,1537090466,1716649754,2848461661,1266925999,653943759,1307642793,3319845926,629631788,4180878311,1080582197,4114403588,2360104553,3811730973,3337788437,695971354,2424950805],MAX_ROOM=10,MAX_LOBBY=5;
@@ -2195,6 +2195,7 @@ function begin(){
 
 /* ===================== CONTROL SETTINGS ===================== */
 const CHANGELOG=[
+["0.115.5","2026-11-25","Fragen-Kontext: Rund 1.000 Fragen nennen ihre Rechtsnorm nicht selbst. Überall, wo eine Frage erscheint (Schlaf, Beförderung, Prüfungen, PÄD, HfPol …), steht jetzt eine Zeile „📘 Thema: …“ mit dem Paragrafen bzw. Gesetz – außer die Frage oder die Überschrift nennt ihn schon."],
 ["0.115.4","2026-11-25","Zoll: pro falscher Antwort 100 $ Zollgebühr oder ein Zollmonster mehr im Kampf. Fragen lassen sich beim Zoll (und in allen Kurzprüfungen) schon während der Frage melden; Meldungen beim Zoll werden jetzt der richtigen Frage zugeordnet."],
 ["0.115.3","2026-11-25","Zoll-Monster neu: Zollschatten → Zollstreifer (Lv 20) → Zollmeister (Lv 38), Typ Unlicht, mit eigenen Sprites. Zollbeamte kämpfen je nach Level mit der passenden Stufe."],
 ["0.115.2","2026-11-25","Neue Fragen: je 6 zu § 221, § 323c, § 145, § 314, § 324 StGB, § 29 BtMG (inkl. KCanG seit 1.4.2024) und für den Zollwächter (§§ 10, 14 ZollVG). Entwicklungen mit nur wenigen eigenen Fragen bekommen zusätzlich die Fragen ihrer Grundform. Monster-Übersicht zeigt jetzt auch die 61 Fallfragen und die StVO-Fragen."],
@@ -8746,6 +8747,25 @@ function stockNext(k,tm){const e=((RUN.stock||{})[stockKey()]||{})[tm?'tm:'+k:k]
     tag.style.cssText='display:block;color:'+(n?'#9aa1bd':'#ef4444');tag.textContent=n?`Lager ${n}/${mx}`:`ausverkauft · Nachschub in ${stockNext(k)} min`;b.insertAdjacentElement('afterend',tag);
     if(!n){b.disabled=true;b.classList.add('ghost')}if(row)row.style.flexWrap='wrap'});
   document.querySelectorAll('#mbox [data-btm]').forEach(b=>{const k=b.dataset.btm,n=stockOf(k,1);if(!n){b.disabled=true;b.classList.add('ghost');const tag=document.createElement('span');tag.className='small';tag.style.color='#ef4444';tag.textContent=`ausverkauft · ${stockNext(k,1)} min`;b.insertAdjacentElement('afterend',tag)}})}catch(e){console.warn(e)}return r}}
+// ===== question context: many questions do not name the norm they are about ("Für wie lange darf … höchstens …?").
+// Wherever a question is shown, a small "📘 Thema" line names its norm (the monster's paragraph, or the law book for
+// general questions) – unless the question itself or the box around it already names it.
+const Q_NORM_RE=/§|Art\.|Artikel|\b[A-ZÄÖÜ][A-Za-zÄÖÜäöü]{1,9}(?:G|O|VO|V)\b|StGB|StPO|PolG|\bGG\b|Grundgesetz|OWiG|BtMG|StVO|StVG|ZollVG|\bAO\b|KCanG|BGB|VwVfG|LVwVG|Polizeigesetz|Strafprozess|Strafgesetz|VersG|AufenthG|PassG|PAuswG|WaffG/;
+const Q_BOOK_NAME={StGB:'Strafgesetzbuch (StGB)',StPO:'Strafprozessordnung (StPO)',PolG:'Polizeigesetz Baden-Württemberg (PolG)',GG:'Grundgesetz (GG)',OWiG:'Ordnungswidrigkeitengesetz (OWiG)',StVO:'Straßenverkehrs-Ordnung (StVO)',BtMG:'Betäubungsmittelgesetz (BtMG)'};
+let QCTX=null;
+function qCtxMap(){if(QCTX)return QCTX;QCTX=new Map();
+  for(const b in (typeof VAULT_BOOK!=='undefined'?VAULT_BOOK:{}))for(const q of VAULT_BOOK[b])if(!Q_NORM_RE.test(q[0]))QCTX.set(q[0],{t:Q_BOOK_NAME[b]||b,k:b});
+  for(const s in QZ){const sp=SPECIES[s];if(!sp||!sp.law)continue;const L=sp.law.replace(/ PolG\b/,' PolG BW');for(const q of QZ[s])if(!Q_NORM_RE.test(q[0])&&!QCTX.has(q[0]))QCTX.set(q[0],{t:L,k:sp.law.split(' · ')[0]})}
+  if(typeof STVO_QZ!=='undefined')for(const q of STVO_QZ)if(!Q_NORM_RE.test(q[0]))QCTX.set(q[0],{t:Q_BOOK_NAME.StVO,k:'StVO'});
+  return QCTX}
+function qCtxScan(root){const M=qCtxMap();const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);const hits=[];let n;
+  while((n=w.nextNode())){const t=n.nodeValue.trim();if(t.length<12)continue;const c=M.get(t);if(c)hits.push([n,c])}
+  for(const[n,c]of hits){const box=n.parentElement;if(!box||box.querySelector(':scope > .qctx'))continue;
+    const hd=(box.closest('.sdlg,#sleepq,#qqbox')||box).textContent;if(c.k.length<6?new RegExp('\\b'+c.k+'\\b').test(hd):hd.includes(c.k))continue;   // the header already names it
+    const d=document.createElement('div');d.className='qctx';d.textContent='📘 Thema: '+c.t;box.insertBefore(d,n)}}
+{let pend=0;const run=()=>{pend=0;for(const sel of['#cquiz','#study','#mbox','#sleepq'])for(const el of document.querySelectorAll(sel))try{qCtxScan(el)}catch(e){}};
+ const mo=new MutationObserver(()=>{if(!pend){pend=1;requestAnimationFrame(run)}});mo.observe(document.body,{childList:true,subtree:true})}
+(function(){const st=document.createElement('style');st.textContent=`.qctx{font-family:VT323,monospace;font-size:15px;color:#9aa1bd;margin:2px 0 3px;line-height:1.05}#sleepq .qctx{font-size:13px;color:#b8bdd6}`;document.head.appendChild(st)})();
 /* ===================== BOOT ===================== */
 applyControls();
 G=loadSave();
