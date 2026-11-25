@@ -501,7 +501,7 @@ const TURN_CONFIG = {
 
 /* ===================== VERSION ===================== */
 // bump with every release (MAJOR.MINOR.PATCH). Players can only share lobbies/duels with the same version.
-const VERSION='0.120.0';
+const VERSION='0.120.1';
 // access password: changes every Monday 00:00 (local time). Only the hashes are stored here (one per week from PW_W0);
 // the password itself also keys the P2P room, so clients without the current one cannot connect. The plain list lives offline.
 const PW_KEY='knast_pw',PW_W0=Date.UTC(2026,10,16),PW_WH=[3239358969,4147130060,2718625794,3495965776,1618054998,4028240764,3044289461,1207180107,4242648729,353861226,2672313786,600614717,407529519,2270237167,3207113251,1525244515,870970040,319006638,3847934078,944313310,2153038366,3950944742,2733334548,4002544240,2736690288,645338530,1884329338,4268902487,2483246182,3828308270,2182929315,3152020422,1311886195,3461060417,3407580460,2544240283,1017220184,1277844250,4288535363,461397931,853058720,2065298771,219387161,3215594984,1108518435,2250837220,3171827014,1035538317,1537090466,1716649754,2848461661,1266925999,653943759,1307642793,3319845926,629631788,4180878311,1080582197,4114403588,2360104553,3811730973,3337788437,695971354,2424950805],MAX_ROOM=10,MAX_LOBBY=5;
@@ -2210,6 +2210,7 @@ function begin(){
 
 /* ===================== CONTROL SETTINGS ===================== */
 const CHANGELOG=[
+["0.120.1","25.11.2026","Koop-Einsatz: Die Zwischenprüfung legt nur noch einer ab – reihum für die ganze Streife (3 Fragen zum Schwerpunkt der Höhle). Weniger als 2 richtig → ein zusätzlicher Strafkampf vor dem nächsten Raum. Der Angriffsbonus/-malus entfällt."],
 ["0.120.0","25.11.2026","Koop-Einsatz: Jede Höhle hat einen Gesetzesschwerpunkt (StGB, StPO, PolG oder GG) – alle Gegner stammen aus diesem Gesetz. Zwischen den Räumen gibt es eine Zwischenprüfung mit 3 Fragen dazu: 3 richtig → Angriff ↑ im nächsten Raum, 0–1 richtig → Angriff ↓. Weiter geht es erst, wenn alle fertig sind. Unterwegs gibt es keine Heilung mehr."],
 ["0.119.0","25.11.2026","Koop-Einsatz (Prototyp): In jeder Stadt steht ein Polizeiführer. Er eröffnet eine Streife für bis zu 4 Spieler (mit ihrem aktiven Kader) und führt sie in eine Höhle mit 5 Räumen: wilde Monster, Bandenmitglieder und ein Bandenboss. Nur dort gibt es Koop-Kämpfe – in einer größeren Arena, gegen Gegner, die mit jedem Mitspieler stärker werden. Festnehmen darf, wer den letzten Treffer landet; Geld gibt es nur von der Bande."],
 ["0.118.1","25.11.2026","Netzwerk: Cloudflare-TURN als schneller Relay-Server mit Standort in deiner Nähe (für Spieler ohne Direktverbindung, z. B. in Schul- oder Firmennetzen). Metered bleibt als Reserve."],
@@ -9254,7 +9255,7 @@ function coLobbies(town){return others().filter(p=>{const c=p.presence.cl;return
 function coopChief(t){if(!RUN||B||COOP)return;if(teamDown())return;
   const L=coLobbies(t.town);P.lock=true;
   openModal(`<h3>🚔 KOOP-EINSATZ</h3><p><b>${esc(t.n)}</b>: „In der Höhle bei ${esc(t.tn)} hat sich eine Bande verschanzt – ihr Revier ist das <b>${COOP_LAWN[t.law]}</b>. Allein schafft das keiner – bildet eine Streife (bis ${COOP_MAX} Leute), ich führe euch hin.“</p>
-   <p class="small">5 Räume: wilde Monster, Bandenmitglieder und der Bandenboss – alle aus dem ${esc(t.law)}. Zwischen den Räumen gibt es eine Prüfung im ${esc(t.law)}. Es gibt <b>keine Heilung</b> unterwegs. Die Gegner sind stärker, je mehr ihr seid. Fangen darf, wer den letzten Treffer landet. Geld gibt es nur von der Bande.</p>
+   <p class="small">5 Räume: wilde Monster, Bandenmitglieder und der Bandenboss – alle aus dem ${esc(t.law)}. Zwischen den Räumen muss einer von euch (reihum) eine Prüfung im ${esc(t.law)} ablegen – fällt er durch, wartet ein Strafkampf. Es gibt <b>keine Heilung</b> unterwegs. Die Gegner sind stärker, je mehr ihr seid. Fangen darf, wer den letzten Treffer landet. Geld gibt es nur von der Bande.</p>
    ${L.length?`<p><b>Offene Streifen:</b></p>${L.map(p=>{const c=p.presence.cl;const n=1+((c.mem||[]).length);return`<button class="btn" style="width:100%;margin:3px 0" data-cj="${esc(p.peer)}" ${n>=COOP_MAX?'disabled':''}>Beitreten: ${esc(cleanName(p.presence.n))} (${n}/${COOP_MAX})</button>`}).join('')}`:'<p class="small">Gerade ist keine Streife offen.</p>'}
    <div class="acts"><button class="btn ghost" id="mno">ZURÜCK</button><button class="btn" id="cnew">NEUE STREIFE GRÜNDEN</button></div>`);
   $('#mno').onclick=()=>{closeModal();P.lock=false};
@@ -9301,31 +9302,48 @@ function coHostGo(){if(!CLOB||!CLOB.host)return;const J=coJoiners();const mem=[c
 function coopStart(plan,hostPeer){COOP={id:plan.id,plan,hostPeer,host:hostPeer===coMe(),idx:0,started:-1,seen:Date.now(),seen0:Date.now(),td:-1,tk:{},ls:{}};P.lock=true;held.length=0;
   sysChat(`🚔 Koop-Einsatz gestartet: Höhle bei ${plan.tn} (${plan.mem.length} ${plan.mem.length===1?'Spieler':'Spieler'})`);coCave()}
 function coSq(){return RUN.team.map(m=>Math.round(100*m.hp/Math.max(1,stats(m).mhp)))}
-function coPubCave(go){if(!COOP)return;const o={r:COOP.id,i:COOP.idx,sq:coSq(),td:COOP.td==null?-1:COOP.td,tk:COOP.tk?COOP.tk[COOP.idx]:null};if(COOP.host&&go!=null)o.go=go;else if(COOP.host&&COOP.go!=null)o.go=COOP.go;pres({co:o})}
-const CO_ICON={wild:'🐾',trainer:'🦹',boss:'👑'};
+function coPubCave(go){if(!COOP)return;const o={r:COOP.id,i:COOP.idx,sq:coSq(),td:COOP.td==null?-1:COOP.td,tk:COOP.tk?COOP.tk[COOP.idx]:null};if(COOP.host){o.rooms=COOP.plan.rooms;o.ts=COOP.ts&&COOP.ts.i===COOP.idx?{i:COOP.ts.i,ex:COOP.ts.ex,ok:COOP.ts.ok}:null}if(COOP.host&&go!=null)o.go=go;else if(COOP.host&&COOP.go!=null)o.go=COOP.go;pres({co:o})}
+const CO_ICON={wild:'🐾',trainer:'🦹',boss:'👑',extra:'⚠️'};
 function coCave(){if(!COOP)return;if(COOP_IV)clearInterval(COOP_IV);if(!B)arenaScale(1);coPubCave();
-  const draw=()=>{if(!COOP||B||COOP.testing){return}
-    // guests: follow the host into the next room, notice a vanished host
-    if(!COOP.host){const h=findPeer(COOP.hostPeer),c=h&&h.presence.co;if(c&&c.r===COOP.id)COOP.seen=Date.now();else if(Date.now()-COOP.seen>COOP_TIMEOUT){coopEnd('Der Streifenführer hat den Einsatz verlassen.');return}
-      if(c&&c.r===COOP.id&&c.go===COOP.idx&&COOP.started!==COOP.idx){coopRoom(COOP.idx);return}}
-    const P_=COOP.plan,rows=P_.rooms.map((r,i)=>`<div style="padding:3px 6px;margin:2px 0;border-radius:6px;background:${i===COOP.idx?'#ffcb3d30':'#ffffff0c'}">${i<COOP.idx?'✅':i===COOP.idx?'▶':'🔒'} ${CO_ICON[r[0]]} ${i<=COOP.idx?`<b>${esc(r[3])}</b> <span class="small">· ${i===COOP.idx||i<COOP.idx?esc(SPECIES[r[1]].n)+' ':''}Lv ${r[2]}</span>`:'<span class="small">unbekannt</span>'}</div>`).join('');
-    const needT=COOP.idx>0;let waitT=0;COOP.ls=COOP.ls||{};
-    const team=P_.mem.map(id=>{let sq=null,td=-1,tk=null;if(id===coMe()){sq=coSq();td=COOP.td==null?-1:COOP.td;tk=COOP.tk&&COOP.tk[COOP.idx]}else{const p=findPeer(id),c=p&&p.presence.co;if(c&&c.r===COOP.id){sq=c.sq;td=c.td;tk=c.tk;COOP.ls[id]=Date.now()}}
-      const gone=id!==coMe()&&Date.now()-(COOP.ls[id]||COOP.seen0||Date.now())>COOP_TIMEOUT;const ok=!needT||td===COOP.idx||gone;if(!ok)waitT++;
-      return`<div class="small">${id===COOP.hostPeer?'⭐ ':''}<b>${esc(coName(id))}</b> ${sq?sq.map(v=>`<span style="color:${v<=0?'#8a8ea6':v<35?'#ef4444':v<70?'#ffcb3d':'#3ddc6b'}">■</span>`).join(''):'<i>offline?</i>'}${needT?(gone?' · <i>weg</i>':ok?` · 📝 ${tk!=null?tk+'/3':'✓'}`:' · 📝 <i>prüft noch …</i>'):''}</div>`}).join('');
-    const html=`<h3>🕳 HÖHLE BEI ${esc(P_.tn.toUpperCase())}</h3><p class="small">Schwerpunkt: <b>${esc(COOP_LAWN[P_.law]||P_.law)}</b></p><p class="small">${esc(P_.chief)}: „${COOP.idx===0?'Leise rein, zusammenbleiben. Ich bleibe am Eingang.':COOP.idx===4?'Da hinten sitzt der Boss. Jetzt alles geben!':'Gut gemacht. Weiter!'}“</p>
-      <div style="text-align:left">${rows}</div><div style="text-align:left;margin-top:6px">${team}</div>
-      <p class="small">${COOP.host?'Du führst die Streife – du entscheidest, wann es weitergeht.':'Warte, bis der Streifenführer den nächsten Raum betritt …'} Unterwegs gibt es keine Heilung – wer keine Monster mehr hat, schaut nur noch zu.</p>
-      <div class="acts"><button class="btn ghost" id="cabort">EINSATZ ABBRECHEN</button>${COOP.host?`<button class="btn" id="cnext" ${waitT?'disabled':''}>${waitT?'⏳ WARTE AUF PRÜFUNG':'▶ RAUM BETRETEN'}</button>`:''}</div>`;
+  const draw=()=>{if(!COOP||B||COOP.testing){return}COOP.ls=COOP.ls||{};
+    const hc=COOP.host?null:(()=>{const h=findPeer(COOP.hostPeer);return h&&h.presence.co})();
+    // guests: adopt the host's room list (extra fights) and exam state, follow into the next room, notice a vanished host
+    if(!COOP.host){if(hc&&hc.r===COOP.id)COOP.seen=Date.now();else if(Date.now()-COOP.seen>COOP_TIMEOUT){coopEnd('Der Streifenführer hat den Einsatz verlassen.');return}
+      if(hc&&hc.r===COOP.id){if(Array.isArray(hc.rooms)&&hc.rooms.length>=COOP.plan.rooms.length)COOP.plan.rooms=hc.rooms.filter(r=>Array.isArray(r)&&SPECIES[r[1]]);if(hc.ts&&hc.ts.i===COOP.idx)COOP.ts=hc.ts;
+        if(hc.go===COOP.idx&&COOP.started!==COOP.idx&&(!COOP.ts||COOP.ts.i!==COOP.idx||COOP.ts.ok!=null)){coopRoom(COOP.idx);return}}}
+    else coHostExam();
+    // the examinee takes the test
+    const ts=COOP.ts&&COOP.ts.i===COOP.idx?COOP.ts:null;
+    if(ts&&ts.ex===coMe()&&ts.ok==null&&COOP.td!==COOP.idx){coTest();return}
+    const P_=COOP.plan,rows=P_.rooms.map((r,i)=>`<div style="padding:3px 6px;margin:2px 0;border-radius:6px;background:${i===COOP.idx?'#ffcb3d30':r[0]==='extra'?'#ef444420':'#ffffff0c'}">${i<COOP.idx?'✅':i===COOP.idx?'▶':'🔒'} ${CO_ICON[r[0]]} ${i<=COOP.idx||r[0]==='extra'?`<b>${esc(r[3])}</b> <span class="small">· ${i<=COOP.idx?esc(SPECIES[r[1]].n)+' ':''}Lv ${r[2]}</span>`:'<span class="small">unbekannt</span>'}</div>`).join('');
+    const team=P_.mem.map(id=>{let sq=null;if(id===coMe())sq=coSq();else{const p=findPeer(id),c=p&&p.presence.co;if(c&&c.r===COOP.id){sq=c.sq;COOP.ls[id]=Date.now()}}
+      return`<div class="small">${id===COOP.hostPeer?'⭐ ':''}<b>${esc(coName(id))}</b> ${sq?sq.map(v=>`<span style="color:${v<=0?'#8a8ea6':v<35?'#ef4444':v<70?'#ffcb3d':'#3ddc6b'}">■</span>`).join(''):'<i>offline?</i>'}</div>`}).join('');
+    const exLine=ts?(ts.ok==null?`📝 <b>${esc(coName(ts.ex))}</b> legt gerade die Zwischenprüfung ab …`:ts.ok>=2?`📝 ${esc(coName(ts.ex))} hat die Prüfung bestanden (${ts.ok}/3).`:`📝 ${esc(coName(ts.ex))} ist durchgefallen (${ts.ok}/3) – <b style="color:#ef4444">Strafkampf!</b>`):'';
+    const wait=!!(ts&&ts.ok==null);
+    const html=`<h3>🕳 HÖHLE BEI ${esc(P_.tn.toUpperCase())}</h3><p class="small">Schwerpunkt: <b>${esc(COOP_LAWN[P_.law]||P_.law)}</b></p><p class="small">${esc(P_.chief)}: „${COOP.idx===0?'Leise rein, zusammenbleiben. Ich bleibe am Eingang.':P_.rooms[COOP.idx][0]==='boss'?'Da hinten sitzt der Boss. Jetzt alles geben!':P_.rooms[COOP.idx][0]==='extra'?'Das war nichts. Die Bande hat euch gehört – macht euch bereit!':'Gut gemacht. Weiter!'}“</p>
+      <div style="text-align:left">${rows}</div><div style="text-align:left;margin-top:6px">${team}</div>${exLine?`<p class="small" style="text-align:left">${exLine}</p>`:''}
+      <p class="small">${COOP.host?'Du führst die Streife – du entscheidest, wann es weitergeht.':'Warte, bis der Streifenführer den nächsten Raum betritt …'} Zwischen den Räumen prüft der Polizeiführer reihum einen von euch – fällt er durch, wartet ein Strafkampf. Unterwegs gibt es keine Heilung.</p>
+      <div class="acts"><button class="btn ghost" id="cabort">EINSATZ ABBRECHEN</button>${COOP.host?`<button class="btn" id="cnext" ${wait?'disabled':''}>${wait?'⏳ WARTE AUF PRÜFUNG':'▶ RAUM BETRETEN'}</button>`:''}</div>`;
     if($('#mbox').dataset.co!==html||!$('#modal').classList.contains('on')){openModal(html);$('#mbox').dataset.co=html;
-      $('#cabort').onclick=()=>coopEnd('Du hast den Einsatz abgebrochen.');if($('#cnext')&&!waitT)$('#cnext').onclick=()=>{COOP.go=COOP.idx;coPubCave(COOP.idx);setTimeout(()=>{if(COOP&&!B)coopRoom(COOP.idx)},120)}}};
+      $('#cabort').onclick=()=>coopEnd('Du hast den Einsatz abgebrochen.');if($('#cnext')&&!wait)$('#cnext').onclick=()=>{COOP.go=COOP.idx;coPubCave(COOP.idx);setTimeout(()=>{if(COOP&&!B)coopRoom(COOP.idx)},120)}}};
   draw();COOP_IV=setInterval(()=>{coPubCave();draw()},500)}
+// host: picks the examinee (in turn, skipping players who are gone), reads the result, adds a penalty fight after a fail
+function coHostExam(){const i=COOP.idx;if(!COOP.needT||COOP.needT!==i){return}
+  const alive=id=>id===coMe()||Date.now()-(COOP.ls[id]||COOP.seen0||Date.now())<COOP_TIMEOUT;
+  let ts=COOP.ts&&COOP.ts.i===i?COOP.ts:null;
+  if(!ts){const M=COOP.plan.mem;COOP.exN=(COOP.exN||0);let ex=coMe();for(let k=0;k<M.length;k++){const id=M[(COOP.exN+k)%M.length];if(alive(id)){ex=id;COOP.exN+=k+1;break}}ts=COOP.ts={i,ex,ok:null,t0:Date.now()}}
+  if(ts.ok!=null)return;
+  if(ts.ex===coMe()){if(COOP.td===i)ts.ok=COOP.tk[i]}
+  else{const p=findPeer(ts.ex),c=p&&p.presence.co;if(c&&c.r===COOP.id&&c.td===i&&c.tk!=null)ts.ok=+c.tk;else if(!alive(ts.ex)){COOP.ts=null;return}}
+  if(ts.ok!=null){COOP.needT=null;if(ts.ok<2){const nx=COOP.plan.rooms[i],r=mulberry32((Date.now()*7)>>>0),pool=lawSpecies(COOP.plan.law).filter(s=>SPECIES[s]);const sp=pool.length?pool[Math.floor(r()*pool.length)]:nx[1];
+      COOP.plan.rooms.splice(i,0,['extra',sp,nx[2],'Strafkampf: '+COOP_GANG[Math.floor(r()*COOP_GANG.length)]+'s Bande']);sysChat(`📝 ${coName(ts.ex)} ist durchgefallen – Strafkampf!`)}
+    else sysChat(`📝 ${coName(ts.ex)} hat die Zwischenprüfung bestanden.`);coPubCave()}}
 function coopEnd(msg){if(COOP_IV){clearInterval(COOP_IV);COOP_IV=null}const was=COOP;COOP=null;pres({co:null,cb:null});if(B&&B.mode==='coop')closeBattle();arenaScale(1);
   try{closeModal()}catch(e){}P.lock=false;held.length=0;if(msg){toast(msg);sysChat('🚔 '+msg)}save();if(was&&!RUN.team.some(m=>m.hp>0))teamDown()}
 
 // ---- Gegner: stärker mit jedem Mitspieler ----
 function coFoe(room,n){const[k,s,l]=room;const mon=newMon(s,l);const b=battler(mon);
-  const hm=(1+0.75*(n-1))*(k==='boss'?3:k==='trainer'?1.5:1.25),am=(1+0.1*(n-1))*(k==='boss'?1.2:k==='trainer'?1.08:1);
+  const hm=(1+0.75*(n-1))*(k==='boss'?3:k==='trainer'||k==='extra'?1.5:1.25),am=(1+0.1*(n-1))*(k==='boss'?1.2:k==='trainer'?1.08:1);
   b.mhp=b.hp=Math.round(b.mhp*hm);b.atk=Math.round(b.atk*am);b.def=Math.round(b.def*(k==='boss'?1.15:1));if(k==='boss')b.gw=3;return b}
 function coSlotX(i,n){return Math.round(ACX+(i-(n-1)/2)*Math.min(70,ARX*1.4/Math.max(1,n)))}
 function coopRoom(i){if(!COOP||B)return;const P_=COOP.plan,room=P_.rooms[i],n=P_.mem.length;COOP.started=i;if(COOP_IV){clearInterval(COOP_IV);COOP_IV=null}closeModal();
@@ -9335,8 +9353,7 @@ function coopRoom(i){if(!COOP||B)return;const P_=COOP.plan,room=P_.rooms[i],n=P_
   newBattle({mode:'coop',id:COOP.id+':'+i,zone:'coopcave',oppName:room[3],me,foe,state:'count',cntEnd:performance.now()+2600,allies:[],
     co:{i,room,n,last:null,F:{},seen:new Set(),seenT:{},fq:[],q:0,pubT:0,tgt:null,tgtT:0,fin:false,t0:performance.now()}});
   {const b=act(B.foe);if(b.gw)b._gwB=B}
-  {const tk=COOP.tk&&COOP.tk[i];B.co.buff=tk==null?null:tk>=3?{a:1}:tk<=1?{a:-1}:null;if(B.co.buff&&!B.me.out){const bf=B.co.buff;setTimeout(()=>{if(B&&B.mode==='coop'&&B.co.i===i){applyStages(B.me,bf);say(bf.a>0?'📝 Bestnote: Angriff ↑':'📝 Prüfung verhauen: Angriff ↓')}},3200)}}
-  say(room[0]==='boss'?`👑 ${room[3]} schickt ${SPECIES[room[1]].n} (Lv ${room[2]})!`:room[0]==='trainer'?`🦹 ${room[3]} schickt ${SPECIES[room[1]].n} (Lv ${room[2]})!`:`🐾 Ein wildes ${SPECIES[room[1]].n} (Lv ${room[2]}) greift an!`);
+  say(room[0]==='boss'?`👑 ${room[3]} schickt ${SPECIES[room[1]].n} (Lv ${room[2]})!`:room[0]==='trainer'||room[0]==='extra'?`${CO_ICON[room[0]]} ${room[3]} schickt ${SPECIES[room[1]].n} (Lv ${room[2]})!`:`🐾 Ein wildes ${SPECIES[room[1]].n} (Lv ${room[2]}) greift an!`);
   if(n>1)say(`Koop: ${n} Polizisten gegen einen Gegner`);G.dex[room[1]]=G.dex[room[1]]||0;
   coPubCave();coPub(true)}
 
@@ -9384,7 +9401,6 @@ aiUpdate=coSwap(aiUpdate);aiAimTick=coSwap(aiAimTick);
 {const _d=dealDamage;dealDamage=function(T){if(B&&B.mode==='coop'&&T&&T.ctrl==='remote')return;return _d.apply(this,arguments)}}
 {const _dh=drainHeal;drainHeal=function(s){if(B&&B.mode==='coop'&&s&&s.rm)return;return _dh.apply(this,arguments)}}
 {const _sb=startBreak;startBreak=function(F){if(B&&B.mode==='coop'){if(F===B.me){const n=nextAlive(F);if(n>=0){doSwitch(F,n);F.faint=0;F.inv=1.2;say(`Los, ${SPECIES[act(F).s].n}!`)}}return}return _sb.apply(this,arguments)}}
-{const _ds=doSwitch;doSwitch=function(F){const r=_ds.apply(this,arguments);if(B&&B.mode==='coop'&&F===B.me&&B.co&&B.co.buff)applyStages(F,B.co.buff);return r}}
 {const _ce=checkEnd;checkEnd=function(){if(B&&B.mode==='coop'){coCheck();return}return _ce.apply(this,arguments)}}
 {const _bu=bUpdate;bUpdate=function(dt){_bu.apply(this,arguments);if(B&&B.mode==='coop'&&COOP&&!B.closing){coSync(dt);coPub(false)}}}
 {const _uc=updateCam;updateCam=function(now){if(B&&B.mode==='coop'){const z=Math.min(AW/(2*ARX+70),(AH-58)/(2*ARY+75));return B.cam={x:ACX,y:ACY-20,z,t:now,init:1}}return _uc.apply(this,arguments)}}
@@ -9413,15 +9429,15 @@ async function coFinish(win,last){const C=B.co;if(C.fin)return;C.fin=true;B.stat
   save();await finSleep(2200);if(B!==myB)return;closeBattle();
   if(!COOP)return;if(!win){coopEnd('Einsatz gescheitert – die Streife musste sich zurückziehen.');return}
   if(C.i>=COOP.plan.rooms.length-1){coopEnd(`Einsatz erfolgreich! Die Bande in der Höhle bei ${COOP.plan.tn} ist zerschlagen.`);return}
-  COOP.idx=C.i+1;COOP.go=null;COOP.seen0=Date.now();setTimeout(()=>{if(COOP&&!B)coTest()},400)}
+  COOP.idx=C.i+1;COOP.go=null;COOP.seen0=Date.now();COOP.ts=null;if(COOP.host&&room[0]!=='extra')COOP.needT=COOP.idx;setTimeout(()=>{if(COOP&&!B)coCave()},400)}
 // ---- Prüfung zwischen den Räumen: 3 Fragen zum Schwerpunkt der Höhle ----
 function coQs(law){const av=new Set(),qs=[];const pool=lawQuestions(law).map(x=>x.q);
   for(let k=0;k<20&&qs.length<3;k++){const q=(k%2===0&&typeof caseFor==='function')?caseFor(law,av):pool.length?qFreshPick(pool,av):null;if(!q||av.has(q[0]))continue;av.add(q[0]);qs.push(qReal(q))}return qs}
 function coTest(){if(!COOP)return;const i=COOP.idx,law=COOP.plan.law,qs=coQs(law);if(COOP_IV){clearInterval(COOP_IV);COOP_IV=null}
-  if(!qs.length){COOP.td=i;COOP.tk[i]=null;coCave();return}
+  if(!qs.length){COOP.td=i;COOP.tk[i]=3;coPubCave();coCave();return}
   COOP.testing=true;coPubCave();
-  quickQuiz(`📝 ZWISCHENPRÜFUNG · ${law}`,`Vor Raum ${i+1}: 3 richtig → Angriff ↑ im nächsten Raum · 0–1 richtig → Angriff ↓`,qs,ok=>{if(!COOP)return;COOP.testing=false;COOP.td=i;COOP.tk[i]=ok;
-    toast(ok>=3?'📝 Bestnote! Deine Monster greifen im nächsten Raum stärker an.':ok<=1?'📝 Durchgefallen – deine Monster greifen im nächsten Raum schwächer an.':'📝 Bestanden.');try{closeModal()}catch(e){}coCave()})}
+  quickQuiz(`📝 ZWISCHENPRÜFUNG · ${law}`,`Du prüfst für die ganze Streife: mindestens 2 von 3 richtig – sonst Strafkampf!`,qs,ok=>{if(!COOP)return;COOP.testing=false;COOP.td=i;COOP.tk[i]=ok;
+    toast(ok>=2?'📝 Bestanden – weiter geht’s!':'📝 Durchgefallen – die Streife muss in einen Strafkampf!');coPubCave();try{closeModal()}catch(e){}coCave()})}
 
 // ---- Darstellung: Höhlenboden + Namensschilder der Mitspieler ----
 let CO_BG=null;
