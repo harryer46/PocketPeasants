@@ -1,4 +1,5 @@
 const CHANGELOG=[
+["0.114.1","2026-11-25","Echte Sprites für alle 18 Eis- und Gift-Monster (Aussetzling-, Kaltherz-, Notruffrost-, Dealermolch-, Giftmischer- und Kloakenkröten-Linie) statt der Platzhalter – im Pixelraster der übrigen Monster, breite Endformen flacher statt kleiner."],
 ["0.114.0","2026-11-25","Zollkontrollen: An jeder dritten Route (17 Stück) steht ein Zollbeamter am Straßenrand. Wer vorbeikommt, beantwortet pro Monster im Team eine Frage zu dessen Paragrafen. Alles richtig → weiter. Ein Fehler → 100 $ Zollgeld oder Kampf gegen 1–3 Zollwächter (neues Zoll-Monster, § 10 ZollVG, eigenes Pixel-Artwork). Jede Kontrolle einmal pro Spiel."],
 ["0.113.2","2026-11-25","PÄD: Heilen ohne Frage (➕ 10 %) entfernt. HfPol/IAuT: Lernen ohne Frage (📖 +5 %) entfernt – Fortschritt gibt es nur noch über Fragen (bzw. 💊 $100 / Nachhilfe). Performance: Namensschilder messen Text nicht mehr jedes Bild neu, Touch-Erkennung gecacht."],
 ["0.113.1","2026-11-25","Doppelt oder nichts verschärft: richtig → Preisgeld und EP verdoppelt; falsch → Preisgeld und alle EP aus dem Kampf sind weg (Level-Aufstiege und Entwicklungen aus dem Kampf werden zurückgenommen)."],

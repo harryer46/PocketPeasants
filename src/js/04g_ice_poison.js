@@ -59,4 +59,6 @@ function ipArt(id,t,stage,col){const rnd=mulberry32(hashStr(id)),H=[40,50,62][st
   if(t==='ice'){const fx=cx,fy=cy+ry*0.4;x.fillStyle=hi;x.fillRect(fx-4,fy,9,1);x.fillRect(fx,fy-4,1,9);x.fillRect(fx-2,fy-2,1,1);x.fillRect(fx+2,fy+2,1,1);x.fillRect(fx+2,fy-2,1,1);x.fillRect(fx-2,fy+2,1,1)}
   else{for(let i=0;i<3+stage*2;i++){const a=rnd()*6.28,r=rnd()*0.7,sx=cx+Math.cos(a)*rx*r,sy=cy+Math.sin(a)*ry*r*0.8;x.fillStyle=acc;x.fillRect(sx,sy,2,2)}for(let i=0;i<2+stage;i++){const dx=cx-rx*0.5+rnd()*rx,dy=cy+ry-1;x.fillStyle='#14141f';x.fillRect(dx-1,dy,3,4+i%2*2);x.fillStyle=acc;x.fillRect(dx,dy,1,3+i%2*2)}}
   return c}
-{for(const id in ICE_POISON){const D=ICE_POISON[id];[id,...D.evo.map(e=>e[1])].forEach((sid,st)=>{const url=ipArt(sid,D.t,st,D.c).toDataURL();SPECIES[sid].img=1;ALT_IMG[sid]=url;const im=new Image();im.onload=()=>{for(const key in SPR)if(key.split(':')[0]===sid)delete SPR[key]};im.src=url;ALT_IM[sid]=im})}}
+//@inc js/data/ip_img.js
+const IP_FACE_R=new Set([]);  // the delivered artwork looks to the front or to the left
+{for(const id in ICE_POISON){const D=ICE_POISON[id];[id,...D.evo.map(e=>e[1])].forEach((sid,st)=>{const url=IP_IMG[sid]||ipArt(sid,D.t,st,D.c).toDataURL();if(IP_IMG[sid]){delete SPECIES[sid].ph;if(IP_FACE_R.has(sid))SPECIES[sid].faceR=1;else delete SPECIES[sid].faceR}SPECIES[sid].img=1;ALT_IMG[sid]=url;const im=new Image();im.onload=()=>{for(const key in SPR)if(key.split(':')[0]===sid)delete SPR[key]};im.src=url;ALT_IM[sid]=im})}}
