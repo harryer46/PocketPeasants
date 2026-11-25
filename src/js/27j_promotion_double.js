@@ -29,7 +29,7 @@ const _evoPlay=evoPlay;evoPlay=function(ev){const m=ev.m;if(!m||!RUN||!RUN.team.
 // ---- Doppelt oder nichts ----
 {const _gx=gainXp;gainXp=function(m,amt){try{if(B&&B.mode==='trainer'&&m&&!gainXp._don){(B.trXp=B.trXp||[]).push([m,amt]);B.trSnap=B.trSnap||new Map();if(!B.trSnap.has(m))B.trSnap.set(m,{l:m.l,xp:m.xp,s:m.s,m:m.m.slice(),prom:m.prom||0})}}catch(e){}return _gx.apply(this,arguments)}}
 {const _tw=trainerWin;trainerWin=async function(){const t=B&&B.trainer,xs=(B&&B.trXp||[]).slice(),snap=B&&B.trSnap?new Map(B.trSnap):new Map(),m0=RUN?RUN.money:0;const r=await _tw.apply(this,arguments);
-  try{const prize=Math.max(0,(RUN?RUN.money:0)-m0);if(t&&!t.pplk&&!t.gift&&!t.toll&&!t.boss&&prize>0&&SET.don!=='0'){let n=0;
+  try{const prize=Math.max(0,(RUN?RUN.money:0)-m0);if(t&&!t.pplk&&!t.gift&&!t.toll&&!t.zoll&&!t.boss&&prize>0&&SET.don!=='0'){let n=0;
     const w=()=>{if(++n>200)return;if(B||TALK||$('#modal').classList.contains('on')||$('#evoov')||EVO_Q.length){setTimeout(w,400);return}offerDouble(t,prize,xs,snap)};setTimeout(w,900)}}catch(e){console.warn(e)}return r}}
 function offerDouble(t,prize,xs,snap){const ep=xs.reduce((a,x)=>a+x[1],0);
   openModal(`<h3>🎲 DOPPELT ODER NICHTS?</h3><p>Du hast <b>${esc(t.n)}</b> besiegt: <b>$${prize}</b>${ep?` und <b>${Math.round(ep*((RUN.cfg&&RUN.cfg.xp)||1))} EP</b>`:''}.</p><p class="small">Eine Fallfrage: <span style="color:#3ddc6b">richtig → Preisgeld${ep?' und EP':''} noch einmal</span> · <span style="color:#ef4444">falsch → Preisgeld${ep?' und alle EP aus diesem Kampf':''} sind weg</span>${ep?' (auch Level-Aufstiege und Entwicklungen daraus)':''}.</p>

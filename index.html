@@ -485,7 +485,7 @@ const TURN_CONFIG = {
 
 /* ===================== VERSION ===================== */
 // bump with every release (MAJOR.MINOR.PATCH). Players can only share lobbies/duels with the same version.
-const VERSION='0.113.2';
+const VERSION='0.114.0';
 // access password: changes every Monday 00:00 (local time). Only the hashes are stored here (one per week from PW_W0);
 // the password itself also keys the P2P room, so clients without the current one cannot connect. The plain list lives offline.
 const PW_KEY='knast_pw',PW_W0=Date.UTC(2026,10,16),PW_WH=[3239358969,4147130060,2718625794,3495965776,1618054998,4028240764,3044289461,1207180107,4242648729,353861226,2672313786,600614717,407529519,2270237167,3207113251,1525244515,870970040,319006638,3847934078,944313310,2153038366,3950944742,2733334548,4002544240,2736690288,645338530,1884329338,4268902487,2483246182,3828308270,2182929315,3152020422,1311886195,3461060417,3407580460,2544240283,1017220184,1277844250,4288535363,461397931,853058720,2065298771,219387161,3215594984,1108518435,2250837220,3171827014,1035538317,1537090466,1716649754,2848461661,1266925999,653943759,1307642793,3319845926,629631788,4180878311,1080582197,4114403588,2360104553,3811730973,3337788437,695971354,2424950805],MAX_ROOM=10,MAX_LOBBY=5;
@@ -2178,6 +2178,7 @@ function begin(){
 
 /* ===================== CONTROL SETTINGS ===================== */
 const CHANGELOG=[
+["0.114.0","2026-11-25","Zollkontrollen: An jeder dritten Route (17 Stück) steht ein Zollbeamter am Straßenrand. Wer vorbeikommt, beantwortet pro Monster im Team eine Frage zu dessen Paragrafen. Alles richtig → weiter. Ein Fehler → 100 $ Zollgeld oder Kampf gegen 1–3 Zollwächter (neues Zoll-Monster, § 10 ZollVG, eigenes Pixel-Artwork). Jede Kontrolle einmal pro Spiel."],
 ["0.113.2","2026-11-25","PÄD: Heilen ohne Frage (➕ 10 %) entfernt. HfPol/IAuT: Lernen ohne Frage (📖 +5 %) entfernt – Fortschritt gibt es nur noch über Fragen (bzw. 💊 $100 / Nachhilfe). Performance: Namensschilder messen Text nicht mehr jedes Bild neu, Touch-Erkennung gecacht."],
 ["0.113.1","2026-11-25","Doppelt oder nichts verschärft: richtig → Preisgeld und EP verdoppelt; falsch → Preisgeld und alle EP aus dem Kampf sind weg (Level-Aufstiege und Entwicklungen aus dem Kampf werden zurückgenommen)."],
 ["0.113.0","2026-11-25","Neue Sprites für alle 10 GG-Linien (je 3 Stufen, im Pixelraster der übrigen Monster). Art. 1 heißt jetzt Würdelöwe → Würdekönigslöwe → Würdeimperator (Normal). Art. 8: Demofalke → Kundgebfalke → Massendemofalke (Flug). Art. 19: Kettensprenger → Rechtswegkoloss → Rechtsweg-Titan (Kampf). Art. 20 bekommt die Endstufe Verfassungsadler. Art. 1, 19 und 20 entwickeln sich jetzt mit Lv 20 und 38. Attacken an die neuen Typen angepasst."],
@@ -8591,7 +8592,7 @@ const _evoPlay=evoPlay;evoPlay=function(ev){const m=ev.m;if(!m||!RUN||!RUN.team.
 // ---- Doppelt oder nichts ----
 {const _gx=gainXp;gainXp=function(m,amt){try{if(B&&B.mode==='trainer'&&m&&!gainXp._don){(B.trXp=B.trXp||[]).push([m,amt]);B.trSnap=B.trSnap||new Map();if(!B.trSnap.has(m))B.trSnap.set(m,{l:m.l,xp:m.xp,s:m.s,m:m.m.slice(),prom:m.prom||0})}}catch(e){}return _gx.apply(this,arguments)}}
 {const _tw=trainerWin;trainerWin=async function(){const t=B&&B.trainer,xs=(B&&B.trXp||[]).slice(),snap=B&&B.trSnap?new Map(B.trSnap):new Map(),m0=RUN?RUN.money:0;const r=await _tw.apply(this,arguments);
-  try{const prize=Math.max(0,(RUN?RUN.money:0)-m0);if(t&&!t.pplk&&!t.gift&&!t.toll&&!t.boss&&prize>0&&SET.don!=='0'){let n=0;
+  try{const prize=Math.max(0,(RUN?RUN.money:0)-m0);if(t&&!t.pplk&&!t.gift&&!t.toll&&!t.zoll&&!t.boss&&prize>0&&SET.don!=='0'){let n=0;
     const w=()=>{if(++n>200)return;if(B||TALK||$('#modal').classList.contains('on')||$('#evoov')||EVO_Q.length){setTimeout(w,400);return}offerDouble(t,prize,xs,snap)};setTimeout(w,900)}}catch(e){console.warn(e)}return r}}
 function offerDouble(t,prize,xs,snap){const ep=xs.reduce((a,x)=>a+x[1],0);
   openModal(`<h3>🎲 DOPPELT ODER NICHTS?</h3><p>Du hast <b>${esc(t.n)}</b> besiegt: <b>$${prize}</b>${ep?` und <b>${Math.round(ep*((RUN.cfg&&RUN.cfg.xp)||1))} EP</b>`:''}.</p><p class="small">Eine Fallfrage: <span style="color:#3ddc6b">richtig → Preisgeld${ep?' und EP':''} noch einmal</span> · <span style="color:#ef4444">falsch → Preisgeld${ep?' und alle EP aus diesem Kampf':''} sind weg</span>${ep?' (auch Level-Aufstiege und Entwicklungen daraus)':''}.</p>
@@ -8613,6 +8614,40 @@ Object.assign(DEX_TXT,{
  rechtswegtitan:'Rechtsweg-Titan: Die Endstufe der Linie. Wo keine andere Zuständigkeit begründet ist, steht der ordentliche Rechtsweg offen. Entwickelt aus Rechtswegkoloss.',
  grosserbundesadler:'Großer Bundesadler ist die nächste Stufe von Bundesadler. Wacht über Gewaltenteilung, Demokratie und Sozialstaat.',
  verfassungsadler:'Verfassungsadler: Die Endstufe der Linie. Schwert und Waage in den Krallen – Widerstand nur, wenn keine andere Abhilfe möglich ist. Entwickelt aus Großer Bundesadler.'});
+// ===== ZOLL: customs officers on the routes =====
+// Every few routes a customs officer stands beside the road. Whoever passes gets checked: one question per monster in the team
+// (about that monster's paragraph). Any mistake → pay 100 $ customs duty or fight the officer's own customs monsters.
+const ZOLL_FEE=100,ZOLL_EVERY=3;
+// the customs monster: a stern bulldog in customs uniform with a stamp (own pixel artwork, 1 sprite px = 1 game px)
+SPECIES.zollwaechter={n:'Zollwächter §10 ZollVG',base:'Zollwächter',sfx:'§10 ZollVG',law:'§ 10 ZollVG · Zollkontrolle',t:'normal',img:1,c:['#26406e','#d6a062','#141414'],
+  b:[88,90,98,66],xp:120,an:'tank',ls:[[1,'bump'],[1,'harden'],[5,'leer'],[9,'headrush'],[13,'biss'],[17,'bodyslam'],[22,'karateschlag'],[26,'zahlungsaufforderung'],[30,'crunch'],[35,'strafschaerfung'],[40,'gegenschlag']]};
+ALT_IDS.add('zollwaechter');RAR.zollwaechter='unique';
+{const url='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACEAAAAtCAYAAAAgJgIUAAADXUlEQVR4Xs2YQWgTQRSGNyEULUWhplA0BpUgoQQPRYqkEkGhhx4kFARPRaoU6Ukw4MHioYgg9CwipdQeRBRC6EEk6MGiQYr0ICEGCVpqlWJCQQlVRKi82cw4Oztv3iYbJR8s2dl9u++fN29m3iZgEYTDkR3KxkStthGgng+ZDEBAb2KMeoeZYnaHEoKq5AL6o3Gtk6XJB+L60PSgUchWMWuMiFYEFYGVm6sup36EBI1dIHj9cp0y8YQvESdORj05oUATc3eygj576ske68Xod3Ef2iZ7RhGX4hLhdUqC43bhSEyvAigOTB5zmXy+95Zd001X4zrRKtd//3Q/OnGUXZuat1zrhkvEnYaxyumzo45LXysll02xtNaSbjIS4Hzf8FXr8bUzwoEqiOVdQ8C5289ZW7anEFMU8gGLgh3G9+wAAbooACCgr+8gOzDAh5p75DrBHVarn9iBCeBwu2YghwN4d/+i4537UxPW1PSClc8/FdcrKw+bGgIZ7RRdnh0R45wYOCTswTkQGzqv7SgIAfJ3b2jvw3AC6jR1DId6UyfACyOXZ1Az3TpB5gTAI8DhPZZRr5mEqLhEgNJUJk92mDuFX52oZtBGAhOC5QLHdB/yAauwjPUfzGeepFRSAnJE1ORsSQRfUKDGzF2oO3Jj7+Fh69vHVyICarsZAQC6i6oFLheiS1TOl+V5dirvIVcaW/6vzTeONJGHRixWcl0JhSkARe7mepmdpxd6xEtylu1MBWzqNSj59LXGpeTfd8wVImI3ZZHACltZhIpaSf0oxJiJLcLN+BG7M4MDUWu1ZNvMFeosIkGqssbgTgH5nIILkPG0WGFUl7o8C1j84Px+kdu+RLSLjhDhaSs3AV9j1NcXZ3wsKc4XZ7fEue9IeBHwKLRmPcv0OvoC7VwkzGZmiC0axaxYnjnyuvCvCcn7gwyskKnMLdR/JceLnRqziaUNlXYkbOyH7+HwQnqjZqnlAbThOoxEAIsEQA0JrI49YedHMbZimvaOIFY7UAJaAXzxQ35eNLDvUL9/F/HNECtoAGNRA4C4rv7j2o7zEJvum5xz/ktiUnSECLLG7O7ehXZke9v+C4CyoYbE094RjydcQsplw/8/TeJJRDsd6uj8nOBTFIsuH2tsjQGofAD+AFulePa4N3+zAAAAAElFTkSuQmCC';ALT_IMG.zollwaechter=url;const im=new Image();im.onload=()=>{for(const k in SPR)if(k.split(':')[0]==='zollwaechter')delete SPR[k]};im.src=url;ALT_IM.zollwaechter=im}
+if(typeof DEX_TXT!=='undefined')DEX_TXT.zollwaechter='Der Diensthund des Zolls. Riecht Schmuggelware durch drei Lagen Alufolie und stempelt alles ab, was die Grenze passiert.';
+// officers: one beside the road on every third route
+{const NM=['Zollinspektorin Weber','Zollsekretär Brandt','Zollinspektor Kaya','Zollobersekretärin Lenz','Zollamtfrau Petrov','Zollinspektor Haas','Zolloberinspektorin Roth','Zollsekretärin Yilmaz'];
+ const LINES=['Zollkontrolle! Haben Sie etwas zu verzollen?','Moment mal – Zollkontrolle. Ihre Monster bitte!','Guten Tag, Zoll. Wir machen eine kurze Kontrolle.'];
+ const bad=new Set([3,7,12,13,22,23,27,36]);const busy=(x,y)=>TRAINERS.some(t=>Math.abs(t.x-x)+Math.abs(t.y-y)<7)||(typeof tollSpots==='function'&&tollSpots().some(t=>Math.abs(t.x-x)+Math.abs(t.y-y)<7))||TOWNS.some(t=>Math.abs(t.x-x)<14&&Math.abs(t.y-y)<10);
+ let k=0;for(let r=1;r<=ROUTE_N;r++){if(r%ZOLL_EVERY!==1)continue;const R=[];for(let i=0;i<MW*MH;i++)if(ROUTE_OF[i]===r&&MAP[i]===4)R.push(i);if(R.length<8)continue;R.sort((a,b)=>PROG[a]-PROG[b]);
+   let spot=null;for(let off=0;off<R.length/3&&!spot;off++){for(const sgn of[1,-1]){const i=R[Math.floor(R.length/2)+sgn*off];if(i==null)continue;const x=i%MW,y=(i-x)/MW;
+     for(const[dx,dy,d]of[[1,0,'left'],[-1,0,'right'],[0,1,'up'],[0,-1,'down']]){const sx=x+dx,sy=y+dy,j=sy*MW+sx,t=MAP[j];
+       if(sx<1||sy<1||sx>=MW-1||sy>=MH-1||MAP[j]===4||!WALK0.has(t)||ENC.has(t)||bad.has(t)||busy(sx,sy))continue;spot={x:sx,y:sy,d};break}if(spot)break}}
+   if(!spot)continue;TRAINERS.push({id:'zoll_r'+r,zoll:1,route:r,n:NM[k%NM.length],x:spot.x,y:spot.y,d:spot.d,c:'#1f5f4f',team:[],reward:1,line:LINES[k%LINES.length],after:'Alles verzollt. Gute Weiterfahrt!'});k++}}
+function zollQs(){const seen=new Set();return RUN.team.map(m=>{const sp=SPECIES[m.s],pool=QZ[m.s]||(sp.evoOf&&QZ[sp.evoOf]);let q;
+  if(pool&&pool.length)q=qReal(qFreshPick(pool,seen));else{const law=lawOf(m.s)||'StGB',L=lawQuestions(law);q=L.length?L[Math.floor(qRnd()*L.length)].q:qReal(VAULT_BOOK.StGB[0])}
+  seen.add(q[0]);const c=q.slice();c[0]=`🐾 ${sp.base||sp.n}: ${q[0]}`;return c})}
+function zollSpotted(t){if(P.lock||B||!RUN||RUN.phase!=='train')return;P.lock=true;held.length=0;t.alert=performance.now();
+  setTimeout(()=>talk(t.n,`${t.line} Pro Monster eine Frage zu seinem Paragrafen – alles richtig, und Sie dürfen weiter.`,()=>{P.lock=false;if(!B&&RUN&&RUN.phase==='train')zollQuiz(t)}),700)}
+function zollQuiz(t){const qs=zollQs();if(!qs.length){zollPass(t,'Ohne Monster? Na dann, gute Fahrt.');return}
+  quickQuiz('🛃 ZOLLKONTROLLE',`${esc(t.n)} · eine Frage pro Monster`,qs,ok=>{const err=qs.length-ok;if(!err){zollPass(t,'Alles korrekt angemeldet. Gute Weiterfahrt!');return}zollFail(t,err)})}
+function zollPass(t,why){RUN.beat=RUN.beat||{};RUN.beat[t.id]=1;save();talk(t.n,why)}
+function zollFail(t,err){const money=RUN.money||0,can=money>=ZOLL_FEE;
+  openModal(`<h3>🛃 BEANSTANDUNG</h3><p>${esc(t.n)}: „${err} ${err>1?'Fehler':'Fehler'} bei der Anmeldung. Entweder Sie zahlen <b>${ZOLL_FEE} $ Zollgeld</b> – oder meine Zollwächter nehmen sich Ihrer Monster an.“</p>
+   <div class="acts"><button class="btn ${can?'':'ghost'}" id="zpay" ${can?'':'disabled'}>💰 ${ZOLL_FEE} $ ZOLLGELD${can?'':' (du hast '+money+' $)'}</button><button class="btn red" id="zfight">⚔ KÄMPFEN <span class="small">(${Math.min(3,err)} Zollwächter)</span></button></div>`);
+  $('#zpay').onclick=()=>{if((RUN.money||0)<ZOLL_FEE)return;RUN.money-=ZOLL_FEE;updateHud();closeModal();zollPass(t,`${ZOLL_FEE} $ Zollgeld erhalten. Quittung kommt per Post. Gute Weiterfahrt!`)};
+  $('#zfight').onclick=()=>{closeModal();const top=Math.max(...RUN.team.map(m=>m.l)),n=Math.min(3,err);
+    startTrainer({id:t.id,zoll:1,n:t.n,c:t.c,x:t.x,y:t.y,d:t.d,fixed:true,team:Array.from({length:n},(_,i)=>['zollwaechter',clamp(top+(i===n-1?1:0),3,70)]),reward:1,line:'Dann eben auf die harte Tour!',after:t.after})}}
+{const _sp=spotted;spotted=function(t){if(t&&t.zoll)return zollSpotted(t);return _sp.apply(this,arguments)}}
 /* ===================== BOOT ===================== */
 applyControls();
 G=loadSave();
