@@ -82,7 +82,7 @@ function pvMakeB(mid,sid,ctx){const atk=newMon(sid&&SPECIES[sid]?sid:'harrymon',
   if(k==='rockthrow')ob('pr','boulder',A.x+20,A.y+10);
   if(k==='wildfire'){ob('p1','bush',A.x+30,A.y-18);ob('p2','bush',ACX,A.y+16);ob('p3','bush',T.x-26,T.y-14)}
   if(k==='bigwave'){ob('p1','bush',ACX,A.y-10);ob('p2','crate',ACX+10,A.y+20)}
-  if(k==='shortcircuit'||(mv.t==='electric'&&k!=='self')){PB.haz.push({k:'puddle',x:ACX,y:A.y+8,r:18,t0:now,until:now+9e9,seed:1},{k:'puddle',x:T.x,y:T.y+2,r:18,t0:now,until:now+9e9,seed:2})}
+  if(k==='shortcircuit'){PB.haz.push({k:'puddle',x:ACX,y:A.y+8,r:18,t0:now,until:now+9e9,seed:1},{k:'puddle',x:T.x,y:T.y+2,r:18,t0:now,until:now+9e9,seed:2})}
   if(k==='windstream'||k==='gale')ob('w1','boulder',T.x+46,T.y+4);
   if(k==='vortex'){ob('s1','bush',ACX-20,A.y+30);ob('s2','crate',ACX+10,A.y-22);ob('s3','rock',ACX+40,A.y+40)}
   if(k==='melee')T.x=A.x+38;if(k==='spin')T.x=A.x+52;  // melee needs contact: put the target within reach
