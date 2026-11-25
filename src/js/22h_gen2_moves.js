@@ -102,7 +102,7 @@ function mid_is(s,m){return s&&s.mid===m}
   if(mv&&A&&T&&A.ctrl!=='remote'&&!(T.prot>performance.now())&&(s.p||0)>0&&!s.wv){
     if(mv.recoil){const e=calcDmg(s.att||act(A),act(T),s.mid,s.p).d,d=Math.max(1,Math.round(e*mv.recoil));dealDamage(A,d,'#ef6f6f','-'+d);say('Rückstoß!')}
     if(mv.selfbs&&Math.random()<(mv.selfc??1))applyStages(A,mv.selfbs);
-    if(mv.thief&&A===B.me&&B.mode!=='duel'&&RUN){const g=10+Math.floor(Math.random()*21);RUN.money=(RUN.money||0)+g;updateHud();B.nums.push({x:A.x,y:A.y-44,t:`+${g} $`,c:'#ffcb3d',at:performance.now(),sz:9,life:1000})}}
+    if(mv.thief&&A===B.me&&B.mode==='trainer'&&RUN){const g=10+Math.floor(Math.random()*21);RUN.money=(RUN.money||0)+g;updateHud();B.nums.push({x:A.x,y:A.y-44,t:`+${g} $`,c:'#ffcb3d',at:performance.now(),sz:9,life:1000})}}
   return r}}
 // statuses over time: toxin gets worse every second, root holds still, Zugabe locks the move, Horrorblick blocks flight and switching
 {const _f=fire;fire=function(F,i,remote){if(F&&F.st&&F.st.enc>0&&!remote&&i!==F.encIdx){if(F===B.me&&(!F.encSay||performance.now()-F.encSay>800)){F.encSay=performance.now();say(`Zugabe: nur ${MOVES[act(F).m[F.encIdx]]?.n||'die letzte Attacke'}!`)}return}

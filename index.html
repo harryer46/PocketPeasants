@@ -499,7 +499,7 @@ const TURN_CONFIG = {
 
 /* ===================== VERSION ===================== */
 // bump with every release (MAJOR.MINOR.PATCH). Players can only share lobbies/duels with the same version.
-const VERSION='0.117.1';
+const VERSION='0.118.0';
 // access password: changes every Monday 00:00 (local time). Only the hashes are stored here (one per week from PW_W0);
 // the password itself also keys the P2P room, so clients without the current one cannot connect. The plain list lives offline.
 const PW_KEY='knast_pw',PW_W0=Date.UTC(2026,10,16),PW_WH=[3239358969,4147130060,2718625794,3495965776,1618054998,4028240764,3044289461,1207180107,4242648729,353861226,2672313786,600614717,407529519,2270237167,3207113251,1525244515,870970040,319006638,3847934078,944313310,2153038366,3950944742,2733334548,4002544240,2736690288,645338530,1884329338,4268902487,2483246182,3828308270,2182929315,3152020422,1311886195,3461060417,3407580460,2544240283,1017220184,1277844250,4288535363,461397931,853058720,2065298771,219387161,3215594984,1108518435,2250837220,3171827014,1035538317,1537090466,1716649754,2848461661,1266925999,653943759,1307642793,3319845926,629631788,4180878311,1080582197,4114403588,2360104553,3811730973,3337788437,695971354,2424950805],MAX_ROOM=10,MAX_LOBBY=5;
@@ -2208,6 +2208,7 @@ function begin(){
 
 /* ===================== CONTROL SETTINGS ===================== */
 const CHANGELOG=[
+["0.118.0","25.11.2026","Geld verdienen ist schwerer: Geld gibt es nur noch aus Trainerkämpfen (und Turnierprämien). Wilde Kämpfe, Festnahmen, Lernprüfungen, Fallakten, Tagesauftrag und Drill bringen kein Geld mehr (Fallakten/Tagesauftrag geben Items). Neu im freien Spiel: Wetteinsatz vor PvP-Freundschaftskämpfen (Standard 0 $, 50-$-Schritte) – der Sieger kassiert den Einsatz."],
 ["0.117.1","2026-11-25","Polizeiposten stehen jetzt auf halber Strecke zwischen zwei Städten der Story-Route (z. B. „Posten Villingen–Marderach“) statt direkt an einer Stadt."],
 ["0.117.0","2026-11-25","Welt+: Weltkarte aufgeräumt (Routennamen pro Gebiet wie „Waldweg 3“, erst ab Zoom 2×; Gebietsnamen mit Levelbereich, kleinere Schlösser), Gebietsliste mit Lv-Bereich und „x/y festgenommen“, ❗ Story-Ziel auf der Karte. Feste Levelbereiche pro Gebiet entlang der Story (Land 1–12, Küste 8–24, Wald 18–38, Gebirge 30–54, Felsenhöhen 40–60, Canyon 50–70, Dschungel 60–82); Professoren nennen die empfohlene Stufe. 6 Polizeiposten zwischen den Städten (Erste Hilfe, kleiner Laden, Schnellreise). Mehr Wasser an der Küste, Pflanze/Gift im Dschungel, Eis im Gebirge. Felsenhöhen = Verkehrsrecht (StVO + Verkehrsstraftaten + Fälle). 7 Fallakten (eine pro Gebiet): drei Zeugen befragen, dann drei Fallfragen beim Ermittler – Belohnung Geld und Items. Einsatzzentrale in Villingen: Einsatz des Tages und Übungskampf beim Ausbilder (alle 10 min)."],
 ["0.116.0","2026-11-25","Fallfragen: jetzt 5 pro Rechtsnorm (315 statt 61). Fallfragen und allgemeine Fragen des jeweiligen Gesetzbuchs kommen in allen Fragesituationen dran (Festnahme, PÄD, HfPol, Zoll, Beförderung …): ca. 55 % Fragen zum Monster-Paragrafen, 25 % allgemeine Fragen seines Gesetzbuchs, 20 % Fallfragen seines Gesetzbuchs – keine Einzelnormen fremder Monster."],
@@ -4284,7 +4285,7 @@ async function trainerWin(){B.state='over';finale(true);const t=B.trainer;RUN.be
 function syncBack(){if(B&&(B.mode==='wild'||B.mode==='trainer'))B.me.team.forEach((b,i)=>{if(RUN.team[i])RUN.team[i].hp=b.hp})}
 async function wildWin(){
   if(B.legend&&typeof FEM!=='undefined'&&FEM.includes(B.legend)){B.state='over';finale(false);syncBack();const n=SPECIES[B.legend].n;say(`${n} ist geflohen!`);setTimeout(()=>sysChat(`${n} lässt sich nicht besiegen – fang es, bevor seine KP auf 0 sinken!`),900);const myB=B;setTimeout(()=>{if(B===myB)endWild(`${n} ist geflohen – versuch es nochmal!`)},2600);return}
-  B.state='over';finale(true);const idx=B.me.a;syncBack();const m=RUN.team[idx];earn(B.legend?150:6+B.wild.l*3,'Preisgeld');if(B.legend){RUN.leg[B.legend]=1;say(`${SPECIES[B.legend].n} verschwindet im Licht…`)}
+  B.state='over';finale(true);const idx=B.me.a;syncBack();const m=RUN.team[idx];if(B.legend){RUN.leg[B.legend]=1;say(`${SPECIES[B.legend].n} verschwindet im Licht…`)}
   const msgs=m?gainXp(m,xpGain(B.wild.s,B.wild.l)):[];if(m)Object.assign(B.me.team[idx],battler(m));
   const myB=B;for(const t of msgs){say(t);await finSleep(1000);if(B!==myB)return}await finSleep(700);while(B===myB&&epBusy()&&!B.skipFin)await sleep(100);if(B===myB)endWild();
 }
@@ -4326,7 +4327,7 @@ function catchUpdate(now){const c=B.catch;const el=(now-c.t0)/1000;if(el<0.95+c.
   if(c.ok&&!c.done&&!c.qz){c.qz=1;const myB=B;catchQuiz(B.wild.s,ok=>{if(B!==myB||!B.catch)return;if(ok)c.qok=1;else{c.done=1;B.state='over';burst(c.x,c.gy-4,'#ffcb3d',16);B.catch=null;say(`Falsch! ${SPECIES[B.wild.s].n} reißt sich los und flieht!`);setTimeout(()=>{if(B===myB)endWild()},1600)}});return}
   if(c.ok&&!c.done&&!c.qok)return;
   if(c.ok&&!c.done){c.done=1;B.state='over';const m=B.wild;if(B.legend)RUN.leg[B.legend]=1;m.hp=act(B.foe).hp;const newDex=!G.dex[m.s];G.dex[m.s]=1;syncBack();if(typeof onCatch==='function')try{onCatch(m)}catch(e){}const toTeam=RUN.team.length<teamMax();(toTeam?RUN.team:RUN.box).push(m);
-    say(`Geschafft! ${SPECIES[m.s].n} wurde festgenommen!`);earn(5+m.l,'Festnahmebonus');say(toTeam?'Es ist jetzt in deinem Team.':'Dein Team ist voll — ab in die Box.');sysChat(`Du hast ${SPECIES[m.s].n} (Lv ${m.l}) festgenommen!`);const myB=B;setTimeout(()=>{if(B===myB){endWild();setTimeout(()=>{if(!B&&!$('#modal').classList.contains('on'))dexReveal(m.s,m,newDex?'★ NEUER DEX-EINTRAG ★':'FESTGENOMMEN')},900)}},1900)}
+    say(`Geschafft! ${SPECIES[m.s].n} wurde festgenommen!`);say(toTeam?'Es ist jetzt in deinem Team.':'Dein Team ist voll — ab in die Box.');sysChat(`Du hast ${SPECIES[m.s].n} (Lv ${m.l}) festgenommen!`);const myB=B;setTimeout(()=>{if(B===myB){endWild();setTimeout(()=>{if(!B&&!$('#modal').classList.contains('on'))dexReveal(m.s,m,newDex?'★ NEUER DEX-EINTRAG ★':'FESTGENOMMEN')},900)}},1900)}
   else if(!c.ok){B.state=B.tb?'tbPlay':'fight';if(B.tb)setTimeout(()=>{if(B&&B.state==='tbPlay')tbRun(null)},900);burst(c.x,c.gy-4,'#ffcb3d',16);burst(c.x,c.gy-4,'#2fb7b0',10);B.catch=null;B.foe.inv=0.8;B.foe.spawnT=performance.now();say('Oh nein! Es hat sich befreit!')}}
 let CQ=null;
 function catchQuiz(sid,cb){
@@ -4428,7 +4429,7 @@ function duelResult(win,why){
   if(B.mode==='duel')publishDuel(true);
   if(B.spar){
     if(win){const m=RUN.team[B.me.a]||RUN.team[0];const lv=B.foe?Math.round(B.foe.team.reduce((a,x)=>a+x.l,0)/B.foe.team.length):m.l;gainXp(m,xpGain(B.foe?act(B.foe).s:m.s,lv)+10).forEach(t=>say(t))}
-    if(win)earn(30,'für den Sieg');sysChat(win?`Du hast den Freundschaftskampf gegen ${B.oppName} gewonnen!`:`${B.oppName} hat den Freundschaftskampf gewonnen.`);save();
+    sysChat(win?`Du hast den Freundschaftskampf gegen ${B.oppName} gewonnen!`:`${B.oppName} hat den Freundschaftskampf gewonnen.`);save();
     const myS=B;setTimeout(()=>{if(B===myS){closeBattle();pushMt()}},3200);return;
   }
   const sc=win===true?1:win===false?0:0.5;RUN.res=(RUN.res||[]).concat([[RUN.r,B.opp||'bot',sc]]);earn(sc===1?50:sc===0.5?20:10,'Prozesskosten-Erstattung');
@@ -5521,7 +5522,7 @@ function mid_is(s,m){return s&&s.mid===m}
   if(mv&&A&&T&&A.ctrl!=='remote'&&!(T.prot>performance.now())&&(s.p||0)>0&&!s.wv){
     if(mv.recoil){const e=calcDmg(s.att||act(A),act(T),s.mid,s.p).d,d=Math.max(1,Math.round(e*mv.recoil));dealDamage(A,d,'#ef6f6f','-'+d);say('Rückstoß!')}
     if(mv.selfbs&&Math.random()<(mv.selfc??1))applyStages(A,mv.selfbs);
-    if(mv.thief&&A===B.me&&B.mode!=='duel'&&RUN){const g=10+Math.floor(Math.random()*21);RUN.money=(RUN.money||0)+g;updateHud();B.nums.push({x:A.x,y:A.y-44,t:`+${g} $`,c:'#ffcb3d',at:performance.now(),sz:9,life:1000})}}
+    if(mv.thief&&A===B.me&&B.mode==='trainer'&&RUN){const g=10+Math.floor(Math.random()*21);RUN.money=(RUN.money||0)+g;updateHud();B.nums.push({x:A.x,y:A.y-44,t:`+${g} $`,c:'#ffcb3d',at:performance.now(),sz:9,life:1000})}}
   return r}}
 // statuses over time: toxin gets worse every second, root holds still, Zugabe locks the move, Horrorblick blocks flight and switching
 {const _f=fire;fire=function(F,i,remote){if(F&&F.st&&F.st.enc>0&&!remote&&i!==F.encIdx){if(F===B.me&&(!F.encSay||performance.now()-F.encSay>800)){F.encSay=performance.now();say(`Zugabe: nur ${MOVES[act(F).m[F.encIdx]]?.n||'die letzte Attacke'}!`)}return}
@@ -7493,7 +7494,7 @@ function renderStudy(){if(!ST)return;const m=ST.m,sp=SPECIES[m.s],st=stats(m);co
     <div class="spanel"><div class="snm"><span>Prüfer: ${nameHtml(ex)}</span></div><div class="shearts">${ST.qs.map((_,i)=>`<b class="${i<ST.i?(ST.res&&ST.res[i]?'hit':'miss'):''}">⚖</b>`).join('')}</div><div class="ssm">Frage ${Math.min(ST.i+1,ST.qs.length)}/${ST.qs.length} · richtig ${ST.ok}</div></div></div>
     <canvas id="stcv" width="360" height="150"></canvas>`;
   if(ST.state==='done'){
-    h+=`<div class="sdlg"><b>${ST.ok===ST.qs.length?'Bestanden mit Auszeichnung!':ST.ok>0?'Prüfung beendet.':'Durchgefallen…'}</b><br>${ST.ok}/${ST.qs.length} richtig · +${ST.xp} EP für ${nameHtml(m.s)}${ST.bonus?`<br>🏅 Prämie für alles richtig: +${Math.round(ST.bonus*((RUN.cfg&&RUN.cfg.xp)||1))} EP extra und $${STUDY_BONUS_$}`:''}${(ST.msgs||[]).filter(t=>!/erhält/.test(t)).map(t=>'<br>'+esc(t)).join('')}</div>
+    h+=`<div class="sdlg"><b>${ST.ok===ST.qs.length?'Bestanden mit Auszeichnung!':ST.ok>0?'Prüfung beendet.':'Durchgefallen…'}</b><br>${ST.ok}/${ST.qs.length} richtig · +${ST.xp} EP für ${nameHtml(m.s)}${ST.bonus?`<br>🏅 Prämie für alles richtig: +${Math.round(ST.bonus*((RUN.cfg&&RUN.cfg.xp)||1))} EP extra`:''}${(ST.msgs||[]).filter(t=>!/erhält/.test(t)).map(t=>'<br>'+esc(t)).join('')}</div>
       <div class="sacts"><button class="btn" id="sclose">SCHLIESSEN</button></div>`;
   }else{
     const q=cur.q;if(!cur.order)cur.order=shuffleArr([0,1,2,3]);const LB='';
@@ -7522,7 +7523,7 @@ function studyAnswer(k){if(!ST||ST.state!=='ask')return;const cur=ST.qs[ST.i];cu
 // all questions of a full exam right → bonus: +50 % EP on top and $50
 const STUDY_BONUS=0.5,STUDY_BONUS_$=50;
 function studyFinish(){const m=ST.m;m.stT=Date.now();ST.ok=ST.ok??(ST.res||[]).filter(Boolean).length;ST.bonus=0;
-  if(ST.qs.length>=STUDY_N&&ST.ok===ST.qs.length&&ST.pend){ST.bonus=Math.max(1,Math.round(ST.pend*STUDY_BONUS));ST.pend+=ST.bonus;earn(STUDY_BONUS_$,'Prüfungsprämie')}
+  if(ST.qs.length>=STUDY_N&&ST.ok===ST.qs.length&&ST.pend){ST.bonus=Math.max(1,Math.round(ST.pend*STUDY_BONUS));ST.pend+=ST.bonus}
   if(ST.pend){const before=m.xp+xpNeed(m.l)*0;ST.msgs=gainXp(m,ST.pend);ST.xp=Math.round(ST.pend*((RUN.cfg&&RUN.cfg.xp)||1));for(const t of ST.msgs)sysChat(t);save();renderTeam();pushMt()}}
 function closeStudy(){$('#study').classList.remove('on');ST=null;if(atHfPol())openHfPol()}
 const STUDY_QT=15000;  // every question has a timer
@@ -9143,8 +9144,8 @@ function caseBoss(t){const z=t.zone,C=ACASES[z],st=caseSt(z),n=caseFound(z);
   P.lock=true;held.length=0;talk(t.n,C.end,()=>{P.lock=false;
     const av=new Set(),qs=[];const pool=C.book==='Verkehrsrecht'?CASE_QZ.filter(q=>TRAFFIC_RE.test(q[1][0])):null;
     for(let i=0;i<12&&qs.length<3;i++){const q=pool?qFreshPick(pool,av):caseFor(C.book,av);if(!q||av.has(q[0]))continue;av.add(q[0]);qs.push(qReal(q))}
-    quickQuiz('🔎 '+C.t.toUpperCase(),`${esc(C.boss)} · 2 von 3 richtig schließen den Fall`,qs,ok=>{if(ok>=2){st.done=1;const L=(ZLV[z]||{lo:5}).lo,money=200+L*12;RUN.money=(RUN.money||0)+money;RUN.items=RUN.items||{};const it=L>=40?'candy':L>=18?'great':'superp';RUN.items[it]=(RUN.items[it]||0)+(it==='candy'?1:2);
-      save();updateHud();renderTeam();talk(t.n,`Fall gelöst! Hier sind ${money} $ Belohnung und ${it==='candy'?'ein Sonderbonbon':'2× '+ITEMS[it].n}.`);sysChat(`🔎 Fallakte „${C.t}“ abgeschlossen: +${money} $`)}
+    quickQuiz('🔎 '+C.t.toUpperCase(),`${esc(C.boss)} · 2 von 3 richtig schließen den Fall`,qs,ok=>{if(ok>=2){st.done=1;const L=(ZLV[z]||{lo:5}).lo;RUN.items=RUN.items||{};const it=L>=40?'candy':L>=18?'great':'superp';RUN.items[it]=(RUN.items[it]||0)+(it==='candy'?1:2);RUN.items.revive=(RUN.items.revive||0)+1;
+      save();updateHud();renderTeam();talk(t.n,`Fall gelöst! Als Belohnung: ${it==='candy'?'ein Sonderbonbon':'2× '+ITEMS[it].n} und ein ${ITEMS.revive.n}.`);sysChat(`🔎 Fallakte „${C.t}“ abgeschlossen`)}
       else talk(t.n,'Das reicht vor Gericht noch nicht. Lies nochmal nach und komm wieder!')})})}
 
 // ======== 8) Einsatzzentrale: Einsatz des Tages + Ausbilder ========
@@ -9162,13 +9163,13 @@ function onCatch(m){try{dailyBump('catch',SPECIES[m.s].t)}catch(e){}}
 {const _tw=trainerWin;trainerWin=async function(){const t=B&&B.trainer;const r=await _tw.apply(this,arguments);try{if(t&&!t.drill)dailyBump('win')}catch(e){}return r}}
 {const _ql=qsLog;qsLog=function(text,ok){const r=_ql.apply(this,arguments);try{if(ok)dailyBump('quiz')}catch(e){}return r}}
 function dailyTalk(t){const D=daily();if(!D)return;
-  if(D.done&&!D.claimed){D.claimed=1;const L=Math.max(...RUN.team.map(m=>m.l)),money=150+L*8;RUN.money=(RUN.money||0)+money;RUN.items=RUN.items||{};RUN.items.great=(RUN.items.great||0)+1;save();updateHud();renderTeam();talk(t.n,`Saubere Arbeit! ${money} $ und Super-Handschellen für dich. Morgen gibt’s einen neuen Einsatz.`);return}
-  talk(t.n,D.claimed?'Für heute bist du durch. Morgen wartet ein neuer Einsatz!':`📋 Einsatz des Tages: ${dailyText(D)}. Stand: ${D.n}/${D.goal}. Belohnung: Geld und Super-Handschellen.`)}
+  if(D.done&&!D.claimed){D.claimed=1;RUN.items=RUN.items||{};RUN.items.great=(RUN.items.great||0)+2;RUN.items.superp=(RUN.items.superp||0)+1;save();updateHud();renderTeam();talk(t.n,`Saubere Arbeit! 2× Super-Handschellen und ein ${ITEMS.superp.n} für dich. Morgen gibt’s einen neuen Einsatz.`);return}
+  talk(t.n,D.claimed?'Für heute bist du durch. Morgen wartet ein neuer Einsatz!':`📋 Einsatz des Tages: ${dailyText(D)}. Stand: ${D.n}/${D.goal}. Belohnung: Super-Handschellen und ein Supertrank.`)}
 const DRILL_CD=10*60000;
 function drillTalk(t){const left=(RUN.drillT||0)+DRILL_CD-Date.now();if(left>0){talk(t.n,`Pause, Kollege! Nächste Übung in ${Math.ceil(left/60000)} min.`);return}
   P.lock=true;held.length=0;talk(t.n,'Übungskampf! Zwei Gegner auf deinem Niveau – keine Gnade, aber auch kein Risiko für deine Akte.',()=>{P.lock=false;if(B||!RUN)return;
     const top=Math.max(...RUN.team.map(m=>m.l)),z=ZONE_ORDER.slice().reverse().find(k=>(ZLV[k]||{lo:99}).lo<=top)||'north',pl=poolOf(z);RUN.drillT=Date.now();save();
-    startTrainer({id:'drill',drill:1,fixed:true,n:t.n,c:t.c,x:t.x,y:t.y,d:t.d,team:[0,1].map(i=>[pl[Math.floor(Math.random()*pl.length)],clamp(top-1+i,2,99)]),reward:1,line:'',after:'Gut gekämpft! In zehn Minuten wieder.'})})}
+    startTrainer({id:'drill',drill:1,fixed:true,n:t.n,c:t.c,x:t.x,y:t.y,d:t.d,team:[0,1].map(i=>[pl[Math.floor(Math.random()*pl.length)],clamp(top-1+i,2,99)]),reward:0,line:'',after:'Gut gekämpft! In zehn Minuten wieder.'})})}
 {const _tw=trainerWin;trainerWin=async function(){const t=B&&B.trainer;const r=await _tw.apply(this,arguments);try{if(t&&t.drill&&RUN.beat)delete RUN.beat[t.id]}catch(e){}return r}}
 
 // ---- talking to the new NPCs (bump), before the cave-gift handler ----
@@ -9194,6 +9195,27 @@ function storyTarget(){try{if(!storyOn())return null;const s=storyOf();if(!s.met
 {const _ss=storyStatus;storyStatus=function(){_ss.apply(this,arguments);try{const mb=$('#mbox');if(!mb)return;const rows=Object.entries(ACASES).map(([z,C])=>{const st=RUN.acase&&RUN.acase[z]||{w:[]};const n=C.w.filter((_,i)=>st.w&&st.w[i]).length;
   return`<div>${st.done?'✅':'🔎'} <b>${esc(C.t)}</b> <span class="small">· ${esc(ZONES[z].n)} · ${st.done?'gelöst':n+'/3 Hinweise · '+esc(C.boss)}</span></div>`}).join('');
   const h=document.createElement('div');h.style.cssText='text-align:left;margin-top:8px';h.innerHTML=`<b style="display:block;margin-top:8px">Fallakten</b>${rows}`;const acts=mb.querySelector('.acts');mb.insertBefore(h,acts)}catch(e){}}}
+// ===== Wetten vor freien PvP-Kämpfen (nur im freien Spiel) =====
+// Wer herausfordert, wählt den Einsatz (Standard 0 $, in 50-$-Schritten bis zum eigenen Kontostand).
+// Der Herausgeforderte sieht den Einsatz und kann nur annehmen, wenn er ihn selbst bezahlen kann. Sieger +Einsatz, Verlierer −Einsatz.
+const BET_BY_ID={};let BET_PEND=null;
+{const _p=pres;pres=function(o){if(o&&o.ch&&BET_PEND!=null&&o.ch.bet==null)o.ch.bet=BET_PEND;return _p.apply(this,arguments)}}
+function betOn(){return!!(RUN&&RUN.free)}
+{const _ch=challenge;challenge=function(peer){if(!betOn()||myCh||!canSpar())return _ch.apply(this,arguments);
+  const max=Math.floor((RUN.money||0)/50)*50;let bet=0;const p=findPeer(peer);
+  const draw=()=>{$('#betv').textContent=bet+' $';$('#betm').disabled=bet<=0;$('#betp').disabled=bet+50>max};
+  openModal(`<h3>⚔ KAMPFANFRAGE</h3><p>Herausforderung an <b>${esc(p?cleanName(p.presence.n):'Spieler')}</b>.</p><p>💰 Wetteinsatz – der Sieger bekommt ihn vom Verlierer:</p>
+   <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin:8px 0"><button class="btn ghost" id="betm">−50</button><b id="betv" style="font-size:22px;min-width:90px;text-align:center">0 $</b><button class="btn ghost" id="betp">+50</button></div>
+   <p class="small">Dein Geld: ${RUN.money||0} $. Ohne Einsatz geht es nur um EP und Ehre.</p><div class="acts"><button class="btn ghost" id="mno">ABBRECHEN</button><button class="btn" id="myes">ANFRAGE SENDEN</button></div>`);
+  draw();$('#betm').onclick=()=>{bet=Math.max(0,bet-50);draw()};$('#betp').onclick=()=>{bet=Math.min(max,bet+50);draw()};$('#mno').onclick=closeModal;
+  $('#myes').onclick=()=>{closeModal();BET_PEND=bet;try{_ch.call(null,peer)}finally{BET_PEND=null}if(myCh){myCh.bet=bet;BET_BY_ID[myCh.id]=bet}}}}
+{const _sc=showChallenge;showChallenge=function(peer,id,name){const p=findPeer(peer),bet=Math.max(0,Math.floor(+(p&&p.presence.ch&&p.presence.ch.bet)||0));const r=_sc.apply(this,arguments);
+  if(!betOn()||!bet){BET_BY_ID[id]=0;return r}BET_BY_ID[id]=bet;const can=(RUN.money||0)>=bet,pp=document.querySelector('#mbox p');
+  if(pp)pp.insertAdjacentHTML('afterend',`<p style="color:${can?'#ffcb3d':'#ef4444'}">💰 Wetteinsatz: <b>${bet} $</b> – der Sieger bekommt ihn.${can?'':` Du hast nur ${RUN.money||0} $.`}</p>`);
+  if(!can){const y=$('#myes');if(y){y.disabled=true;y.classList.add('ghost');y.textContent='ZU WENIG GELD'}}return r}}
+{const _sd=startDuel;startDuel=function(peer,id,spar){const r=_sd.apply(this,arguments);try{if(B&&spar&&betOn())B.bet=BET_BY_ID[id]||0;if(B&&B.bet)say(`💰 Es geht um ${B.bet} $!`)}catch(e){}return r}}
+{const _dr=duelResult;duelResult=function(win,why){const bet=B&&B.spar&&B.state!=='over'&&B.bet||0;const r=_dr.apply(this,arguments);
+  if(bet&&RUN){if(win===true)earn(bet,'Wetteinsatz gewonnen');else if(win===false){RUN.money=Math.max(0,(RUN.money||0)-bet);save();updateHud();toast(`💸 −${bet} $ Wetteinsatz verloren`)}}return r}}
 /* ===================== BOOT ===================== */
 applyControls();
 G=loadSave();

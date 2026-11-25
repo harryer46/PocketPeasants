@@ -95,8 +95,8 @@ function caseBoss(t){const z=t.zone,C=ACASES[z],st=caseSt(z),n=caseFound(z);
   P.lock=true;held.length=0;talk(t.n,C.end,()=>{P.lock=false;
     const av=new Set(),qs=[];const pool=C.book==='Verkehrsrecht'?CASE_QZ.filter(q=>TRAFFIC_RE.test(q[1][0])):null;
     for(let i=0;i<12&&qs.length<3;i++){const q=pool?qFreshPick(pool,av):caseFor(C.book,av);if(!q||av.has(q[0]))continue;av.add(q[0]);qs.push(qReal(q))}
-    quickQuiz('🔎 '+C.t.toUpperCase(),`${esc(C.boss)} · 2 von 3 richtig schließen den Fall`,qs,ok=>{if(ok>=2){st.done=1;const L=(ZLV[z]||{lo:5}).lo,money=200+L*12;RUN.money=(RUN.money||0)+money;RUN.items=RUN.items||{};const it=L>=40?'candy':L>=18?'great':'superp';RUN.items[it]=(RUN.items[it]||0)+(it==='candy'?1:2);
-      save();updateHud();renderTeam();talk(t.n,`Fall gelöst! Hier sind ${money} $ Belohnung und ${it==='candy'?'ein Sonderbonbon':'2× '+ITEMS[it].n}.`);sysChat(`🔎 Fallakte „${C.t}“ abgeschlossen: +${money} $`)}
+    quickQuiz('🔎 '+C.t.toUpperCase(),`${esc(C.boss)} · 2 von 3 richtig schließen den Fall`,qs,ok=>{if(ok>=2){st.done=1;const L=(ZLV[z]||{lo:5}).lo;RUN.items=RUN.items||{};const it=L>=40?'candy':L>=18?'great':'superp';RUN.items[it]=(RUN.items[it]||0)+(it==='candy'?1:2);RUN.items.revive=(RUN.items.revive||0)+1;
+      save();updateHud();renderTeam();talk(t.n,`Fall gelöst! Als Belohnung: ${it==='candy'?'ein Sonderbonbon':'2× '+ITEMS[it].n} und ein ${ITEMS.revive.n}.`);sysChat(`🔎 Fallakte „${C.t}“ abgeschlossen`)}
       else talk(t.n,'Das reicht vor Gericht noch nicht. Lies nochmal nach und komm wieder!')})})}
 
 // ======== 8) Einsatzzentrale: Einsatz des Tages + Ausbilder ========
@@ -114,13 +114,13 @@ function onCatch(m){try{dailyBump('catch',SPECIES[m.s].t)}catch(e){}}
 {const _tw=trainerWin;trainerWin=async function(){const t=B&&B.trainer;const r=await _tw.apply(this,arguments);try{if(t&&!t.drill)dailyBump('win')}catch(e){}return r}}
 {const _ql=qsLog;qsLog=function(text,ok){const r=_ql.apply(this,arguments);try{if(ok)dailyBump('quiz')}catch(e){}return r}}
 function dailyTalk(t){const D=daily();if(!D)return;
-  if(D.done&&!D.claimed){D.claimed=1;const L=Math.max(...RUN.team.map(m=>m.l)),money=150+L*8;RUN.money=(RUN.money||0)+money;RUN.items=RUN.items||{};RUN.items.great=(RUN.items.great||0)+1;save();updateHud();renderTeam();talk(t.n,`Saubere Arbeit! ${money} $ und Super-Handschellen für dich. Morgen gibt’s einen neuen Einsatz.`);return}
-  talk(t.n,D.claimed?'Für heute bist du durch. Morgen wartet ein neuer Einsatz!':`📋 Einsatz des Tages: ${dailyText(D)}. Stand: ${D.n}/${D.goal}. Belohnung: Geld und Super-Handschellen.`)}
+  if(D.done&&!D.claimed){D.claimed=1;RUN.items=RUN.items||{};RUN.items.great=(RUN.items.great||0)+2;RUN.items.superp=(RUN.items.superp||0)+1;save();updateHud();renderTeam();talk(t.n,`Saubere Arbeit! 2× Super-Handschellen und ein ${ITEMS.superp.n} für dich. Morgen gibt’s einen neuen Einsatz.`);return}
+  talk(t.n,D.claimed?'Für heute bist du durch. Morgen wartet ein neuer Einsatz!':`📋 Einsatz des Tages: ${dailyText(D)}. Stand: ${D.n}/${D.goal}. Belohnung: Super-Handschellen und ein Supertrank.`)}
 const DRILL_CD=10*60000;
 function drillTalk(t){const left=(RUN.drillT||0)+DRILL_CD-Date.now();if(left>0){talk(t.n,`Pause, Kollege! Nächste Übung in ${Math.ceil(left/60000)} min.`);return}
   P.lock=true;held.length=0;talk(t.n,'Übungskampf! Zwei Gegner auf deinem Niveau – keine Gnade, aber auch kein Risiko für deine Akte.',()=>{P.lock=false;if(B||!RUN)return;
     const top=Math.max(...RUN.team.map(m=>m.l)),z=ZONE_ORDER.slice().reverse().find(k=>(ZLV[k]||{lo:99}).lo<=top)||'north',pl=poolOf(z);RUN.drillT=Date.now();save();
-    startTrainer({id:'drill',drill:1,fixed:true,n:t.n,c:t.c,x:t.x,y:t.y,d:t.d,team:[0,1].map(i=>[pl[Math.floor(Math.random()*pl.length)],clamp(top-1+i,2,99)]),reward:1,line:'',after:'Gut gekämpft! In zehn Minuten wieder.'})})}
+    startTrainer({id:'drill',drill:1,fixed:true,n:t.n,c:t.c,x:t.x,y:t.y,d:t.d,team:[0,1].map(i=>[pl[Math.floor(Math.random()*pl.length)],clamp(top-1+i,2,99)]),reward:0,line:'',after:'Gut gekämpft! In zehn Minuten wieder.'})})}
 {const _tw=trainerWin;trainerWin=async function(){const t=B&&B.trainer;const r=await _tw.apply(this,arguments);try{if(t&&t.drill&&RUN.beat)delete RUN.beat[t.id]}catch(e){}return r}}
 
 // ---- talking to the new NPCs (bump), before the cave-gift handler ----

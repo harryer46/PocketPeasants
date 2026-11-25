@@ -87,7 +87,7 @@ function renderStudy(){if(!ST)return;const m=ST.m,sp=SPECIES[m.s],st=stats(m);co
     <div class="spanel"><div class="snm"><span>Prüfer: ${nameHtml(ex)}</span></div><div class="shearts">${ST.qs.map((_,i)=>`<b class="${i<ST.i?(ST.res&&ST.res[i]?'hit':'miss'):''}">⚖</b>`).join('')}</div><div class="ssm">Frage ${Math.min(ST.i+1,ST.qs.length)}/${ST.qs.length} · richtig ${ST.ok}</div></div></div>
     <canvas id="stcv" width="360" height="150"></canvas>`;
   if(ST.state==='done'){
-    h+=`<div class="sdlg"><b>${ST.ok===ST.qs.length?'Bestanden mit Auszeichnung!':ST.ok>0?'Prüfung beendet.':'Durchgefallen…'}</b><br>${ST.ok}/${ST.qs.length} richtig · +${ST.xp} EP für ${nameHtml(m.s)}${ST.bonus?`<br>🏅 Prämie für alles richtig: +${Math.round(ST.bonus*((RUN.cfg&&RUN.cfg.xp)||1))} EP extra und $${STUDY_BONUS_$}`:''}${(ST.msgs||[]).filter(t=>!/erhält/.test(t)).map(t=>'<br>'+esc(t)).join('')}</div>
+    h+=`<div class="sdlg"><b>${ST.ok===ST.qs.length?'Bestanden mit Auszeichnung!':ST.ok>0?'Prüfung beendet.':'Durchgefallen…'}</b><br>${ST.ok}/${ST.qs.length} richtig · +${ST.xp} EP für ${nameHtml(m.s)}${ST.bonus?`<br>🏅 Prämie für alles richtig: +${Math.round(ST.bonus*((RUN.cfg&&RUN.cfg.xp)||1))} EP extra`:''}${(ST.msgs||[]).filter(t=>!/erhält/.test(t)).map(t=>'<br>'+esc(t)).join('')}</div>
       <div class="sacts"><button class="btn" id="sclose">SCHLIESSEN</button></div>`;
   }else{
     const q=cur.q;if(!cur.order)cur.order=shuffleArr([0,1,2,3]);const LB='';
@@ -116,7 +116,7 @@ function studyAnswer(k){if(!ST||ST.state!=='ask')return;const cur=ST.qs[ST.i];cu
 // all questions of a full exam right → bonus: +50 % EP on top and $50
 const STUDY_BONUS=0.5,STUDY_BONUS_$=50;
 function studyFinish(){const m=ST.m;m.stT=Date.now();ST.ok=ST.ok??(ST.res||[]).filter(Boolean).length;ST.bonus=0;
-  if(ST.qs.length>=STUDY_N&&ST.ok===ST.qs.length&&ST.pend){ST.bonus=Math.max(1,Math.round(ST.pend*STUDY_BONUS));ST.pend+=ST.bonus;earn(STUDY_BONUS_$,'Prüfungsprämie')}
+  if(ST.qs.length>=STUDY_N&&ST.ok===ST.qs.length&&ST.pend){ST.bonus=Math.max(1,Math.round(ST.pend*STUDY_BONUS));ST.pend+=ST.bonus}
   if(ST.pend){const before=m.xp+xpNeed(m.l)*0;ST.msgs=gainXp(m,ST.pend);ST.xp=Math.round(ST.pend*((RUN.cfg&&RUN.cfg.xp)||1));for(const t of ST.msgs)sysChat(t);save();renderTeam();pushMt()}}
 function closeStudy(){$('#study').classList.remove('on');ST=null;if(atHfPol())openHfPol()}
 const STUDY_QT=15000;  // every question has a timer
