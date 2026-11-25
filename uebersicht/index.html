@@ -44,9 +44,9 @@ function qList(qs){return`<ol>${qs.map(q=>`<li>${esc(q[0])}<br><span class="a">�
 let PG='mon',SORT=['t',1],QALL=null,QMAX=200;
 // all questions once, duplicates merged (evolutions share the questions of their base form)
 function qAll(){if(QALL)return QALL;const M=new Map();const add=(t,a,ex,src,book,kind)=>{let e=M.get(t);if(!e){e={t,a,ex,book,kind,src:[]};M.set(t,e)}if(src&&!e.src.includes(src))e.src.push(src)};
-  for(const s of D.sp){const b=bookOf(s.law);for(const q of s.q)add(q[0],q[1],q[2],s.n.replace(/ (§|Art\.).*/,''),b,'mon')}
   for(const b in D.book)for(const q of D.book[b])add(q[0],q[1],q[2],null,b,'book');
   for(const q of D.cases||[])add(q[0],q[1],q[2],null,q[3]||'',"case");for(const q of D.stvo||[])add(q[0],q[1],q[2],null,'StVO','stvo');
+  for(const s of D.sp){const b=bookOf(s.law);for(const q of s.q)add(q[0],q[1],q[2],s.n.replace(/ (§|Art\.).*/,''),b,'mon')}
   return QALL=[...M.values()]}
 function renderQ(){const q=document.getElementById('q').value.trim().toLowerCase(),bk=document.getElementById('bk').value,kd=document.getElementById('qk').value;
   const L=qAll().filter(e=>(!bk||(bk==='-'?!e.book:e.book===bk))&&(!kd||e.kind===kd)&&(!q||(e.t+' '+e.a+' '+e.ex+' '+e.src.join(' ')).toLowerCase().includes(q)));
