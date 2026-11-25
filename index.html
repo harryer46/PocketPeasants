@@ -485,7 +485,7 @@ const TURN_CONFIG = {
 
 /* ===================== VERSION ===================== */
 // bump with every release (MAJOR.MINOR.PATCH). Players can only share lobbies/duels with the same version.
-const VERSION='0.111.1';
+const VERSION='0.111.2';
 // access password: changes every Monday 00:00 (local time). Only the hashes are stored here (one per week from PW_W0);
 // the password itself also keys the P2P room, so clients without the current one cannot connect. The plain list lives offline.
 const PW_KEY='knast_pw',PW_W0=Date.UTC(2026,10,16),PW_WH=[3239358969,4147130060,2718625794,3495965776,1618054998,4028240764,3044289461,1207180107,4242648729,353861226,2672313786,600614717,407529519,2270237167,3207113251,1525244515,870970040,319006638,3847934078,944313310,2153038366,3950944742,2733334548,4002544240,2736690288,645338530,1884329338,4268902487,2483246182,3828308270,2182929315,3152020422,1311886195,3461060417,3407580460,2544240283,1017220184,1277844250,4288535363,461397931,853058720,2065298771,219387161,3215594984,1108518435,2250837220,3171827014,1035538317,1537090466,1716649754,2848461661,1266925999,653943759,1307642793,3319845926,629631788,4180878311,1080582197,4114403588,2360104553,3811730973,3337788437,695971354,2424950805],MAX_ROOM=10,MAX_LOBBY=5;
@@ -964,7 +964,7 @@ Object.assign(MOVES,{
   regentanz:{n:'Regentanz',t:'water',p:0,k:'weather',w:'rain',cd:12},
   sandsturm:{n:'Sandsturm',t:'rock',p:0,k:'weather',w:'sand',cd:12},
   schutzschild:{n:'Schutzschild',t:'normal',p:0,k:'protect',cd:7},
-  turbodreher:{n:'Turbodreher',t:'normal',p:30,k:'spin',cd:3},
+  turbodreher:{n:'Turbodreher',t:'normal',p:40,k:'spin',cd:3.5},
   toxin:{n:'Toxin',t:'grass',p:10,k:'shot',tox:1,cd:6},
   horrorblick:{n:'Horrorblick',t:'dark',p:10,k:'beam',trap:1,cd:8},
   zugabe:{n:'Zugabe',t:'normal',p:10,k:'shot',encore:1,cd:8},
@@ -1174,8 +1174,8 @@ whirl:'Wirbelnde Schlagserie, die verwirren kann.',headrush:'Wuchtige Kopfnuss m
 sparkshot:'Schneller Funke, der geradeaus fliegt.',emberrain:'Glut im Bogen, kann verbrennen.',cinderbite:'Glühender Biss, kann verbrennen.',
 scorchline:'Feueratem in einer Linie, kann verbrennen.',cindershell:'Glutpanzer halbiert kurz den erlittenen Schaden.',firestorm:'Fächer aus Flammen in Blickrichtung.',
 kilnburst:'Schwere Feuerkugel, die beim Aufprall explodiert.',splash:'Einfacher Wasserschuss.',foamvolley:'Schnelle Salve aus Schaumblasen.',
-waveslam:'Wasserschlag aus nächster Nähe mit Rückstoß.',undertow:'Wellenförmiger Strudel, saugt Gegner und leichte Hindernisse an.',
-whirlpool:'Vier Wasserwirbel kreisen über das Feld und ziehen Gegner mit.',mistveil:'Nebel halbiert kurz den erlittenen Schaden.',
+waveslam:'Wasserschlag mit Rückstoß, schickt eine kleine Welle voraus.',undertow:'Wellenförmiger Strudel, saugt Gegner und leichte Hindernisse an.',
+whirlpool:'Vier Wasserwirbel kreisen über das Feld und ziehen Gegner mit.',mistveil:'Nebel über dem ganzen Feld – halbiert kurz deinen Schaden, Gegner zielen schlecht.',
 torrent:'Breiter Fächer aus Wasserstrahlen.',geyser:'Wassersäule schießt unter dem Ziel hervor.',leaftoss:'Wirft ein scharfes Blatt.',
 sapdrain:'Saugt Saft ab und heilt dich dabei.',vinelash:'Peitschende Ranken, verlangsamen das Ziel.',drowsyspores:'Sporen, die einschläfern.',
 bloomheal:'Blütenduft heilt 30 % KP.',thornrain:'Dornen regnen über einem Bereich ab.',brambleburst:'Schwere Dornenkugel, verlangsamt.',
@@ -1208,7 +1208,7 @@ finsteraura:'Dunkle Kugel, blendet das Ziel 4 s.',verhoehner:'Provokation: 6 s k
 gegenschlag:'Konterhaltung: Nahkampftreffer kommen doppelt zurück.',zahlungsaufforderung:'Drei Mahnungen im Fächer – die dritte pfändet (1 s betäubt).',
 vierfaust:'Vier Fäuste in alle Richtungen, zerschlagen Geschosse.',biss:'Beißt kräftig zu.',dieb:'Biss, der dem Ziel Geld klaut.',
 regentanz:'Lässt es regnen – stärkt Wasser.',sandsturm:'Sandsturm – Gestein nimmt weniger Fernkampfschaden.',schutzschild:'Blockt kurz jeden Angriff.',
-turbodreher:'Dreht sich und trifft alles ringsum.',toxin:'Starkes Gift, das jede Sekunde schlimmer wird.',horrorblick:'Blick verhindert Fliegen und Wechseln.',
+turbodreher:'Wirbelt 1 s als Tornado: bis zu 3 Treffer ringsum, wehrt Geschosse ab, löst Fesseln.',toxin:'Starkes Gift, das jede Sekunde schlimmer wird.',horrorblick:'Blick verhindert Fliegen und Wechseln.',
 zugabe:'Zwingt das Ziel, nur noch seine letzte Attacke zu nutzen.',reflektor:'Halbiert Nahkampfschaden eine Zeit lang.',lichtschild:'Halbiert Fernkampfschaden eine Zeit lang.',
 bauchtrommel:'Opfert halbe KP für maximalen Angriff.',tempohieb:'Blitzschneller Hieb.',karateschlag:'Handkantenschlag von oben.',
 dynamopunch:'Explosive Faust, kann verwirren.',geowurf:'Packt das Ziel und schleudert es zu Boden.',turmkick:'Sprungkick aus der Luft.',
@@ -2157,6 +2157,7 @@ function begin(){
 
 /* ===================== CONTROL SETTINGS ===================== */
 const CHANGELOG=[
+["0.111.2","2026-11-25","Strahlen laden schneller (0,35 s statt 0,5 s). Turbodreher: 1 s Mini-Tornado mit Reichweite 62, bis zu 3 Treffer (Stärke 40), wehrt Geschosse ab. Sog: langsamer und weicher, Ausschlag wächst mit der Zeit. Wellenschlag schickt eine kleine Welle voraus. Nebelschleier legt 6 s Nebel über das Feld (Gegner-KI zielt schlechter). Attacken-Vorschau ohne Herabfallen der Monster."],
 ["0.111.1","2026-11-25","Nahkampf-Animationen wie im Original: jede Attacke hat eigenen Schwung und Treffer (Krallenspuren, zuschnappende Kiefer, Faust, Tritt, Handkante, Peitsche, Flügel, Bohrschnabel, Funken, Spritzer, Bodenrisse, Geowurf …). Sog ist jetzt ein wellenförmig wandernder Strudel, der Gegner und leichte Hindernisse ansaugt – mitgerissene Hindernisse verstärken den Treffer. Jede Attacke hat eine einzeilige Beschreibung (Dex, Vorschau, Team, Kampf-Tooltip). Vorschau: Nahkampf steht nun in Reichweite."],
  ["0.111.0","2026-11-25","Beförderungsprüfung: Vor jeder Entwicklung 3 Fragen zum Paragraphen des Monsters — 2 von 3 richtig = Beförderung mit Auszeichnung (+6 % auf alle Werte, stapelt sich je Entwicklung), sonst Entwicklung ohne Bonus. Doppelt oder nichts (freiwillig) nach Trainer-Siegen: eine Fallfrage — richtig gibt Preisgeld und EP aus dem Kampf noch einmal, falsch kostet die Hälfte des Preisgelds. Beide Quiz mit Tasten 1–4, Leertaste weiter und ⚑ Frage melden."],
  ["0.110.2","2026-11-25","Monster-Dex zeigt je Monster den Fragen-Stand: ✓ zuletzt richtig · ✗ zuletzt falsch · ○ noch offen (in der Liste und in den Details, inkl. passender Fallfragen). Fehler behoben: im Dex stand „${cuffIcon(14)}“ statt des Handschellen-Icons."],
@@ -3663,7 +3664,7 @@ function shotParams0(mid){const mv=MOVES[mid]||MOVES.bump;const k=mv.k||(mv.t===
   if(k==='rain')return{k:'air',nm:1,sp:0,life:0.9,r:12,p:Math.round(mv.p*0.36),n:1,rain:5};
   if(k==='fly')return{k:'fly',nm:1,sp:0,life:1.25,r:20,p:mv.p,n:1};
   if(k==='dive')return{k:'air',nm:1,sp:0,life:0.06,r:30,p:mv.p,n:1,dive:1.1};
-  if(k==='vortex')return{k:'vortex',nm:1,sp:74,life:2.6,r:7,p:mv.p,n:1};
+  if(k==='vortex')return{k:'vortex',nm:1,sp:52,life:3.6,r:7,p:mv.p,n:1};
   if(k==='spread')return{sp:125,life:2.4,r:4,p:Math.round(mv.p*0.42),n:3,ang:0.24};
   if(k==='multi')return{sp:200,life:2,r:2.5,p:Math.max(4,Math.round(mv.p*0.22)),n:3,ang:0.07};
   if(k==='big')return{sp:92,life:3,r:7,p:mv.p,n:1};
@@ -3871,7 +3872,7 @@ function impactWave(s,T,x,y){const W=s.r+30;(B.rings=B.rings||[]).push({x,y,t0:p
   if(D<W+9){const k=clamp(1-(D-(s.r+9))/(W-s.r),0,1),f=0.15+0.6*k;shotHit(Object.assign({},s,{p:Math.max(1,Math.round(s.p*f)),vx:ux*100,vy:uy*100,kb:Math.round(6+12*k),wv:1}),T)}}
 function drawRings(c,now){if(!B||!B.rings||!B.rings.length)return;B.rings=B.rings.filter(g=>now-g.t0<320);for(const g of B.rings){const k=(now-g.t0)/320,r=g.r0+(g.r1-g.r0)*k;
   c.globalAlpha=0.85*(1-k);c.strokeStyle='#ffffff';pxEl(c,g.x,g.y,r,r*0.45,0);c.strokeStyle=g.col;pxEl(c,g.x,g.y,r-1,r*0.45-1,0);c.globalAlpha=1}}
-const BEAM_CH=0.5; // beams: 0.5 s aiming line first (time to dodge), then the beam
+const BEAM_CH=0.35; // beams: 0.35 s aiming line first (time to dodge), then the beam
 function shotHit(s,T){burst(s.x,s.y,TYPES[MOVES[s.mid].t].c,7);effLabel(s,T);
   if(B.mode!=='duel'||T===B.me){const d=hitLocal(T,s);drainHeal(s,d)}
   else if(MOVES[s.mid].fx==='drain'){drainHeal(s,calcDmg(s.att,act(T),s.mid,s.p).d)}}
@@ -5333,6 +5334,7 @@ Object.assign(NK,{
   if(stOn(F,'oil')){c.fillStyle='#3a3020';c.fillRect(X-7,Y-6,3,2);c.fillRect(X+4,Y-9,2,2)}
   if(stOn(F,'mag')){const a=now/200;c.fillStyle='#ff5a8a';c.fillRect(Math.round(X+Math.cos(a)*13),Math.round(Y-14+Math.sin(a)*8),2,2);c.fillStyle='#3d6bd8';c.fillRect(Math.round(X-Math.cos(a)*13),Math.round(Y-14-Math.sin(a)*8),2,2)}
   if(stOn(F,'ground')){c.strokeStyle='#c49a6c';c.lineWidth=1;pxEl(c,X,Y,14,5,0)}}}}
+const SPIN_R=62; // Turbodreher reach
 /* ===================== GEN-2-MECHANIKEN (v0.100) =====================
    motion kinds: dash (Tackle), jet (Wasserwerfer), nova (Sturmknall), jumpkick (Turmkick), spin (Turbodreher),
    weather (Sonnentag/Regentanz/Sandsturm), protect (Schutzschild), screen (Reflektor/Lichtschild), belly (Bauchtrommel)
@@ -5349,7 +5351,7 @@ function weatherOn(w){return!!(B&&B.weather&&B.weather.w===w&&B.weather.until>pe
   if(mv.k==='belly')h.push('½ KP → Angriff max');if(mv.k==='spin')h.push('löst Fallen & Samen');
   return h.length?r.replace(/ · (\d+ AP)$/,` · ${h.join(', ')} · $1`):r}}
 {const _sp0=shotParams0;shotParams0=function(mid){const mv=MOVES[mid]||MOVES.bump;
-  const P={dash:{life:0.32},jet:{life:1.2},nova:{life:0.7},jumpkick:{life:0.5},spin:{life:0.3},weather:{life:0.05},protect:{life:0.05},screen:{life:0.05},belly:{life:0.05}}[mv.k];
+  const P={dash:{life:0.32},jet:{life:1.2},nova:{life:0.7},jumpkick:{life:0.5},spin:{life:0.9},weather:{life:0.05},protect:{life:0.05},screen:{life:0.05},belly:{life:0.05}}[mv.k];
   if(P)return Object.assign({k:mv.k,nm:1,sp:1,r:8,p:mv.p,n:1},P);return _sp0(mid)}}
 {const _cd=cdOf;cdOf=function(mid){const c=_cd(mid);return mid==='solarbeam'&&weatherOn('sun')?c*0.4:c}}
 const G2={
@@ -5375,12 +5377,24 @@ const G2={
       if(k>=1){s.dead=1;A.jz=0;shockwave(A.x,A.y,40,'#c03028',0.35);
         if(alive&&!(T.inv>0)&&!airBusy(T)&&Math.hypot(T.x-A.x,(T.y-A.y)*1.2)<30)nkHit(s,T,T.x,T.y-12,{vx:s.ux,vy:s.uy,kb:14});
         else if(A.ctrl!=='remote'){const m=act(A),d=Math.max(1,Math.round(m.mhp*0.12));dealDamage(A,d,'#ef6f6f','-'+d);say('Turmkick ging daneben – Rückstoß!')}}},draw(){}},
-  spin:{tick(s,dt,T,alive){const A=sideF(s.side);if(!A){s.dead=1;return}s.x=A.x;s.y=A.y-12;if(!s.init){s.init=1;dkLock(A,280);
-        if(alive&&!(T.inv>0)&&!airBusy(T)&&Math.hypot(T.x-A.x,(T.y-A.y)*1.2)<38){const d=Math.hypot(T.x-A.x,T.y-A.y)||1;nkHit(s,T,T.x,T.y-12,{vx:(T.x-A.x)/d,vy:(T.y-A.y)/d,kb:10})}
+  spin:{tick(s,dt,T,alive){const A=sideF(s.side);if(!A){s.dead=1;return}s.x=A.x;s.y=A.y-12;const R=SPIN_R;
+      if(!s.init){s.init=1;s.hn=0;dkLock(A,150);
         let freed=0;if(A.seed){A.seed=null;freed=1}const N=nkState();const n0=N.traps.length;N.traps=N.traps.filter(t=>t.side===A.side);if(N.traps.length<n0)freed=1;
         for(const b of B.shots||[])if(b.k==='tether'&&b.tied&&b.side!==A.side){b.dead=1;freed=1}if(A.ctrl!=='remote'&&(A.st.root>0||A.st.trap>0)){A.st.root=0;A.st.trap=0;freed=1}
-        if(freed)say(`${SPECIES[act(A).s].n} wirbelt sich frei!`)}if(s.age>s.life)s.dead=1},
-    draw(c,s,col,now){const k=s.age/s.life;for(let i=0;i<10;i++){const a=i/10*Math.PI*2+k*12,x=Math.round(s.x+Math.cos(a)*30),y=Math.round(s.y+8+Math.sin(a)*14);c.fillStyle=i%2?'#ffffff':'#b8bcc8';c.fillRect(x-2,y-1,4,2)}}},
+        if(freed)say(`${SPECIES[act(A).s].n} wirbelt sich frei!`)}
+      if(A.ctrl!=='remote')A.face=Math.floor(s.age*14)%2?1:-1;   // the monster spins
+      // three hits while spinning (every 0.3 s), each throws the target outward
+      if(s.age>=s.hn*0.3&&s.hn<3){s.hn++;if(alive&&!(T.inv>0)&&!airBusy(T)&&Math.hypot(T.x-A.x,(T.y-A.y)*1.25)<R){const d=Math.hypot(T.x-A.x,T.y-A.y)||1;nkHit(s,T,T.x,T.y-12,{vx:(T.x-A.x)/d,vy:(T.y-A.y)/d,kb:s.hn<3?3:16})}}
+      // knocks incoming shots out of the air
+      for(const b of B.shots||[]){if(b.dead||b.side===s.side||b.nm||b.cap||b.mel)continue;if(Math.hypot(b.x-A.x,(b.y-A.y+12)*1.25)<R){b.dead=1;burst(b.x,b.y,'#e8ecf2',5)}}
+      if(Math.random()<dt*20)B.parts.push({x:A.x+(Math.random()-.5)*R*1.4,y:A.y+4,vx:(Math.random()-.5)*60,vy:-20-Math.random()*20,life:0.4,age:0,c:'#c8b89a'});
+      if(s.age>s.life)s.dead=1},
+    draw(c,s,col,now){const k=s.age/s.life,R=SPIN_R,fade=k>0.85?(1-k)/0.15:Math.min(1,k*6);c.globalAlpha=Math.max(0,fade);
+      // a little tornado: three tilted rings of streaks, wider at the top
+      for(let ring=0;ring<3;ring++){const rr=R*(0.55+ring*0.22),yy=s.y+14-ring*12,sp=now/55*(ring%2?1:1.3);
+        for(let i=0;i<7;i++){const a0=i/7*Math.PI*2+sp;for(let j=0;j<6;j++){const a=a0+j*0.09,x=Math.round(s.x+Math.cos(a)*rr),y=Math.round(yy+Math.sin(a)*rr*0.32);
+          c.fillStyle='#14141f';c.fillRect(x-1,y-1,4,3);c.fillStyle=j<2?'#ffffff':j<4?'#d8dce8':'#9aa1bd';c.fillRect(x,y,2,1)}}}
+      c.strokeStyle='#ffffff';pxEl(c,s.x,s.y+16,R*0.9,R*0.3,0);c.globalAlpha=1}},
   weather:{tick(s,dt,T,alive){s.dead=1;const mv=MOVES[s.mid];B.weather={w:mv.w,until:performance.now()+10000,t0:performance.now()};say(mv.w==='sun'?'Die Sonne brennt!':mv.w==='rain'?'Es regnet in Strömen!':'Ein Sandsturm zieht auf!')},draw(){}},
   protect:{tick(s,dt,T,alive){s.dead=1;const A=sideF(s.side);if(!A)return;A.prot=performance.now()+900;say(`${SPECIES[act(A).s].n} schützt sich!`)},draw(){}},
   screen:{tick(s,dt,T,alive){s.dead=1;const A=sideF(s.side);if(!A)return;const mv=MOVES[s.mid];if(mv.scr==='mel')A.scrMel=performance.now()+6000;else A.scrRng=performance.now()+6000;say(`${mv.n} errichtet!`)},draw(){}},
@@ -5821,7 +5835,7 @@ const SOG_R=110;
 function sogRelease(s){for(const o of B.obs||[])if(o.sw===s.id){o.sw=null;o.x=clamp(o.x,24,AW-24);o.y=clamp(o.y,24,AH-16)}}
 vortexShot=function(s,dt,T,alive){
   if(s.bx==null){s.bx=s.x;s.by=s.y;const L=Math.hypot(s.vx,s.vy)||1;s.px=-s.vy/L;s.py=s.vx/L;s.sgc=0}
-  s.bx+=s.vx*dt;s.by+=s.vy*dt;const w=Math.sin(s.age*6.5)*18;s.x=s.bx+s.px*w;s.y=s.by+s.py*w*0.8;
+  s.bx+=s.vx*dt;s.by+=s.vy*dt;const w=Math.sin(s.age*3.4)*Math.min(26,4+s.age*9);s.x=s.bx+s.px*w;s.y=s.by+s.py*w*0.8;
   if(s.age>s.life||outArena(s.x,s.y+10)){s.dead=1;sogRelease(s);if(!outArena(s.x,s.y+10))leaveHazard(s,s.x,s.y+8);return}
   // heavy obstacles (rock, stumps, logs, bollards) still stop it
   for(const o of B.obs||[]){if(o.dead||o.sw===s.id)continue;const dx=s.x-o.x,dy=s.y-(o.y-8),d=Math.hypot(dx,dy);
@@ -5845,6 +5859,30 @@ vortexShot=function(s,dt,T,alive){
   c.fillStyle='#0b2a55';c.fillRect(X-2,Y-1,4,2);
   // streaks drawn towards the centre (the pull)
   for(let i=0;i<6;i++){const a=i*1.047+now/700,q=((now/600+i*0.37)%1),r=R+22-q*20;c.fillStyle='#d8f0ff';c.globalAlpha=0.5*q+0.2;c.fillRect(Math.round(X+Math.cos(a)*r),Math.round(Y+Math.sin(a)*r*0.55),3,1)}c.globalAlpha=1}}
+// ===== Nebelschleier: fog drifts over the whole arena for 6 s (the caster still gets its shield).
+// In the fog the opposing AI aims badly; everyone sees the field only hazily.
+const FOG_MS=6000;
+{const _sm=selfMove;selfMove=function(F,mv){const r=_sm.apply(this,arguments);if(B&&mv===MOVES.mistveil){const now=performance.now();B.fog={t0:now,until:now+FOG_MS,side:F.side};say('Nebel zieht über das Feld!')}return r}}
+{const _kt=kindsTick;kindsTick=function(dt){_kt(dt);if(!B||!B.fog)return;if(performance.now()>B.fog.until){B.fog=null;return}
+  for(const F of[B.me,B.foe])if(F&&F.side!==B.fog.side&&F.ctrl==='ai'&&F.aimAng!=null)F.aimAng+=(Math.random()-.5)*4*dt}}
+function drawFog(c,now){const f=B&&B.fog;if(!f)return;const k=(now-f.t0)/FOG_MS;if(k>=1)return;const a=Math.min(1,k*6)*(k>0.85?(1-k)/0.15:1);
+  c.save();c.globalAlpha=0.32*a;c.fillStyle='#dfe6ee';c.fillRect(0,0,AW,AH);
+  // drifting banks of fog (chunky pixel blobs)
+  for(let i=0;i<14;i++){const sp=6+(i%4)*4,x=((i*67+now/1000*sp*(i%2?1:-1))%(AW+120)+AW+120)%(AW+120)-60,y=20+((i*53)%(AH-30));
+    c.globalAlpha=0.38*a;c.fillStyle=i%3?'#eef2f6':'#c9d3de';pxEl(c,x,y,34+(i%3)*10,9+(i%2)*4,1);c.globalAlpha=0.25*a;c.fillStyle='#ffffff';pxEl(c,x+10,y-3,18,5,1)}
+  c.restore()}
+{const _da=drawArenaEv;drawArenaEv=function(c,now,top){const r=_da.apply(this,arguments);if(top)try{drawFog(c,now)}catch(e){}return r}}
+
+// ===== Wellenschlag: besides the hit a small wave rolls forward from the attacker
+function miniWave(x,y,a){if(!B)return;(B.mwv=B.mwv||[]).push({x,y,a,t0:performance.now()});if(B.mwv.length>6)B.mwv.shift()}
+function drawMiniWaves(c,now){if(!B||!B.mwv||!B.mwv.length)return;B.mwv=B.mwv.filter(w=>now-w.t0<650);
+  for(const w of B.mwv){const k=(now-w.t0)/650,d=8+k*78,ux=Math.cos(w.a),uy=Math.sin(w.a),px=-uy,py=ux,X=w.x+ux*d,Y=w.y+uy*d,h=Math.sin(Math.min(1,k*1.4)*Math.PI)*13+3,W=20+k*14;
+    c.globalAlpha=k>0.75?(1-k)/0.25:1;
+    for(let i=-W;i<=W;i+=2){const q=1-Math.abs(i)/W,hh=Math.max(1,Math.round(h*q)),cx=Math.round(X+px*i),cy=Math.round(Y+py*i*0.7);
+      c.fillStyle='#14141f';c.fillRect(cx-1,cy-hh-1,3,hh+2);c.fillStyle='#3d8bf2';c.fillRect(cx,cy-hh,2,hh);c.fillStyle='#ffffff';c.fillRect(cx,cy-hh,2,1)}
+    if(Math.random()<0.5)B.parts.push({x:X+(Math.random()-.5)*W,y:Y-h,vx:ux*30,vy:-20,life:0.3,age:0,c:'#d8f0ff'});c.globalAlpha=1}}
+{const _da=drawArenaEv;drawArenaEv=function(c,now,top){const r=_da.apply(this,arguments);if(!top)try{drawMiniWaves(c,now)}catch(e){}return r}}
+{const _ms=meleeSwing;meleeSwing=function(c,s,col,now){if(s.mid==='waveslam'&&!s.mw){s.mw=1;const A=mOwner(s);if(A)miniWave(A.x,A.y+4,Math.atan2(s.vy,s.vx))}return _ms.apply(this,arguments)}}
 /* ===================== COURT: arena choice, spectating =====================
    Spectators render a running tournament duel purely from the two duelists' presence ("du": positions, HP, shots),
    which is broadcast to the whole room anyway — watching costs no extra bandwidth. Nothing is simulated or hit here. */
@@ -7782,7 +7820,7 @@ const PV_H=230;
 function pvTargetSid(){return['pruegelklops','zellbaer','harrymon'].find(s=>SPECIES[s])||Object.keys(SPECIES)[0]}
 function pvMakeB(mid,sid,ctx){const atk=newMon(sid&&SPECIES[sid]?sid:'harrymon',30);atk.m=[mid];const tgt=newMon(pvTargetSid(),30);
   const A=mkFighter('R',[battler(atk)],ACX-70,'none'),T=mkFighter('L',[battler(tgt)],ACX+70,'none');A.x=ACX-70;A.y=ACY-28;T.x=ACX+70;T.y=ACY-28;A.spawnT=0;T.spawnT=0;A.inv=0;T.inv=0;A.ap=AP_MAX;
-  const PB={shots:[],parts:[],nums:[],log:[],state:'fight',ptr:null,capCd:0,sid:0,vshots:[],mode:'pv',pv:1,tb:false,zone:'north',me:T,foe:A,obs:[],haz:[],pvCtx:ctx,pvK:1,enterT:performance.now(),leadDone:1};
+  const PB={shots:[],parts:[],nums:[],log:[],state:'fight',ptr:null,capCd:0,sid:0,vshots:[],mode:'pv',pv:1,tb:false,zone:'north',me:T,foe:A,obs:[],haz:[],pvCtx:ctx,pvK:1,enterT:performance.now()-5000,leadDone:1};
   const mv=MOVES[mid]||{},now=performance.now(),k=mv.k;
   const ob=(id,kind,x,y)=>{const O=OBK[kind]||{r:10,hp:50,mat:'rock'};PB.obs.push({id,kind,mat:O.mat,ind:0,x,y,r:O.r,hp:O.hp,max:O.hp,v:0})};
   if(k==='rockthrow')ob('pr','boulder',A.x+20,A.y+10);
@@ -7791,7 +7829,7 @@ function pvMakeB(mid,sid,ctx){const atk=newMon(sid&&SPECIES[sid]?sid:'harrymon',
   if(k==='shortcircuit'||(mv.t==='electric'&&k!=='self')){PB.haz.push({k:'puddle',x:ACX,y:A.y+8,r:18,t0:now,until:now+9e9,seed:1},{k:'puddle',x:T.x,y:T.y+2,r:18,t0:now,until:now+9e9,seed:2})}
   if(k==='windstream'||k==='gale')ob('w1','boulder',T.x+46,T.y+4);
   if(k==='vortex'){ob('s1','bush',ACX-20,A.y+30);ob('s2','crate',ACX+10,A.y-22);ob('s3','rock',ACX+40,A.y+40)}
-  if(k==='melee')T.x=A.x+38;  // melee needs contact: put the target within reach
+  if(k==='melee')T.x=A.x+38;if(k==='spin')T.x=A.x+52;  // melee needs contact: put the target within reach
   return PB}
 function pvEngineLoop(mid,sid){const cv=MVP.querySelector('canvas');cv.width=AW;cv.height=PV_H;cv.style.width=AW+'px';cv.style.height=PV_H+'px';const ctx=cv.getContext('2d');ctx.imageSmoothingEnabled=false;
   let PB=null,t0=0,last=performance.now(),fired=false;const CYC=2600;

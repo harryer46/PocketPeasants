@@ -29,7 +29,7 @@ function shotParams0(mid){const mv=MOVES[mid]||MOVES.bump;const k=mv.k||(mv.t===
   if(k==='rain')return{k:'air',nm:1,sp:0,life:0.9,r:12,p:Math.round(mv.p*0.36),n:1,rain:5};
   if(k==='fly')return{k:'fly',nm:1,sp:0,life:1.25,r:20,p:mv.p,n:1};
   if(k==='dive')return{k:'air',nm:1,sp:0,life:0.06,r:30,p:mv.p,n:1,dive:1.1};
-  if(k==='vortex')return{k:'vortex',nm:1,sp:74,life:2.6,r:7,p:mv.p,n:1};
+  if(k==='vortex')return{k:'vortex',nm:1,sp:52,life:3.6,r:7,p:mv.p,n:1};
   if(k==='spread')return{sp:125,life:2.4,r:4,p:Math.round(mv.p*0.42),n:3,ang:0.24};
   if(k==='multi')return{sp:200,life:2,r:2.5,p:Math.max(4,Math.round(mv.p*0.22)),n:3,ang:0.07};
   if(k==='big')return{sp:92,life:3,r:7,p:mv.p,n:1};
@@ -237,7 +237,7 @@ function impactWave(s,T,x,y){const W=s.r+30;(B.rings=B.rings||[]).push({x,y,t0:p
   if(D<W+9){const k=clamp(1-(D-(s.r+9))/(W-s.r),0,1),f=0.15+0.6*k;shotHit(Object.assign({},s,{p:Math.max(1,Math.round(s.p*f)),vx:ux*100,vy:uy*100,kb:Math.round(6+12*k),wv:1}),T)}}
 function drawRings(c,now){if(!B||!B.rings||!B.rings.length)return;B.rings=B.rings.filter(g=>now-g.t0<320);for(const g of B.rings){const k=(now-g.t0)/320,r=g.r0+(g.r1-g.r0)*k;
   c.globalAlpha=0.85*(1-k);c.strokeStyle='#ffffff';pxEl(c,g.x,g.y,r,r*0.45,0);c.strokeStyle=g.col;pxEl(c,g.x,g.y,r-1,r*0.45-1,0);c.globalAlpha=1}}
-const BEAM_CH=0.5; // beams: 0.5 s aiming line first (time to dodge), then the beam
+const BEAM_CH=0.35; // beams: 0.35 s aiming line first (time to dodge), then the beam
 function shotHit(s,T){burst(s.x,s.y,TYPES[MOVES[s.mid].t].c,7);effLabel(s,T);
   if(B.mode!=='duel'||T===B.me){const d=hitLocal(T,s);drainHeal(s,d)}
   else if(MOVES[s.mid].fx==='drain'){drainHeal(s,calcDmg(s.att,act(T),s.mid,s.p).d)}}

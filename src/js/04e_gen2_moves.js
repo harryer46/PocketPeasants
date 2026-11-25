@@ -38,7 +38,7 @@ Object.assign(MOVES,{
   regentanz:{n:'Regentanz',t:'water',p:0,k:'weather',w:'rain',cd:12},
   sandsturm:{n:'Sandsturm',t:'rock',p:0,k:'weather',w:'sand',cd:12},
   schutzschild:{n:'Schutzschild',t:'normal',p:0,k:'protect',cd:7},
-  turbodreher:{n:'Turbodreher',t:'normal',p:30,k:'spin',cd:3},
+  turbodreher:{n:'Turbodreher',t:'normal',p:40,k:'spin',cd:3.5},
   toxin:{n:'Toxin',t:'grass',p:10,k:'shot',tox:1,cd:6},
   horrorblick:{n:'Horrorblick',t:'dark',p:10,k:'beam',trap:1,cd:8},
   zugabe:{n:'Zugabe',t:'normal',p:10,k:'shot',encore:1,cd:8},

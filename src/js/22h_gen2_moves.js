@@ -1,3 +1,4 @@
+const SPIN_R=62; // Turbodreher reach
 /* ===================== GEN-2-MECHANIKEN (v0.100) =====================
    motion kinds: dash (Tackle), jet (Wasserwerfer), nova (Sturmknall), jumpkick (Turmkick), spin (Turbodreher),
    weather (Sonnentag/Regentanz/Sandsturm), protect (Schutzschild), screen (Reflektor/Lichtschild), belly (Bauchtrommel)
@@ -14,7 +15,7 @@ function weatherOn(w){return!!(B&&B.weather&&B.weather.w===w&&B.weather.until>pe
   if(mv.k==='belly')h.push('½ KP → Angriff max');if(mv.k==='spin')h.push('löst Fallen & Samen');
   return h.length?r.replace(/ · (\d+ AP)$/,` · ${h.join(', ')} · $1`):r}}
 {const _sp0=shotParams0;shotParams0=function(mid){const mv=MOVES[mid]||MOVES.bump;
-  const P={dash:{life:0.32},jet:{life:1.2},nova:{life:0.7},jumpkick:{life:0.5},spin:{life:0.3},weather:{life:0.05},protect:{life:0.05},screen:{life:0.05},belly:{life:0.05}}[mv.k];
+  const P={dash:{life:0.32},jet:{life:1.2},nova:{life:0.7},jumpkick:{life:0.5},spin:{life:0.9},weather:{life:0.05},protect:{life:0.05},screen:{life:0.05},belly:{life:0.05}}[mv.k];
   if(P)return Object.assign({k:mv.k,nm:1,sp:1,r:8,p:mv.p,n:1},P);return _sp0(mid)}}
 {const _cd=cdOf;cdOf=function(mid){const c=_cd(mid);return mid==='solarbeam'&&weatherOn('sun')?c*0.4:c}}
 const G2={
@@ -40,12 +41,24 @@ const G2={
       if(k>=1){s.dead=1;A.jz=0;shockwave(A.x,A.y,40,'#c03028',0.35);
         if(alive&&!(T.inv>0)&&!airBusy(T)&&Math.hypot(T.x-A.x,(T.y-A.y)*1.2)<30)nkHit(s,T,T.x,T.y-12,{vx:s.ux,vy:s.uy,kb:14});
         else if(A.ctrl!=='remote'){const m=act(A),d=Math.max(1,Math.round(m.mhp*0.12));dealDamage(A,d,'#ef6f6f','-'+d);say('Turmkick ging daneben – Rückstoß!')}}},draw(){}},
-  spin:{tick(s,dt,T,alive){const A=sideF(s.side);if(!A){s.dead=1;return}s.x=A.x;s.y=A.y-12;if(!s.init){s.init=1;dkLock(A,280);
-        if(alive&&!(T.inv>0)&&!airBusy(T)&&Math.hypot(T.x-A.x,(T.y-A.y)*1.2)<38){const d=Math.hypot(T.x-A.x,T.y-A.y)||1;nkHit(s,T,T.x,T.y-12,{vx:(T.x-A.x)/d,vy:(T.y-A.y)/d,kb:10})}
+  spin:{tick(s,dt,T,alive){const A=sideF(s.side);if(!A){s.dead=1;return}s.x=A.x;s.y=A.y-12;const R=SPIN_R;
+      if(!s.init){s.init=1;s.hn=0;dkLock(A,150);
         let freed=0;if(A.seed){A.seed=null;freed=1}const N=nkState();const n0=N.traps.length;N.traps=N.traps.filter(t=>t.side===A.side);if(N.traps.length<n0)freed=1;
         for(const b of B.shots||[])if(b.k==='tether'&&b.tied&&b.side!==A.side){b.dead=1;freed=1}if(A.ctrl!=='remote'&&(A.st.root>0||A.st.trap>0)){A.st.root=0;A.st.trap=0;freed=1}
-        if(freed)say(`${SPECIES[act(A).s].n} wirbelt sich frei!`)}if(s.age>s.life)s.dead=1},
-    draw(c,s,col,now){const k=s.age/s.life;for(let i=0;i<10;i++){const a=i/10*Math.PI*2+k*12,x=Math.round(s.x+Math.cos(a)*30),y=Math.round(s.y+8+Math.sin(a)*14);c.fillStyle=i%2?'#ffffff':'#b8bcc8';c.fillRect(x-2,y-1,4,2)}}},
+        if(freed)say(`${SPECIES[act(A).s].n} wirbelt sich frei!`)}
+      if(A.ctrl!=='remote')A.face=Math.floor(s.age*14)%2?1:-1;   // the monster spins
+      // three hits while spinning (every 0.3 s), each throws the target outward
+      if(s.age>=s.hn*0.3&&s.hn<3){s.hn++;if(alive&&!(T.inv>0)&&!airBusy(T)&&Math.hypot(T.x-A.x,(T.y-A.y)*1.25)<R){const d=Math.hypot(T.x-A.x,T.y-A.y)||1;nkHit(s,T,T.x,T.y-12,{vx:(T.x-A.x)/d,vy:(T.y-A.y)/d,kb:s.hn<3?3:16})}}
+      // knocks incoming shots out of the air
+      for(const b of B.shots||[]){if(b.dead||b.side===s.side||b.nm||b.cap||b.mel)continue;if(Math.hypot(b.x-A.x,(b.y-A.y+12)*1.25)<R){b.dead=1;burst(b.x,b.y,'#e8ecf2',5)}}
+      if(Math.random()<dt*20)B.parts.push({x:A.x+(Math.random()-.5)*R*1.4,y:A.y+4,vx:(Math.random()-.5)*60,vy:-20-Math.random()*20,life:0.4,age:0,c:'#c8b89a'});
+      if(s.age>s.life)s.dead=1},
+    draw(c,s,col,now){const k=s.age/s.life,R=SPIN_R,fade=k>0.85?(1-k)/0.15:Math.min(1,k*6);c.globalAlpha=Math.max(0,fade);
+      // a little tornado: three tilted rings of streaks, wider at the top
+      for(let ring=0;ring<3;ring++){const rr=R*(0.55+ring*0.22),yy=s.y+14-ring*12,sp=now/55*(ring%2?1:1.3);
+        for(let i=0;i<7;i++){const a0=i/7*Math.PI*2+sp;for(let j=0;j<6;j++){const a=a0+j*0.09,x=Math.round(s.x+Math.cos(a)*rr),y=Math.round(yy+Math.sin(a)*rr*0.32);
+          c.fillStyle='#14141f';c.fillRect(x-1,y-1,4,3);c.fillStyle=j<2?'#ffffff':j<4?'#d8dce8':'#9aa1bd';c.fillRect(x,y,2,1)}}}
+      c.strokeStyle='#ffffff';pxEl(c,s.x,s.y+16,R*0.9,R*0.3,0);c.globalAlpha=1}},
   weather:{tick(s,dt,T,alive){s.dead=1;const mv=MOVES[s.mid];B.weather={w:mv.w,until:performance.now()+10000,t0:performance.now()};say(mv.w==='sun'?'Die Sonne brennt!':mv.w==='rain'?'Es regnet in Strömen!':'Ein Sandsturm zieht auf!')},draw(){}},
   protect:{tick(s,dt,T,alive){s.dead=1;const A=sideF(s.side);if(!A)return;A.prot=performance.now()+900;say(`${SPECIES[act(A).s].n} schützt sich!`)},draw(){}},
   screen:{tick(s,dt,T,alive){s.dead=1;const A=sideF(s.side);if(!A)return;const mv=MOVES[s.mid];if(mv.scr==='mel')A.scrMel=performance.now()+6000;else A.scrRng=performance.now()+6000;say(`${mv.n} errichtet!`)},draw(){}},

@@ -6,7 +6,7 @@ const SOG_R=110;
 function sogRelease(s){for(const o of B.obs||[])if(o.sw===s.id){o.sw=null;o.x=clamp(o.x,24,AW-24);o.y=clamp(o.y,24,AH-16)}}
 vortexShot=function(s,dt,T,alive){
   if(s.bx==null){s.bx=s.x;s.by=s.y;const L=Math.hypot(s.vx,s.vy)||1;s.px=-s.vy/L;s.py=s.vx/L;s.sgc=0}
-  s.bx+=s.vx*dt;s.by+=s.vy*dt;const w=Math.sin(s.age*6.5)*18;s.x=s.bx+s.px*w;s.y=s.by+s.py*w*0.8;
+  s.bx+=s.vx*dt;s.by+=s.vy*dt;const w=Math.sin(s.age*3.4)*Math.min(26,4+s.age*9);s.x=s.bx+s.px*w;s.y=s.by+s.py*w*0.8;
   if(s.age>s.life||outArena(s.x,s.y+10)){s.dead=1;sogRelease(s);if(!outArena(s.x,s.y+10))leaveHazard(s,s.x,s.y+8);return}
   // heavy obstacles (rock, stumps, logs, bollards) still stop it
   for(const o of B.obs||[]){if(o.dead||o.sw===s.id)continue;const dx=s.x-o.x,dy=s.y-(o.y-8),d=Math.hypot(dx,dy);
