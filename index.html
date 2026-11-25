@@ -485,7 +485,7 @@ const TURN_CONFIG = {
 
 /* ===================== VERSION ===================== */
 // bump with every release (MAJOR.MINOR.PATCH). Players can only share lobbies/duels with the same version.
-const VERSION='0.110.2';
+const VERSION='0.111.0';
 // access password: changes every Monday 00:00 (local time). Only the hashes are stored here (one per week from PW_W0);
 // the password itself also keys the P2P room, so clients without the current one cannot connect. The plain list lives offline.
 const PW_KEY='knast_pw',PW_W0=Date.UTC(2026,10,16),PW_WH=[3239358969,4147130060,2718625794,3495965776,1618054998,4028240764,3044289461,1207180107,4242648729,353861226,2672313786,600614717,407529519,2270237167,3207113251,1525244515,870970040,319006638,3847934078,944313310,2153038366,3950944742,2733334548,4002544240,2736690288,645338530,1884329338,4268902487,2483246182,3828308270,2182929315,3152020422,1311886195,3461060417,3407580460,2544240283,1017220184,1277844250,4288535363,461397931,853058720,2065298771,219387161,3215594984,1108518435,2250837220,3171827014,1035538317,1537090466,1716649754,2848461661,1266925999,653943759,1307642793,3319845926,629631788,4180878311,1080582197,4114403588,2360104553,3811730973,3337788437,695971354,2424950805],MAX_ROOM=10,MAX_LOBBY=5;
@@ -2097,6 +2097,7 @@ function begin(){
 
 /* ===================== CONTROL SETTINGS ===================== */
 const CHANGELOG=[
+ ["0.111.0","2026-11-25","Beförderungsprüfung: Vor jeder Entwicklung 3 Fragen zum Paragraphen des Monsters — 2 von 3 richtig = Beförderung mit Auszeichnung (+6 % auf alle Werte, stapelt sich je Entwicklung), sonst Entwicklung ohne Bonus. Doppelt oder nichts (freiwillig) nach Trainer-Siegen: eine Fallfrage — richtig gibt Preisgeld und EP aus dem Kampf noch einmal, falsch kostet die Hälfte des Preisgelds. Beide Quiz mit Tasten 1–4, Leertaste weiter und ⚑ Frage melden."],
  ["0.110.2","2026-11-25","Monster-Dex zeigt je Monster den Fragen-Stand: ✓ zuletzt richtig · ✗ zuletzt falsch · ○ noch offen (in der Liste und in den Details, inkl. passender Fallfragen). Fehler behoben: im Dex stand „${cuffIcon(14)}“ statt des Handschellen-Icons."],
  ["0.110.1","2026-11-25","Entwicklungs-Animation wie im Original: „Nanu? … entwickelt sich!“, das Monster wird zur weißen Silhouette, alte und neue Form wechseln immer schneller, Lichtstrahlen und Funkeln, weißer Blitz, dann die neue Form mit „Glückwunsch!“. Läuft nach dem Kampf bzw. sofort außerhalb; mehrere Entwicklungen nacheinander; Leertaste/Tippen spult vor."],
  ["0.110.0","2026-11-25","Lernen: 61 Fallfragen (kurzer Sachverhalt → „Welche Norm?“, StGB, StPO, PolG, GG, BtMG) — 1–2 in jeder HfPol-Prüfung, in den Prof-Klausuren und als Weckfrage. Schlaf: statt fallender Paragraphen eine Weckfrage mit vier Antworten, beantwortbar mit den Attacken-Tasten (1–4) oder per Antippen; richtig weckt sofort, falsch kostet eine halbe Sekunde. Jede beantwortete Frage hat „⚑ Frage melden“ (kommt dann nicht mehr dran). Lernstand: Export als CSV-Tabelle und als Sicherung (JSON) mit Import auf einem anderen Gerät. Spicken entfernt → Nachhilfe für $100 beendet die Lernpause, die Prüfung schreibt man trotzdem selbst. Der 📖-Lern-Knopf an der HfPol ist auf allen Geräten immer sichtbar (unten rechts), auch während der Strafsekunden."],
@@ -8158,14 +8159,53 @@ function evoPlay(ev){const W=400,H=300;const ov=document.createElement('div');ov
     if(e>=T_END&&!ov.dataset.ready){ov.dataset.ready=1}
     requestAnimationFrame(frame)};frame();
   return new Promise(res=>{const close=()=>{if(done)return;const e=performance.now()-t0;if(e<T_FLASH&&!skip){skip=true;return}if(e<T_FLASH+600)return;done=true;ov.remove();removeEventListener('keydown',kd,true);res()};
-    const kd=e=>{if(e.key===' '||e.key==='Enter'||e.key==='Escape'){e.preventDefault();e.stopImmediatePropagation();close()}};addEventListener('keydown',kd,true);ov.addEventListener('pointerdown',e=>{e.preventDefault();close()});
+    const kd=e=>{if(e.key===' '||e.key==='Escape'){e.preventDefault();e.stopImmediatePropagation();close()}};addEventListener('keydown',kd,true);ov.addEventListener('pointerdown',e=>{e.preventDefault();close()});
     setTimeout(()=>{if(!done){const auto=()=>{if(done)return;if(performance.now()-t0>T_END+4000)close();else setTimeout(auto,500)};auto()}},T_END)})}
-setInterval(()=>{if(EVO_ON||!EVO_Q.length||B||PANIC)return;if(($('#study')&&$('#study').classList.contains('on'))||$('#cquiz').classList.contains('on'))return;
+setInterval(()=>{if(EVO_ON||!EVO_Q.length||B||PANIC||TALK||$('#modal').classList.contains('on'))return;if(($('#study')&&$('#study').classList.contains('on'))||$('#cquiz').classList.contains('on'))return;
   EVO_ON=EVO_Q.shift();evoPlay(EVO_ON).then(()=>{EVO_ON=null})},300);
 (function(){const st=document.createElement('style');st.textContent=`#evoov{position:fixed;inset:0;z-index:99999;background:#0b0d16;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px}
 #evoov canvas{width:min(92vw,800px);height:auto;image-rendering:pixelated;border:3px solid #000;box-shadow:6px 6px 0 #000}
 #evoov .evtx{width:min(92vw,800px);box-sizing:border-box;background:#f6f1e1;color:#14141f;border:3px solid #14141f;box-shadow:4px 4px 0 #000;padding:10px 14px;font-family:VT323,monospace;font-size:24px;line-height:1.1;display:flex;justify-content:space-between;gap:10px;align-items:flex-end}
 #evoov .evk{font:9px 'Press Start 2P',monospace;color:#5b3fd1;white-space:nowrap;animation:evb 1s steps(2) infinite}@keyframes evb{50%{opacity:.3}}`;document.head.appendChild(st)})();
+/* Fallhöhe-Fragen:
+   - Beförderungsprüfung: Vor der Entwicklungs-Animation 3 Fragen zum Paragraphen des Monsters.
+     2 von 3 richtig → Beförderung mit Auszeichnung: +6 % auf alle Werte (stapelt je Entwicklung). Sonst entwickelt es sich ohne Bonus.
+   - Doppelt oder nichts (freiwillig) nach einem Trainer-Sieg: eine Fallfrage. Richtig → Preisgeld und EP aus dem Kampf noch einmal;
+     falsch → die Hälfte des Preisgelds ist weg (EP bleiben). */
+{const _st=stats;stats=function(m){const s=_st.apply(this,arguments);if(m&&m.prom){const f=1+0.06*m.prom;s.mhp=Math.round(s.mhp*f);s.atk=Math.round(s.atk*f);s.def=Math.round(s.def*f);s.spd=Math.round(s.spd*f)}return s}}
+// small modal quiz: questions realized ([text, 4 answers (0 = right), explanation]); keys 1–4 answer, Space/Enter continues
+function quickQuiz(title,intro,qs,done){let i=0,ok=0,ans=null;const keys=e=>{if(!$('#modal').classList.contains('on')||!$('#qqbox')){removeEventListener('keydown',keys,true);return}
+    const n=+e.key;if(ans==null&&n>=1&&n<=4){e.preventDefault();e.stopImmediatePropagation();pick(QQ.order[n-1])}else if(ans!=null&&e.key===' '){e.preventDefault();e.stopImmediatePropagation();next()}};
+  const QQ={order:[0,1,2,3]};addEventListener('keydown',keys,true);
+  const render=()=>{const q=qs[i];QQ.order=QQ.order&&ans!=null?QQ.order:qShuffle([0,1,2,3]);
+    openModal(`<div id="qqbox"><h3>${title}</h3><p class="small">${intro} · Frage ${i+1}/${qs.length} · ${ok} richtig</p><div class="sdlg" style="margin:6px 0">${esc(q[0])}</div>
+      <div class="sans">${QQ.order.map((k,j)=>`<button class="sa ${ans==null?'':k===0?'ok':k===ans?'bad':'dim'}" data-qq="${k}" ${ans!=null?'disabled':''}><span class="sk">${j+1}</span>${esc(q[1][k])}</button>`).join('')}</div>
+      ${ans!=null?`<div class="sexp ${ans===0?'ok':'bad'}" style="margin-top:6px">${ans===0?'✔ Richtig!':'✘ Falsch.'} ${esc(q[2]||'')}</div><div class="acts" style="margin-top:8px"><button class="btn ghost" id="qqrep" style="font-size:9px">${qReported(q[0])?'⚑ GEMELDET':'⚑ FRAGE MELDEN'}</button><button class="btn" id="qqnext">${i+1<qs.length?'WEITER ▶':'ERGEBNIS ▶'}</button></div>`:''}</div>`);
+    document.querySelectorAll('[data-qq]').forEach(b=>b.onclick=()=>pick(+b.dataset.qq));const nx=$('#qqnext');if(nx)nx.onclick=next;const rp=$('#qqrep');if(rp)rp.onclick=()=>{qReport(q[0]);rp.textContent='⚑ GEMELDET';rp.disabled=true}};
+  const pick=k=>{if(ans!=null)return;ans=k;if(k===0)ok++;qsLog(qs[i][0],k===0);render()};
+  const next=()=>{if(ans==null)return;ans=null;QQ.order=null;i++;if(i>=qs.length){removeEventListener('keydown',keys,true);closeModal();done(ok);return}render()};
+  render()}
+function promoQuestions(m){const sid=m.s,sp=SPECIES[sid],base=sp.evoOf||sid,raw=(QZ[sid]||QZ[base]||[]).filter(q=>!qReported(q[0]));const out=[],av=new Set();
+  for(const q of qwSample(raw,3)){const r=q.q||q;if(av.has(r[0]))continue;av.add(r[0]);out.push(qReal(r))}
+  const book=lawOf(base)||lawOf(sid);while(out.length<3){const q=caseFor(['StGB','StPO','PolG','GG','BtMG'].includes(book)?book:null,av);if(!q)break;av.add(q[0]);out.push(qReal(q))}
+  return out}
+// queue: exam first, then the animation
+{const _gx=gainXp;gainXp=function(m,amt){const s0=m&&m.s;const out=_gx.apply(this,arguments);try{if(m&&s0&&m.s!==s0&&EVO_Q.length)EVO_Q[EVO_Q.length-1].m=m}catch(e){}return out}}
+const _evoPlay=evoPlay;evoPlay=function(ev){const m=ev.m;if(!m||!RUN||!RUN.team.includes(m))return _evoPlay(ev);const qs=promoQuestions(m);if(qs.length<3)return _evoPlay(ev);
+  return new Promise(res=>{quickQuiz(`🎖 BEFÖRDERUNGSPRÜFUNG`,`${esc(SPECIES[ev.from].n)} steht vor der Beförderung – 2 von 3 richtig für die Auszeichnung`,qs,ok=>{const pass=ok>=2;
+    if(pass){m.prom=(m.prom||0)+1;m.hp=Math.min(stats(m).mhp,m.hp+Math.round(stats(m).mhp*0.06));save()}
+    _evoPlay(ev).then(()=>{toast(pass?`🎖 Mit Auszeichnung befördert (${ok}/3): ${SPECIES[m.s].n} bekommt +6 % auf alle Werte!`:`Beförderung ohne Auszeichnung (${ok}/3) – kein Bonus diesmal.`);if(pass)sysChat(`🎖 ${SPECIES[m.s].n} wurde mit Auszeichnung befördert (${ok}/3).`);renderTeam();res()})})})};
+// ---- Doppelt oder nichts ----
+{const _gx=gainXp;gainXp=function(m,amt){try{if(B&&B.mode==='trainer'&&m&&!gainXp._don)(B.trXp=B.trXp||[]).push([m,amt])}catch(e){}return _gx.apply(this,arguments)}}
+{const _tw=trainerWin;trainerWin=async function(){const t=B&&B.trainer,xs=(B&&B.trXp||[]).slice(),m0=RUN?RUN.money:0;const r=await _tw.apply(this,arguments);
+  try{const prize=Math.max(0,(RUN?RUN.money:0)-m0);if(t&&!t.pplk&&!t.gift&&!t.toll&&!t.boss&&prize>0&&SET.don!=='0'){let n=0;
+    const w=()=>{if(++n>200)return;if(B||TALK||$('#modal').classList.contains('on')||$('#evoov')||EVO_Q.length){setTimeout(w,400);return}offerDouble(t,prize,xs)};setTimeout(w,900)}}catch(e){console.warn(e)}return r}}
+function offerDouble(t,prize,xs){const ep=xs.reduce((a,x)=>a+x[1],0);
+  openModal(`<h3>🎲 DOPPELT ODER NICHTS?</h3><p>Du hast <b>${esc(t.n)}</b> besiegt: <b>$${prize}</b>${ep?` und <b>${Math.round(ep*((RUN.cfg&&RUN.cfg.xp)||1))} EP</b>`:''}.</p><p class="small">Eine Fallfrage: <span style="color:#3ddc6b">richtig → Preisgeld${ep?' und EP':''} noch einmal</span> · <span style="color:#ef4444">falsch → die Hälfte des Preisgelds ist weg</span> (EP bleiben).</p>
+   <div class="acts"><button class="btn ghost" id="dnno">NEIN, LIEBER SICHER</button><button class="btn" id="dnyes">🎲 RISKIEREN</button></div>`);
+  $('#dnno').onclick=closeModal;$('#dnyes').onclick=()=>{const q=caseFor(null);if(!q){closeModal();return}
+    quickQuiz('🎲 DOPPELT ODER NICHTS','Eine Frage entscheidet',[qReal(q)],ok=>{if(ok){earn(prize,'Doppelt oder nichts');gainXp._don=1;try{for(const[m,a]of xs)if(RUN.team.includes(m))for(const s of gainXp(m,a))sysChat(s)}finally{gainXp._don=0}toast(`🎉 Verdoppelt! +$${prize}${ep?' und EP':''}.`)}
+      else{const lose=Math.floor(prize/2);RUN.money=Math.max(0,RUN.money-lose);toast(`💸 Daneben – $${lose} sind weg.`)}save();updateHud();renderTeam();pushMt()})}}
 /* ===================== BOOT ===================== */
 applyControls();
 G=loadSave();
