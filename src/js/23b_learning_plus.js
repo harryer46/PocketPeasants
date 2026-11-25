@@ -143,3 +143,12 @@ studyCrib=function(m){if(!m||!atHfPol())return;if((m.stT||0)+STUDY_CD<=Date.now(
   RUN.money-=CRIB_P;m.stT=0;save();updateHud();toast(`👩‍🏫 Nachhilfe gebucht: ${SPECIES[m.s].n} schreibt die Prüfung sofort.`);openStudy(m)};
 {const _oh=openHfPol;openHfPol=function(){_oh.apply(this,arguments);try{document.querySelectorAll('[data-cp]').forEach(b=>{const m=RUN.team[+b.dataset.cp],left=(m.stT||0)+STUDY_CD-Date.now();b.textContent=`👩‍🏫 NACHHILFE $${CRIB_P}`;b.title='Lernpause sofort beenden und die Prüfung direkt schreiben (die Fragen musst du trotzdem beantworten)';b.disabled=!(left>0)||money()<CRIB_P})}catch(e){}}}
 {const _qi=qIndex;qIndex=function(){const had=QIDX;const m=_qi();if(!had)for(const q of CASE_QZ){const k=qsId(q[0]);if(!m.has(k))m.set(k,q.book)}return m}}
+// ---- Fragen-Stand je Monster (Dex) ----
+function qPoolOf(sid){const sp=SPECIES[sid];if(!sp)return[];const m=new Map();const base=sp.evoOf||sid;
+  for(const q of(QZ[sid]||QZ[base]||[]))m.set(qsId(q[0]),q[0]);
+  const lm=(sp.law||'').match(/^(?:§|Art\.)\s*(\d+[a-z]?)\s+([A-Za-zÄÖÜäöü]+)/);if(lm)for(let i=0;i<CASES.length;i++){const c=CASES[i];if(c[0]===lm[2]&&c[1]===lm[1])m.set(qsId(CASE_QZ[i][0]),CASE_QZ[i][0])}
+  return[...m.keys()]}
+function qStatsFor(sid){const S=qsLoad(),ks=qPoolOf(sid);let r=0,w=0,o=0;for(const k of ks){const x=S[k];if(!x||x[0]+x[1]===0)o++;else if(x[2]>0)r++;else w++}return{n:ks.length,r,w,o}}
+function qDexLine(sid,short){const q=qStatsFor(sid);if(!q.n)return'';return short?`<br><span class="small" title="Fragen zu diesem Monster: zuletzt richtig · zuletzt falsch · noch offen"><span style="color:#3ddc6b">✓${q.r}</span> <span style="color:#ef4444">✗${q.w}</span> <span style="color:var(--muted)">○${q.o}</span></span>`
+  :`<p class="small" style="margin:4px 0 0">📚 Fragen zu diesem Monster: <span style="color:#3ddc6b">${q.r} richtig</span> · <span style="color:#ef4444">${q.w} falsch</span> · ${q.o} offen <span style="opacity:.7">(von ${q.n})</span></p>`}
+{const _omi2=openMonInfo;openMonInfo=function(s){const r=_omi2.apply(this,arguments);try{const box=$('#mbox'),law=[...box.querySelectorAll('p')].find(p=>/§|Art\./.test(p.textContent));const h=qDexLine(s,false);if(h){if(law)law.insertAdjacentHTML('afterend',h);else box.querySelector('h3')&&box.querySelector('h3').insertAdjacentHTML('afterend',h)}}catch(e){}return r}}

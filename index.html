@@ -485,7 +485,7 @@ const TURN_CONFIG = {
 
 /* ===================== VERSION ===================== */
 // bump with every release (MAJOR.MINOR.PATCH). Players can only share lobbies/duels with the same version.
-const VERSION='0.110.0';
+const VERSION='0.110.2';
 // access password: changes every Monday 00:00 (local time). Only the hashes are stored here (one per week from PW_W0);
 // the password itself also keys the P2P room, so clients without the current one cannot connect. The plain list lives offline.
 const PW_KEY='knast_pw',PW_W0=Date.UTC(2026,10,16),PW_WH=[3239358969,4147130060,2718625794,3495965776,1618054998,4028240764,3044289461,1207180107,4242648729,353861226,2672313786,600614717,407529519,2270237167,3207113251,1525244515,870970040,319006638,3847934078,944313310,2153038366,3950944742,2733334548,4002544240,2736690288,645338530,1884329338,4268902487,2483246182,3828308270,2182929315,3152020422,1311886195,3461060417,3407580460,2544240283,1017220184,1277844250,4288535363,461397931,853058720,2065298771,219387161,3215594984,1108518435,2250837220,3171827014,1035538317,1537090466,1716649754,2848461661,1266925999,653943759,1307642793,3319845926,629631788,4180878311,1080582197,4114403588,2360104553,3811730973,3337788437,695971354,2424950805],MAX_ROOM=10,MAX_LOBBY=5;
@@ -2097,6 +2097,8 @@ function begin(){
 
 /* ===================== CONTROL SETTINGS ===================== */
 const CHANGELOG=[
+ ["0.110.2","2026-11-25","Monster-Dex zeigt je Monster den Fragen-Stand: ✓ zuletzt richtig · ✗ zuletzt falsch · ○ noch offen (in der Liste und in den Details, inkl. passender Fallfragen). Fehler behoben: im Dex stand „${cuffIcon(14)}“ statt des Handschellen-Icons."],
+ ["0.110.1","2026-11-25","Entwicklungs-Animation wie im Original: „Nanu? … entwickelt sich!“, das Monster wird zur weißen Silhouette, alte und neue Form wechseln immer schneller, Lichtstrahlen und Funkeln, weißer Blitz, dann die neue Form mit „Glückwunsch!“. Läuft nach dem Kampf bzw. sofort außerhalb; mehrere Entwicklungen nacheinander; Leertaste/Tippen spult vor."],
  ["0.110.0","2026-11-25","Lernen: 61 Fallfragen (kurzer Sachverhalt → „Welche Norm?“, StGB, StPO, PolG, GG, BtMG) — 1–2 in jeder HfPol-Prüfung, in den Prof-Klausuren und als Weckfrage. Schlaf: statt fallender Paragraphen eine Weckfrage mit vier Antworten, beantwortbar mit den Attacken-Tasten (1–4) oder per Antippen; richtig weckt sofort, falsch kostet eine halbe Sekunde. Jede beantwortete Frage hat „⚑ Frage melden“ (kommt dann nicht mehr dran). Lernstand: Export als CSV-Tabelle und als Sicherung (JSON) mit Import auf einem anderen Gerät. Spicken entfernt → Nachhilfe für $100 beendet die Lernpause, die Prüfung schreibt man trotzdem selbst. Der 📖-Lern-Knopf an der HfPol ist auf allen Geräten immer sichtbar (unten rechts), auch während der Strafsekunden."],
  ["0.109.0","2026-11-25","Neue Typen Eis und Gift. Eis: Aussetzling (§ 221 StGB), Kaltherz (§ 323c StGB), Notruffrost (§ 145 StGB) — Gebirge, Norden, Osten. Gift: Dealermolch (§ 29 BtMG), Giftmischer (§ 314 StGB), Kloakenkröte (§ 324 StGB) — Dschungel, Küste, Wüste, Osten. Jede Art mit zwei Entwicklungen (Platzhalter-Sprites bis zum Artwork). Gift-Attacken: Giftstachel, Giftpuder, Säurespray, Schlammbombe, Giftwolke (Gaswolke auf dem Feld, explodiert mit Feuer), Toxin ist jetzt Gift-Typ; Vergiftung schadet jede Sekunde. Pflanzen lernen Giftpuder, Giftstachel und Schlammbombe. Eis-Attacken: Eissplitter, Frostatem, Eiszapfenhagel, Eisstrahl (auch Wasser), Blizzard — verlangsamen oder frieren ein; Eis friert Pfützen zu Glatteis (rutschig), Feuer taut es wieder. Typ-Tabelle: Eis stark gegen Pflanze/Flug, schwach gegen Feuer/Gestein/Kampf; Gift stark gegen Pflanze, schwach gegen Gestein. Solarstrahl prallt jetzt zweimal ab (Feldrand oder feste Hindernisse) und kann über Bande treffen."],
  ["0.108.0","2026-11-24","Attacken-Vorschau nutzt jetzt die echte Kampf-Engine: echte Sprites, Geschosse, Effekte, Hindernisse und Schadenszahlen in einem Mini-Kampf (dein Monster gegen eine Übungspuppe), auch während eines Kampfes. Große Geschosse (Glut, Ofenexplosion, Dornenexplosion …) zerbersten in drei kleinere Splitter, wenn ein anderes Geschoss sie trifft. Erdbeben: Kamera bebt, 10–20 Steine fallen vom Himmel (Schatten → Einschlag, max. 3 Treffer), jeder dritte bleibt 8 s liegen (Munition für Felswurf). SIEG-/Niederlagen-Bildschirm mit Leertaste oder Tippen überspringen. Surfer-Welle kommt jetzt vom Rand des Kampffelds und rollt übers ganze Feld; wer hinter einem stabilen Hindernis (Fels, Säule …) steht, bekommt keinen Schaden — kleine Deckung wie Büsche reißt die Welle weg."],
@@ -7202,6 +7204,15 @@ studyCrib=function(m){if(!m||!atHfPol())return;if((m.stT||0)+STUDY_CD<=Date.now(
   RUN.money-=CRIB_P;m.stT=0;save();updateHud();toast(`👩‍🏫 Nachhilfe gebucht: ${SPECIES[m.s].n} schreibt die Prüfung sofort.`);openStudy(m)};
 {const _oh=openHfPol;openHfPol=function(){_oh.apply(this,arguments);try{document.querySelectorAll('[data-cp]').forEach(b=>{const m=RUN.team[+b.dataset.cp],left=(m.stT||0)+STUDY_CD-Date.now();b.textContent=`👩‍🏫 NACHHILFE $${CRIB_P}`;b.title='Lernpause sofort beenden und die Prüfung direkt schreiben (die Fragen musst du trotzdem beantworten)';b.disabled=!(left>0)||money()<CRIB_P})}catch(e){}}}
 {const _qi=qIndex;qIndex=function(){const had=QIDX;const m=_qi();if(!had)for(const q of CASE_QZ){const k=qsId(q[0]);if(!m.has(k))m.set(k,q.book)}return m}}
+// ---- Fragen-Stand je Monster (Dex) ----
+function qPoolOf(sid){const sp=SPECIES[sid];if(!sp)return[];const m=new Map();const base=sp.evoOf||sid;
+  for(const q of(QZ[sid]||QZ[base]||[]))m.set(qsId(q[0]),q[0]);
+  const lm=(sp.law||'').match(/^(?:§|Art\.)\s*(\d+[a-z]?)\s+([A-Za-zÄÖÜäöü]+)/);if(lm)for(let i=0;i<CASES.length;i++){const c=CASES[i];if(c[0]===lm[2]&&c[1]===lm[1])m.set(qsId(CASE_QZ[i][0]),CASE_QZ[i][0])}
+  return[...m.keys()]}
+function qStatsFor(sid){const S=qsLoad(),ks=qPoolOf(sid);let r=0,w=0,o=0;for(const k of ks){const x=S[k];if(!x||x[0]+x[1]===0)o++;else if(x[2]>0)r++;else w++}return{n:ks.length,r,w,o}}
+function qDexLine(sid,short){const q=qStatsFor(sid);if(!q.n)return'';return short?`<br><span class="small" title="Fragen zu diesem Monster: zuletzt richtig · zuletzt falsch · noch offen"><span style="color:#3ddc6b">✓${q.r}</span> <span style="color:#ef4444">✗${q.w}</span> <span style="color:var(--muted)">○${q.o}</span></span>`
+  :`<p class="small" style="margin:4px 0 0">📚 Fragen zu diesem Monster: <span style="color:#3ddc6b">${q.r} richtig</span> · <span style="color:#ef4444">${q.w} falsch</span> · ${q.o} offen <span style="opacity:.7">(von ${q.n})</span></p>`}
+{const _omi2=openMonInfo;openMonInfo=function(s){const r=_omi2.apply(this,arguments);try{const box=$('#mbox'),law=[...box.querySelectorAll('p')].find(p=>/§|Art\./.test(p.textContent));const h=qDexLine(s,false);if(h){if(law)law.insertAdjacentHTML('afterend',h);else box.querySelector('h3')&&box.querySelector('h3').insertAdjacentHTML('afterend',h)}}catch(e){}return r}}
 /* ===================== DEX & DETAILS ===================== */
 const KIND_TXT={melee:'Nahkampf — trifft aus der Nähe',shot:'Fernkampf — ein Geschoss',spread:'Fächer — 3 Geschosse im Fächer',multi:'Salve — schnelle Serie',big:'Schwer — großes, langsames Geschoss',self:'Selbst — stärkt/heilt dich',beam:'Strahl — kurzes Aufladen, dann sofortiger Treffer in Linie',breath:'Atem — kurzer Kegel, mehrere Treffer',air:'Luftschlag — trifft von oben an der markierten Stelle',lob:'Hochwurf — fliegt über Hindernisse, Flächentreffer'};
 const FX_LONG={sleep:'Kann das Ziel einschläfern (wacht bei Treffer auf)',conf:'Kann das Ziel verwirren (Steuerung und Zielen gestört)',burn:'Kann verbrennen: Schaden über Zeit',slow:'Verlangsamt das Ziel',stun:'Kann das Ziel kurz betäuben',drain:'Heilt dich um die Hälfte des Schadens',heal:'Heilt 30 % der max. KP',shield:'Halbiert eine Weile den erlittenen Schaden',haste:'Macht dich eine Weile schneller',knock:'Stößt das Ziel zurück'};
@@ -7242,7 +7253,7 @@ function openTypeChart(){const T=Object.keys(TYPES);
   $('#mok').onclick=closeModal;$('#mback').onclick=openDex}
 function openDex(){const ids=rosterIds();
   const seen=ids.filter(s=>G.dex[s]!==undefined).length,caught=ids.filter(s=>G.dex[s]).length;
-  openModal(`<h3>📖 MONSTER-DEX</h3><p class="small" style="margin-bottom:4px">Gesehen ${seen} · festgenommen ${caught} / ${ids.length}</p><div id="dexgrid">${ids.map((s,i)=>{const k=G.dex[s];return`<button class="dexc ${k===undefined?'unk':''}" data-dx="${s}"><canvas width="52" height="52"></canvas>#${String(i+1).padStart(2,'0')} ${k===undefined?'???':nameHtml(s)+(SPECIES[s].law?'<br><span class="small" style="color:var(--accent)">'+esc(SPECIES[s].law.split(' · ')[0])+'</span>':'')}${k?'<br><span class="small">${cuffIcon(14)} festgenommen</span>':k===0?'<br><span class="small">gesehen</span>':''}</button>`}).join('')}</div><div class="acts"><a class="btn ghost" href="uebersicht/" target="_blank" rel="noopener" style="text-decoration:none;display:inline-block" title="Alle Monster mit Entwicklungslinien, Typen und Attacken (neuer Tab, enthält Spoiler)">📋 ÜBERSICHT ↗</a><button class="btn ghost" id="mtypes">TYPEN-TABELLE</button><button class="btn" id="mok">SCHLIESSEN</button></div>`);
+  openModal(`<h3>📖 MONSTER-DEX</h3><p class="small" style="margin-bottom:4px">Gesehen ${seen} · festgenommen ${caught} / ${ids.length}</p><div id="dexgrid">${ids.map((s,i)=>{const k=G.dex[s];return`<button class="dexc ${k===undefined?'unk':''}" data-dx="${s}"><canvas width="52" height="52"></canvas>#${String(i+1).padStart(2,'0')} ${k===undefined?'???':nameHtml(s)+(SPECIES[s].law?'<br><span class="small" style="color:var(--accent)">'+esc(SPECIES[s].law.split(' · ')[0])+'</span>':'')}${k?'<br><span class="small">'+cuffIcon(14)+' festgenommen</span>':k===0?'<br><span class="small">gesehen</span>':''}${k!==undefined?qDexLine(s,true):''}</button>`}).join('')}</div><div class="acts"><a class="btn ghost" href="uebersicht/" target="_blank" rel="noopener" style="text-decoration:none;display:inline-block" title="Alle Monster mit Entwicklungslinien, Typen und Attacken (neuer Tab, enthält Spoiler)">📋 ÜBERSICHT ↗</a><button class="btn ghost" id="mtypes">TYPEN-TABELLE</button><button class="btn" id="mok">SCHLIESSEN</button></div>`);
   $('#mtypes').onclick=openTypeChart;$('#mbox').style.maxWidth='760px';$('#mbox').style.maxHeight='92%';$('#mbox').style.overflow='auto';
   document.querySelectorAll('[data-dx]').forEach(b=>{const s=b.dataset.dx,cx=b.querySelector('canvas').getContext('2d');cx.imageSmoothingEnabled=false;if(G.dex[s]!==undefined)cx.drawImage(monSprite(s,24),0,0,52,52);else{cx.globalAlpha=0.3;cx.filter='brightness(0)';cx.drawImage(monSprite(s,24),0,0,52,52)}
     b.onclick=()=>{if(G.dex[s]===undefined){toast('Noch nicht gesehen — geh auf Entdeckungstour!');return}openMonInfo(s,null,true)}});
@@ -8118,6 +8129,43 @@ addEventListener('keydown',e=>{if(e.key!=='Escape'||capturing||PANIC)return;let 
   const bs=[...box.querySelectorAll('button')].filter(b=>b.offsetParent!==null&&!b.disabled);
   const b=box.querySelector('#mno:not([disabled]),#mok:not([disabled]),#mback:not([disabled])')||bs.find(b=>/^(✕|×)|SCHLIESSEN|ABBRECHEN|ZURÜCK|WEITER TRAINIEREN|NICHTS MITNEHMEN|SPÄTER|NEIN/i.test(b.textContent.trim()));
   if(!b)return;e.preventDefault();e.stopImmediatePropagation();b.click()},true);
+/* Entwicklungs-Animation wie im Original: dunkler Bildschirm, „Nanu? … entwickelt sich!“, das Monster wird zur weißen
+   Silhouette, alte und neue Form wechseln immer schneller, weißer Blitz, die neue Form erscheint mit Funkeln und
+   „Glückwunsch!“. Läuft nach dem Kampf (bzw. sofort außerhalb), mehrere Entwicklungen nacheinander. Leertaste/Tippen: weiter. */
+const EVO_Q=[];let EVO_ON=null;
+{const _gx=gainXp;gainXp=function(m,amt){const s0=m&&m.s;const out=_gx.apply(this,arguments);try{if(m&&s0&&m.s!==s0){let a=s0;const chain=[];let s=a;while(SPECIES[s]&&SPECIES[s].evo&&s!==m.s){chain.push([s,SPECIES[s].evo[1]]);s=SPECIES[s].evo[1]}if(!chain.length)chain.push([s0,m.s]);for(const[f,t]of chain)EVO_Q.push({from:f,to:t})}}catch(e){}return out}}
+function evoSil(spr,col){const c=mk(spr.width,spr.height),x=c.getContext('2d');x.drawImage(spr,0,0);x.globalCompositeOperation='source-in';x.fillStyle=col;x.fillRect(0,0,c.width,c.height);return c}
+function evoPlay(ev){const W=400,H=300;const ov=document.createElement('div');ov.id='evoov';ov.innerHTML=`<canvas width="${W}" height="${H}"></canvas><div class="evtx"></div>`;document.body.appendChild(ov);
+  const cv=ov.querySelector('canvas'),c=cv.getContext('2d'),tx=ov.querySelector('.evtx');c.imageSmoothingEnabled=false;
+  const A=monSprite(ev.from,24),Bs=monSprite(ev.to,24),SA=evoSil(A,'#ffffff'),SB=evoSil(Bs,'#ffffff');const nA=SPECIES[ev.from].n,nB=SPECIES[ev.to].n;
+  const t0=performance.now(),T_SIL=1500,T_SWAP=4400,T_FLASH=4800,T_END=5800;let skip=false,done=false;const stars=[];
+  const draw=s=>{const k=Math.max(1,Math.floor(Math.min(170/s.height,2.4)*2)/2);const w=s.width*k,h=s.height*k;c.drawImage(s,Math.round(W/2-w/2),Math.round(H*0.47-h/2),Math.round(w),Math.round(h))};
+  const frame=()=>{if(done)return;let e=performance.now()-t0;if(skip&&e<T_FLASH)e=T_FLASH;
+    // backdrop
+    c.fillStyle='#0b0d16';c.fillRect(0,0,W,H);const g=c.createRadialGradient(W/2,H*0.47,10,W/2,H*0.47,190);g.addColorStop(0,e>T_SIL?'#3a4a8a':'#1f2a48');g.addColorStop(1,'#0b0d16');c.fillStyle=g;c.fillRect(0,0,W,H);
+    // light rays while transforming
+    if(e>T_SIL&&e<T_FLASH){c.save();c.translate(W/2,H*0.47);c.rotate(e/1600);c.globalAlpha=Math.min(0.35,(e-T_SIL)/3000);for(let i=0;i<12;i++){c.rotate(Math.PI/6);c.fillStyle=i%2?'#ffffff':'#9fd0ff';c.beginPath();c.moveTo(0,0);c.lineTo(220,-12);c.lineTo(220,12);c.closePath();c.fill()}c.restore()}
+    if(e>T_SIL*0.6&&Math.random()<0.6)stars.push({x:W/2+(Math.random()-.5)*240,y:H*0.47+(Math.random()-.5)*190,t:performance.now()});
+    for(const s of stars){const a=(performance.now()-s.t)/600;if(a>1)continue;const r=Math.round(3*(1-Math.abs(a-.5)*2));c.fillStyle=e>T_FLASH?'#ffcb3d':'#ffffff';c.fillRect(Math.round(s.x)-r,Math.round(s.y),2*r+1,1);c.fillRect(Math.round(s.x),Math.round(s.y)-r,1,2*r+1)}
+    while(stars.length&&performance.now()-stars[0].t>700)stars.shift();
+    // sprite phases
+    if(e<T_SIL*0.55)draw(A);
+    else if(e<T_SIL){draw(A);c.globalAlpha=(e-T_SIL*0.55)/(T_SIL*0.45);draw(SA);c.globalAlpha=1}
+    else if(e<T_SWAP){const u=(e-T_SIL)/(T_SWAP-T_SIL),per=520*(1-u)+55,ph=Math.floor((e-T_SIL)/per)%2;draw(ph?SB:SA)}
+    else if(e<T_FLASH){draw(SB);c.fillStyle=`rgba(255,255,255,${(e-T_SWAP)/(T_FLASH-T_SWAP)})`;c.fillRect(0,0,W,H)}
+    else{draw(Bs);const f=1-Math.min(1,(e-T_FLASH)/500);if(f>0){c.fillStyle=`rgba(255,255,255,${f})`;c.fillRect(0,0,W,H)}}
+    const txt=e<T_FLASH?`Nanu? ${nA} entwickelt sich!`:`Glückwunsch! ${nA} hat sich zu ${nB} entwickelt!`;if(tx.dataset.t!==txt){tx.dataset.t=txt;tx.innerHTML=esc(txt)+(e>=T_FLASH?`<span class="evk">${isMob()?'Tippen':'LEERTASTE'} ▶</span>`:'')}
+    if(e>=T_END&&!ov.dataset.ready){ov.dataset.ready=1}
+    requestAnimationFrame(frame)};frame();
+  return new Promise(res=>{const close=()=>{if(done)return;const e=performance.now()-t0;if(e<T_FLASH&&!skip){skip=true;return}if(e<T_FLASH+600)return;done=true;ov.remove();removeEventListener('keydown',kd,true);res()};
+    const kd=e=>{if(e.key===' '||e.key==='Enter'||e.key==='Escape'){e.preventDefault();e.stopImmediatePropagation();close()}};addEventListener('keydown',kd,true);ov.addEventListener('pointerdown',e=>{e.preventDefault();close()});
+    setTimeout(()=>{if(!done){const auto=()=>{if(done)return;if(performance.now()-t0>T_END+4000)close();else setTimeout(auto,500)};auto()}},T_END)})}
+setInterval(()=>{if(EVO_ON||!EVO_Q.length||B||PANIC)return;if(($('#study')&&$('#study').classList.contains('on'))||$('#cquiz').classList.contains('on'))return;
+  EVO_ON=EVO_Q.shift();evoPlay(EVO_ON).then(()=>{EVO_ON=null})},300);
+(function(){const st=document.createElement('style');st.textContent=`#evoov{position:fixed;inset:0;z-index:99999;background:#0b0d16;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px}
+#evoov canvas{width:min(92vw,800px);height:auto;image-rendering:pixelated;border:3px solid #000;box-shadow:6px 6px 0 #000}
+#evoov .evtx{width:min(92vw,800px);box-sizing:border-box;background:#f6f1e1;color:#14141f;border:3px solid #14141f;box-shadow:4px 4px 0 #000;padding:10px 14px;font-family:VT323,monospace;font-size:24px;line-height:1.1;display:flex;justify-content:space-between;gap:10px;align-items:flex-end}
+#evoov .evk{font:9px 'Press Start 2P',monospace;color:#5b3fd1;white-space:nowrap;animation:evb 1s steps(2) infinite}@keyframes evb{50%{opacity:.3}}`;document.head.appendChild(st)})();
 /* ===================== BOOT ===================== */
 applyControls();
 G=loadSave();
