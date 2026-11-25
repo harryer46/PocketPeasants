@@ -110,7 +110,7 @@ function healQuiz(){RUN.kap=Math.max(RUN.kap,10);updateHud();for(const m of RUN.
   // penalty after a wrong answer: the next question only comes after 5 s
   const penBtns=()=>{const l=Math.max(0,(healQuiz.pen||0)-Date.now());const b=$('#cqnext');if(b){b.disabled=l>0;b.textContent=l>0?`⏳ ${Math.ceil(l/1000)} s`:'NÄCHSTE FRAGE'}document.querySelectorAll('[data-pm]').forEach(c=>{c.style.filter=l>0?'grayscale(1)':''});const t=$('#cqpen');if(t)t.textContent=l>0?`⏳ Strafzeit: noch ${Math.ceil(l/1000)} s`:'';if(l>0)setTimeout(penBtns,200)};
   const overview=()=>{clearInterval(healQuiz.tm);CQ=null;CQ_PICK=null;cur=null;
-    $('#cqbox').innerHTML=`<div class="sdlg" style="margin-bottom:8px"><span class="slaw">⚕ PÄD · Polizeiärztlicher Dienst</span><br><span class="small">Wähle ein Monster: Fragen zu seinem Paragraphen. Richtig = voll geheilt, falsch = keine Heilung und 5 Strafsekunden. Unter dem Bild: 💊 sofort voll heilen für $100. In der Frage-Ansicht heilt ➕ ohne Frage +10 % KP (danach 1 s warten).</span></div>
+    $('#cqbox').innerHTML=`<div class="sdlg" style="margin-bottom:8px"><span class="slaw">⚕ PÄD · Polizeiärztlicher Dienst</span><br><span class="small">Wähle ein Monster: Fragen zu seinem Paragraphen. Richtig = voll geheilt, falsch = keine Heilung und 5 Strafsekunden. Unter dem Bild: 💊 sofort voll heilen für $100.</span></div>
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px">${all().map((m,i)=>`<div>${card(m,i)}</div>`).join('')}</div>
       <div class="small" id="cqpen" style="text-align:center;color:#ffcb3d;min-height:14px"></div><div class="sacts" style="margin-top:8px"><button class="btn ghost" id="cqstop">GEHEN</button></div>`;
     $('#cquiz').classList.add('on');document.querySelectorAll('[data-pm]').forEach(b=>b.onclick=()=>{if((healQuiz.pen||0)>Date.now())return;const m=all()[+b.dataset.pm];if(!m||m.hp>=stats(m).mhp)return;cur=m;ask()});penBtns();
@@ -121,7 +121,7 @@ function healQuiz(){RUN.kap=Math.max(RUN.kap,10);updateHud();for(const m of RUN.
     document.querySelectorAll('[data-ph]').forEach(b=>b.onclick=e=>{e.stopPropagation();const m=all()[+b.dataset.ph];if(!heal5(m))return;toast(`➕ ${SPECIES[m.s].n}: +10 % KP`);if(full()){stop();toast('PÄD: Dein Team ist wieder fit!');return}overview()});hcd();$('#cqstop').onclick=stop};
   const ask=()=>{const it=pickQ(),order=shuffleArr([0,1,2,3]);n++;CQ={it,order,end:Infinity,done:false,cb:null};CQ_PICK=pick;const QT=qTime(it.q);let qEnd=Date.now()+QT;const myQ=CQ;clearInterval(healQuiz.tm);healQuiz.tm=setInterval(()=>{if(CQ!==myQ||myQ.done){clearInterval(healQuiz.tm);return}if(PANIC){qEnd+=100;return}const l=Math.max(0,qEnd-Date.now()),b=$('#cqbar'),t=$('#cqtime');if(b)b.style.width=(l/QT*100)+'%';if(t)t.textContent=Math.ceil(l/1000)+' s';if(l<=0){clearInterval(healQuiz.tm);pick(-1)}},100);
     $('#cqbox').innerHTML=`<div style="margin-bottom:8px">${card(cur,all().indexOf(cur),true)}</div><div class="sdlg"><span class="slaw">⚕ PÄD · Frage ${n} · ${esc(SPECIES[it.src].law||'')}</span><br>${esc(it.q[0])}<div class="cqt"><i id="cqbar"></i></div><div class="small" id="cqtime" style="text-align:right"></div><div id="cqexp"></div></div>
-      <div class="qrow"><div class="sans">${order.map((k,j)=>`<button class="sa" data-ck="${k}"><span class="sk">${j+1}</span>${esc(it.q[1][k])}</button>`).join('')}</div></div><div class="sacts" id="cqact"><button class="rbtn heal" id="cqheal" title="Ohne Frage +10 % KP, danach 1 s warten"><div class="cdr"></div><span><b>➕</b>10 %</span></button><button class="btn ghost" id="cqback">ÜBERSICHT</button><button class="btn ghost" id="cqstop">GEHEN</button></div>`;
+      <div class="qrow"><div class="sans">${order.map((k,j)=>`<button class="sa" data-ck="${k}"><span class="sk">${j+1}</span>${esc(it.q[1][k])}</button>`).join('')}</div></div><div class="sacts" id="cqact"><button class="btn ghost" id="cqback">ÜBERSICHT</button><button class="btn ghost" id="cqstop">GEHEN</button></div>`;
     $('#cquiz').classList.add('on');document.querySelectorAll('[data-ck]').forEach(bt=>bt.onclick=()=>pick(+bt.dataset.ck));$('#cqstop').onclick=stop;$('#cqback').onclick=overview;bindHeal()};
   const stop=()=>{clearInterval(healQuiz.tm);$('#cquiz').classList.remove('on');CQ=null;CQ_PICK=null;save();renderTeam();updateHud()};
   const pick=k=>{if(!CQ||CQ.done)return;CQ.done=true;clearInterval(healQuiz.tm);const ok=k===0,it=CQ.it,tm=cur;
@@ -144,8 +144,9 @@ function updateHud(){try{flyBtn()}catch(e){}
 
 /* world render (low-res buffer, scaled up) */
 const wcv=$('#world'),wc=wcv.getContext('2d');let SC=3,LW=0,LH=0;
+const NT_W=new Map();try{document.fonts&&document.fonts.addEventListener('loadingdone',()=>NT_W.clear())}catch(e){} // text widths of name tags (measureText every frame was a third of the world's script time)
 function nameTag(c,x,y,txt,col,icon){
-  c.font='8px VT323,monospace';c.textBaseline='alphabetic';const w=Math.ceil(c.measureText(txt).width)+9+(icon?6:0);const X=Math.round(x-w/2);
+  c.font='8px VT323,monospace';c.textBaseline='alphabetic';let tw=NT_W.get(txt);if(tw==null){tw=Math.ceil(c.measureText(txt).width);if(NT_W.size>400)NT_W.clear();NT_W.set(txt,tw)}const w=tw+9+(icon?6:0);const X=Math.round(x-w/2);
   c.fillStyle='#000000';c.fillRect(X-0.5,y-9.5,w+1,9);c.fillStyle='#14182af0';c.fillRect(X,y-9,w,8);c.fillStyle=col;c.fillRect(X+2,y-6.5,3,3);
   c.fillStyle='#ffffff';c.fillText(txt,X+7,y-2.6);if(icon){c.fillStyle=icon==='⚔'?'#ffcb3d':'#ff6b6b';c.fillText(icon==='⚔'?'!!':'!',X+w-5,y-2.6)}
 }

@@ -7,7 +7,7 @@ let SET={ctrl:'auto',dp:'m',side:'right',keys:{...DEF_KEYS}};
 try{const v=JSON.parse(localStorage.getItem(SET_KEY)||'null');if(v)SET={...SET,...v,keys:{...DEF_KEYS,...(v.keys||{})}};if(SET.keys.sw==='q')SET.keys.sw='x'}catch(e){}
 function aimLead(){const v=SET.lead;return Number.isFinite(v)?clamp(Math.round(v),0,10):7}
 function saveSet(){try{localStorage.setItem(SET_KEY,JSON.stringify(SET))}catch(e){}}
-function isMob(){return SET.ctrl==='mobile'||(SET.ctrl==='auto'&&matchMedia('(pointer:coarse)').matches)}
+const MQ_COARSE=matchMedia('(pointer:coarse)');function isMob(){return SET.ctrl==='mobile'||(SET.ctrl==='auto'&&MQ_COARSE.matches)}
 function normKey(k){return k.length===1?k.toLowerCase():k}
 function keyLabel(k){return k===' '?'LEERTASTE':k.length===1?k.toUpperCase():k.toUpperCase()}
 function applyControls(){setTimeout(()=>{try{checkOrient()}catch(e){}},0);TB_KEY='';

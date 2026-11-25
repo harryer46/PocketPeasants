@@ -1,4 +1,5 @@
 const CHANGELOG=[
+["0.113.2","2026-11-25","PÄD: Heilen ohne Frage (➕ 10 %) entfernt. HfPol/IAuT: Lernen ohne Frage (📖 +5 %) entfernt – Fortschritt gibt es nur noch über Fragen (bzw. 💊 $100 / Nachhilfe). Performance: Namensschilder messen Text nicht mehr jedes Bild neu, Touch-Erkennung gecacht."],
 ["0.113.1","2026-11-25","Doppelt oder nichts verschärft: richtig → Preisgeld und EP verdoppelt; falsch → Preisgeld und alle EP aus dem Kampf sind weg (Level-Aufstiege und Entwicklungen aus dem Kampf werden zurückgenommen)."],
 ["0.113.0","2026-11-25","Neue Sprites für alle 10 GG-Linien (je 3 Stufen, im Pixelraster der übrigen Monster). Art. 1 heißt jetzt Würdelöwe → Würdekönigslöwe → Würdeimperator (Normal). Art. 8: Demofalke → Kundgebfalke → Massendemofalke (Flug). Art. 19: Kettensprenger → Rechtswegkoloss → Rechtsweg-Titan (Kampf). Art. 20 bekommt die Endstufe Verfassungsadler. Art. 1, 19 und 20 entwickeln sich jetzt mit Lv 20 und 38. Attacken an die neuen Typen angepasst."],
 ["0.112.1","2026-11-25","Ziel-Indikator: Zeigt die Ziellinie wirklich auf den Gegner, werden die Punkte zu Strichen und die Linie wird nach ca. 0,35 s durchgezogen."],
