@@ -23,16 +23,16 @@ const ZOLL_FEE=100,ZOLL_EVERY=3;
    if(!spot)continue;TRAINERS.push({id:'zoll_r'+r,zoll:1,route:r,n:NM[k%NM.length],x:spot.x,y:spot.y,d:spot.d,c:'#1f5f4f',team:[],reward:1,line:LINES[k%LINES.length],after:'Alles verzollt. Gute Weiterfahrt!'});k++}}
 function zollQs(){const seen=new Set();return RUN.team.map(m=>{const sp=SPECIES[m.s],pool=QZ[m.s]||(sp.evoOf&&QZ[sp.evoOf]);let q;
   if(pool&&pool.length)q=qReal(qFreshPick(pool,seen));else{const law=lawOf(m.s)||'StGB',L=lawQuestions(law);q=L.length?L[Math.floor(qRnd()*L.length)].q:qReal(VAULT_BOOK.StGB[0])}
-  seen.add(q[0]);const c=q.slice();c[0]=`🐾 ${sp.base||sp.n}: ${q[0]}`;return c})}
+  seen.add(q[0]);const c=q.slice();c.pre=`🐾 ${sp.base||sp.n}${sp.law?" · "+sp.law:""}`;return c})}
 function zollSpotted(t){if(P.lock||B||!RUN||RUN.phase!=='train')return;P.lock=true;held.length=0;t.alert=performance.now();
   setTimeout(()=>talk(t.n,`${t.line} Pro Monster eine Frage zu seinem Paragrafen – alles richtig, und Sie dürfen weiter.`,()=>{P.lock=false;if(!B&&RUN&&RUN.phase==='train')zollQuiz(t)}),700)}
 function zollQuiz(t){const qs=zollQs();if(!qs.length){zollPass(t,'Ohne Monster? Na dann, gute Fahrt.');return}
   quickQuiz('🛃 ZOLLKONTROLLE',`${esc(t.n)} · eine Frage pro Monster`,qs,ok=>{const err=qs.length-ok;if(!err){zollPass(t,'Alles korrekt angemeldet. Gute Weiterfahrt!');return}zollFail(t,err)})}
 function zollPass(t,why){RUN.beat=RUN.beat||{};RUN.beat[t.id]=1;save();talk(t.n,why)}
-function zollFail(t,err){const money=RUN.money||0,can=money>=ZOLL_FEE;
-  openModal(`<h3>🛃 BEANSTANDUNG</h3><p>${esc(t.n)}: „${err} ${err>1?'Fehler':'Fehler'} bei der Anmeldung. Entweder Sie zahlen <b>${ZOLL_FEE} $ Zollgeld</b> – oder meine Zollmonster nehmen sich Ihrer Monster an.“</p>
-   <div class="acts"><button class="btn ${can?'':'ghost'}" id="zpay" ${can?'':'disabled'}>💰 ${ZOLL_FEE} $ ZOLLGELD${can?'':' (du hast '+money+' $)'}</button><button class="btn red" id="zfight">⚔ KÄMPFEN <span class="small">(${Math.min(3,err)} Zollmonster)</span></button></div>`);
-  $('#zpay').onclick=()=>{if((RUN.money||0)<ZOLL_FEE)return;RUN.money-=ZOLL_FEE;updateHud();closeModal();zollPass(t,`${ZOLL_FEE} $ Zollgeld erhalten. Quittung kommt per Post. Gute Weiterfahrt!`)};
-  $('#zfight').onclick=()=>{closeModal();const top=Math.max(...RUN.team.map(m=>m.l)),n=Math.min(3,err);
+function zollFail(t,err){const money=RUN.money||0,fee=ZOLL_FEE*err,can=money>=fee,n=Math.min(6,err);
+  openModal(`<h3>🛃 BEANSTANDUNG</h3><p>${esc(t.n)}: „${err} ${err>1?'Fehler':'Fehler'} bei der Anmeldung. Pro Fehler ${ZOLL_FEE} $ – macht <b>${fee} $ Zollgebühr</b>. Oder Sie stellen sich ${n>1?n+' meiner Zollmonster':'meinem Zollmonster'}.“</p>
+   <div class="acts"><button class="btn ${can?'':'ghost'}" id="zpay" ${can?'':'disabled'}>💰 ${fee} $ ZOLLGEBÜHR${can?'':' (du hast '+money+' $)'}</button><button class="btn red" id="zfight">⚔ KÄMPFEN <span class="small">(${n} Zollmonster)</span></button></div>`);
+  $('#zpay').onclick=()=>{if((RUN.money||0)<fee)return;RUN.money-=fee;updateHud();closeModal();zollPass(t,`${fee} $ Zollgebühr erhalten. Quittung kommt per Post. Gute Weiterfahrt!`)};
+  $('#zfight').onclick=()=>{closeModal();const top=Math.max(...RUN.team.map(m=>m.l));
     startTrainer({id:t.id,zoll:1,n:t.n,c:t.c,x:t.x,y:t.y,d:t.d,fixed:true,team:Array.from({length:n},(_,i)=>['zollwaechter',clamp(top+(i===n-1?1:0),3,70)]),reward:1,line:'Dann eben auf die harte Tour!',after:t.after})}}
 {const _sp=spotted;spotted=function(t){if(t&&t.zoll)return zollSpotted(t);return _sp.apply(this,arguments)}}

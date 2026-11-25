@@ -9,10 +9,10 @@ function quickQuiz(title,intro,qs,done){let i=0,ok=0,ans=null;const keys=e=>{if(
     const n=+e.key;if(ans==null&&n>=1&&n<=4){e.preventDefault();e.stopImmediatePropagation();pick(QQ.order[n-1])}else if(ans!=null&&e.key===' '){e.preventDefault();e.stopImmediatePropagation();next()}};
   const QQ={order:[0,1,2,3]};addEventListener('keydown',keys,true);
   const render=()=>{const q=qs[i];QQ.order=QQ.order&&ans!=null?QQ.order:qShuffle([0,1,2,3]);
-    openModal(`<div id="qqbox"><h3>${title}</h3><p class="small">${intro} · Frage ${i+1}/${qs.length} · ${ok} richtig</p><div class="sdlg" style="margin:6px 0">${esc(q[0])}</div>
+    openModal(`<div id="qqbox"><h3>${title}</h3><p class="small">${intro} · Frage ${i+1}/${qs.length} · ${ok} richtig</p><div class="sdlg" style="margin:6px 0">${q.pre?`<span class="slaw">${esc(q.pre)}</span><br>`:''}${esc(q[0])}${ans==null?`<button class="btn ghost" id="qqrep0" style="float:right;font-size:8px;padding:2px 5px;margin:2px 0 0 6px" title="Frage fehlerhaft? Melden">${qReported(q[0])?'⚑ GEMELDET':'⚑ MELDEN'}</button>`:''}</div>
       <div class="sans">${QQ.order.map((k,j)=>`<button class="sa ${ans==null?'':k===0?'ok':k===ans?'bad':'dim'}" data-qq="${k}" ${ans!=null?'disabled':''}><span class="sk">${j+1}</span>${esc(q[1][k])}</button>`).join('')}</div>
       ${ans!=null?`<div class="sexp ${ans===0?"ok":"bad"}" style="margin-top:6px;color:${ans===0?"#0f3d1f":"#fff"};background:${ans===0?"#c8f5d6":"#7a1f1f"}">${ans===0?'✔ Richtig!':'✘ Falsch.'} ${esc(q[2]||'')}</div><div class="acts" style="margin-top:8px"><button class="btn ghost" id="qqrep" style="font-size:9px">${qReported(q[0])?'⚑ GEMELDET':'⚑ FRAGE MELDEN'}</button><button class="btn" id="qqnext">${i+1<qs.length?'WEITER ▶':'ERGEBNIS ▶'}</button></div>`:''}</div>`);
-    document.querySelectorAll('[data-qq]').forEach(b=>b.onclick=()=>pick(+b.dataset.qq));const nx=$('#qqnext');if(nx)nx.onclick=next;const rp=$('#qqrep');if(rp)rp.onclick=()=>{qReport(q[0]);rp.textContent='⚑ GEMELDET';rp.disabled=true}};
+    document.querySelectorAll('[data-qq]').forEach(b=>b.onclick=()=>pick(+b.dataset.qq));const nx=$('#qqnext');if(nx)nx.onclick=next;for(const id of['#qqrep','#qqrep0']){const rp=$(id);if(rp)rp.onclick=()=>{qReport(q[0]);rp.textContent='⚑ GEMELDET';rp.disabled=true}}};
   const pick=k=>{if(ans!=null)return;ans=k;if(k===0)ok++;qsLog(qs[i][0],k===0);render()};
   const next=()=>{if(ans==null)return;ans=null;QQ.order=null;i++;if(i>=qs.length){removeEventListener('keydown',keys,true);closeModal();done(ok);return}render()};
   render()}

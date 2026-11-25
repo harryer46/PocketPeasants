@@ -1,4 +1,5 @@
 const CHANGELOG=[
+["0.115.4","2026-11-25","Zoll: pro falscher Antwort 100 $ Zollgebühr oder ein Zollmonster mehr im Kampf. Fragen lassen sich beim Zoll (und in allen Kurzprüfungen) schon während der Frage melden; Meldungen beim Zoll werden jetzt der richtigen Frage zugeordnet."],
 ["0.115.3","2026-11-25","Zoll-Monster neu: Zollschatten → Zollstreifer (Lv 20) → Zollmeister (Lv 38), Typ Unlicht, mit eigenen Sprites. Zollbeamte kämpfen je nach Level mit der passenden Stufe."],
 ["0.115.2","2026-11-25","Neue Fragen: je 6 zu § 221, § 323c, § 145, § 314, § 324 StGB, § 29 BtMG (inkl. KCanG seit 1.4.2024) und für den Zollwächter (§§ 10, 14 ZollVG). Entwicklungen mit nur wenigen eigenen Fragen bekommen zusätzlich die Fragen ihrer Grundform. Monster-Übersicht zeigt jetzt auch die 61 Fallfragen und die StVO-Fragen."],
 ["0.115.1","2026-11-25","Neue, überarbeitete Sprites für alle 18 Eis- und Gift-Monster."],
