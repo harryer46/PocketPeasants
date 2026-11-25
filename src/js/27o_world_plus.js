@@ -19,13 +19,17 @@ function wpNear(x0,y0,taken){for(let r=2;r<12;r++)for(let dy=-r;dy<=r;dy++)for(l
 
 // ======== 3) Polizeiposten ========
 const POSTS=[];
-{const NM={south:'Polizeiposten Küste',east:'Polizeiposten Waldrand',snow:'Bergwacht-Posten',west:'Autobahnpolizei Felsenhöhen',desert:'Polizeiposten Canyon',jungle:'Dschungel-Revier'};
- for(const z of ZONE_ORDER.slice(1)){const s=wpSpot(z,0.5,POSTS);if(!s)continue;const t={id:'post_'+z,kind:'post',gift:'post',zone:z,n:NM[z],x:s.x,y:s.y,d:s.d,c:'#1f6fd0',team:[],reward:0,line:'',after:''};POSTS.push(t);TRAINERS.push(t)}}
+// one post halfway along every stretch of the story road (Villingen → Marderach → Damental → Lahribar → Felsenhöhen → Unterwertheim → Mostbach)
+{const NM={north:'Polizeiposten Landstraße',south:'Polizeiposten Küste',east:'Polizeiposten Waldrand',snow:'Bergwacht-Posten',west:'Autobahnpolizei Felsenhöhen',desert:'Polizeiposten Canyon',jungle:'Dschungel-Revier'};
+ const tn=o=>{const T=o&&o.id&&TOWNS.find(t=>t.id===o.id);return T?T.n:'Felsenhöhen'};
+ ROUTE_STRETCH.forEach((st,k)=>{if(!st.path||st.path.length<20)return;let s=null;
+   for(let off=0;off<st.path.length/4&&!s;off+=3)for(const sg of[1,-1]){const i=st.path[(st.path.length>>1)+sg*off];if(i==null)continue;const x=i%MW,y=(i-x)/MW;s=wpNear(x,y,POSTS);if(s)break}
+   if(!s)return;const z=BKEYS[BIOME[s.y*MW+s.x]]||'north';const t={id:'post_'+k,kind:'post',gift:'post',zone:z,n:'Posten '+tn(st.from).split('-')[0]+'–'+tn(st.to).split('-')[0],via:tn(st.from)+' – '+tn(st.to),x:s.x,y:s.y,d:s.d,c:'#1f6fd0',team:[],reward:0,line:'',after:''};POSTS.push(t);TRAINERS.push(t)})}
 function postVisited(t){return!!(RUN&&RUN.posts&&RUN.posts[t.id])}
 let POST_AT=null;
 function postTalk(t){if(!RUN||RUN.phase==='arena'){toast(`${t.n}: „Komm wieder, wenn dein Spiel begonnen hat!“`);return}
   if(!postVisited(t)){RUN.posts=RUN.posts||{};RUN.posts[t.id]=1;save();toast(`🚓 ${t.n}: Schnellreise-Punkt freigeschaltet!`)}
-  openModal(`<h3>🚓 ${esc(t.n.toUpperCase())}</h3><p>„Moin, Kollege! Kurze Pause? Hier kannst du dein Team versorgen und dich mit dem Nötigsten eindecken.“</p>
+  openModal(`<h3>🚓 ${esc(t.n.toUpperCase())}</h3><p class="small">auf halber Strecke ${esc(t.via||'')}</p><p>„Moin, Kollege! Kurze Pause? Hier kannst du dein Team versorgen und dich mit dem Nötigsten eindecken.“</p>
    <div style="display:flex;flex-direction:column;gap:6px"><button class="btn" id="pheal">⚕ ERSTE HILFE <span class="small">— PÄD-Fragen wie in der Stadt</span></button><button class="btn" id="pshop">🛒 KLEINER LADEN <span class="small">— eigenes, kleineres Lager</span></button></div>
    <p class="small" style="margin-top:6px">🕊 Dieser Posten ist ein Schnellreise-Punkt (Weltkarte, Taste M).</p><div class="acts"><button class="btn ghost" id="mno">WEITER</button></div>`);
   $('#mno').onclick=closeModal;$('#pheal').onclick=()=>{closeModal();healQuiz()};$('#pshop').onclick=()=>{closeModal();POST_AT=t;openShop()}}
