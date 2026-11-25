@@ -782,7 +782,7 @@ function renderPick(){const el=$('#bpick');if(!el)return;const mode=pickMode();
 function updateBattleUI(){if(B.mode==='spec')return;try{renderPick()}catch(e){console.error(e)}try{bagLabel()}catch(e){}
   const F=B.me;const pm=pickMode(),pi=(pm==='lead'||pm==='next'||pm==='swap')&&B.reel?reelList()[B.reel.pos]:null;const mon=pi!=null&&F.team[pi]?F.team[pi]:act(F);const key=mon.s+(pi??F.a)+mon.m.join();
   const btns=document.querySelectorAll('#bact .mv');
-  if(key!==B.uiKey){B.uiKey=key;btns.forEach((b,i)=>{const mid=mon.m[i];b.style.visibility=mid?'visible':'hidden';if(!mid)return;const mv=MOVES[mid];b.style.background=TYPES[mv.t].c;b.querySelector('.lbl').innerHTML=`<span class="k">${isMob()?'':esc(keyLabel(SET.keys['a'+(i+1)]))}</span> ${esc(mv.n)}<small>${esc(moveDesc(mid).replace(/^\w+ · /,''))}</small>`})}
+  if(key!==B.uiKey){B.uiKey=key;btns.forEach((b,i)=>{const mid=mon.m[i];b.style.visibility=mid?'visible':'hidden';if(!mid)return;const mv=MOVES[mid];b.style.background=TYPES[mv.t].c;b.title=typeof moveLine==='function'?moveLine(mid):'';b.querySelector('.lbl').innerHTML=`<span class="k">${isMob()?'':esc(keyLabel(SET.keys['a'+(i+1)]))}</span> ${esc(mv.n)}<small>${esc(moveDesc(mid).replace(/^\w+ · /,''))}</small>`})}
   const lock=B.tb&&B.state!=='tbChoose';document.querySelectorAll('#bact button').forEach(b=>{if(b.textContent!=='⚙')b.disabled=lock});
   btns.forEach((b,i)=>{const mid=mon.m[i];if(!mid)return;b.querySelector('.cd').style.width=B.tb||pi!=null?'0%':(F.cd[i]/cdOf(mid)*100)+'%';const have=B.tb?Math.min(AP_MAX,(F.ap??AP_MAX)+TB_AP_REGEN):(F.ap??AP_MAX);b.style.filter=have<apCost(mid)?'grayscale(.8) brightness(.7)':''});
   const cap=$('#bcap');if(cap){const ct=B.aim?'LOSLASSEN ZUM WERFEN!':B.capGreat?'HALTEN: SUPER-HANDSCHELLEN':`HALTEN: HANDSCHELLEN (${RUN.kap})`;if(cap.dataset.ct!==ct){cap.dataset.ct=ct;cap.textContent=ct}}
@@ -1012,6 +1012,7 @@ function drawBattle(){
     if(s.cap){const pk=clamp(s.age/(s.flight||1),0,1),arc=Math.sin(pk*Math.PI)*28;c.fillStyle='#00000040';c.fillRect(X-3,Y+12,6,2);drawCapsule(c,X,Math.round(Y-arc),s.age*18);continue}
     const col=TYPES[MOVES[s.mid].t].c;
     if(s.nm){drawSpecial(c,s,col,now);continue}
+    if(s.mel&&typeof meleeSwing==='function'){meleeSwing(c,s,col,now);continue}
     if(s.mel){c.fillStyle='#ffffff';const a=Math.atan2(s.vy,s.vx);for(let i=-3;i<=3;i++){const aa=a+i*0.25;c.fillRect(Math.round(s.x+Math.cos(aa)*6)-1,Math.round(s.y+Math.sin(aa)*6)-1,2,2)}continue}
     if(s.r>=6&&!s.wave)drawOrbit(c,s,col,now);
     if(drawVis(c,s,col,now))continue;

@@ -3,7 +3,7 @@
 let PREV_SID=null,MVP=null;
 {const _omi=openMonInfo;openMonInfo=function(s){PREV_SID=s;return _omi.apply(this,arguments)}}
 (function(){const st=document.createElement('style');st.textContent=`#mvprev{position:fixed;z-index:60;pointer-events:none;background:#14141f;border:3px solid #000;box-shadow:4px 4px 0 #000;padding:3px;display:none}
-#mvprev canvas{display:block;image-rendering:pixelated;max-width:92vw;height:auto!important}#mvprev .cap{font-family:VT323,monospace;font-size:15px;color:#e8e8f0;padding:2px 2px 0;display:flex;justify-content:space-between;gap:8px}`;document.head.appendChild(st)})();
+#mvprev canvas{display:block;image-rendering:pixelated;max-width:92vw;height:auto!important}#mvprev .cap{font-family:VT323,monospace;font-size:15px;color:#e8e8f0;padding:2px 2px 0;display:flex;justify-content:space-between;gap:8px}#mvprev .ln{font-family:VT323,monospace;font-size:14px;color:#9aa1bd;padding:0 2px 1px;max-width:396px}#mvprev .ln:empty{display:none}.mvline{font-family:VT323,monospace;font-size:15px;color:#c9cbe0;font-style:italic}`;document.head.appendChild(st)})();
 const PW=176,PH=96,PAX=34,PTX=142,PGY=70;
 function pvDummy(c,x,y,shake,hit){x+=shake;c.fillStyle='#14141f';c.fillRect(x-2,y-2,4,6);c.fillRect(x-7,y-24,14,20);c.fillRect(x-5,y-30,10,7);
   c.fillStyle='#6b4a2a';c.fillRect(x-1,y-4,2,6);c.fillStyle=hit?'#ffffff':'#d9b45a';c.fillRect(x-6,y-23,12,18);c.fillStyle=hit?'#ffffff':'#e8c878';c.fillRect(x-4,y-29,8,6);c.fillStyle='#a0552a';c.fillRect(x-6,y-16,12,2);c.fillStyle='#ef4444';c.fillRect(x-2,y-19,4,4)}
@@ -58,8 +58,8 @@ function pvDraw(c,mid,sid,t,spr){const mv=MOVES[mid]||MOVES.bump,col=(TYPES[mv.t
   if(aShow&&spr){c.imageSmoothingEnabled=false;const S=40;c.drawImage(spr,Math.round(ax-S/2),Math.round(ay-S+4),S,S)}else if(aShow){pvBall(c,ax,ay-10,8,'#9aa1bd')}
   if(fxLbl&&mv.fx)pvText(c,fxLbl,tx,T0-24,'#ffcb3d');
   if(thit&&(mv.p||0)>0)pvText(c,'-'+mv.p,tx+14,T0-10-Math.round((t%0.3)*20),'#ffffff')}
-function pvShow(el,mid,sid){if(!MOVES[mid])return;if(!MVP){MVP=document.createElement('div');MVP.id='mvprev';MVP.innerHTML='<canvas width="176" height="96"></canvas><div class="cap"><span class="n"></span><span class="d"></span></div>';document.body.appendChild(MVP)}
-  const mv=MOVES[mid];MVP.querySelector('.n').textContent=mv.n;MVP.querySelector('.d').textContent=(TYPES[mv.t]||{}).n+(mv.p?' · '+mv.p:'');MVP.style.display='block';
+function pvShow(el,mid,sid){if(!MOVES[mid])return;if(!MVP){MVP=document.createElement('div');MVP.id='mvprev';MVP.innerHTML='<canvas width="176" height="96"></canvas><div class="cap"><span class="n"></span><span class="d"></span></div><div class="ln"></div>';document.body.appendChild(MVP)}
+  const mv=MOVES[mid];MVP.querySelector('.n').textContent=mv.n;MVP.querySelector('.d').textContent=(TYPES[mv.t]||{}).n+(mv.p?' · '+mv.p:'');MVP.querySelector('.ln').textContent=moveLine(mid);MVP.style.display='block';
   const r=el.getBoundingClientRect(),w=278,h=170;let x=r.right+8,y=r.top;if(x+w>innerWidth)x=Math.max(4,r.left-w-8);if(y+h>innerHeight)y=innerHeight-h-4;MVP.style.left=x+'px';MVP.style.top=Math.max(4,y)+'px';
   const spr=sid&&SPECIES[sid]?monSprite(sid,24):null;const cv=MVP.querySelector('canvas'),c=cv.getContext('2d');c.imageSmoothingEnabled=false;const t0=performance.now(),cyc=1.8;MVP.dataset.mid=mid;
   cancelAnimationFrame(MVP.raf);const loop=()=>{if(MVP.style.display==='none'||MVP.dataset.mid!==mid)return;const t=((performance.now()-t0)/1000%cyc)/cyc;try{pvDraw(c,mid,sid,t,spr)}catch(e){}MVP.raf=requestAnimationFrame(loop)};loop()}
@@ -75,7 +75,7 @@ document.addEventListener('touchstart',e=>{const p=pvTarget(e);if(p&&!(B&&B.stat
 const PV_H=230;
 function pvTargetSid(){return['pruegelklops','zellbaer','harrymon'].find(s=>SPECIES[s])||Object.keys(SPECIES)[0]}
 function pvMakeB(mid,sid,ctx){const atk=newMon(sid&&SPECIES[sid]?sid:'harrymon',30);atk.m=[mid];const tgt=newMon(pvTargetSid(),30);
-  const A=mkFighter('R',[battler(atk)],ACX-70,'none'),T=mkFighter('L',[battler(tgt)],ACX+70,'none');A.x=ACX-70;A.y=ACY-28;T.x=ACX+70;T.y=ACY-28;A.spawnT=0;T.spawnT=0;A.ap=AP_MAX;
+  const A=mkFighter('R',[battler(atk)],ACX-70,'none'),T=mkFighter('L',[battler(tgt)],ACX+70,'none');A.x=ACX-70;A.y=ACY-28;T.x=ACX+70;T.y=ACY-28;A.spawnT=0;T.spawnT=0;A.inv=0;T.inv=0;A.ap=AP_MAX;
   const PB={shots:[],parts:[],nums:[],log:[],state:'fight',ptr:null,capCd:0,sid:0,vshots:[],mode:'pv',pv:1,tb:false,zone:'north',me:T,foe:A,obs:[],haz:[],pvCtx:ctx,pvK:1,enterT:performance.now(),leadDone:1};
   const mv=MOVES[mid]||{},now=performance.now(),k=mv.k;
   const ob=(id,kind,x,y)=>{const O=OBK[kind]||{r:10,hp:50,mat:'rock'};PB.obs.push({id,kind,mat:O.mat,ind:0,x,y,r:O.r,hp:O.hp,max:O.hp,v:0})};
@@ -84,6 +84,8 @@ function pvMakeB(mid,sid,ctx){const atk=newMon(sid&&SPECIES[sid]?sid:'harrymon',
   if(k==='bigwave'){ob('p1','bush',ACX,A.y-10);ob('p2','crate',ACX+10,A.y+20)}
   if(k==='shortcircuit'||(mv.t==='electric'&&k!=='self')){PB.haz.push({k:'puddle',x:ACX,y:A.y+8,r:18,t0:now,until:now+9e9,seed:1},{k:'puddle',x:T.x,y:T.y+2,r:18,t0:now,until:now+9e9,seed:2})}
   if(k==='windstream'||k==='gale')ob('w1','boulder',T.x+46,T.y+4);
+  if(k==='vortex'){ob('s1','bush',ACX-20,A.y+30);ob('s2','crate',ACX+10,A.y-22);ob('s3','rock',ACX+40,A.y+40)}
+  if(k==='melee')T.x=A.x+38;  // melee needs contact: put the target within reach
   return PB}
 function pvEngineLoop(mid,sid){const cv=MVP.querySelector('canvas');cv.width=AW;cv.height=PV_H;cv.style.width=AW+'px';cv.style.height=PV_H+'px';const ctx=cv.getContext('2d');ctx.imageSmoothingEnabled=false;
   let PB=null,t0=0,last=performance.now(),fired=false;const CYC=2600;
@@ -97,3 +99,4 @@ function pvEngineLoop(mid,sid){const cv=MVP.querySelector('canvas');cv.width=AW;
 {const _ps=pvShow;pvShow=function(el,mid,sid){_ps.apply(this,arguments);if(!MVP||!MOVES[mid])return;cancelAnimationFrame(MVP.raf);
   const r=el.getBoundingClientRect(),w=AW+12,h=PV_H+30;let x=r.right+8,y=r.top;if(x+w>innerWidth)x=Math.max(4,r.left-w-8);if(x<4)x=4;if(y+h>innerHeight)y=innerHeight-h-4;MVP.style.left=x+'px';MVP.style.top=Math.max(4,y)+'px';
   try{pvEngineLoop(mid,sid)}catch(e){console.warn(e);_ps.apply(this,arguments)}}}
+if(!KIND_TXT.vortex)KIND_TXT.vortex='Strudel — schlängelt sich vorwärts und zieht an';

@@ -485,7 +485,7 @@ const TURN_CONFIG = {
 
 /* ===================== VERSION ===================== */
 // bump with every release (MAJOR.MINOR.PATCH). Players can only share lobbies/duels with the same version.
-const VERSION='0.111.0';
+const VERSION='0.111.1';
 // access password: changes every Monday 00:00 (local time). Only the hashes are stored here (one per week from PW_W0);
 // the password itself also keys the P2P room, so clients without the current one cannot connect. The plain list lives offline.
 const PW_KEY='knast_pw',PW_W0=Date.UTC(2026,10,16),PW_WH=[3239358969,4147130060,2718625794,3495965776,1618054998,4028240764,3044289461,1207180107,4242648729,353861226,2672313786,600614717,407529519,2270237167,3207113251,1525244515,870970040,319006638,3847934078,944313310,2153038366,3950944742,2733334548,4002544240,2736690288,645338530,1884329338,4268902487,2483246182,3828308270,2182929315,3152020422,1311886195,3461060417,3407580460,2544240283,1017220184,1277844250,4288535363,461397931,853058720,2065298771,219387161,3215594984,1108518435,2250837220,3171827014,1035538317,1537090466,1716649754,2848461661,1266925999,653943759,1307642793,3319845926,629631788,4180878311,1080582197,4114403588,2360104553,3811730973,3337788437,695971354,2424950805],MAX_ROOM=10,MAX_LOBBY=5;
@@ -1167,6 +1167,66 @@ function ipArt(id,t,stage,col){const rnd=mulberry32(hashStr(id)),H=[40,50,62][st
   else{for(let i=0;i<3+stage*2;i++){const a=rnd()*6.28,r=rnd()*0.7,sx=cx+Math.cos(a)*rx*r,sy=cy+Math.sin(a)*ry*r*0.8;x.fillStyle=acc;x.fillRect(sx,sy,2,2)}for(let i=0;i<2+stage;i++){const dx=cx-rx*0.5+rnd()*rx,dy=cy+ry-1;x.fillStyle='#14141f';x.fillRect(dx-1,dy,3,4+i%2*2);x.fillStyle=acc;x.fillRect(dx,dy,1,3+i%2*2)}}
   return c}
 {for(const id in ICE_POISON){const D=ICE_POISON[id];[id,...D.evo.map(e=>e[1])].forEach((sid,st)=>{const url=ipArt(sid,D.t,st,D.c).toDataURL();SPECIES[sid].img=1;ALT_IMG[sid]=url;const im=new Image();im.onload=()=>{for(const key in SPR)if(key.split(':')[0]===sid)delete SPR[key]};im.src=url;ALT_IM[sid]=im})}}
+// ===== one-line description for every attack (shown in Dex, team list, preview, battle tooltips) =====
+const MOVE_LINE={
+bump:'Rempelt den Gegner aus nächster Nähe weg.',scratch:'Dreifacher Kratzer mit scharfen Krallen.',quickjab:'Drei blitzschnelle Hiebe hintereinander.',
+whirl:'Wirbelnde Schlagserie, die verwirren kann.',headrush:'Wuchtige Kopfnuss mit Rückstoß.',powernap:'Kurzes Nickerchen – heilt einen Teil der KP.',
+sparkshot:'Schneller Funke, der geradeaus fliegt.',emberrain:'Glut im Bogen, kann verbrennen.',cinderbite:'Glühender Biss, kann verbrennen.',
+scorchline:'Feueratem in einer Linie, kann verbrennen.',cindershell:'Glutpanzer halbiert kurz den erlittenen Schaden.',firestorm:'Fächer aus Flammen in Blickrichtung.',
+kilnburst:'Schwere Feuerkugel, die beim Aufprall explodiert.',splash:'Einfacher Wasserschuss.',foamvolley:'Schnelle Salve aus Schaumblasen.',
+waveslam:'Wasserschlag aus nächster Nähe mit Rückstoß.',undertow:'Wellenförmiger Strudel, saugt Gegner und leichte Hindernisse an.',
+whirlpool:'Vier Wasserwirbel kreisen über das Feld und ziehen Gegner mit.',mistveil:'Nebel halbiert kurz den erlittenen Schaden.',
+torrent:'Breiter Fächer aus Wasserstrahlen.',geyser:'Wassersäule schießt unter dem Ziel hervor.',leaftoss:'Wirft ein scharfes Blatt.',
+sapdrain:'Saugt Saft ab und heilt dich dabei.',vinelash:'Peitschende Ranken, verlangsamen das Ziel.',drowsyspores:'Sporen, die einschläfern.',
+bloomheal:'Blütenduft heilt 30 % KP.',thornrain:'Dornen regnen über einem Bereich ab.',brambleburst:'Schwere Dornenkugel, verlangsamt.',
+zap:'Kleiner statischer Schlag auf Distanz.',sparkchain:'Funkenkette, die mehrfach trifft.',jolt:'Elektrischer Doppelschlag, kann betäuben.',
+staticnet:'Stromnetz, das betäuben kann.',boltstrike:'Voltlanze als Strahl – erst zielen, dann feuern.',stormcrack:'Elektrische Explosion rundherum, betäubt.',
+rocktoss:'Stein im Bogen geworfen.',gravel:'Fächer aus Kieseln.',stoneskin:'Steinhaut halbiert kurz den erlittenen Schaden.',
+quakestomp:'Stampfer reißt den Boden auf, verlangsamt.',boulder:'Hochgeworfener Fels mit Rückstoß.',meteor:'Meteor stürzt vom Himmel – vorher Schatten.',
+gust:'Leichter Windstoß.',featherdarts:'Schnelle Salve aus Federpfeilen.',galecutter:'Scharfer Windschnitt mit Rückstoß.',updraft:'Aufwind macht dich schneller.',
+divebomb:'Sturzflug von oben auf das Ziel.',skyslam:'Wuchtiger Schlag aus der Luft, betäubt.',bottletoss:'Flasche im hohen Bogen, verwirrt.',
+canewhack:'Hieb mit dem Gehstock, verlangsamt.',flexpunch:'Muskelfaust mit Rückstoß.',painkiller:'Schmerzmittel heilt 30 % KP.',dawncrow:'Weckruf macht dich schneller.',
+goldrush:'Salve aus Münzen.',heartspore:'Herzförmige Sporen, schläfern ein.',noodlelash:'Dreifache Nudelpeitsche, verlangsamt.',
+watercannon:'Starker Wasserstrahl mit großem Rückstoß.',paragraph:'Paragraphen-Schlag, der verwirrt.',tackle:'Sprint mit vollem Körpereinsatz.',
+bodyslam:'Wirft sich mit ganzem Gewicht auf das Ziel, betäubt.',hyperbeam:'Gewaltiger Strahl, lange Abklingzeit.',swordsdance:'Erhöht deinen Angriff stark.',
+harden:'Erhöht deine Verteidigung.',growl:'Heulen schwächt die Gegner im Fächer.',leer:'Durchdringender Blick schwächt das Ziel.',
+furyswipes:'Bis zu fünf Kratzer in schneller Folge.',screech:'Kreischen schwächt die Gegner im Fächer.',scaryface:'Grimasse schwächt das Ziel.',
+recover:'Regeneriert 30 % KP.',confuseray:'Flackernder Strahl, der verwirrt.',flamethrower:'Feueratem, kann verbrennen.',fireblast:'Feuersturm schlägt von oben ein.',
+sunnyday:'Lässt die Sonne scheinen – stärkt Feuer.',hydropump:'Mächtiger Wasserstrahl mit Rückstoß.',surf:'Riesige Welle vom Arenarand – Deckung schützt.',
+bubblebeam:'Blubbersalve, schwächt das Ziel.',aurorabeam:'Farbiger Strahl, verlangsamt.',withdraw:'Zieht sich in den Panzer zurück und stärkt sich.',
+razorleaf:'Salve aus scharfen Blättern.',solarbeam:'Sonnenstrahl, prallt zweimal von Hindernissen ab.',gigadrain:'Saugt kräftig Energie ab und heilt dich.',
+sleeppowder:'Schlafpuder im Fächer.',growth:'Wachstum stärkt deine Angriffe.',stringshot:'Fäden schwächen die Gegner im Fächer.',thunderbolt:'Blitzstrahl, kann betäuben.',
+thunder:'Blitz schlägt von oben ein, betäubt.',thunderwave:'Schwache Welle, die sicher betäubt.',charge:'Lädt sich auf und stärkt sich.',
+rockslide:'Steine regnen herab, können betäuben.',earthquake:'Erdbeben: 10–20 Steine fallen vom Himmel.',irontail:'Harter Schweifhieb, senkt die Verteidigung.',
+metalclaw:'Doppelte Metallklaue, kann dich stärken.',crunch:'Kräftiger Knirscher, senkt die Verteidigung.',defcurl:'Rollt sich ein – mehr Verteidigung.',
+ancientpower:'Urgestein im Bogen, kann dich stärken.',wingattack:'Zwei Flügelschläge hintereinander.',drillpeck:'Bohrender Schnabel, dreifach.',
+aeroblast:'Gebündelter Luftstrahl.',ember:'Kleine Glut im Bogen, kann verbrennen.',fly:'Steigt auf und stößt herab – in der Luft unangreifbar.',
+dive:'Taucht ab und greift von unten an.',agility:'Erhöht deine Initiative stark.',steelwing:'Stählerner Flügel, kann die Verteidigung steigern.',
+featherdance:'Federn senken den Angriff im Fächer.',finte:'Teleportiert sich hinter das Ziel und schlägt zu.',verfolgung:'Verfolgt das Ziel – trifft Fliehende härter.',
+tiefschlag:'Schnellangriff, trifft nur wenn das Ziel gerade angreift.',abschlag:'Nahhieb, klaut Schild-/Tempo-Buffs und 15 AP.',
+finsteraura:'Dunkle Kugel, blendet das Ziel 4 s.',verhoehner:'Provokation: 6 s keine Status-Attacken.',fokusstoss:'1 s aufladen, dann Wucht-Stoß – Treffer bricht ab.',
+gegenschlag:'Konterhaltung: Nahkampftreffer kommen doppelt zurück.',zahlungsaufforderung:'Drei Mahnungen im Fächer – die dritte pfändet (1 s betäubt).',
+vierfaust:'Vier Fäuste in alle Richtungen, zerschlagen Geschosse.',biss:'Beißt kräftig zu.',dieb:'Biss, der dem Ziel Geld klaut.',
+regentanz:'Lässt es regnen – stärkt Wasser.',sandsturm:'Sandsturm – Gestein nimmt weniger Fernkampfschaden.',schutzschild:'Blockt kurz jeden Angriff.',
+turbodreher:'Dreht sich und trifft alles ringsum.',toxin:'Starkes Gift, das jede Sekunde schlimmer wird.',horrorblick:'Blick verhindert Fliegen und Wechseln.',
+zugabe:'Zwingt das Ziel, nur noch seine letzte Attacke zu nutzen.',reflektor:'Halbiert Nahkampfschaden eine Zeit lang.',lichtschild:'Halbiert Fernkampfschaden eine Zeit lang.',
+bauchtrommel:'Opfert halbe KP für maximalen Angriff.',tempohieb:'Blitzschneller Hieb.',karateschlag:'Handkantenschlag von oben.',
+dynamopunch:'Explosive Faust, kann verwirren.',geowurf:'Packt das Ziel und schleudert es zu Boden.',turmkick:'Sprungkick aus der Luft.',
+dreifachkick:'Drei Tritte hintereinander.',gegenschlag2:'Schneller Gegenschlag aus der Deckung.',
+felswurf:'Wirft einen Fels aus der Umgebung – direkt daneben stärker.',kurzschluss:'Strom fließt durch Pfützen und trifft alle darin.',
+flaechenbrand:'Entzündet Büsche und Gras – Feuer breitet sich aus.',orkan:'Orkan treibt Felder und Gegner vor sich her.',
+windkanal:'Windkanal drückt Gegner und Geschosse in eine Richtung.',oelfleck:'Rutschiger Ölfleck – entflammbar.',magnetfeld:'Magnetfeld zieht Stahl- und Gesteinsgeschosse ab.',
+erdung:'Erdung macht immun gegen Strom.',strafschaerfung:'Jeder Treffer in Folge wird stärker.',glutkern:'Glutkern wächst beim Fliegen.',
+sturzflut:'Breite Flutwelle rollt über das Feld.',ueberspannung:'Ladungen kreisen um dich und treffen Nahe.',rankennetz:'Ranke fesselt das Ziel an dich.',
+felswand:'Errichtet eine Felswand als Deckung.',luftsog:'Saugt das Ziel zu dir heran.',schattenschleier:'Macht dich kurz unsichtbar.',
+giftstachel:'Giftiger Stachel, kann vergiften.',giftpuder:'Giftpuder im Atemkegel, vergiftet.',saeurespray:'Säure im Fächer, senkt die Verteidigung.',
+schlammbombe:'Schlammbombe im Bogen, vergiftet.',giftwolke:'Giftwolke bleibt liegen – Feuer bringt sie zur Explosion.',
+eissplitter:'Schneller Eissplitter, verlangsamt.',frostatem:'Eisiger Atem, verlangsamt.',eiszapfen:'Eiszapfen fallen herab, können betäuben.',
+eisstrahl:'Eisstrahl, kann betäuben.',blizzard:'Schwerer Schneesturm, verlangsamt – hinterlässt Eis.',bonemerang:'Knochen fliegt hin und zurück.',
+rollout:'Rollt los und wird mit jeder Runde stärker.',spikes:'Streut Stacheln, die verlangsamen.',leechseed:'Samen saugt dem Ziel KP ab.',
+firespin:'Feuerring hält das Ziel fest, verbrennt.',mirrorcoat:'Spiegelt Fernkampfschaden doppelt zurück.',magnetbomb:'Mine, die bei Nähe explodiert und betäubt.',
+whirlwind:'Wirbelwind bläst das Ziel weit weg.',substitute:'Erschafft einen Doppelgänger, der Treffer abfängt.'};
+function moveLine(mid){return MOVE_LINE[mid]||''}
 /* ===================== UTIL ===================== */
 const $=s=>document.querySelector(s);
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
@@ -2097,6 +2157,7 @@ function begin(){
 
 /* ===================== CONTROL SETTINGS ===================== */
 const CHANGELOG=[
+["0.111.1","2026-11-25","Nahkampf-Animationen wie im Original: jede Attacke hat eigenen Schwung und Treffer (Krallenspuren, zuschnappende Kiefer, Faust, Tritt, Handkante, Peitsche, Flügel, Bohrschnabel, Funken, Spritzer, Bodenrisse, Geowurf …). Sog ist jetzt ein wellenförmig wandernder Strudel, der Gegner und leichte Hindernisse ansaugt – mitgerissene Hindernisse verstärken den Treffer. Jede Attacke hat eine einzeilige Beschreibung (Dex, Vorschau, Team, Kampf-Tooltip). Vorschau: Nahkampf steht nun in Reichweite."],
  ["0.111.0","2026-11-25","Beförderungsprüfung: Vor jeder Entwicklung 3 Fragen zum Paragraphen des Monsters — 2 von 3 richtig = Beförderung mit Auszeichnung (+6 % auf alle Werte, stapelt sich je Entwicklung), sonst Entwicklung ohne Bonus. Doppelt oder nichts (freiwillig) nach Trainer-Siegen: eine Fallfrage — richtig gibt Preisgeld und EP aus dem Kampf noch einmal, falsch kostet die Hälfte des Preisgelds. Beide Quiz mit Tasten 1–4, Leertaste weiter und ⚑ Frage melden."],
  ["0.110.2","2026-11-25","Monster-Dex zeigt je Monster den Fragen-Stand: ✓ zuletzt richtig · ✗ zuletzt falsch · ○ noch offen (in der Liste und in den Details, inkl. passender Fallfragen). Fehler behoben: im Dex stand „${cuffIcon(14)}“ statt des Handschellen-Icons."],
  ["0.110.1","2026-11-25","Entwicklungs-Animation wie im Original: „Nanu? … entwickelt sich!“, das Monster wird zur weißen Silhouette, alte und neue Form wechseln immer schneller, Lichtstrahlen und Funkeln, weißer Blitz, dann die neue Form mit „Glückwunsch!“. Läuft nach dem Kampf bzw. sofort außerhalb; mehrere Entwicklungen nacheinander; Leertaste/Tippen spult vor."],
@@ -4355,7 +4416,7 @@ function renderPick(){const el=$('#bpick');if(!el)return;const mode=pickMode();
 function updateBattleUI(){if(B.mode==='spec')return;try{renderPick()}catch(e){console.error(e)}try{bagLabel()}catch(e){}
   const F=B.me;const pm=pickMode(),pi=(pm==='lead'||pm==='next'||pm==='swap')&&B.reel?reelList()[B.reel.pos]:null;const mon=pi!=null&&F.team[pi]?F.team[pi]:act(F);const key=mon.s+(pi??F.a)+mon.m.join();
   const btns=document.querySelectorAll('#bact .mv');
-  if(key!==B.uiKey){B.uiKey=key;btns.forEach((b,i)=>{const mid=mon.m[i];b.style.visibility=mid?'visible':'hidden';if(!mid)return;const mv=MOVES[mid];b.style.background=TYPES[mv.t].c;b.querySelector('.lbl').innerHTML=`<span class="k">${isMob()?'':esc(keyLabel(SET.keys['a'+(i+1)]))}</span> ${esc(mv.n)}<small>${esc(moveDesc(mid).replace(/^\w+ · /,''))}</small>`})}
+  if(key!==B.uiKey){B.uiKey=key;btns.forEach((b,i)=>{const mid=mon.m[i];b.style.visibility=mid?'visible':'hidden';if(!mid)return;const mv=MOVES[mid];b.style.background=TYPES[mv.t].c;b.title=typeof moveLine==='function'?moveLine(mid):'';b.querySelector('.lbl').innerHTML=`<span class="k">${isMob()?'':esc(keyLabel(SET.keys['a'+(i+1)]))}</span> ${esc(mv.n)}<small>${esc(moveDesc(mid).replace(/^\w+ · /,''))}</small>`})}
   const lock=B.tb&&B.state!=='tbChoose';document.querySelectorAll('#bact button').forEach(b=>{if(b.textContent!=='⚙')b.disabled=lock});
   btns.forEach((b,i)=>{const mid=mon.m[i];if(!mid)return;b.querySelector('.cd').style.width=B.tb||pi!=null?'0%':(F.cd[i]/cdOf(mid)*100)+'%';const have=B.tb?Math.min(AP_MAX,(F.ap??AP_MAX)+TB_AP_REGEN):(F.ap??AP_MAX);b.style.filter=have<apCost(mid)?'grayscale(.8) brightness(.7)':''});
   const cap=$('#bcap');if(cap){const ct=B.aim?'LOSLASSEN ZUM WERFEN!':B.capGreat?'HALTEN: SUPER-HANDSCHELLEN':`HALTEN: HANDSCHELLEN (${RUN.kap})`;if(cap.dataset.ct!==ct){cap.dataset.ct=ct;cap.textContent=ct}}
@@ -4585,6 +4646,7 @@ function drawBattle(){
     if(s.cap){const pk=clamp(s.age/(s.flight||1),0,1),arc=Math.sin(pk*Math.PI)*28;c.fillStyle='#00000040';c.fillRect(X-3,Y+12,6,2);drawCapsule(c,X,Math.round(Y-arc),s.age*18);continue}
     const col=TYPES[MOVES[s.mid].t].c;
     if(s.nm){drawSpecial(c,s,col,now);continue}
+    if(s.mel&&typeof meleeSwing==='function'){meleeSwing(c,s,col,now);continue}
     if(s.mel){c.fillStyle='#ffffff';const a=Math.atan2(s.vy,s.vx);for(let i=-3;i<=3;i++){const aa=a+i*0.25;c.fillRect(Math.round(s.x+Math.cos(aa)*6)-1,Math.round(s.y+Math.sin(aa)*6)-1,2,2)}continue}
     if(s.r>=6&&!s.wave)drawOrbit(c,s,col,now);
     if(drawVis(c,s,col,now))continue;
@@ -5632,6 +5694,157 @@ function ipTick(dt){if(!B||B.tb||!B.haz)return;const now=performance.now();
   if(h.k==='gas'){for(let i=0;i<9;i++){const t=now/700+i*0.7,x=X+Math.round(Math.cos(t+i)*h.r*0.6),y=Y-4+Math.round(Math.sin(t*1.3+i)*h.r*0.35);c.fillStyle=i%3?'#a24cc480':'#c88ae080';c.fillRect(x-4,y-3,8,6);c.fillRect(x-3,y-4,6,8)}}
   else if(h.k==='icefloor'){c.fillStyle='#bfe8f8c0';pxEl(c,X,Y,h.r,h.r*0.5,1);c.fillStyle='#ffffff';c.fillRect(X-h.r*0.4|0,Y-2,4,1);c.fillRect(X+3,Y+1,3,1);if(Math.floor(now/300+h.seed)%5===0)c.fillRect(X-2,Y-1,2,2)}
   c.restore()}}}
+// ===== melee animations in the style of the original games =====
+// every melee move gets its own swing (while the hit travels) and its own impact
+// (claw marks, jaws, fist, foot, karate chop, whip, wings, drill beak, sparks, splash, ground crack ...)
+const MFX_STYLE={
+  scratch:'claw',furyswipes:'claw',metalclaw:'claw',
+  biss:'jaw',crunch:'jaw',cinderbite:'jaw',
+  flexpunch:'fist',dynamopunch:'fist',quickjab:'fist',gegenschlag2:'fist',
+  dreifachkick:'kick',
+  karateschlag:'chop',tempohieb:'chop',canewhack:'chop',
+  bump:'body',headrush:'body',bodyslam:'body',
+  vinelash:'whip',noodlelash:'whip',
+  wingattack:'wing',steelwing:'wing',
+  drillpeck:'peck',irontail:'tail',jolt:'spark',waveslam:'splash',quakestomp:'crack',
+  divebomb:'dive',skyslam:'dive',whirl:'whirl',geowurf:'throw',dieb:'snatch'};
+const MFX_BIG={dynamopunch:1,bodyslam:1,quakestomp:1,skyslam:1,geowurf:1,crunch:1};
+const MFX_COL={metalclaw:'#c8ccd8',steelwing:'#c8ccd8',irontail:'#b0b6c6',crunch:'#6a4a8a',biss:'#ffffff',cinderbite:'#ff8a3d',noodlelash:'#ffd96b',canewhack:'#a8743a'};
+const MK='#14141f';
+// small pixel sprites (facing right); W light, L shade, K outline
+const MBM={
+  fist:['.KKKKK..','KWWWWWK.','KWWWWWWK','KWWWWWWK','KWLWLWWK','.KWWWWK.','..KKKK..'],
+  foot:['..KKKK...','..KWWK...','..KWWKKKK','.KWWWWWWK','KWWWWWWWK','.KKKKKKK.'],
+  hand:['.KKK.','KWWWK','KWWWK','KWWWK','KWWWK','KWWWK','KWWWK','KLLLK','.KKK.'],
+  wing:['KKK.......','KWWKK.....','KWWWWKK...','.KWWWWWKK.','..KWWWWWWK','...KKWWWWK','.....KKKK.'],
+  grab:['K.K.K.','KWKWKW','KWKWKW','KWWWWK','KWWWWK','.KKKK.']};
+function mBm(c,rows,x,y,W,L,fx,fy,S){S=S||2;const h=rows.length,w=rows[0].length,x0=Math.round(x-w*S/2),y0=Math.round(y-h*S/2);
+  for(let j=0;j<h;j++)for(let i=0;i<w;i++){const ch=rows[fy?h-1-j:j][fx?w-1-i:i];if(ch==='.')continue;c.fillStyle=ch==='K'?MK:ch==='L'?L:W;c.fillRect(x0+i*S,y0+j*S,S,S)}}
+function mLine(c,x0,y0,x1,y1,col,w){const n=Math.max(1,Math.ceil(Math.hypot(x1-x0,y1-y0)));c.fillStyle=col;w=w||1;
+  for(let i=0;i<=n;i++){const t=i/n;c.fillRect(Math.round(x0+(x1-x0)*t-w/2),Math.round(y0+(y1-y0)*t-w/2),w,w)}}
+function mStar(c,x,y,R,col,sp){sp=sp||8;R*=1.6;for(let i=0;i<sp;i++){const a=i/sp*6.283+(i%2?0.2:0),r=i%2?R*0.55:R;mLine(c,x,y,x+Math.cos(a)*r,y+Math.sin(a)*r*0.8,col,i%2?2:3)}
+  c.fillStyle='#ffffff';c.fillRect(Math.round(x)-3,Math.round(y)-3,6,6)}
+function mSpeed(c,x,y,a,len,col,n){const px=-Math.sin(a),py=Math.cos(a);for(let i=0;i<(n||4);i++){const o=(i-(n||4)/2+0.5)*6,l=len*(0.6+((i*37)%10)/25);
+  mLine(c,x+px*o-Math.cos(a)*12,y+py*o-Math.sin(a)*12,x+px*o-Math.cos(a)*(12+l*1.6),y+py*o-Math.sin(a)*(12+l*1.6),col,2)}}
+function mBolt(c,x0,y0,x1,y1,col,seed){let px=x0,py=y0;const n=5;for(let i=1;i<=n;i++){const t=i/n,j=i<n?((Math.sin(seed*13+i*7.1)*0.5)*8):0;
+  const nx=x0+(x1-x0)*t+j,ny=y0+(y1-y0)*t+j*0.5;mLine(c,px,py,nx,ny,'#ffffff',2);mLine(c,px,py,nx,ny,col,1);px=nx;py=ny}}
+function mClaw(c,x,y,a,len,col,k,flip,n){const d=a+(flip?-0.9:0.9),ux=Math.cos(d),uy=Math.sin(d),px=-uy,py=ux;n=n||3;
+  for(let i=0;i<n;i++){const o=(i-(n-1)/2)*7,cx=x+px*o,cy=y+py*o,L=len*Math.min(1,k);
+    mLine(c,cx-ux*len/2,cy-uy*len/2,cx-ux*len/2+ux*L,cy-uy*len/2+uy*L,MK,5);mLine(c,cx-ux*len/2,cy-uy*len/2,cx-ux*len/2+ux*L,cy-uy*len/2+uy*L,col,3);
+    mLine(c,cx-ux*len/2+ux*2,cy-uy*len/2+uy*2,cx-ux*len/2+ux*Math.max(2,L-2),cy-uy*len/2+uy*Math.max(2,L-2),'#ffffff',1)}}
+function mJaw(c,x,y,k,R,col){const gap=Math.round(R*1.3*(1-k)),w=R*2;// upper and lower row of teeth snapping shut
+  for(const s of [-1,1]){const by=Math.round(y+s*(gap+3));c.fillStyle=MK;c.fillRect(Math.round(x-w/2)-1,by-(s<0?5:0)-1,w+2,7);c.fillStyle=col;c.fillRect(Math.round(x-w/2),by-(s<0?5:0),w,5);
+    for(let i=0;i<5;i++){const tx=Math.round(x-w/2+2+i*(w-4)/4);for(let r=0;r<6;r++){const hw=Math.max(0,3-Math.floor(r/2));c.fillStyle=r===5?MK:'#ffffff';c.fillRect(tx-hw,by+s*(r+1),hw*2+1,1)}}}}
+function mWhip(c,x0,y0,x1,y1,col,now,k){const n=14,dx=x1-x0,dy=y1-y0,L=Math.hypot(dx,dy)||1,px=-dy/L,py=dx/L;let lx=x0,ly=y0;
+  for(let i=1;i<=n;i++){const t=i/n*Math.min(1,k*1.2),w=Math.sin(t*9-now/40)*5*(1-t*0.4);const nx=x0+dx*t+px*w,ny=y0+dy*t+py*w;mLine(c,lx,ly,nx,ny,MK,4);mLine(c,lx,ly,nx,ny,col,3);lx=nx;ly=ny}
+  c.fillStyle='#ffffff';c.fillRect(Math.round(lx)-1,Math.round(ly)-1,2,2)}
+function mOwner(s){if(!B)return null;return B.me&&B.me.side===s.side?B.me:B.foe}
+function mfxStyle(mid){return MFX_STYLE[mid]||'slash'}
+function mfxCol(mid){return MFX_COL[mid]||(TYPES[MOVES[mid].t]||{}).c||'#ffffff'}
+
+// --- swing: drawn while the melee hit is under way ---
+function meleeSwing(c,s,col,now){const st=mfxStyle(s.mid),cl=mfxCol(s.mid),a=Math.atan2(s.vy,s.vx),k=clamp(s.age/(s.life||0.17),0,1),X=s.x,Y=s.y,fx=s.vx<0;
+  const A=mOwner(s);
+  switch(st){
+    case 'claw':{const fl=(s.mid==='furyswipes'||s.mid==='metalclaw')&&((B.mcN||0)%2);mClaw(c,X,Y,a,22,cl,k,fl,3);break}
+    case 'jaw':{const R=s.mid==='crunch'?15:11;mJaw(c,X,Y,k,R,s.mid==='crunch'?'#6a4a8a':'#c84a5a');break}
+    case 'fist':{mSpeed(c,X,Y,a,s.mid==='quickjab'?16:10,'#ffffff',s.mid==='dynamopunch'?5:3);const big=s.mid==='dynamopunch';
+      if(big){c.fillStyle='#ff8a3d';pxEl(c,X,Y,7,6,1)}mBm(c,MBM.fist,X,Y,big?'#ffd96b':'#f0e6d8',big?'#d89a3d':'#b9ab98',fx,0);break}
+    case 'kick':mSpeed(c,X,Y,a,10,'#ffffff',3);mBm(c,MBM.foot,X,Y,'#f0e6d8','#b9ab98',fx,0);break;
+    case 'chop':{const yy=Y-14*(1-k);if(s.mid==='canewhack'){mLine(c,X-6*(fx?-1:1),yy-10,X+4*(fx?-1:1),yy+6,MK,3);mLine(c,X-6*(fx?-1:1),yy-10,X+4*(fx?-1:1),yy+6,'#a8743a',2)}
+      else{mBm(c,MBM.hand,X,yy,'#f0e6d8','#b9ab98',fx,0);if(s.mid==='tempohieb')mSpeed(c,X,yy,-Math.PI/2,8,'#ffffff',3)}break}
+    case 'body':mSpeed(c,X,Y,a,s.mid==='bodyslam'?18:12,'#ffffff',s.mid==='bodyslam'?6:4);break;
+    case 'whip':if(A)mWhip(c,A.x,A.y-10,X,Y,cl,now,k);break;
+    case 'wing':{const f=Math.sin(k*Math.PI*2)*3;mBm(c,MBM.wing,X,Y-4-f,cl==='#c8ccd8'?'#e6e8f0':'#ffffff',cl==='#c8ccd8'?'#9aa1bd':'#c8d8ff',fx,0);mBm(c,MBM.wing,X,Y+4+f,cl==='#c8ccd8'?'#e6e8f0':'#ffffff',cl==='#c8ccd8'?'#9aa1bd':'#c8d8ff',fx,1);break}
+    case 'peck':{const r=now/30;for(let i=0;i<6;i++){const aa=r+i*1.05,t=i/6;c.fillStyle=i%2?'#ffd96b':'#ffffff';c.fillRect(Math.round(X-Math.cos(a)*t*14+Math.cos(aa)*3*(1-t)),Math.round(Y-Math.sin(a)*t*14+Math.sin(aa)*3*(1-t)),2,2)}
+      mLine(c,X,Y,X-Math.cos(a)*6+Math.sin(a)*3,Y-Math.sin(a)*6-Math.cos(a)*3,'#e8a33d',2);mLine(c,X,Y,X-Math.cos(a)*6-Math.sin(a)*3,Y-Math.sin(a)*6+Math.cos(a)*3,'#e8a33d',2);break}
+    case 'tail':{if(!A)break;const r=18,a0=a-1.4,a1=a0+2.8*k;for(let t=a0;t<a1;t+=0.12){mLine(c,A.x+Math.cos(t)*r,A.y-8+Math.sin(t)*r*0.7,A.x+Math.cos(t+0.12)*r,A.y-8+Math.sin(t+0.12)*r*0.7,MK,4);mLine(c,A.x+Math.cos(t)*r,A.y-8+Math.sin(t)*r*0.7,A.x+Math.cos(t+0.12)*r,A.y-8+Math.sin(t+0.12)*r*0.7,cl,2)}break}
+    case 'spark':for(let i=0;i<3;i++){const aa=a+(i-1)*0.7;mBolt(c,X-Math.cos(aa)*10,Y-Math.sin(aa)*10,X+Math.cos(aa)*4,Y+Math.sin(aa)*4,'#ffe14d',now/60+i)}break;
+    case 'splash':for(let i=0;i<7;i++){const aa=a+(i-3)*0.3,d=4+k*10;c.fillStyle=i%2?'#ffffff':'#3d8bf2';c.fillRect(Math.round(X+Math.cos(aa)*d),Math.round(Y+Math.sin(aa)*d-Math.sin(k*Math.PI)*4),2,2)}break;
+    case 'crack':mBm(c,MBM.foot,X,Y-12*(1-k),'#c8b89a','#8e7a5a',fx,0);break;
+    case 'dive':for(let i=0;i<4;i++){const ox=(i-1.5)*5;mLine(c,X+ox,Y-30+k*10,X+ox,Y-12+k*10,'#ffffff',1)}c.fillStyle=cl;pxEl(c,X,Y,4,3,1);break;
+    case 'whirl':{if(!A)break;const r=12+k*10;for(let t=0;t<6.28;t+=0.25){const aa=t+now/50;c.fillStyle=t<3.1?'#ffffff':cl;c.fillRect(Math.round(A.x+Math.cos(aa)*r),Math.round(A.y-8+Math.sin(aa)*r*0.6),2,2)}break}
+    case 'throw':case 'snatch':mBm(c,MBM.grab,X,Y,'#f0e6d8','#b9ab98',fx,0);break;
+    default:{c.fillStyle='#ffffff';for(let i=-3;i<=3;i++){const aa=a+i*0.25;c.fillRect(Math.round(X+Math.cos(aa)*6)-1,Math.round(Y+Math.sin(aa)*6)-1,2,2)}}}}
+
+// --- impact: a short effect at the target when the hit lands ---
+function mfxAdd(s,T){if(!B||!s||!MOVES[s.mid])return;const st=mfxStyle(s.mid);B.mcN=(B.mcN||0)+1;
+  (B.mfx=B.mfx||[]).push({st,mid:s.mid,x:T.x,y:T.y-20,a:Math.atan2(s.vy||0,s.vx||1),t0:performance.now(),dur:st==='throw'?700:MFX_BIG[s.mid]?520:380,n:B.mcN,seed:Math.random()*99});
+  if(B.mfx.length>14)B.mfx.shift();
+  if(MFX_BIG[s.mid])B.shakeUntil=Math.max(B.shakeUntil||0,performance.now()+(s.mid==='geowurf'?120:220))}
+function drawMeleeFx(c,now){if(!B||!B.mfx||!B.mfx.length)return;B.mfx=B.mfx.filter(e=>now-e.t0<e.dur);
+  for(const e of B.mfx){const k=(now-e.t0)/e.dur,X=e.x,Y=e.y,cl=mfxCol(e.mid),fade=k<0.6?1:1-(k-0.6)/0.4,fx=Math.cos(e.a)<0;c.globalAlpha=Math.max(0,fade);
+    switch(e.st){
+      case 'claw':{const n=e.mid==='furyswipes'?3:3;mClaw(c,X,Y,e.a,30,cl,Math.min(1,k*4),e.n%2===1&&e.mid!=='scratch',n);if(e.mid==='metalclaw'&&k<0.3)mStar(c,X,Y,6,'#ffffff',6);break}
+      case 'jaw':{const R=e.mid==='crunch'?18:13,q=Math.min(1,k*2.6);mJaw(c,X,Y,q,R,e.mid==='crunch'?'#6a4a8a':'#c84a5a');if(q>=1&&k<0.55)mStar(c,X,Y,R,'#ffffff',8);
+        if(e.mid==='cinderbite')for(let i=0;i<6;i++){const fy=Y-k*20-(i%3)*3,fxx=X+(i-2.5)*4+Math.sin(now/60+i)*2;c.fillStyle=i%2?'#ffd96b':'#ff5a2a';c.fillRect(Math.round(fxx),Math.round(fy),2,3)}break}
+      case 'fist':{const big=e.mid==='dynamopunch',R=(big?10:6)+k*(big?18:8);mStar(c,X,Y,R,big?'#ff8a3d':'#ffd96b',big?12:8);
+        if(big){c.strokeStyle='#ffd96b';pxEl(c,X,Y,R*1.2,R*0.8,0);c.strokeStyle='#ffffff';pxEl(c,X,Y,R*0.8,R*0.55,0)}
+        if(k<0.35)mBm(c,MBM.fist,X-Math.cos(e.a)*6,Y,'#f0e6d8','#b9ab98',fx,0);break}
+      case 'kick':{mStar(c,X,Y,6+k*8,'#ffd96b',8);if(k<0.4)mBm(c,MBM.foot,X-Math.cos(e.a)*6,Y+2,'#f0e6d8','#b9ab98',fx,0);break}
+      case 'chop':{const q=Math.min(1,k*4),yy=Y-16+16*q;if(e.mid==='canewhack'){mLine(c,X-8,yy-8,X+8,yy+4,MK,3);mLine(c,X-8,yy-8,X+8,yy+4,'#a8743a',2)}else mBm(c,MBM.hand,X,yy,'#f0e6d8','#b9ab98',fx,0);
+        if(q>=1){mLine(c,X-12-k*6,Y+1,X+12+k*6,Y+1,'#ffffff',2);mStar(c,X,Y,5+k*6,'#ffffff',6)}break}
+      case 'body':{const big=e.mid==='bodyslam',R=(big?9:6)+k*(big?14:9);mStar(c,X,Y,R,big?'#ffffff':'#ffd96b',big?12:8);if(big||e.mid==='headrush'){c.strokeStyle='#ffffff';pxEl(c,X,Y+10,R*1.3,R*0.45,0)}
+        if(e.mid==='headrush'&&k<0.5)for(let i=0;i<3;i++){const aa=now/90+i*2.1;c.fillStyle='#ffe14d';c.fillRect(Math.round(X+Math.cos(aa)*10),Math.round(Y-14+Math.sin(aa)*3),2,2)}break}
+      case 'whip':{const q=Math.min(1,k*3);mLine(c,X-16*q,Y-14*q,X+16*q,Y+14*q,cl,3);mLine(c,X+16*q,Y-14*q,X-16*q,Y+14*q,cl,3);if(k<0.4)mStar(c,X,Y,5,'#ffffff',6);break}
+      case 'wing':{mStar(c,X,Y,5+k*6,'#ffffff',6);for(let i=0;i<5;i++){const aa=e.seed+i*1.26,d=6+k*18;c.fillStyle=e.mid==='steelwing'?'#c8ccd8':'#ffffff';
+        const fxx=X+Math.cos(aa)*d,fyy=Y+Math.sin(aa)*d*0.6+k*10;c.fillRect(Math.round(fxx),Math.round(fyy),3,1);c.fillRect(Math.round(fxx)+1,Math.round(fyy)+1,2,1)}break}
+      case 'peck':{for(let i=0;i<4;i++){const t=(k*4-i);if(t<0||t>1.2)continue;const aa=e.seed+i*1.9;mStar(c,X+Math.cos(aa)*6,Y+Math.sin(aa)*5,3+t*3,'#ffffff',6)}
+        for(let t=0;t<6.28*1.5;t+=0.3){const r=2+t*1.4*(0.5+k);c.fillStyle='#ffd96b';c.fillRect(Math.round(X+Math.cos(t+now/40)*r),Math.round(Y+Math.sin(t+now/40)*r*0.6),1,1)}break}
+      case 'tail':{const r=14,a0=e.a-1.2,a1=a0+2.4*Math.min(1,k*3);for(let t=a0;t<a1;t+=0.12){mLine(c,X-Math.cos(e.a)*8+Math.cos(t)*r,Y+Math.sin(t)*r*0.6,X-Math.cos(e.a)*8+Math.cos(t+0.12)*r,Y+Math.sin(t+0.12)*r*0.6,cl,2)}
+        if(k>0.2)mStar(c,X,Y,4+k*8,'#ffffff',8);break}
+      case 'spark':{for(let i=0;i<5;i++){const aa=e.seed+i*1.26+k;mBolt(c,X,Y,X+Math.cos(aa)*(10+k*8),Y+Math.sin(aa)*(8+k*6),'#ffe14d',e.seed+i+Math.floor(now/50))}break}
+      case 'splash':{for(let i=0;i<12;i++){const aa=-Math.PI/2+(i-5.5)*0.25,v=14+((i*7)%5)*3,yy=Y-Math.sin(aa+Math.PI)*0+(-v*k+30*k*k)*1.2,xx=X+Math.cos(aa)*v*k*1.4;c.fillStyle=i%3?'#3d8bf2':'#ffffff';c.fillRect(Math.round(xx),Math.round(yy),2,2)}
+        c.strokeStyle='#ffffff';pxEl(c,X,Y+10,6+k*12,2+k*4,0);break}
+      case 'crack':{const gy=Y+12;for(let i=0;i<6;i++){const aa=e.seed+i*1.05;let px=X,py=gy;const L=Math.min(1,k*3)*(10+i%3*5);for(let j=1;j<=3;j++){const nx=X+Math.cos(aa+(j%2?0.25:-0.25))*L*j/3,ny=gy+Math.sin(aa)*L*j/3*0.45;mLine(c,px,py,nx,ny,MK,2);px=nx;py=ny}}
+        for(let i=0;i<6;i++){const aa=e.seed*2+i;c.fillStyle='#c8b89a';c.fillRect(Math.round(X+Math.cos(aa)*(6+k*16)),Math.round(gy-k*10-Math.abs(Math.sin(aa))*6),2,2)}break}
+      case 'dive':{const R=6+k*12;mStar(c,X,Y,R,'#ffffff',10);c.strokeStyle=cl;pxEl(c,X,Y+10,R*1.4,R*0.45,0);break}
+      case 'whirl':{const r=8+k*10;for(let t=0;t<6.28;t+=0.2){const aa=t+k*12;c.fillStyle=t<3.1?'#ffffff':cl;c.fillRect(Math.round(X+Math.cos(aa)*r),Math.round(Y+Math.sin(aa)*r*0.6),2,2)}break}
+      case 'throw':{// target is lifted, spun and thrown down (shown as an arc of afterimages and a heavy landing)
+        if(k<0.6){const q=k/0.6;for(let i=0;i<5;i++){const t=Math.max(0,q-i*0.06);c.globalAlpha=Math.max(0,0.7-i*0.14);c.fillStyle=i?'#ffffff':cl;pxEl(c,X,Y-Math.sin(t*Math.PI)*34,5-i*0.6,4-i*0.5,1)}c.globalAlpha=1;
+          mBm(c,MBM.grab,X,Y-Math.sin(q*Math.PI)*34-8,'#f0e6d8','#b9ab98',0,1)}
+        else{const q=(k-0.6)/0.4;mStar(c,X,Y+4,8+q*14,'#ffd96b',12);c.strokeStyle='#ffffff';pxEl(c,X,Y+10,10+q*16,3+q*5,0)}break}
+      case 'snatch':{const q=Math.min(1,k*2.2);mBm(c,MBM.grab,X-Math.cos(e.a)*q*14,Y,'#f0e6d8','#b9ab98',fx,0);
+        if(k>0.25){const sx=X-Math.cos(e.a)*q*14,sy=Y-8-k*6;c.fillStyle='#ffe14d';c.fillRect(Math.round(sx)-1,Math.round(sy)-3,2,6);c.fillRect(Math.round(sx)-3,Math.round(sy)-1,6,2)}break}
+      default:mStar(c,X,Y,4+k*8,'#ffffff',8)}
+    c.globalAlpha=1}}
+
+// hook: register the impact on every melee hit (runs on both clients, so the opponent sees it too)
+{const _sh=shotHit;shotHit=function(s,T){if(s&&s.mel&&T&&!s.wv)try{mfxAdd(s,T)}catch(e){}return _sh.apply(this,arguments)}}
+// draw the impacts on the top layer
+{const _da=drawArenaEv;drawArenaEv=function(c,now,top){const r=_da.apply(this,arguments);if(top)try{drawMeleeFx(c,now)}catch(e){}return r}}
+// ===== Sog (undertow): a whirlpool that snakes across the field in waves and sucks in
+// opponents and every light obstacle (plants, crates, driftwood). Captured obstacles spin
+// along with the whirlpool and smash into the target for extra damage.
+const SOG_LIGHT={bush:1,flower:1,fern:1,reeds:1,shrub:1,crate:1,drift:1};
+const SOG_R=110;
+function sogRelease(s){for(const o of B.obs||[])if(o.sw===s.id){o.sw=null;o.x=clamp(o.x,24,AW-24);o.y=clamp(o.y,24,AH-16)}}
+vortexShot=function(s,dt,T,alive){
+  if(s.bx==null){s.bx=s.x;s.by=s.y;const L=Math.hypot(s.vx,s.vy)||1;s.px=-s.vy/L;s.py=s.vx/L;s.sgc=0}
+  s.bx+=s.vx*dt;s.by+=s.vy*dt;const w=Math.sin(s.age*6.5)*18;s.x=s.bx+s.px*w;s.y=s.by+s.py*w*0.8;
+  if(s.age>s.life||outArena(s.x,s.y+10)){s.dead=1;sogRelease(s);if(!outArena(s.x,s.y+10))leaveHazard(s,s.x,s.y+8);return}
+  // heavy obstacles (rock, stumps, logs, bollards) still stop it
+  for(const o of B.obs||[]){if(o.dead||o.sw===s.id)continue;const dx=s.x-o.x,dy=s.y-(o.y-8),d=Math.hypot(dx,dy);
+    if(SOG_LIGHT[o.kind]&&!o.sw){if(d<70){const f=(60*(1-d/70)+14)*dt;o.x+=dx/(d||1)*f;o.y+=dy/(d||1)*f;if(d<s.r+o.r*0.6&&s.sgc<3){o.sw=s.id;o.swA=Math.atan2(dy,dx);s.sgc++;burst(o.x,o.y-8,'#d8f0ff',6)}}continue}
+    if(!SOG_LIGHT[o.kind]&&d<o.r+(s.r||4)){s.dead=1;sogRelease(s);hitObs(o,s);leaveHazard(s,s.x,s.y+8);return}}
+  // captured obstacles orbit the whirlpool
+  let k=0;for(const o of B.obs||[]){if(o.sw!==s.id||o.dead)continue;o.swA+=dt*7;const R=16+k*5;o.x=s.x+Math.cos(o.swA)*R;o.y=s.y+8+Math.sin(o.swA)*R*0.55;k++}
+  if(!alive)return;const dx=s.x-T.x,dy=s.y-(T.y-12),d=Math.hypot(dx,dy)||1;
+  if(d<SOG_R&&T.ctrl!=='remote'&&!airBusy(T)&&!(T.dashT>0)){const pull=95*(1-d/SOG_R)+14;T.x+=dx/d*pull*dt;T.y+=dy/d*pull*dt*0.9;arenaClamp(T);obsPush(T)}
+  if(d<s.r+11&&T.inv<=0){s.dead=1;const n=(B.obs||[]).filter(o=>o.sw===s.id&&!o.dead);
+    const hit=n.length?Object.assign({},s,{p:Math.round(s.p*(1+0.25*n.length))}):s;shotHit(hit,T);
+    for(const o of n)breakObs(o);if(n.length)say(`Der Sog schleudert ${n.length} Hindernis${n.length>1?'se':''} mit!`);
+    sogRelease(s);leaveHazard(s,T.x,T.y)}};
+// whirlpool look: spiral arms, foam rim and water drawn inwards
+{const _ds=drawSpecial;drawSpecial=function(c,s,col,now){if(s.k!=='vortex')return _ds.apply(this,arguments);
+  const X=Math.round(s.x),Y=Math.round(s.y)+4,R=16,sp=now/110;
+  c.fillStyle='#1d5fb888';pxEl(c,X,Y,R+2,(R+2)*0.55,1);c.fillStyle='#3d8bf2aa';pxEl(c,X,Y,R-3,(R-3)*0.55,1);
+  for(let arm=0;arm<3;arm++)for(let i=0;i<16;i++){const t=i/16,a=sp+arm*2.094+t*5.2,r=2+t*R;c.fillStyle=i%4===0?'#ffffff':i%2?'#d8f0ff':'#7fc0ff';
+    c.fillRect(Math.round(X+Math.cos(a)*r)-1,Math.round(Y+Math.sin(a)*r*0.55)-1,i>10?3:2,2)}
+  for(let i=0;i<10;i++){const a=-sp*0.7+i*0.628;c.fillStyle=i%2?'#ffffff':'#bfe4ff';c.fillRect(Math.round(X+Math.cos(a)*(R+3)),Math.round(Y+Math.sin(a)*(R+3)*0.55),2,1)}
+  c.fillStyle='#0b2a55';c.fillRect(X-2,Y-1,4,2);
+  // streaks drawn towards the centre (the pull)
+  for(let i=0;i<6;i++){const a=i*1.047+now/700,q=((now/600+i*0.37)%1),r=R+22-q*20;c.fillStyle='#d8f0ff';c.globalAlpha=0.5*q+0.2;c.fillRect(Math.round(X+Math.cos(a)*r),Math.round(Y+Math.sin(a)*r*0.55),3,1)}c.globalAlpha=1}}
 /* ===================== COURT: arena choice, spectating =====================
    Spectators render a running tournament duel purely from the two duelists' presence ("du": positions, HP, shots),
    which is broadcast to the whole room anyway — watching costs no extra bandwidth. Nothing is simulated or hit here. */
@@ -5695,7 +5908,7 @@ function monCard(m,i,inTeam){
   const info=document.createElement('div');info.className='info';
   info.innerHTML=`<div class="nm"><span>${nameHtml(m.s)}</span><span class="lv">Lv ${m.l}</span></div><span class="tb" style="background:${TYPES[sp.t].c}">${TYPES[sp.t].n.toUpperCase()}</span> <span class="tb" style="background:${rarOf(m.s).c};color:#14141f">${rarOf(m.s).n.toUpperCase()}</span> <span class="small">KP ${m.hp}/${st.mhp}</span><div class="bar"><i style="width:${r*100}%;background:${hpColor(r)}"></i></div><div class="bar xp"><i style="width:${Math.min(100,m.xp/xpNeed(m.l)*100)}%"></i></div><div class="mvl"></div>`;
   {const L=info.querySelector('.mvl'),lock=!!B||(RUN&&RUN.phase==='arena');m.m.forEach((x,j)=>{const mv=MOVES[x];if(!mv)return;const r=document.createElement('div');r.className='mvr';r.dataset.prev=x;r.dataset.prevS=m.s;
-    r.innerHTML=`<span class="k">${j+1}</span><span class="tb" style="background:${TYPES[mv.t].c}">${TYPES[mv.t].n.slice(0,3).toUpperCase()}</span><span class="n" title="${esc(moveDesc(x))}">${esc(mv.n)}</span><span class="p">${mv.p?mv.p:'–'}</span>`;
+    r.innerHTML=`<span class="k">${j+1}</span><span class="tb" style="background:${TYPES[mv.t].c}">${TYPES[mv.t].n.slice(0,3).toUpperCase()}</span><span class="n" title="${esc((moveLine(x)?moveLine(x)+'\n':'')+moveDesc(x))}">${esc(mv.n)}</span><span class="p">${mv.p?mv.p:'–'}</span>`;
     const mvb=(t,d,tt)=>{const b=document.createElement('button');b.className='mini';b.textContent=t;b.title=tt;b.disabled=lock||j+d<0||j+d>=m.m.length;b.onclick=()=>{const q=m.m[j+d];m.m[j+d]=m.m[j];m.m[j]=q;changed()};r.appendChild(b)};
     mvb('▲',-1,'Nach oben (Attacke '+j+')');mvb('▼',1,'Nach unten');L.appendChild(r)})}
   const acts=document.createElement('div');const btn=(t,fn,dis)=>{const b=document.createElement('button');b.className='mini';b.textContent=t;b.disabled=!!dis||!!B||(RUN&&RUN.phase==='arena');b.onclick=fn;acts.appendChild(b)};
@@ -7218,7 +7431,7 @@ function qDexLine(sid,short){const q=qStatsFor(sid);if(!q.n)return'';return shor
 const KIND_TXT={melee:'Nahkampf — trifft aus der Nähe',shot:'Fernkampf — ein Geschoss',spread:'Fächer — 3 Geschosse im Fächer',multi:'Salve — schnelle Serie',big:'Schwer — großes, langsames Geschoss',self:'Selbst — stärkt/heilt dich',beam:'Strahl — kurzes Aufladen, dann sofortiger Treffer in Linie',breath:'Atem — kurzer Kegel, mehrere Treffer',air:'Luftschlag — trifft von oben an der markierten Stelle',lob:'Hochwurf — fliegt über Hindernisse, Flächentreffer'};
 const FX_LONG={sleep:'Kann das Ziel einschläfern (wacht bei Treffer auf)',conf:'Kann das Ziel verwirren (Steuerung und Zielen gestört)',burn:'Kann verbrennen: Schaden über Zeit',slow:'Verlangsamt das Ziel',stun:'Kann das Ziel kurz betäuben',drain:'Heilt dich um die Hälfte des Schadens',heal:'Heilt 30 % der max. KP',shield:'Halbiert eine Weile den erlittenen Schaden',haste:'Macht dich eine Weile schneller',knock:'Stößt das Ziel zurück'};
 function moveInfoHtml(mid,learnLv){const mv=MOVES[mid];if(!mv)return'';const T=TYPES[mv.t];
-  return`<div class="mvrow" data-prev="${mid}"><b>${esc(mv.n)}</b>${learnLv!=null?` <span class="small">· gelernt mit Lv ${learnLv}</span>`:''}<br><span class="tb" style="background:${T.c}">${T.n.toUpperCase()}</span> <span class="small">${esc(KIND_TXT[mv.k]||mv.k)}${mv.combo>1?` · Serie ×${mv.combo}`:''}</span><br>
+  return`<div class="mvrow" data-prev="${mid}"><b>${esc(mv.n)}</b>${learnLv!=null?` <span class="small">· gelernt mit Lv ${learnLv}</span>`:''}<br><span class="tb" style="background:${T.c}">${T.n.toUpperCase()}</span> <span class="small">${esc(KIND_TXT[mv.k]||mv.k)}${mv.combo>1?` · Serie ×${mv.combo}`:''}</span>${moveLine(mid)?`<br><span class="mvline">${esc(moveLine(mid))}</span>`:''}<br>
    <span class="small">Stärke <b style="font-size:17px;color:var(--text)">${mv.p||'—'}</b> · AP <b style="font-size:17px;color:#4aa3ff">${apCost(mid)}</b> · Abklingzeit ${cdOf(mid).toFixed(1)} s${(B&&B.tb)||(RUN&&RUN.cfg&&RUN.cfg.tb)?` · Genauigkeit ${TB_ACC[mv.k]||100}%`:''}${mv.fx?`<br>Effekt: ${esc(mv.bs?(mv.fx==='debuff'?'senkt beim Ziel ':mv.fx==='selfbuff'?'kann dich stärken: ':'stärkt dich: ')+bsText(mv)+(mv.stc&&mv.stc<1?` (${Math.round(mv.stc*100)} %)`:''):(FX_LONG[mv.fx]||mv.fx))}`:''}</span></div>`}
 // attacks you have seen (used by you or an opponent, or known by one of your monsters); everything else stays ??? in the dex
 function seenMove(mid){try{if(!G||!MOVES[mid])return;G.mvSeen=G.mvSeen||{};if(!G.mvSeen[mid]){G.mvSeen[mid]=1}}catch(e){}}
@@ -7496,7 +7709,7 @@ function openTMGive(k){const all=RUN.team.map(m=>({m,w:'Kader'})).concat(RUN.box
 let PREV_SID=null,MVP=null;
 {const _omi=openMonInfo;openMonInfo=function(s){PREV_SID=s;return _omi.apply(this,arguments)}}
 (function(){const st=document.createElement('style');st.textContent=`#mvprev{position:fixed;z-index:60;pointer-events:none;background:#14141f;border:3px solid #000;box-shadow:4px 4px 0 #000;padding:3px;display:none}
-#mvprev canvas{display:block;image-rendering:pixelated;max-width:92vw;height:auto!important}#mvprev .cap{font-family:VT323,monospace;font-size:15px;color:#e8e8f0;padding:2px 2px 0;display:flex;justify-content:space-between;gap:8px}`;document.head.appendChild(st)})();
+#mvprev canvas{display:block;image-rendering:pixelated;max-width:92vw;height:auto!important}#mvprev .cap{font-family:VT323,monospace;font-size:15px;color:#e8e8f0;padding:2px 2px 0;display:flex;justify-content:space-between;gap:8px}#mvprev .ln{font-family:VT323,monospace;font-size:14px;color:#9aa1bd;padding:0 2px 1px;max-width:396px}#mvprev .ln:empty{display:none}.mvline{font-family:VT323,monospace;font-size:15px;color:#c9cbe0;font-style:italic}`;document.head.appendChild(st)})();
 const PW=176,PH=96,PAX=34,PTX=142,PGY=70;
 function pvDummy(c,x,y,shake,hit){x+=shake;c.fillStyle='#14141f';c.fillRect(x-2,y-2,4,6);c.fillRect(x-7,y-24,14,20);c.fillRect(x-5,y-30,10,7);
   c.fillStyle='#6b4a2a';c.fillRect(x-1,y-4,2,6);c.fillStyle=hit?'#ffffff':'#d9b45a';c.fillRect(x-6,y-23,12,18);c.fillStyle=hit?'#ffffff':'#e8c878';c.fillRect(x-4,y-29,8,6);c.fillStyle='#a0552a';c.fillRect(x-6,y-16,12,2);c.fillStyle='#ef4444';c.fillRect(x-2,y-19,4,4)}
@@ -7551,8 +7764,8 @@ function pvDraw(c,mid,sid,t,spr){const mv=MOVES[mid]||MOVES.bump,col=(TYPES[mv.t
   if(aShow&&spr){c.imageSmoothingEnabled=false;const S=40;c.drawImage(spr,Math.round(ax-S/2),Math.round(ay-S+4),S,S)}else if(aShow){pvBall(c,ax,ay-10,8,'#9aa1bd')}
   if(fxLbl&&mv.fx)pvText(c,fxLbl,tx,T0-24,'#ffcb3d');
   if(thit&&(mv.p||0)>0)pvText(c,'-'+mv.p,tx+14,T0-10-Math.round((t%0.3)*20),'#ffffff')}
-function pvShow(el,mid,sid){if(!MOVES[mid])return;if(!MVP){MVP=document.createElement('div');MVP.id='mvprev';MVP.innerHTML='<canvas width="176" height="96"></canvas><div class="cap"><span class="n"></span><span class="d"></span></div>';document.body.appendChild(MVP)}
-  const mv=MOVES[mid];MVP.querySelector('.n').textContent=mv.n;MVP.querySelector('.d').textContent=(TYPES[mv.t]||{}).n+(mv.p?' · '+mv.p:'');MVP.style.display='block';
+function pvShow(el,mid,sid){if(!MOVES[mid])return;if(!MVP){MVP=document.createElement('div');MVP.id='mvprev';MVP.innerHTML='<canvas width="176" height="96"></canvas><div class="cap"><span class="n"></span><span class="d"></span></div><div class="ln"></div>';document.body.appendChild(MVP)}
+  const mv=MOVES[mid];MVP.querySelector('.n').textContent=mv.n;MVP.querySelector('.d').textContent=(TYPES[mv.t]||{}).n+(mv.p?' · '+mv.p:'');MVP.querySelector('.ln').textContent=moveLine(mid);MVP.style.display='block';
   const r=el.getBoundingClientRect(),w=278,h=170;let x=r.right+8,y=r.top;if(x+w>innerWidth)x=Math.max(4,r.left-w-8);if(y+h>innerHeight)y=innerHeight-h-4;MVP.style.left=x+'px';MVP.style.top=Math.max(4,y)+'px';
   const spr=sid&&SPECIES[sid]?monSprite(sid,24):null;const cv=MVP.querySelector('canvas'),c=cv.getContext('2d');c.imageSmoothingEnabled=false;const t0=performance.now(),cyc=1.8;MVP.dataset.mid=mid;
   cancelAnimationFrame(MVP.raf);const loop=()=>{if(MVP.style.display==='none'||MVP.dataset.mid!==mid)return;const t=((performance.now()-t0)/1000%cyc)/cyc;try{pvDraw(c,mid,sid,t,spr)}catch(e){}MVP.raf=requestAnimationFrame(loop)};loop()}
@@ -7568,7 +7781,7 @@ document.addEventListener('touchstart',e=>{const p=pvTarget(e);if(p&&!(B&&B.stat
 const PV_H=230;
 function pvTargetSid(){return['pruegelklops','zellbaer','harrymon'].find(s=>SPECIES[s])||Object.keys(SPECIES)[0]}
 function pvMakeB(mid,sid,ctx){const atk=newMon(sid&&SPECIES[sid]?sid:'harrymon',30);atk.m=[mid];const tgt=newMon(pvTargetSid(),30);
-  const A=mkFighter('R',[battler(atk)],ACX-70,'none'),T=mkFighter('L',[battler(tgt)],ACX+70,'none');A.x=ACX-70;A.y=ACY-28;T.x=ACX+70;T.y=ACY-28;A.spawnT=0;T.spawnT=0;A.ap=AP_MAX;
+  const A=mkFighter('R',[battler(atk)],ACX-70,'none'),T=mkFighter('L',[battler(tgt)],ACX+70,'none');A.x=ACX-70;A.y=ACY-28;T.x=ACX+70;T.y=ACY-28;A.spawnT=0;T.spawnT=0;A.inv=0;T.inv=0;A.ap=AP_MAX;
   const PB={shots:[],parts:[],nums:[],log:[],state:'fight',ptr:null,capCd:0,sid:0,vshots:[],mode:'pv',pv:1,tb:false,zone:'north',me:T,foe:A,obs:[],haz:[],pvCtx:ctx,pvK:1,enterT:performance.now(),leadDone:1};
   const mv=MOVES[mid]||{},now=performance.now(),k=mv.k;
   const ob=(id,kind,x,y)=>{const O=OBK[kind]||{r:10,hp:50,mat:'rock'};PB.obs.push({id,kind,mat:O.mat,ind:0,x,y,r:O.r,hp:O.hp,max:O.hp,v:0})};
@@ -7577,6 +7790,8 @@ function pvMakeB(mid,sid,ctx){const atk=newMon(sid&&SPECIES[sid]?sid:'harrymon',
   if(k==='bigwave'){ob('p1','bush',ACX,A.y-10);ob('p2','crate',ACX+10,A.y+20)}
   if(k==='shortcircuit'||(mv.t==='electric'&&k!=='self')){PB.haz.push({k:'puddle',x:ACX,y:A.y+8,r:18,t0:now,until:now+9e9,seed:1},{k:'puddle',x:T.x,y:T.y+2,r:18,t0:now,until:now+9e9,seed:2})}
   if(k==='windstream'||k==='gale')ob('w1','boulder',T.x+46,T.y+4);
+  if(k==='vortex'){ob('s1','bush',ACX-20,A.y+30);ob('s2','crate',ACX+10,A.y-22);ob('s3','rock',ACX+40,A.y+40)}
+  if(k==='melee')T.x=A.x+38;  // melee needs contact: put the target within reach
   return PB}
 function pvEngineLoop(mid,sid){const cv=MVP.querySelector('canvas');cv.width=AW;cv.height=PV_H;cv.style.width=AW+'px';cv.style.height=PV_H+'px';const ctx=cv.getContext('2d');ctx.imageSmoothingEnabled=false;
   let PB=null,t0=0,last=performance.now(),fired=false;const CYC=2600;
@@ -7590,6 +7805,7 @@ function pvEngineLoop(mid,sid){const cv=MVP.querySelector('canvas');cv.width=AW;
 {const _ps=pvShow;pvShow=function(el,mid,sid){_ps.apply(this,arguments);if(!MVP||!MOVES[mid])return;cancelAnimationFrame(MVP.raf);
   const r=el.getBoundingClientRect(),w=AW+12,h=PV_H+30;let x=r.right+8,y=r.top;if(x+w>innerWidth)x=Math.max(4,r.left-w-8);if(x<4)x=4;if(y+h>innerHeight)y=innerHeight-h-4;MVP.style.left=x+'px';MVP.style.top=Math.max(4,y)+'px';
   try{pvEngineLoop(mid,sid)}catch(e){console.warn(e);_ps.apply(this,arguments)}}}
+if(!KIND_TXT.vortex)KIND_TXT.vortex='Strudel — schlängelt sich vorwärts und zieht an';
 /* ===================== LOOP ===================== */
 let last=performance.now(),slow=0;
 function frame(now){bakeTick();const dt=Math.max(0,Math.min(0.05,(now-last)/1000));last=now;T+=dt;
@@ -8180,7 +8396,7 @@ function quickQuiz(title,intro,qs,done){let i=0,ok=0,ans=null;const keys=e=>{if(
   const render=()=>{const q=qs[i];QQ.order=QQ.order&&ans!=null?QQ.order:qShuffle([0,1,2,3]);
     openModal(`<div id="qqbox"><h3>${title}</h3><p class="small">${intro} · Frage ${i+1}/${qs.length} · ${ok} richtig</p><div class="sdlg" style="margin:6px 0">${esc(q[0])}</div>
       <div class="sans">${QQ.order.map((k,j)=>`<button class="sa ${ans==null?'':k===0?'ok':k===ans?'bad':'dim'}" data-qq="${k}" ${ans!=null?'disabled':''}><span class="sk">${j+1}</span>${esc(q[1][k])}</button>`).join('')}</div>
-      ${ans!=null?`<div class="sexp ${ans===0?'ok':'bad'}" style="margin-top:6px">${ans===0?'✔ Richtig!':'✘ Falsch.'} ${esc(q[2]||'')}</div><div class="acts" style="margin-top:8px"><button class="btn ghost" id="qqrep" style="font-size:9px">${qReported(q[0])?'⚑ GEMELDET':'⚑ FRAGE MELDEN'}</button><button class="btn" id="qqnext">${i+1<qs.length?'WEITER ▶':'ERGEBNIS ▶'}</button></div>`:''}</div>`);
+      ${ans!=null?`<div class="sexp ${ans===0?"ok":"bad"}" style="margin-top:6px;color:${ans===0?"#0f3d1f":"#fff"};background:${ans===0?"#c8f5d6":"#7a1f1f"}">${ans===0?'✔ Richtig!':'✘ Falsch.'} ${esc(q[2]||'')}</div><div class="acts" style="margin-top:8px"><button class="btn ghost" id="qqrep" style="font-size:9px">${qReported(q[0])?'⚑ GEMELDET':'⚑ FRAGE MELDEN'}</button><button class="btn" id="qqnext">${i+1<qs.length?'WEITER ▶':'ERGEBNIS ▶'}</button></div>`:''}</div>`);
     document.querySelectorAll('[data-qq]').forEach(b=>b.onclick=()=>pick(+b.dataset.qq));const nx=$('#qqnext');if(nx)nx.onclick=next;const rp=$('#qqrep');if(rp)rp.onclick=()=>{qReport(q[0]);rp.textContent='⚑ GEMELDET';rp.disabled=true}};
   const pick=k=>{if(ans!=null)return;ans=k;if(k===0)ok++;qsLog(qs[i][0],k===0);render()};
   const next=()=>{if(ans==null)return;ans=null;QQ.order=null;i++;if(i>=qs.length){removeEventListener('keydown',keys,true);closeModal();done(ok);return}render()};
