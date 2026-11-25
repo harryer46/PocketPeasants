@@ -1,5 +1,8 @@
 /* ===================== REAL-TIME BATTLE ENGINE ===================== */
-const AW=396,AH=316,ACX=198,ACY=202,ARX=174,ARY=101,YT=ACY-73,YB=ACY+75,AX0=ACX-ARX,AX1=ACX+ARX,AY0=ACY-ARY,AY1=ACY+ARY,XL=ACX,XR=ACX,AYM=ACY,UI=1.5,UW=AW/UI,UH=AH/UI;
+const AW=396,AH=316,ACX=198,ACY=202,XL=ACX,XR=ACX,AYM=ACY,UI=1.5,UW=AW/UI,UH=AH/UI;
+// arena size can grow (co-op raids): the oval, its bounding box and the start rows scale around the centre
+let ARX=174,ARY=101,YT=ACY-73,YB=ACY+75,AX0=ACX-ARX,AX1=ACX+ARX,AY0=ACY-ARY,AY1=ACY+ARY,ARENA_K=1;
+function arenaScale(k){ARENA_K=k=k||1;ARX=Math.round(174*k);ARY=Math.round(101*k);YT=Math.round(ACY-73*k);YB=Math.round(ACY+75*k);AX0=ACX-ARX;AX1=ACX+ARX;AY0=ACY-ARY;AY1=ACY+ARY}
 // feet stay inside the oval; points outside are pulled back onto its edge
 function arenaClamp(F){const dx=(F.x-ACX)/ARX,dy=(F.y-ACY)/ARY,d=Math.hypot(dx,dy);if(d>1){F.x=ACX+dx/d*ARX;F.y=ACY+dy/d*ARY}}
 function outArena(x,y){const dx=(x-ACX)/(ARX+24),dy=(y-ACY)/(ARY+30);return dx*dx+dy*dy>1}
@@ -122,7 +125,7 @@ function newBattle(o){try{if(typing())document.activeElement.blur()}catch(e){}
   if(B.tb===undefined)B.tb=!!(RUN&&!RUN.free&&RUN.cfg&&RUN.cfg.tb);
   if(B.tb){B.me.x=ACX;B.me.y=YB;if(B.foe){B.foe.x=ACX;B.foe.y=YT}if(B.state==='fight'||B.state==='count')B.state='tbChoose';B.turn=1;B.tbActs={}}
   // obstacles (real-time only); a duel builds them from its shared id in the canonical view, the 'R' player sees them turned by 180°
-  B.obs=B.tb?[]:genObs(B.mode==='duel'?hashStr(String(B.id)):Math.random()*4e9,B.zone||'arena').map(o=>flipOn()?Object.assign(o,{x:2*ACX-o.x,y:2*ACY-o.y}):o);pres({bt:B.mode==='wild'||B.mode==='trainer'?'wild':'duel'});
+  B.obs=B.tb?[]:genObs(B.mode==='duel'||B.mode==='coop'?hashStr(String(B.id)):Math.random()*4e9,B.zone||'arena').map(o=>flipOn()?Object.assign(o,{x:2*ACX-o.x,y:2*ACY-o.y}):o);pres({bt:B.mode==='wild'||B.mode==='trainer'?'wild':'duel'});
   const kind=B.legend?'legend':B.mode==='wild'?'wild':'trainer';const myB=B;
   const realState=B.state;B.state='intro';
   transition(kind,()=>{if(B!==myB)return;$('#battle').classList.add('on');buildBattleUI();const now=performance.now();B.enterT=now;B.log.forEach(m=>m.at=now);
@@ -239,7 +242,7 @@ function drawRings(c,now){if(!B||!B.rings||!B.rings.length)return;B.rings=B.ring
   c.globalAlpha=0.85*(1-k);c.strokeStyle='#ffffff';pxEl(c,g.x,g.y,r,r*0.45,0);c.strokeStyle=g.col;pxEl(c,g.x,g.y,r-1,r*0.45-1,0);c.globalAlpha=1}}
 const BEAM_CH=0.35; // beams: 0.35 s aiming line first (time to dodge), then the beam
 function shotHit(s,T){burst(s.x,s.y,TYPES[MOVES[s.mid].t].c,7);effLabel(s,T);
-  if(B.mode!=='duel'||T===B.me){const d=hitLocal(T,s);drainHeal(s,d)}
+  if(B.mode==='coop'?T.ctrl!=='remote':(B.mode!=='duel'||T===B.me)){const d=hitLocal(T,s);drainHeal(s,d)}
   else if(MOVES[s.mid].fx==='drain'){drainHeal(s,calcDmg(s.att,act(T),s.mid,s.p).d)}}
 // effectiveness of the player's own attacks, shown right at the target
 function effLabel(s,T){if(!B.me||s.side!==B.me.side)return;const e=eff(MOVES[s.mid].t,SPECIES[act(T).s].t);if(e===1)return;const now=performance.now();if(T.effT&&now-T.effT<350)return;T.effT=now;
@@ -568,7 +571,7 @@ function startTrainer(t){
 }
 function trainerKO(def){const idx=B.me.a;syncBack();const m=RUN.team[idx];if(m){const msgs=gainXp(m,Math.round(xpGain(def.s,def.l)*1.4));Object.assign(B.me.team[idx],battler(m));msgs.forEach(say)}}
 async function trainerWin(){B.state='over';finale(true);const t=B.trainer;RUN.beat[t.id]=1;if(t.toll){RUN.tollFw=RUN.tollFw||{};RUN.tollFw[t.toll]=1}RUN.kap+=t.reward;{const k=HM_FROM[t.id];if(k&&!hasHM(k)){RUN.hm=RUN.hm||{};RUN.hm[k]=1;say(k==='fly'||k==='swim'?`Lizenz ${HM[k].i} ${HM[k].n} + VM ${k==='fly'?'FLIEGEN':'SURFER und WHIRLPOOL'} erhalten! Bring die VM einem ${k==='fly'?'Flug':'Wasser'}-Monster bei (Team → 💿).`:`Du hast die VM ${HM[k].i} ${HM[k].n} bekommen! Einsetzbar mit einem ${hmNeed(k)} im Kader.`);try{setTimeout(renderTeam,50)}catch(e){}sysChat(`${t.n} hat dir ${HM[k].n} beigebracht: ${HM[k].d}`)}}earn(t.reward*40,'von '+t.n);{const tm=tmRandom(mulberry32((Date.now()^hashStr(t.id))>>>0),vmTier(t));if(tm){tmGive(tm);say(`Belohnung: 💿 TM ${MOVES[tm].n} (${TYPES[MOVES[tm].t].n})!`)}}syncBack();say(`Du hast ${t.n} besiegt!`);say(`Belohnung: ${t.reward} Handschellen.`);sysChat(`Du hast ${t.n} besiegt und ${t.reward} Handschellen bekommen.`);updateHud();const myB=B;await finSleep(2400);while(B===myB&&epBusy()&&!B.skipFin)await sleep(100);if(B===myB)endWild()}
-function syncBack(){if(B&&(B.mode==='wild'||B.mode==='trainer'))B.me.team.forEach((b,i)=>{if(RUN.team[i])RUN.team[i].hp=b.hp})}
+function syncBack(){if(B&&(B.mode==='wild'||B.mode==='trainer'||B.mode==='coop'))B.me.team.forEach((b,i)=>{if(RUN.team[i])RUN.team[i].hp=b.hp})}
 async function wildWin(){
   if(B.legend&&typeof FEM!=='undefined'&&FEM.includes(B.legend)){B.state='over';finale(false);syncBack();const n=SPECIES[B.legend].n;say(`${n} ist geflohen!`);setTimeout(()=>sysChat(`${n} lässt sich nicht besiegen – fang es, bevor seine KP auf 0 sinken!`),900);const myB=B;setTimeout(()=>{if(B===myB)endWild(`${n} ist geflohen – versuch es nochmal!`)},2600);return}
   B.state='over';finale(true);const idx=B.me.a;syncBack();const m=RUN.team[idx];if(B.legend){RUN.leg[B.legend]=1;say(`${SPECIES[B.legend].n} verschwindet im Licht…`)}
@@ -973,7 +976,7 @@ function drawBattle(){
   c.drawImage(battleBG(B.zone||'arena'),0,0,AW,AH);
 
   drawHazards(c,_n);drawArenaEv(c,_n,0);drawRings(c,_n);
-  const ents=[B.me,B.foe].filter(Boolean).concat((B.obs||[]).filter(o=>!o.dead)).sort((a,b)=>a.y-b.y);
+  const ents=[B.me,B.foe].filter(Boolean).concat(B.allies||[]).concat((B.obs||[]).filter(o=>!o.dead)).sort((a,b)=>a.y-b.y);
   for(const F of ents){if(F.kind){drawObs(c,F,now);continue}if(F.out&&act(F).hp<=0&&F.faint<=0&&F.ctrl!=='remote')continue;const mon=act(F);
     let catchK=-1;if(F===B.foe&&B.catch){const el=(now-B.catch.t0)/1000;if(el>0.4||B.catch.done)continue;catchK=el/0.4}
     if(F.spawnT&&now<F.spawnT)continue;
