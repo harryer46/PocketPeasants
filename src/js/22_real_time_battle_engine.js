@@ -1044,7 +1044,11 @@ function drawBattle(){
     const r=ringR(now),T=B.foe;c.strokeStyle=r<8?'#3ddc6b':r<11.5?'#ffcb3d':'#ffffff';c.beginPath();c.arc(T.x,T.y-12,r,0,7);c.stroke();c.strokeStyle='#ffffff60';c.beginPath();c.arc(T.x,T.y-12,16,0,7);c.stroke()}
   if(B.ptr){c.fillStyle='#ffffff80';c.fillRect(Math.round(B.ptr.x)-1,Math.round(B.ptr.y)-1,3,3)}
   if(!B.tb&&B.me&&!B.aim&&(B.state==='fight'||B.state==='count')&&!B.me.out){const a=myAim(),F=B.me,on=!!B.aimDrag||aimHeld.length>0;c.fillStyle=on?'#ffcb3d':'#ffffff70';
-    for(let i=2;i<10;i++){const d=i*8;c.fillRect(Math.round(F.x+a.x*d)-1,Math.round(F.y-14+a.y*d)-1,2,2)}
+    // lock-on: when the line really points at the opponent, the dots stretch into dashes until the line is solid
+    {const T=B.foe;let on2=false;if(T&&!T.out&&T.faint<=0){const vx=T.x-F.x,vy=T.y-12-(F.y-14),pr=vx*a.x+vy*a.y,pd=Math.abs(vx*a.y-vy*a.x);on2=pr>0&&pd<13}
+      const dtL=Math.min(0.1,(now-(B.aimLt||now))/1000);B.aimLt=now;B.aimLk=clamp((B.aimLk||0)+(on2?dtL/0.35:-dtL/0.2),0,1);}
+    {const lk=B.aimLk||0,len=2+Math.round(lk*6);if(lk>0.98)c.fillStyle=on?'#ffe27a':'#ffffffb0';
+      for(let i=2;i<10;i++){const d=i*8;for(let q=0;q<len;q+=1)c.fillRect(Math.round(F.x+a.x*(d+q-len/2+1))-1,Math.round(F.y-14+a.y*(d+q-len/2+1))-1,2,2)}}
     const tx=F.x+a.x*82,ty=F.y-14+a.y*82,px=-a.y,py=a.x;for(let k=0;k<5;k++){c.fillRect(Math.round(tx-a.x*k*2+px*k*1.5)-1,Math.round(ty-a.y*k*2+py*k*1.5)-1,2,2);c.fillRect(Math.round(tx-a.x*k*2-px*k*1.5)-1,Math.round(ty-a.y*k*2-py*k*1.5)-1,2,2)}}
   // ---- UI layer: drawn 1.5x larger than the battlefield pixels ----
   if(B.pv){c.setTransform(K*UI,0,0,K*UI,0,0);for(const n of B.nums){const k=(now-n.at)/(n.life||900),[sx,sy]=w2s(n.x,n.y);vtText(c,n.t,Math.round(sx/UI),Math.round(sy/UI-k*14),n.c,n.sz||12,'center')}return}

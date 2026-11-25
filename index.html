@@ -485,7 +485,7 @@ const TURN_CONFIG = {
 
 /* ===================== VERSION ===================== */
 // bump with every release (MAJOR.MINOR.PATCH). Players can only share lobbies/duels with the same version.
-const VERSION='0.112.0';
+const VERSION='0.112.1';
 // access password: changes every Monday 00:00 (local time). Only the hashes are stored here (one per week from PW_W0);
 // the password itself also keys the P2P room, so clients without the current one cannot connect. The plain list lives offline.
 const PW_KEY='knast_pw',PW_W0=Date.UTC(2026,10,16),PW_WH=[3239358969,4147130060,2718625794,3495965776,1618054998,4028240764,3044289461,1207180107,4242648729,353861226,2672313786,600614717,407529519,2270237167,3207113251,1525244515,870970040,319006638,3847934078,944313310,2153038366,3950944742,2733334548,4002544240,2736690288,645338530,1884329338,4268902487,2483246182,3828308270,2182929315,3152020422,1311886195,3461060417,3407580460,2544240283,1017220184,1277844250,4288535363,461397931,853058720,2065298771,219387161,3215594984,1108518435,2250837220,3171827014,1035538317,1537090466,1716649754,2848461661,1266925999,653943759,1307642793,3319845926,629631788,4180878311,1080582197,4114403588,2360104553,3811730973,3337788437,695971354,2424950805],MAX_ROOM=10,MAX_LOBBY=5;
@@ -2158,6 +2158,7 @@ function begin(){
 
 /* ===================== CONTROL SETTINGS ===================== */
 const CHANGELOG=[
+["0.112.1","2026-11-25","Ziel-Indikator: Zeigt die Ziellinie wirklich auf den Gegner, werden die Punkte zu Strichen und die Linie wird nach ca. 0,35 s durchgezogen."],
 ["0.112.0","2026-11-25","Stärke der Natur: Pflanzen-Treffer lassen Wurzeln aus dem Boden brechen, Wurzelfelder wachsen sichtbar. Rankenhieb, Nudelpeitsche, Rankennetz und Dornenexplosion halten kurz fest. Neue Attacke Wurzelfalle (Pflanze, Lv 20 / TM): Boden reißt unter dem Ziel auf, Wurzeln halten 1,6 s fest. Gigasauger: langsame Energiekugel, die immer verfolgt – grüne Energie schwebt zum Anwender zurück (auch bei Saftsauger). Wachstum: +10 % Größe, KP und AP-Regeneration (bis 3×). Lange Salven: Rasierblatt 20, Blubbstrahl 16, Federpfeile 14 Geschosse – weniger Schaden je Geschoss. Schlammbombe zerplatzt in 6 Giftspritzer. Box-Knopf oben in der Kopfleiste (Taste X). Monster-Übersicht hat jetzt eine Attacken-Seite."],
 ["0.111.5","2026-11-25","Pfützen, die sich berühren, fließen zu einer größeren Pfütze zusammen (max. ca. 3-fache Fläche). Eine Pfütze unter Spannung lädt berührende Pfützen mit auf."],
 ["0.111.4","2026-11-25","Attacken-Vorschau: Pfützen nur noch bei Kurzschluss, nicht mehr bei jeder Elektro-Attacke."],
@@ -4684,7 +4685,11 @@ function drawBattle(){
     const r=ringR(now),T=B.foe;c.strokeStyle=r<8?'#3ddc6b':r<11.5?'#ffcb3d':'#ffffff';c.beginPath();c.arc(T.x,T.y-12,r,0,7);c.stroke();c.strokeStyle='#ffffff60';c.beginPath();c.arc(T.x,T.y-12,16,0,7);c.stroke()}
   if(B.ptr){c.fillStyle='#ffffff80';c.fillRect(Math.round(B.ptr.x)-1,Math.round(B.ptr.y)-1,3,3)}
   if(!B.tb&&B.me&&!B.aim&&(B.state==='fight'||B.state==='count')&&!B.me.out){const a=myAim(),F=B.me,on=!!B.aimDrag||aimHeld.length>0;c.fillStyle=on?'#ffcb3d':'#ffffff70';
-    for(let i=2;i<10;i++){const d=i*8;c.fillRect(Math.round(F.x+a.x*d)-1,Math.round(F.y-14+a.y*d)-1,2,2)}
+    // lock-on: when the line really points at the opponent, the dots stretch into dashes until the line is solid
+    {const T=B.foe;let on2=false;if(T&&!T.out&&T.faint<=0){const vx=T.x-F.x,vy=T.y-12-(F.y-14),pr=vx*a.x+vy*a.y,pd=Math.abs(vx*a.y-vy*a.x);on2=pr>0&&pd<13}
+      const dtL=Math.min(0.1,(now-(B.aimLt||now))/1000);B.aimLt=now;B.aimLk=clamp((B.aimLk||0)+(on2?dtL/0.35:-dtL/0.2),0,1);}
+    {const lk=B.aimLk||0,len=2+Math.round(lk*6);if(lk>0.98)c.fillStyle=on?'#ffe27a':'#ffffffb0';
+      for(let i=2;i<10;i++){const d=i*8;for(let q=0;q<len;q+=1)c.fillRect(Math.round(F.x+a.x*(d+q-len/2+1))-1,Math.round(F.y-14+a.y*(d+q-len/2+1))-1,2,2)}}
     const tx=F.x+a.x*82,ty=F.y-14+a.y*82,px=-a.y,py=a.x;for(let k=0;k<5;k++){c.fillRect(Math.round(tx-a.x*k*2+px*k*1.5)-1,Math.round(ty-a.y*k*2+py*k*1.5)-1,2,2);c.fillRect(Math.round(tx-a.x*k*2-px*k*1.5)-1,Math.round(ty-a.y*k*2-py*k*1.5)-1,2,2)}}
   // ---- UI layer: drawn 1.5x larger than the battlefield pixels ----
   if(B.pv){c.setTransform(K*UI,0,0,K*UI,0,0);for(const n of B.nums){const k=(now-n.at)/(n.life||900),[sx,sy]=w2s(n.x,n.y);vtText(c,n.t,Math.round(sx/UI),Math.round(sy/UI-k*14),n.c,n.sz||12,'center')}return}
