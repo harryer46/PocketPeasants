@@ -2,7 +2,7 @@
    - Beförderungsprüfung: Vor der Entwicklungs-Animation 3 Fragen zum Paragraphen des Monsters.
      2 von 3 richtig → Beförderung mit Auszeichnung: +6 % auf alle Werte (stapelt je Entwicklung). Sonst entwickelt es sich ohne Bonus.
    - Doppelt oder nichts (freiwillig) nach einem Trainer-Sieg: eine Fallfrage. Richtig → Preisgeld und EP aus dem Kampf noch einmal;
-     falsch → die Hälfte des Preisgelds ist weg (EP bleiben). */
+     falsch → Preisgeld und alle EP aus dem Kampf weg (Monster fallen auf den Stand vor dem Kampf zurück). */
 {const _st=stats;stats=function(m){const s=_st.apply(this,arguments);if(m&&m.prom){const f=1+0.06*m.prom;s.mhp=Math.round(s.mhp*f);s.atk=Math.round(s.atk*f);s.def=Math.round(s.def*f);s.spd=Math.round(s.spd*f)}return s}}
 // small modal quiz: questions realized ([text, 4 answers (0 = right), explanation]); keys 1–4 answer, Space/Enter continues
 function quickQuiz(title,intro,qs,done){let i=0,ok=0,ans=null;const keys=e=>{if(!$('#modal').classList.contains('on')||!$('#qqbox')){removeEventListener('keydown',keys,true);return}
@@ -27,13 +27,14 @@ const _evoPlay=evoPlay;evoPlay=function(ev){const m=ev.m;if(!m||!RUN||!RUN.team.
     if(pass){m.prom=(m.prom||0)+1;m.hp=Math.min(stats(m).mhp,m.hp+Math.round(stats(m).mhp*0.06));save()}
     _evoPlay(ev).then(()=>{toast(pass?`🎖 Mit Auszeichnung befördert (${ok}/3): ${SPECIES[m.s].n} bekommt +6 % auf alle Werte!`:`Beförderung ohne Auszeichnung (${ok}/3) – kein Bonus diesmal.`);if(pass)sysChat(`🎖 ${SPECIES[m.s].n} wurde mit Auszeichnung befördert (${ok}/3).`);renderTeam();res()})})})};
 // ---- Doppelt oder nichts ----
-{const _gx=gainXp;gainXp=function(m,amt){try{if(B&&B.mode==='trainer'&&m&&!gainXp._don)(B.trXp=B.trXp||[]).push([m,amt])}catch(e){}return _gx.apply(this,arguments)}}
-{const _tw=trainerWin;trainerWin=async function(){const t=B&&B.trainer,xs=(B&&B.trXp||[]).slice(),m0=RUN?RUN.money:0;const r=await _tw.apply(this,arguments);
+{const _gx=gainXp;gainXp=function(m,amt){try{if(B&&B.mode==='trainer'&&m&&!gainXp._don){(B.trXp=B.trXp||[]).push([m,amt]);B.trSnap=B.trSnap||new Map();if(!B.trSnap.has(m))B.trSnap.set(m,{l:m.l,xp:m.xp,s:m.s,m:m.m.slice(),prom:m.prom||0})}}catch(e){}return _gx.apply(this,arguments)}}
+{const _tw=trainerWin;trainerWin=async function(){const t=B&&B.trainer,xs=(B&&B.trXp||[]).slice(),snap=B&&B.trSnap?new Map(B.trSnap):new Map(),m0=RUN?RUN.money:0;const r=await _tw.apply(this,arguments);
   try{const prize=Math.max(0,(RUN?RUN.money:0)-m0);if(t&&!t.pplk&&!t.gift&&!t.toll&&!t.boss&&prize>0&&SET.don!=='0'){let n=0;
-    const w=()=>{if(++n>200)return;if(B||TALK||$('#modal').classList.contains('on')||$('#evoov')||EVO_Q.length){setTimeout(w,400);return}offerDouble(t,prize,xs)};setTimeout(w,900)}}catch(e){console.warn(e)}return r}}
-function offerDouble(t,prize,xs){const ep=xs.reduce((a,x)=>a+x[1],0);
-  openModal(`<h3>🎲 DOPPELT ODER NICHTS?</h3><p>Du hast <b>${esc(t.n)}</b> besiegt: <b>$${prize}</b>${ep?` und <b>${Math.round(ep*((RUN.cfg&&RUN.cfg.xp)||1))} EP</b>`:''}.</p><p class="small">Eine Fallfrage: <span style="color:#3ddc6b">richtig → Preisgeld${ep?' und EP':''} noch einmal</span> · <span style="color:#ef4444">falsch → die Hälfte des Preisgelds ist weg</span> (EP bleiben).</p>
+    const w=()=>{if(++n>200)return;if(B||TALK||$('#modal').classList.contains('on')||$('#evoov')||EVO_Q.length){setTimeout(w,400);return}offerDouble(t,prize,xs,snap)};setTimeout(w,900)}}catch(e){console.warn(e)}return r}}
+function offerDouble(t,prize,xs,snap){const ep=xs.reduce((a,x)=>a+x[1],0);
+  openModal(`<h3>🎲 DOPPELT ODER NICHTS?</h3><p>Du hast <b>${esc(t.n)}</b> besiegt: <b>$${prize}</b>${ep?` und <b>${Math.round(ep*((RUN.cfg&&RUN.cfg.xp)||1))} EP</b>`:''}.</p><p class="small">Eine Fallfrage: <span style="color:#3ddc6b">richtig → Preisgeld${ep?' und EP':''} noch einmal</span> · <span style="color:#ef4444">falsch → Preisgeld${ep?' und alle EP aus diesem Kampf':''} sind weg</span>${ep?' (auch Level-Aufstiege und Entwicklungen daraus)':''}.</p>
    <div class="acts"><button class="btn ghost" id="dnno">NEIN, LIEBER SICHER</button><button class="btn" id="dnyes">🎲 RISKIEREN</button></div>`);
   $('#dnno').onclick=closeModal;$('#dnyes').onclick=()=>{const q=caseFor(null);if(!q){closeModal();return}
     quickQuiz('🎲 DOPPELT ODER NICHTS','Eine Frage entscheidet',[qReal(q)],ok=>{if(ok){earn(prize,'Doppelt oder nichts');gainXp._don=1;try{for(const[m,a]of xs)if(RUN.team.includes(m))for(const s of gainXp(m,a))sysChat(s)}finally{gainXp._don=0}toast(`🎉 Verdoppelt! +$${prize}${ep?' und EP':''}.`)}
-      else{const lose=Math.floor(prize/2);RUN.money=Math.max(0,RUN.money-lose);toast(`💸 Daneben – $${lose} sind weg.`)}save();updateHud();renderTeam();pushMt()})}}
+      else{RUN.money=Math.max(0,RUN.money-prize);let back=0;if(snap)for(const[m,o]of snap){if(m.l!==o.l||m.s!==o.s||m.xp!==o.xp)back++;Object.assign(m,{l:o.l,xp:o.xp,s:o.s,m:o.m,prom:o.prom});if(!m.prom)delete m.prom;m.hp=Math.min(m.hp,stats(m).mhp)}
+        toast(`💸 Daneben – $${prize}${ep?' und alle EP':''} sind weg.`);if(back)sysChat(`Doppelt oder nichts verloren: ${back} Monster fallen auf ihren Stand vor dem Kampf zurück.`)}save();updateHud();renderTeam();pushMt()})}}
