@@ -293,7 +293,10 @@ function qAskedW(q){const r=qsLoad()[qsId(q[0])];const n=r?r[0]+r[1]:0;return 1/
 function qFreshPick(pool,avoid){const u=new Map();for(const q of pool)if(!u.has(q[0])&&(!avoid||!avoid.has(q[0])))u.set(q[0],q);let a=[...u.values()];if(!a.length)a=pool.slice();
   const w=a.map(qAskedW),tot=w.reduce((x,y)=>x+y,0);let x=qRnd()*tot;for(let i=0;i<a.length;i++){x-=w[i];if(x<=0)return a[i]}return a[a.length-1]}
 function qzPick(sid,avoid){const own=QZ[sid]||[],L=(SPECIES[sid]&&SPECIES[sid].law)||'',bm=L.match(/^(?:§|Art\.)\s*\d+[a-z]?\s+([A-Za-zÄÖÜäöü]+)/),bk=(bm&&typeof VAULT_BOOK!=='undefined'&&VAULT_BOOK[bm[1]])||[];
-  const pool=bk.length&&(!own.length||qRnd()<0.35)?bk:own;if(!pool.length)return null;return qFocus()?qwPick(pool,avoid):qFreshPick(pool,avoid)}
+  // mix for every monster: its own questions, the general questions of its law book and short cases of that book
+  const cs=bm&&typeof CASE_QZ!=='undefined'?CASE_QZ.filter(q=>q.book===bm[1]&&!(typeof qReported==='function'&&qReported(q[0]))):[];
+  const r=qRnd();let pool=own;if(cs.length&&(r<0.2||!own.length&&!bk.length))pool=cs;else if(bk.length&&(r<0.45||!own.length))pool=bk;
+  if(!pool.length)pool=own.length?own:bk.length?bk:cs;if(!pool.length)return null;return qFocus()?qwPick(pool,avoid):qFreshPick(pool,avoid)}
 function qzHas(sid){return!!qzPick(sid)}
 // answer time: at least 10 s; longer questions get reading time (≈16 characters per second for question + all four answers,
 // plus 2 s to decide), at most 22 s

@@ -21,8 +21,8 @@ const ZOLL_FEE=100,ZOLL_EVERY=3;
      for(const[dx,dy,d]of[[1,0,'left'],[-1,0,'right'],[0,1,'up'],[0,-1,'down']]){const sx=x+dx,sy=y+dy,j=sy*MW+sx,t=MAP[j];
        if(sx<1||sy<1||sx>=MW-1||sy>=MH-1||MAP[j]===4||!WALK0.has(t)||ENC.has(t)||bad.has(t)||busy(sx,sy))continue;spot={x:sx,y:sy,d};break}if(spot)break}}
    if(!spot)continue;TRAINERS.push({id:'zoll_r'+r,zoll:1,route:r,n:NM[k%NM.length],x:spot.x,y:spot.y,d:spot.d,c:'#1f5f4f',team:[],reward:1,line:LINES[k%LINES.length],after:'Alles verzollt. Gute Weiterfahrt!'});k++}}
-function zollQs(){const seen=new Set();return RUN.team.map(m=>{const sp=SPECIES[m.s],pool=QZ[m.s]||(sp.evoOf&&QZ[sp.evoOf]);let q;
-  if(pool&&pool.length)q=qReal(qFreshPick(pool,seen));else{const law=lawOf(m.s)||'StGB',L=lawQuestions(law);q=L.length?L[Math.floor(qRnd()*L.length)].q:qReal(VAULT_BOOK.StGB[0])}
+function zollQs(){const seen=new Set();return RUN.team.map(m=>{const sp=SPECIES[m.s],raw=qzPick(m.s,seen);let q;
+  if(raw)q=qReal(raw);else{const law=lawOf(m.s)||'StGB',L=lawQuestions(law);q=L.length?L[Math.floor(qRnd()*L.length)].q:qReal(VAULT_BOOK.StGB[0])}
   seen.add(q[0]);const c=q.slice();c.pre=`🐾 ${sp.base||sp.n}${sp.law?" · "+sp.law:""}`;return c})}
 function zollSpotted(t){if(P.lock||B||!RUN||RUN.phase!=='train')return;P.lock=true;held.length=0;t.alert=performance.now();
   setTimeout(()=>talk(t.n,`${t.line} Pro Monster eine Frage zu seinem Paragrafen – alles richtig, und Sie dürfen weiter.`,()=>{P.lock=false;if(!B&&RUN&&RUN.phase==='train')zollQuiz(t)}),700)}

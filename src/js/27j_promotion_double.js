@@ -17,7 +17,7 @@ function quickQuiz(title,intro,qs,done){let i=0,ok=0,ans=null;const keys=e=>{if(
   const next=()=>{if(ans==null)return;ans=null;QQ.order=null;i++;if(i>=qs.length){removeEventListener('keydown',keys,true);closeModal();done(ok);return}render()};
   render()}
 function promoQuestions(m){const sid=m.s,sp=SPECIES[sid],base=sp.evoOf||sid,raw=(QZ[sid]||QZ[base]||[]).filter(q=>!qReported(q[0]));const out=[],av=new Set();
-  for(const q of qwSample(raw,3)){const r=q.q||q;if(av.has(r[0]))continue;av.add(r[0]);out.push(qReal(r))}
+  for(let i=0;i<9&&out.length<3;i++){const r=raw.length?qzPick(qzHas(sid)?sid:base,av):null;if(!r||av.has(r[0]))continue;av.add(r[0]);out.push(qReal(r))}
   const book=lawOf(base)||lawOf(sid);while(out.length<3){const q=caseFor(['StGB','StPO','PolG','GG','BtMG'].includes(book)?book:null,av);if(!q)break;av.add(q[0]);out.push(qReal(q))}
   return out}
 // queue: exam first, then the animation

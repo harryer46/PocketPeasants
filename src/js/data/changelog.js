@@ -1,4 +1,5 @@
 const CHANGELOG=[
+["0.116.0","2026-11-25","Fallfragen: jetzt 5 pro Rechtsnorm (315 statt 61). Fallfragen und allgemeine Fragen des jeweiligen Gesetzbuchs kommen in allen Fragesituationen dran (Festnahme, PÄD, HfPol, Zoll, Beförderung …): ca. 55 % Fragen zum Monster-Paragrafen, 25 % allgemeine Fragen seines Gesetzbuchs, 20 % Fallfragen seines Gesetzbuchs – keine Einzelnormen fremder Monster."],
 ["0.115.5","2026-11-25","Fragen-Kontext: Rund 1.000 Fragen nennen ihre Rechtsnorm nicht selbst. Überall, wo eine Frage erscheint (Schlaf, Beförderung, Prüfungen, PÄD, HfPol …), steht jetzt eine Zeile „📘 Thema: …“ mit dem Paragrafen bzw. Gesetz – außer die Frage oder die Überschrift nennt ihn schon."],
 ["0.115.4","2026-11-25","Zoll: pro falscher Antwort 100 $ Zollgebühr oder ein Zollmonster mehr im Kampf. Fragen lassen sich beim Zoll (und in allen Kurzprüfungen) schon während der Frage melden; Meldungen beim Zoll werden jetzt der richtigen Frage zugeordnet."],
 ["0.115.3","2026-11-25","Zoll-Monster neu: Zollschatten → Zollstreifer (Lv 20) → Zollmeister (Lv 38), Typ Unlicht, mit eigenen Sprites. Zollbeamte kämpfen je nach Level mit der passenden Stufe."],

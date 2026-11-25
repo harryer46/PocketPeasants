@@ -76,6 +76,7 @@ const CASES=[
  ['GG','13','Die Polizei durchsucht eine Wohnung – welches Grundrecht ist betroffen?',['10'],'Unverletzlichkeit der Wohnung.']];
 function normName(b,n){return(b==='GG'?'Art. '+n+' GG':'§ '+n+' '+b)+' · '+(CASE_NORMS[b]&&CASE_NORMS[b][n]||'')}
 // as raw quiz question: [text, correct phrasings, wrong ones, explanation]
+//@inc js/data/cases2.js
 const CASE_QZ=CASES.map(([b,n,txt,ex,why])=>{const cat=CASE_NORMS[b]&&Object.keys(CASE_NORMS[b]).length>=6?b:'StGB',wrong=Object.keys(CASE_NORMS[cat]).filter(k=>!(cat===b&&(k===n||ex.includes(k)))).map(k=>normName(cat,k));
   return Object.assign([`⚖ ${txt} Welche Norm?`,[normName(b,n)],wrong,`${normName(b,n)}: ${why}`],{book:b})});
 function caseFor(book,avoid){let pool=CASE_QZ.filter(q=>!book||q.book===book);if(!pool.length)pool=CASE_QZ;pool=pool.filter(q=>!qReported(q[0]));return pool.length?qFreshPick(pool,avoid):null}
