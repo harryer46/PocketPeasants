@@ -122,3 +122,23 @@ NK.quake={tick(s,dt,T,alive){const A=sideF(s.side);if(!A){s.dead=1;return}const 
   draw(c,s,col,now){if(!s.rocks)return;for(const r of s.rocks){if(r.done)continue;const k=(s.age-r.t)/0.55;if(k<-0.5)continue;const kk=Math.max(0,k),X=Math.round(r.x),Y=Math.round(r.y);
       c.fillStyle='#00000055';const w=Math.round(r.sz*(0.5+kk*0.8));c.fillRect(X-w,Y-1,2*w,3);
       if(k>0){const h=Math.round((1-kk)*(1-kk)*170),sz=r.sz;c.fillStyle='#14141f';c.fillRect(X-sz-1,Y-h-2*sz-1,2*sz+2,2*sz+2);c.fillStyle='#7d838c';c.fillRect(X-sz,Y-h-2*sz,2*sz,2*sz);c.fillStyle='#9aa0a6';c.fillRect(X-sz+1,Y-h-2*sz+1,sz,sz-1);c.fillStyle='#5a5f68';c.fillRect(X,Y-h-sz,sz-1,sz-1)}}}};
+// ---- Eis & Gift: Vergiftung, Giftwolken, Glatteis ----
+HAZ_KIND.poison={k:'gas',r:18,ms:6000};HAZ_KIND.ice={k:'icefloor',r:17,ms:7000};
+function psnApply(T,why){if(!T||T.ctrl==='remote'||SPECIES[act(T).s].t==='poison')return;const now=performance.now();if(T.st.tox>0&&!T.toxMild)return;
+  const fresh=!(T.st.tox>0);T.st.tox=Math.max(T.st.tox||0,6);T.toxMild=1;T.toxN=T.toxN||0;if(fresh){T.toxT=now+1000;say(`${SPECIES[act(T).s].n} wurde vergiftet!${why?' ('+why+')':''}`)}}
+{const _hl=hitLocal;hitLocal=function(T,s){const r=_hl.apply(this,arguments);try{const mv=s&&MOVES[s.mid];if(mv&&T&&!(T.faint>0)){const ch=mv.fx==='psn'?(mv.ch||0.3):mv.psn||0;if(ch&&Math.random()<ch)psnApply(T)}}catch(e){}return r}}
+function ipTick(dt){if(!B||B.tb||!B.haz)return;const now=performance.now();
+  if(B.state==='fight')for(const F of[B.me,B.foe]){if(!envLocal(F))continue;for(const h of B.haz){if(h.until<now||Math.hypot(F.x-h.x,(F.y-h.y)*1.3)>h.r+4)continue;
+    if(h.k==='gas'&&!(F.st.fly>0))psnApply(F,'Giftwolke');
+    if(h.k==='icefloor'&&!(F.st.fly>0)&&SPECIES[act(F).s].t!=='ice'){F.st.slow=Math.max(F.st.slow||0,0.5);if(!F.iceSaid){F.iceSaid=1;say(`${SPECIES[act(F).s].n} rutscht auf dem Glatteis!`)}}}}
+  for(const s of B.shots||[]){if(s.dead||!MOVES[s.mid])continue;const t=MOVES[s.mid].t;if(t!=='ice'&&t!=='fire')continue;
+    for(const h of B.haz){if(h.until<now||Math.hypot(s.x-h.x,(s.y+8-h.y)*1.3)>h.r+(s.r||4))continue;
+      if(t==='ice'&&h.k==='puddle'){h.k='icefloor';h.t0=now;h.until=Math.max(h.until,now+5000);burst(h.x,h.y,'#c8f0ff',8);if(!B.frzSaid||now-B.frzSaid>2500){B.frzSaid=now;say('Die Pfütze gefriert zu Glatteis!')}}
+      else if(t==='fire'&&h.k==='icefloor'){h.k='puddle';h.t0=now;steamPuff(h.x,h.y)}
+      else if(t==='fire'&&h.k==='gas'){h.until=now;shockwave(h.x,h.y,h.r+26,'#ff9a3d',0.35);burst(h.x,h.y,'#ffcb3d',16);B.shakeUntil=now+200;say('Die Giftwolke explodiert!');
+        for(const F of[B.me,B.foe])if(envLocal(F)&&Math.hypot(F.x-h.x,(F.y-h.y)*1.3)<h.r+30){const d=Math.max(1,Math.round(act(F).mhp*0.12));dealDamage(F,d,'#ff9a3d','-'+d)}}}}}
+{const _kt=kindsTick;kindsTick=function(dt){_kt(dt);try{ipTick(dt)}catch(e){console.error(e)}}}
+{const _dh=drawHazards;drawHazards=function(c,now){_dh(c,now);if(!B||!B.haz)return;for(const h of B.haz){if(h.until<now)continue;const X=Math.round(h.x),Y=Math.round(h.y),a=Math.min(1,(h.until-now)/400,(now-h.t0)/200);c.save();c.globalAlpha=a;
+  if(h.k==='gas'){for(let i=0;i<9;i++){const t=now/700+i*0.7,x=X+Math.round(Math.cos(t+i)*h.r*0.6),y=Y-4+Math.round(Math.sin(t*1.3+i)*h.r*0.35);c.fillStyle=i%3?'#a24cc480':'#c88ae080';c.fillRect(x-4,y-3,8,6);c.fillRect(x-3,y-4,6,8)}}
+  else if(h.k==='icefloor'){c.fillStyle='#bfe8f8c0';pxEl(c,X,Y,h.r,h.r*0.5,1);c.fillStyle='#ffffff';c.fillRect(X-h.r*0.4|0,Y-2,4,1);c.fillRect(X+3,Y+1,3,1);if(Math.floor(now/300+h.seed)%5===0)c.fillRect(X-2,Y-1,2,2)}
+  c.restore()}}}

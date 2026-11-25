@@ -111,7 +111,7 @@ function drawSpecial(c,s,col,now){const P=(x,y,w,h,cl)=>{c.fillStyle=cl;c.fillRe
     if(k>0.72){const q=(k-0.72)/0.28,Y=s.y-150*(1-q);c.globalAlpha=0.5;P(s.x-2,Y-40,4,40,col);c.globalAlpha=1;if(!drawVis(c,Object.assign({},s,{y:Y-6,vx:0,vy:1}),col,now)){P(s.x-6,Y-12,12,12,'#14141f');P(s.x-5,Y-11,10,10,col);P(s.x-5,Y-11,3,3,'#ffffffc0')}}return}
   const L=Math.hypot(s.vx,s.vy)||1,ux=s.vx/L,uy=s.vy/L;
   if(s.k==='beam'){if(!s.fired){const k=Math.min(1,s.age/BEAM_CH),bl=Math.floor(now/80)%2;c.globalAlpha=0.3+0.5*k;for(let d=0;d<250;d+=2)P(s.x+ux*d,s.y+uy*d,1,1,bl?'#ff4d4d':'#ffffff');c.globalAlpha=0.35+0.4*Math.abs(Math.sin(now/40));for(let d=0;d<250*k;d+=6)P(s.x+ux*d-1,s.y+uy*d-1,2,2,col);c.globalAlpha=1;P(s.x-3-k*3,s.y-3-k*3,6+k*6,6+k*6,'#ffffff');return}
-    const k=(s.age-0.3)/(s.life-0.3),w=Math.max(1,Math.round(7*(1-k)));c.save();c.lineCap='butt';c.strokeStyle='#14141f';c.lineWidth=w+4;c.beginPath();c.moveTo(s.x,s.y);c.lineTo(s.x+ux*s.len,s.y+uy*s.len);c.stroke();
+    const k=(s.age-0.3)/(s.life-0.3),w=Math.max(1,Math.round(7*(1-k)));c.save();c.lineCap='butt';c.strokeStyle='#14141f';c.lineWidth=w+4;c.beginPath();c.moveTo(s.x,s.y);if(s.segs)for(const g of s.segs)c.lineTo(g[2],g[3]);else c.lineTo(s.x+ux*s.len,s.y+uy*s.len);c.stroke();
     c.strokeStyle=col;c.lineWidth=w+2;c.stroke();c.strokeStyle='#ffffff';c.lineWidth=Math.max(1,w-2);c.stroke();c.restore();return}
   if(s.k==='breath'){c.globalAlpha=0.25;c.fillStyle=col;c.beginPath();const a=Math.atan2(uy,ux);c.moveTo(s.x,s.y);c.arc(s.x,s.y,82,a-0.5,a+0.5);c.closePath();c.fill();c.globalAlpha=1}}
 function drawObs(c,o,now){const st=o.hp<o.max*0.34?2:o.hp<o.max*0.7?1:0;const s=obsSprite(o.kind,o.v,st);let sx=0;if(o.hitT&&now-o.hitT<160)sx=Math.round(Math.sin(now/18)*2);
@@ -145,6 +145,16 @@ function closeBattle(){const myB=B;if(!myB)return;myB.closing=true;if(CQ){CQ.don
 function bigShot(s){const mv=MOVES[s.mid];return!s.frag&&mv&&(mv.k==='big'||s.mid==='ember'||(s.r||4)>=7)}
 function splitShot(s){const sp=Math.hypot(s.vx,s.vy)||120,a0=Math.atan2(s.vy,s.vx);for(let k=-1;k<=1;k++){const a=a0+k*0.45,f=Object.assign({},s,{id:s.id+'f'+(k+2),dead:0,frag:1,x:s.x+Math.cos(a)*6,y:s.y+Math.sin(a)*6,vx:Math.cos(a)*sp*1.1,vy:Math.sin(a)*sp*1.1,age:0,life:0.7,r:Math.max(2,Math.round((s.r||4)*0.45)),p:Math.max(4,Math.round((s.p||30)*0.38))});B.shots.push(f)}
   burst(s.x,s.y,TYPES[MOVES[s.mid].t].c,12);if(!B.splitSaid||performance.now()-B.splitSaid>3000){B.splitSaid=performance.now();say(`${MOVES[s.mid].n} zerbirst in Splitter!`)}}
+// reflecting beam (Solarstrahl): bounces twice — off the arena edge or a solid obstacle — every segment can hit the target (once)
+function beamReflect(s,ux,uy,T,alive,col){let x=s.x,y=s.y,dx=ux,dy=uy,left=520,hit=false;s.segs=[];const nb=MOVES[s.mid].refl;
+  for(let b=0;b<=nb&&left>4;b++){let len=left,hitO=null,nx=0,ny=0;
+    // arena edge along the ray (ellipse)
+    {const A=(dx/ARX)**2+(dy/ARY)**2,Bq=2*((x-ACX)*dx/(ARX*ARX)+(y-ACY)*dy/(ARY*ARY)),Cq=((x-ACX)/ARX)**2+((y-ACY)/ARY)**2-1,D=Bq*Bq-4*A*Cq;if(D>=0){const t=(-Bq+Math.sqrt(D))/(2*A);if(t>0&&t<len){len=t;const ex=x+dx*t,ey=y+dy*t;nx=(ex-ACX)/(ARX*ARX);ny=(ey-ACY)/(ARY*ARY)}}}
+    for(const o of B.obs||[]){if(o.dead)continue;const ox=o.x-x,oy=(o.y-8)-y,t=ox*dx+oy*dy;if(t<2||t>len)continue;const perp=Math.hypot(ox-dx*t,oy-dy*t);if(perp<o.r){const tt=t-Math.sqrt(Math.max(0,o.r*o.r-perp*perp));len=Math.max(1,tt);hitO=o;nx=(x+dx*len)-o.x;ny=(y+dy*len)-(o.y-8)}}
+    if(!hit&&alive&&T.inv<=0){const tx=T.x-x,ty=(T.y-12)-y,t=tx*dx+ty*dy;if(t>0&&t<len+6&&Math.hypot(tx-dx*t,ty-dy*t)<s.r+9){hit=true;shotHit(Object.assign({},s,{x:T.x,y:T.y-12,p:Math.round(s.p*(b?0.8:1))}),T);if(b&&(T===B.me||sideF(s.side)===B.me))say(`Abgeprallt! ${MOVES[s.mid].n} trifft über ${b===1?'eine':'zwei'} Reflexion${b>1?'en':''}!`)}}
+    const ex=x+dx*len,ey=y+dy*len;s.segs.push([x,y,ex,ey]);if(hitO&&!hitO.ind&&(hitO.mat||'rock')!=='rock')hitObs(hitO,s);burst(ex,ey,col,b<nb?6:10);left-=len;
+    if(b===nb||(!nx&&!ny))break;const L=Math.hypot(nx,ny)||1;nx/=L;ny/=L;const d=dx*nx+dy*ny;dx-=2*d*nx;dy-=2*d*ny;x=ex+dx*2;y=ey+dy*2}
+  s.len=s.segs.reduce((a,g)=>a+Math.hypot(g[2]-g[0],g[3]-g[1]),0)}
 function fire(F,i,remote){
   const bt=act(F);const mid=bt.m[i];if(!mid||F.cd[i]>0||F.faint>0||F.out||F.st.stun>0||F.st.sleep>0||F.hitstun>0||airBusy(F)||F.rq||(!remote&&F.landT&&performance.now()<F.landT))return;
   const cost=apCost(mid);if(F.ctrl!=='remote'){if((F.ap??AP_MAX)<cost){if(F===B.me){F.apShake=performance.now();const n=performance.now();if(!B.apMsgT||n-B.apMsgT>1200){B.apMsgT=n;say('Nicht genug AP!')}}return}F.ap=(F.ap??AP_MAX)-cost}
@@ -249,6 +259,7 @@ function specialShot(s,dt){const T=s.side===B.me.side?B.foe:B.me,alive=T&&!T.out
     for(const o of B.obs||[])if(!o.dead&&Math.hypot(o.x-s.x,(o.y-s.y)*1.3)<s.r+o.r)hitObs(o,s);
     if(alive){if(s.r>=18)impactWave(s,T,s.x,s.y);else if(T.inv<=0&&!airBusy(T)&&Math.hypot(T.x-s.x,(T.y-s.y)*1.3)<s.r+9)shotHit(s,T)}leaveHazard(s,s.x,s.y);return}
   const L=Math.hypot(s.vx,s.vy)||1,ux=s.vx/L,uy=s.vy/L;
+  if(s.k==='beam'&&MOVES[s.mid]&&MOVES[s.mid].refl){if(s.age>=s.life){s.dead=1;return}if(s.age<BEAM_CH||s.fired)return;s.fired=1;beamReflect(s,ux,uy,T,alive,col);return}
   if(s.k==='beam'){if(s.age>=s.life){s.dead=1;return}if(s.age<BEAM_CH||s.fired)return;s.fired=1;let len=250,hitO=null;
     for(const o of B.obs||[]){if(o.dead)continue;const ox=o.x-s.x,oy=(o.y-8)-s.y,t=ox*ux+oy*uy;if(t<0||t>len)continue;if(Math.hypot(ox-ux*t,oy-uy*t)<o.r){len=t;hitO=o}}
     s.len=len;if(hitO)hitObs(hitO,s);

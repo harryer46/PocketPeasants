@@ -77,7 +77,7 @@ Object.assign(NK,G2);
   const d=_hl.call(this,T,f!==1?Object.assign({},s,{p:s.p*f}):s);
   if(d>0){if(crit)B.nums.push({x:T.x,y:T.y-56,t:'VOLLTREFFER!',c:'#ffcb3d',at:now,sz:9,life:1000});
     if(mv.flinch&&Math.random()<mv.flinch&&T.st.stun<=0){T.st.stun=0.35;say(`${SPECIES[act(T).s].n} schreckt zurück!`)}
-    if(mv.tox){T.st.tox=8;T.toxN=0;T.toxT=now+1000;say(`${SPECIES[act(T).s].n} wurde schwer vergiftet!`)}
+    if(mv.tox){T.st.tox=8;T.toxN=0;T.toxMild=0;T.toxT=now+1000;say(`${SPECIES[act(T).s].n} wurde schwer vergiftet!`)}
     if(mv.trap){T.st.trap=10;say(`${SPECIES[act(T).s].n} kann nicht mehr fliehen!`)}
     if(mv.encore){T.st.enc=4;T.encIdx=T.lastSlot??0;say(`Zugabe! ${SPECIES[act(T).s].n} kann nur noch ${MOVES[act(T).m[T.encIdx]]?.n||'dieselbe Attacke'} einsetzen!`)}
     if(mv.fx==='root'){T.st.root=1.6;T.rx=T.x;T.ry=T.y;say(`${SPECIES[act(T).s].n} sitzt im Whirlpool fest!`)}
@@ -97,7 +97,7 @@ function mid_is(s,m){return s&&s.mid===m}
 {const _kt=kindsTick;kindsTick=function(dt){_kt(dt);if(!B||B.tb||B.state!=='fight')return;const now=performance.now();
   if(B.weather&&B.weather.until<=now)B.weather=null;
   for(const F of[B.me,B.foe]){if(!F||!F.st||F.ctrl==='remote'||F.out||F.faint>0)continue;const m=act(F);if(!m||m.hp<=0)continue;
-    if(F.st.tox>0&&now>=(F.toxT||0)){F.toxT=now+1000;F.toxN=(F.toxN||0)+1;const d=Math.max(1,Math.round(m.mhp*0.02*F.toxN));dealDamage(F,d,'#c070e0','-'+d)}
+    if(F.st.tox>0&&now>=(F.toxT||0)){F.toxT=now+1000;F.toxN=(F.toxN||0)+1;const d=Math.max(1,Math.round(m.mhp*0.02*(F.toxMild?1.1:F.toxN)));dealDamage(F,d,'#c070e0','-'+d)}
     if(F.st.root>0&&F.rx!=null){F.x=F.rx;F.y=F.ry;F.vx=F.vy=0}
     if(weatherOn('rain')&&!(F.st.ground>0))F.st.wet=Math.max(F.st.wet||0,1);
     if(weatherOn('sun')&&F.st.wet>0)F.st.wet=0;

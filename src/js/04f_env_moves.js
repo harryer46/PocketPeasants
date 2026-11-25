@@ -21,3 +21,5 @@ Object.assign(MOVES.gust,{kb:18});
 {for(const sid in SPECIES){const sp=SPECIES[sid];if(!Array.isArray(sp.ls)||sp.t!=='flying')continue;if(!sp.ls.some(x=>x[1]==='windkanal'))sp.ls.push([16,'windkanal']);sp.ls.sort((a,b)=>a[0]-b[0])}}
 // Erdbeben: Boden bebt, 10–20 Steine fallen vom Himmel
 Object.assign(MOVES.earthquake,{k:'quake',cd:7});
+// Solarstrahl wird reflektiert: 2 Abpraller am Feldrand oder an festen Hindernissen
+MOVES.solarbeam.refl=2;
