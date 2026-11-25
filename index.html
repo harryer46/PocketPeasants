@@ -485,7 +485,7 @@ const TURN_CONFIG = {
 
 /* ===================== VERSION ===================== */
 // bump with every release (MAJOR.MINOR.PATCH). Players can only share lobbies/duels with the same version.
-const VERSION='0.111.4';
+const VERSION='0.111.5';
 // access password: changes every Monday 00:00 (local time). Only the hashes are stored here (one per week from PW_W0);
 // the password itself also keys the P2P room, so clients without the current one cannot connect. The plain list lives offline.
 const PW_KEY='knast_pw',PW_W0=Date.UTC(2026,10,16),PW_WH=[3239358969,4147130060,2718625794,3495965776,1618054998,4028240764,3044289461,1207180107,4242648729,353861226,2672313786,600614717,407529519,2270237167,3207113251,1525244515,870970040,319006638,3847934078,944313310,2153038366,3950944742,2733334548,4002544240,2736690288,645338530,1884329338,4268902487,2483246182,3828308270,2182929315,3152020422,1311886195,3461060417,3407580460,2544240283,1017220184,1277844250,4288535363,461397931,853058720,2065298771,219387161,3215594984,1108518435,2250837220,3171827014,1035538317,1537090466,1716649754,2848461661,1266925999,653943759,1307642793,3319845926,629631788,4180878311,1080582197,4114403588,2360104553,3811730973,3337788437,695971354,2424950805],MAX_ROOM=10,MAX_LOBBY=5;
@@ -2157,6 +2157,7 @@ function begin(){
 
 /* ===================== CONTROL SETTINGS ===================== */
 const CHANGELOG=[
+["0.111.5","2026-11-25","Pfützen, die sich berühren, fließen zu einer größeren Pfütze zusammen (max. ca. 3-fache Fläche). Eine Pfütze unter Spannung lädt berührende Pfützen mit auf."],
 ["0.111.4","2026-11-25","Attacken-Vorschau: Pfützen nur noch bei Kurzschluss, nicht mehr bei jeder Elektro-Attacke."],
 ["0.111.3","2026-11-25","Dex-Fix: Monster im Kader oder in der Box (Starter, Lobby-Starter, Geschenke, Tausch, Entwicklungen) gelten jetzt immer als festgenommen – inklusive ihrer Vorstufen – und zeigen alle Details."],
 ["0.111.2","2026-11-25","Strahlen laden schneller (0,35 s statt 0,5 s). Turbodreher: 1 s Mini-Tornado mit Reichweite 62, bis zu 3 Treffer (Stärke 40), wehrt Geschosse ab. Sog: langsamer und weicher, Ausschlag wächst mit der Zeit. Wellenschlag schickt eine kleine Welle voraus. Nebelschleier legt 6 s Nebel über das Feld (Gegner-KI zielt schlechter). Attacken-Vorschau ohne Herabfallen der Monster."],
@@ -5885,6 +5886,17 @@ function drawMiniWaves(c,now){if(!B||!B.mwv||!B.mwv.length)return;B.mwv=B.mwv.fi
     if(Math.random()<0.5)B.parts.push({x:X+(Math.random()-.5)*W,y:Y-h,vx:ux*30,vy:-20,life:0.3,age:0,c:'#d8f0ff'});c.globalAlpha=1}}
 {const _da=drawArenaEv;drawArenaEv=function(c,now,top){const r=_da.apply(this,arguments);if(!top)try{drawMiniWaves(c,now)}catch(e){}return r}}
 {const _ms=meleeSwing;meleeSwing=function(c,s,col,now){if(s.mid==='waveslam'&&!s.mw){s.mw=1;const A=mOwner(s);if(A)miniWave(A.x,A.y+4,Math.atan2(s.vy,s.vx))}return _ms.apply(this,arguments)}}
+
+// ===== puddles that touch flow together into one bigger puddle; an electrified puddle charges the puddles it touches
+const PUD_MAX=44;
+function puddleMerge(){const now=performance.now(),H=(B.haz||[]).filter(h=>h.until>now&&(h.k==='puddle'||h.k==='zap'));
+  for(let i=0;i<H.length;i++){const a=H[i];if(a.gone)continue;for(let j=i+1;j<H.length;j++){const b=H[j];if(b.gone)continue;
+    const d=Math.hypot(a.x-b.x,(a.y-b.y)*1.6);if(d>(a.r+b.r)*0.8)continue;
+    if(a.k!==b.k){const p=a.k==='puddle'?a:b;p.k='zap';p.t0=now;p.until=Math.max(p.until,now+3000);continue}
+    const A1=a.r*a.r,A2=b.r*b.r;a.x=(a.x*A1+b.x*A2)/(A1+A2);a.y=(a.y*A1+b.y*A2)/(A1+A2);a.r=Math.min(PUD_MAX,Math.sqrt(A1+A2));a.until=Math.max(a.until,b.until);
+    b.gone=1;burst(a.x,a.y,'#8fc8f0',6);if(!B.pudSaid||now-B.pudSaid>4000){B.pudSaid=now;say('Die Pfützen fließen zusammen!')}}}
+  if(H.some(h=>h.gone))B.haz=B.haz.filter(h=>!h.gone)}
+{const _kt=kindsTick;kindsTick=function(dt){_kt(dt);if(!B||!B.haz||!B.haz.length)return;B.pudT=(B.pudT||0)+dt;if(B.pudT<0.25)return;B.pudT=0;try{puddleMerge()}catch(e){}}}
 /* ===================== COURT: arena choice, spectating =====================
    Spectators render a running tournament duel purely from the two duelists' presence ("du": positions, HP, shots),
    which is broadcast to the whole room anyway — watching costs no extra bandwidth. Nothing is simulated or hit here. */

@@ -22,3 +22,14 @@ function drawMiniWaves(c,now){if(!B||!B.mwv||!B.mwv.length)return;B.mwv=B.mwv.fi
     if(Math.random()<0.5)B.parts.push({x:X+(Math.random()-.5)*W,y:Y-h,vx:ux*30,vy:-20,life:0.3,age:0,c:'#d8f0ff'});c.globalAlpha=1}}
 {const _da=drawArenaEv;drawArenaEv=function(c,now,top){const r=_da.apply(this,arguments);if(!top)try{drawMiniWaves(c,now)}catch(e){}return r}}
 {const _ms=meleeSwing;meleeSwing=function(c,s,col,now){if(s.mid==='waveslam'&&!s.mw){s.mw=1;const A=mOwner(s);if(A)miniWave(A.x,A.y+4,Math.atan2(s.vy,s.vx))}return _ms.apply(this,arguments)}}
+
+// ===== puddles that touch flow together into one bigger puddle; an electrified puddle charges the puddles it touches
+const PUD_MAX=44;
+function puddleMerge(){const now=performance.now(),H=(B.haz||[]).filter(h=>h.until>now&&(h.k==='puddle'||h.k==='zap'));
+  for(let i=0;i<H.length;i++){const a=H[i];if(a.gone)continue;for(let j=i+1;j<H.length;j++){const b=H[j];if(b.gone)continue;
+    const d=Math.hypot(a.x-b.x,(a.y-b.y)*1.6);if(d>(a.r+b.r)*0.8)continue;
+    if(a.k!==b.k){const p=a.k==='puddle'?a:b;p.k='zap';p.t0=now;p.until=Math.max(p.until,now+3000);continue}
+    const A1=a.r*a.r,A2=b.r*b.r;a.x=(a.x*A1+b.x*A2)/(A1+A2);a.y=(a.y*A1+b.y*A2)/(A1+A2);a.r=Math.min(PUD_MAX,Math.sqrt(A1+A2));a.until=Math.max(a.until,b.until);
+    b.gone=1;burst(a.x,a.y,'#8fc8f0',6);if(!B.pudSaid||now-B.pudSaid>4000){B.pudSaid=now;say('Die Pfützen fließen zusammen!')}}}
+  if(H.some(h=>h.gone))B.haz=B.haz.filter(h=>!h.gone)}
+{const _kt=kindsTick;kindsTick=function(dt){_kt(dt);if(!B||!B.haz||!B.haz.length)return;B.pudT=(B.pudT||0)+dt;if(B.pudT<0.25)return;B.pudT=0;try{puddleMerge()}catch(e){}}}

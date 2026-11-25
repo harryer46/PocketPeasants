@@ -1,4 +1,5 @@
 const CHANGELOG=[
+["0.111.5","2026-11-25","Pfützen, die sich berühren, fließen zu einer größeren Pfütze zusammen (max. ca. 3-fache Fläche). Eine Pfütze unter Spannung lädt berührende Pfützen mit auf."],
 ["0.111.4","2026-11-25","Attacken-Vorschau: Pfützen nur noch bei Kurzschluss, nicht mehr bei jeder Elektro-Attacke."],
 ["0.111.3","2026-11-25","Dex-Fix: Monster im Kader oder in der Box (Starter, Lobby-Starter, Geschenke, Tausch, Entwicklungen) gelten jetzt immer als festgenommen – inklusive ihrer Vorstufen – und zeigen alle Details."],
 ["0.111.2","2026-11-25","Strahlen laden schneller (0,35 s statt 0,5 s). Turbodreher: 1 s Mini-Tornado mit Reichweite 62, bis zu 3 Treffer (Stärke 40), wehrt Geschosse ab. Sog: langsamer und weicher, Ausschlag wächst mit der Zeit. Wellenschlag schickt eine kleine Welle voraus. Nebelschleier legt 6 s Nebel über das Feld (Gegner-KI zielt schlechter). Attacken-Vorschau ohne Herabfallen der Monster."],
