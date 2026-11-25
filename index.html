@@ -485,7 +485,7 @@ const TURN_CONFIG = {
 
 /* ===================== VERSION ===================== */
 // bump with every release (MAJOR.MINOR.PATCH). Players can only share lobbies/duels with the same version.
-const VERSION='0.111.2';
+const VERSION='0.111.3';
 // access password: changes every Monday 00:00 (local time). Only the hashes are stored here (one per week from PW_W0);
 // the password itself also keys the P2P room, so clients without the current one cannot connect. The plain list lives offline.
 const PW_KEY='knast_pw',PW_W0=Date.UTC(2026,10,16),PW_WH=[3239358969,4147130060,2718625794,3495965776,1618054998,4028240764,3044289461,1207180107,4242648729,353861226,2672313786,600614717,407529519,2270237167,3207113251,1525244515,870970040,319006638,3847934078,944313310,2153038366,3950944742,2733334548,4002544240,2736690288,645338530,1884329338,4268902487,2483246182,3828308270,2182929315,3152020422,1311886195,3461060417,3407580460,2544240283,1017220184,1277844250,4288535363,461397931,853058720,2065298771,219387161,3215594984,1108518435,2250837220,3171827014,1035538317,1537090466,1716649754,2848461661,1266925999,653943759,1307642793,3319845926,629631788,4180878311,1080582197,4114403588,2360104553,3811730973,3337788437,695971354,2424950805],MAX_ROOM=10,MAX_LOBBY=5;
@@ -2157,6 +2157,7 @@ function begin(){
 
 /* ===================== CONTROL SETTINGS ===================== */
 const CHANGELOG=[
+["0.111.3","2026-11-25","Dex-Fix: Monster im Kader oder in der Box (Starter, Lobby-Starter, Geschenke, Tausch, Entwicklungen) gelten jetzt immer als festgenommen – inklusive ihrer Vorstufen – und zeigen alle Details."],
 ["0.111.2","2026-11-25","Strahlen laden schneller (0,35 s statt 0,5 s). Turbodreher: 1 s Mini-Tornado mit Reichweite 62, bis zu 3 Treffer (Stärke 40), wehrt Geschosse ab. Sog: langsamer und weicher, Ausschlag wächst mit der Zeit. Wellenschlag schickt eine kleine Welle voraus. Nebelschleier legt 6 s Nebel über das Feld (Gegner-KI zielt schlechter). Attacken-Vorschau ohne Herabfallen der Monster."],
 ["0.111.1","2026-11-25","Nahkampf-Animationen wie im Original: jede Attacke hat eigenen Schwung und Treffer (Krallenspuren, zuschnappende Kiefer, Faust, Tritt, Handkante, Peitsche, Flügel, Bohrschnabel, Funken, Spritzer, Bodenrisse, Geowurf …). Sog ist jetzt ein wellenförmig wandernder Strudel, der Gegner und leichte Hindernisse ansaugt – mitgerissene Hindernisse verstärken den Treffer. Jede Attacke hat eine einzeilige Beschreibung (Dex, Vorschau, Team, Kampf-Tooltip). Vorschau: Nahkampf steht nun in Reichweite."],
  ["0.111.0","2026-11-25","Beförderungsprüfung: Vor jeder Entwicklung 3 Fragen zum Paragraphen des Monsters — 2 von 3 richtig = Beförderung mit Auszeichnung (+6 % auf alle Werte, stapelt sich je Entwicklung), sonst Entwicklung ohne Bonus. Doppelt oder nichts (freiwillig) nach Trainer-Siegen: eine Fallfrage — richtig gibt Preisgeld und EP aus dem Kampf noch einmal, falsch kostet die Hälfte des Preisgelds. Beide Quiz mit Tasten 1–4, Leertaste weiter und ⚑ Frage melden."],
@@ -7604,6 +7605,13 @@ function addChat(name,col,t,remote){if(remote)chatPop(name,col,t);const l=$('#ch
 function sysChat(t){const l=$('#chatlog');const d=document.createElement('div');d.className='m sys';d.textContent='» '+t;l.appendChild(d);l.scrollTop=l.scrollHeight}
 $('#chatform').addEventListener('submit',e=>{e.preventDefault();const inp=$('#chatin');const t=inp.value.replace(/[\u0000-\u001f]/g,'').trim().slice(0,120);if(!t||!G)return;inp.value='';chatN++;pres({chat:{i:Date.now()%1e9+chatN,t}});inp.blur();myBubble={t,until:performance.now()+6000};addChat(G.name,G.color,t)});
 
+// every monster you own counts as caught (starter, gifts, trades, lobby picks, evolutions) – and so do its earlier forms
+function dexSync(){if(!G)return;G.dex=G.dex||{};const pre={};for(const k in SPECIES){const e=SPECIES[k].evo;if(e&&e[1])pre[e[1]]=k}
+  const mark=s=>{let g=0;while(s&&SPECIES[s]&&g++<5){if(!G.dex[s])G.dex[s]=1;s=pre[s]}};
+  const lists=[RUN&&RUN.team,RUN&&RUN.box,G.freeRun&&G.freeRun.team,G.freeRun&&G.freeRun.box,G.pendBox];for(const L of lists)for(const m of L||[])if(m&&m.s)mark(m.s)}
+{const _od=openDex;openDex=function(){try{dexSync()}catch(e){}return _od.apply(this,arguments)}}
+{const _om=openMonInfo;openMonInfo=function(){try{dexSync()}catch(e){}return _om.apply(this,arguments)}}
+{const _rt=renderTeam;renderTeam=function(){try{dexSync()}catch(e){}return _rt.apply(this,arguments)}}
 // v0.100.3 — Beutel als scrollbare Kachel-Matrix, Box als eigenes Fenster mit Tabellen-Matrix aller Monster
 function bagKeys(){return RUN&&RUN.items?Object.keys(ITEMS).filter(k=>inv(k)>0):[]}
 function bagGridEl(onPick,big){const g=document.createElement('div');g.className='bagGrid'+(big?' big':'');const ks=bagKeys(),tms=RUN?tmOwned():[];

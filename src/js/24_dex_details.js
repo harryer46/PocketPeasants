@@ -135,3 +135,10 @@ function addChat(name,col,t,remote){if(remote)chatPop(name,col,t);const l=$('#ch
 function sysChat(t){const l=$('#chatlog');const d=document.createElement('div');d.className='m sys';d.textContent='» '+t;l.appendChild(d);l.scrollTop=l.scrollHeight}
 $('#chatform').addEventListener('submit',e=>{e.preventDefault();const inp=$('#chatin');const t=inp.value.replace(/[\u0000-\u001f]/g,'').trim().slice(0,120);if(!t||!G)return;inp.value='';chatN++;pres({chat:{i:Date.now()%1e9+chatN,t}});inp.blur();myBubble={t,until:performance.now()+6000};addChat(G.name,G.color,t)});
 
+// every monster you own counts as caught (starter, gifts, trades, lobby picks, evolutions) – and so do its earlier forms
+function dexSync(){if(!G)return;G.dex=G.dex||{};const pre={};for(const k in SPECIES){const e=SPECIES[k].evo;if(e&&e[1])pre[e[1]]=k}
+  const mark=s=>{let g=0;while(s&&SPECIES[s]&&g++<5){if(!G.dex[s])G.dex[s]=1;s=pre[s]}};
+  const lists=[RUN&&RUN.team,RUN&&RUN.box,G.freeRun&&G.freeRun.team,G.freeRun&&G.freeRun.box,G.pendBox];for(const L of lists)for(const m of L||[])if(m&&m.s)mark(m.s)}
+{const _od=openDex;openDex=function(){try{dexSync()}catch(e){}return _od.apply(this,arguments)}}
+{const _om=openMonInfo;openMonInfo=function(){try{dexSync()}catch(e){}return _om.apply(this,arguments)}}
+{const _rt=renderTeam;renderTeam=function(){try{dexSync()}catch(e){}return _rt.apply(this,arguments)}}
