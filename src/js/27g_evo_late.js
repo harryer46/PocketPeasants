@@ -4,7 +4,8 @@
 {const T1=['hat im Dienst ordentlich zugelegt: größer, kräftiger und schwerer zu bremsen.','ist die erfahrene Form – wer sie trifft, merkt sofort den Unterschied.','hat die Probezeit hinter sich und tritt jetzt deutlich selbstbewusster auf.'];
  const T2=['Die Endstufe der Linie. Kaum ein Monster hält ihrem Auftritt stand.','Voll ausgebildet und mit goldenem Abzeichen – die höchste Stufe dieser Art.','Ganz oben angekommen: mächtig, erfahren und ausgesprochen ungemütlich.'];
  for(const id in SPECIES){const sp=SPECIES[id];if(!sp.evoOf)continue;const b=sp.evoOf,B=SPECIES[b];
-   if(typeof QZ!=='undefined'&&!QZ[id]&&QZ[b])QZ[id]=QZ[b];
+   // an evolution asks its own questions plus those of its base form (a few own questions alone get repetitive)
+   if(typeof QZ!=='undefined'&&QZ[b]){if(!QZ[id])QZ[id]=QZ[b];else if(QZ[id]!==QZ[b]&&QZ[id].length<8){const seen=new Set(QZ[id].map(q=>q[0]));QZ[id]=QZ[id].concat(QZ[b].filter(q=>!seen.has(q[0])))}}
    if(typeof DEX_TXT==='undefined'||DEX_TXT[id])continue;
    const fin=!sp.evo,h=hashStr(id),bn=B.base||B.n,me=sp.base||sp.n;
    let t=fin?`${me}: ${T2[h%T2.length]} Entwickelt aus ${bn}.`:`${me} ist die nächste Stufe von ${bn} und ${T1[h%T1.length]}`;

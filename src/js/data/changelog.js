@@ -1,4 +1,5 @@
 const CHANGELOG=[
+["0.115.2","2026-11-25","Neue Fragen: je 6 zu § 221, § 323c, § 145, § 314, § 324 StGB, § 29 BtMG (inkl. KCanG seit 1.4.2024) und für den Zollwächter (§§ 10, 14 ZollVG). Entwicklungen mit nur wenigen eigenen Fragen bekommen zusätzlich die Fragen ihrer Grundform. Monster-Übersicht zeigt jetzt auch die 61 Fallfragen und die StVO-Fragen."],
 ["0.115.1","2026-11-25","Neue, überarbeitete Sprites für alle 18 Eis- und Gift-Monster."],
 ["0.115.0","2026-11-25","Ladebalken beim Start (Spiel und Grafiken). Sonderbonbon kostet jetzt 800 $ statt 250 $. Copshop mit begrenztem Lager je Laden (z. B. Trank 10, Beleber 3, Sonderbonbon 1, jede TM 1); ausverkaufte Waren füllen sich mit der Zeit Stück für Stück wieder auf (Trank alle 3 min, Sonderbonbon alle 30 min, TMs alle 20 min)."],
 ["0.114.1","2026-11-25","Echte Sprites für alle 18 Eis- und Gift-Monster (Aussetzling-, Kaltherz-, Notruffrost-, Dealermolch-, Giftmischer- und Kloakenkröten-Linie) statt der Platzhalter – im Pixelraster der übrigen Monster, breite Endformen flacher statt kleiner."],
