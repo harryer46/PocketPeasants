@@ -485,7 +485,7 @@ ${J}`;se.test(Q)&&(H(F),F=setTimeout(ne,jo))},Ue=()=>{b.iceGatheringState==="com
                  username: 'USERNAME', credential: 'PASSWORD' }],
    ===================================================================== */
 const TURN_CONFIG = {
-  apiUrl: '',
+  apiUrl: 'https://pp-turn.harald-dieterichs21.workers.dev/',
   servers: [{
     urls: [
       'stun:stun.relay.metered.ca:80',
@@ -501,7 +501,7 @@ const TURN_CONFIG = {
 
 /* ===================== VERSION ===================== */
 // bump with every release (MAJOR.MINOR.PATCH). Players can only share lobbies/duels with the same version.
-const VERSION='0.118.0';
+const VERSION='0.118.1';
 // access password: changes every Monday 00:00 (local time). Only the hashes are stored here (one per week from PW_W0);
 // the password itself also keys the P2P room, so clients without the current one cannot connect. The plain list lives offline.
 const PW_KEY='knast_pw',PW_W0=Date.UTC(2026,10,16),PW_WH=[3239358969,4147130060,2718625794,3495965776,1618054998,4028240764,3044289461,1207180107,4242648729,353861226,2672313786,600614717,407529519,2270237167,3207113251,1525244515,870970040,319006638,3847934078,944313310,2153038366,3950944742,2733334548,4002544240,2736690288,645338530,1884329338,4268902487,2483246182,3828308270,2182929315,3152020422,1311886195,3461060417,3407580460,2544240283,1017220184,1277844250,4288535363,461397931,853058720,2065298771,219387161,3215594984,1108518435,2250837220,3171827014,1035538317,1537090466,1716649754,2848461661,1266925999,653943759,1307642793,3319845926,629631788,4180878311,1080582197,4114403588,2360104553,3811730973,3337788437,695971354,2424950805],MAX_ROOM=10,MAX_LOBBY=5;
@@ -2210,6 +2210,7 @@ function begin(){
 
 /* ===================== CONTROL SETTINGS ===================== */
 const CHANGELOG=[
+["0.118.1","25.11.2026","Netzwerk: Cloudflare-TURN als schneller Relay-Server mit Standort in deiner Nähe (für Spieler ohne Direktverbindung, z. B. in Schul- oder Firmennetzen). Metered bleibt als Reserve."],
 ["0.118.0","25.11.2026","Geld verdienen ist schwerer: Geld gibt es nur noch aus Trainerkämpfen (und Turnierprämien). Wilde Kämpfe, Festnahmen, Lernprüfungen, Fallakten, Tagesauftrag und Drill bringen kein Geld mehr (Fallakten/Tagesauftrag geben Items). Neu im freien Spiel: Wetteinsatz vor PvP-Freundschaftskämpfen (Standard 0 $, 50-$-Schritte) – der Sieger kassiert den Einsatz."],
 ["0.117.1","2026-11-25","Polizeiposten stehen jetzt auf halber Strecke zwischen zwei Städten der Story-Route (z. B. „Posten Villingen–Marderach“) statt direkt an einer Stadt."],
 ["0.117.0","2026-11-25","Welt+: Weltkarte aufgeräumt (Routennamen pro Gebiet wie „Waldweg 3“, erst ab Zoom 2×; Gebietsnamen mit Levelbereich, kleinere Schlösser), Gebietsliste mit Lv-Bereich und „x/y festgenommen“, ❗ Story-Ziel auf der Karte. Feste Levelbereiche pro Gebiet entlang der Story (Land 1–12, Küste 8–24, Wald 18–38, Gebirge 30–54, Felsenhöhen 40–60, Canyon 50–70, Dschungel 60–82); Professoren nennen die empfohlene Stufe. 6 Polizeiposten zwischen den Städten (Erste Hilfe, kleiner Laden, Schnellreise). Mehr Wasser an der Küste, Pflanze/Gift im Dschungel, Eis im Gebirge. Felsenhöhen = Verkehrsrecht (StVO + Verkehrsstraftaten + Fälle). 7 Fallakten (eine pro Gebiet): drei Zeugen befragen, dann drei Fallfragen beim Ermittler – Belohnung Geld und Items. Einsatzzentrale in Villingen: Einsatz des Tages und Übungskampf beim Ausbilder (alle 10 min)."],
