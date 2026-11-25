@@ -8,6 +8,7 @@ ZONE_OBS.coopcave=[['boulder',2,3],['rock',2,3],['crystal',2,3],['pillar',1,2]];
 BBG.coopcave=mk(2,2);
 let COOP=null,CLOB=null,COOP_IV=null;
 const COOP_CHIEFS=[];
+const COOP_LAW=['StGB','StPO','PolG','GG'],COOP_LAWN={StGB:'Strafrecht (StGB)',StPO:'Strafprozessrecht (StPO)',PolG:'Polizeirecht (PolG)',GG:'Grundgesetz (GG)'};
 const COOP_NAMES=['PHK Brandt','EPHK Kessler','PHKin Vogt','POR Lindner','PHK Aydın','PRin Hartmann','EPHK Nowak','PHK Seidel','POKin Berger','PR Yilmaz','PHK Wagner','EPHKin Roth'];
 const COOP_GANG=['Kralle','Rex','Viper','Schatten','Brecher','Nadel','Zange','Funke'];
 const COOP_BOSS=['„Der Pate“','„Die Spinne“','„Eisenfaust“','„Der Graf“'];
@@ -19,21 +20,21 @@ function coTeam(arr){if(!Array.isArray(arr)||!arr.length||arr.length>6)return nu
 
 // ---- Polizeiführer in jeder Stadt ----
 {const taken=[];TOWNS.forEach((T,i)=>{const s=wpNear(T.x+3,T.y+2,taken);if(!s)return;
-  const t={id:'coop_'+T.id,kind:'coopchief',gift:'coop',town:T.id,tn:T.n,n:'Polizeiführer '+COOP_NAMES[i%COOP_NAMES.length],x:s.x,y:s.y,d:'down',c:'#0a3d91',team:[],reward:0,line:'',after:''};
+  const t={id:'coop_'+T.id,kind:'coopchief',gift:'coop',town:T.id,tn:T.n,law:COOP_LAW[i%COOP_LAW.length],n:'Polizeiführer '+COOP_NAMES[i%COOP_NAMES.length],x:s.x,y:s.y,d:'down',c:'#0a3d91',team:[],reward:0,line:'',after:''};
   taken.push(t);COOP_CHIEFS.push(t);TRAINERS.push(t)})}
 {const _b=bump;bump=function(nx,ny){const t=trainerAt(nx,ny);if(t&&t.kind==='coopchief'){if(P.bumpCd>0)return;P.bumpCd=0.5;return coopChief(t)}return _b.apply(this,arguments)}}
 
 function coLobbies(town){return others().filter(p=>{const c=p.presence.cl;return c&&c.h&&c.st==='open'&&c.town===town})}
 function coopChief(t){if(!RUN||B||COOP)return;if(teamDown())return;
   const L=coLobbies(t.town);P.lock=true;
-  openModal(`<h3>🚔 KOOP-EINSATZ</h3><p><b>${esc(t.n)}</b>: „In der Höhle bei ${esc(t.tn)} hat sich eine Bande verschanzt. Allein schafft das keiner – bildet eine Streife (bis ${COOP_MAX} Leute), ich führe euch hin.“</p>
-   <p class="small">5 Räume: wilde Monster, Bandenmitglieder und der Bandenboss. Die Gegner sind stärker, je mehr ihr seid. Fangen darf, wer den letzten Treffer landet. Geld gibt es nur von der Bande.</p>
+  openModal(`<h3>🚔 KOOP-EINSATZ</h3><p><b>${esc(t.n)}</b>: „In der Höhle bei ${esc(t.tn)} hat sich eine Bande verschanzt – ihr Revier ist das <b>${COOP_LAWN[t.law]}</b>. Allein schafft das keiner – bildet eine Streife (bis ${COOP_MAX} Leute), ich führe euch hin.“</p>
+   <p class="small">5 Räume: wilde Monster, Bandenmitglieder und der Bandenboss – alle aus dem ${esc(t.law)}. Zwischen den Räumen gibt es eine Prüfung im ${esc(t.law)}. Es gibt <b>keine Heilung</b> unterwegs. Die Gegner sind stärker, je mehr ihr seid. Fangen darf, wer den letzten Treffer landet. Geld gibt es nur von der Bande.</p>
    ${L.length?`<p><b>Offene Streifen:</b></p>${L.map(p=>{const c=p.presence.cl;const n=1+((c.mem||[]).length);return`<button class="btn" style="width:100%;margin:3px 0" data-cj="${esc(p.peer)}" ${n>=COOP_MAX?'disabled':''}>Beitreten: ${esc(cleanName(p.presence.n))} (${n}/${COOP_MAX})</button>`}).join('')}`:'<p class="small">Gerade ist keine Streife offen.</p>'}
    <div class="acts"><button class="btn ghost" id="mno">ZURÜCK</button><button class="btn" id="cnew">NEUE STREIFE GRÜNDEN</button></div>`);
   $('#mno').onclick=()=>{closeModal();P.lock=false};
-  $('#cnew').onclick=()=>{CLOB={id:'k'+Math.random().toString(36).slice(2,9),host:true,hostPeer:coMe(),town:t.town,tn:t.tn,chief:t.n,zone:zoneAt(t.x,t.y)||'north'};pres({cl:{id:CLOB.id,h:1,st:'open',town:t.town,tm:coRaw(),mem:[]}});coLobbyView()};
+  $('#cnew').onclick=()=>{CLOB={id:'k'+Math.random().toString(36).slice(2,9),host:true,hostPeer:coMe(),town:t.town,tn:t.tn,chief:t.n,law:t.law};pres({cl:{id:CLOB.id,h:1,st:'open',town:t.town,tm:coRaw(),mem:[]}});coLobbyView()};
   document.querySelectorAll('[data-cj]').forEach(b=>b.onclick=()=>{const p=findPeer(b.dataset.cj);const c=p&&p.presence.cl;if(!c){toast('Diese Streife gibt es nicht mehr.');return}
-    CLOB={id:c.id,host:false,hostPeer:p.peer,town:t.town,tn:t.tn,chief:t.n};pres({cl:{j:c.id,jt:Date.now(),tm:coRaw()}});coLobbyView()})}
+    CLOB={id:c.id,host:false,hostPeer:p.peer,town:t.town,tn:t.tn,chief:t.n,law:t.law};pres({cl:{j:c.id,jt:Date.now(),tm:coRaw()}});coLobbyView()})}
 function coLeaveLobby(msg){CLOB=null;pres({cl:null});if(COOP_IV){clearInterval(COOP_IV);COOP_IV=null}closeModal();P.lock=false;if(msg)toast(msg)}
 function coJoiners(){if(!CLOB)return[];return others().filter(p=>p.presence.cl&&p.presence.cl.j===CLOB.id).sort((a,b)=>(+a.presence.cl.jt||0)-(+b.presence.cl.jt||0)).slice(0,COOP_MAX-1)}
 function coKader(tm){return(tm||[]).map(e=>`${esc(SPECIES[e[0]]?SPECIES[e[0]].n:'?')} <span class="small">Lv ${e[1]|0}</span>`).join(' · ')||'–'}
@@ -43,7 +44,7 @@ function coLobbyView(){if(COOP_IV)clearInterval(COOP_IV);const draw=()=>{if(!CLO
     else{const h=findPeer(CLOB.hostPeer),c=h&&h.presence.cl;if(!c||c.id!==CLOB.id){coLeaveLobby('Die Streife wurde aufgelöst.');return}
       if(c.st==='go'){if((c.mem||[]).includes(coMe())&&c.plan){coLeaveLobbyQuiet();coopStart(c.plan,CLOB0.hostPeer);return}coLeaveLobby('Die Streife ist ohne dich losgezogen – sie war voll.');return}
       rows=[[CLOB.hostPeer,c.tm],...(c.mem||[]).map(id=>{const p=findPeer(id);return[id,p&&p.presence.cl?p.presence.cl.tm:null]})];ok=(c.mem||[]).includes(coMe());info=ok?'Du bist dabei. Warte, bis der Streifenführer startet …':'Die Streife ist voll – du stehst auf der Warteliste.'}
-    const html=`<h3>🚔 STREIFE · ${esc(CLOB.tn)}</h3><p class="small">${esc(CLOB.chief)} wartet am Höhleneingang.</p>
+    const html=`<h3>🚔 STREIFE · ${esc(CLOB.tn)}</h3><p class="small">${esc(CLOB.chief)} wartet am Höhleneingang. Schwerpunkt: <b>${esc(COOP_LAWN[CLOB.law]||CLOB.law)}</b></p>
       <div style="text-align:left">${rows.map(([id,tm],i)=>`<div style="padding:4px 6px;margin:3px 0;background:#ffffff10;border-radius:6px"><b>${i===0?'⭐ ':''}${esc(coName(id))}</b><br>${coKader(tm)}</div>`).join('')}
       ${Array.from({length:Math.max(0,COOP_MAX-rows.length)},()=>'<div class="small" style="padding:4px 6px;margin:3px 0;border:1px dashed #ffffff30;border-radius:6px">freier Platz</div>').join('')}</div>
       ${info?`<p class="small">${info}</p>`:`<p class="small">${rows.length} von ${COOP_MAX} Plätzen belegt. Du kannst auch allein starten.</p>`}
@@ -55,41 +56,43 @@ let CLOB0=null;
 function coLeaveLobbyQuiet(){CLOB0=CLOB;CLOB=null;if(COOP_IV){clearInterval(COOP_IV);COOP_IV=null}pres({cl:null});closeModal()}
 
 // ---- Einsatzplan: 5 Räume, Stufe nach dem Kader der Streife ----
-function coPlan(mem,teams,zone){const r=mulberry32((Math.random()*4e9)>>>0);const tops=teams.map(tm=>Math.max(1,...(tm||[]).map(e=>e[1]|0)));
+function coPlan(mem,teams,law){const r=mulberry32((Math.random()*4e9)>>>0);const tops=teams.map(tm=>Math.max(1,...(tm||[]).map(e=>e[1]|0)));
   const L=clamp(Math.round(tops.reduce((a,b)=>a+b,0)/tops.length),3,95);
-  let pool=poolOf(zone).filter(s=>SPECIES[s]&&!(SPECIES[s].minLv>L));if(!pool.length)pool=poolOf(zone).slice();
-  const pick=()=>pool[Math.floor(r()*pool.length)];const fin=(s,l)=>newMon(s,l).s;
+  const base=lawSpecies(law).filter(s=>SPECIES[s]);let pool=base.filter(s=>!(SPECIES[s].minLv>L));if(!pool.length)pool=base.length?base:poolOf('north').slice();
+  const used=new Set();const pick=()=>{let c=pool.filter(x=>!used.has(x));if(!c.length)c=pool;const x=c[Math.floor(r()*c.length)];used.add(x);return x};const fin=(s,l)=>newMon(s,l).s;
   const bs=s=>{const b=SPECIES[s].b;return b[0]+b[1]+b[2]+b[3]};
   const boss=pool.map(s=>fin(s,L+7)).sort((a,b)=>bs(b)-bs(a))[0];
   const g=()=>COOP_GANG[Math.floor(r()*COOP_GANG.length)];
-  return{id:'r'+Math.random().toString(36).slice(2,9),L,mem,zone,rooms:[
+  return{id:'r'+Math.random().toString(36).slice(2,9),L,mem,law,rooms:[
     ['wild',pick(),L+2,'Wildes Monster'],['trainer',pick(),L+3,'Bandenmitglied '+g()],['wild',pick(),L+4,'Wildes Monster'],['trainer',pick(),L+5,'Bandenmitglied '+g()],['boss',boss,L+7,'Bandenboss '+COOP_BOSS[Math.floor(r()*COOP_BOSS.length)]]]}}
 function coHostGo(){if(!CLOB||!CLOB.host)return;const J=coJoiners();const mem=[coMe(),...J.map(p=>p.peer)];
-  const plan=coPlan(mem,[coRaw(),...J.map(p=>p.presence.cl.tm)],CLOB.zone);plan.tn=CLOB.tn;plan.chief=CLOB.chief;
+  const plan=coPlan(mem,[coRaw(),...J.map(p=>p.presence.cl.tm)],CLOB.law);plan.tn=CLOB.tn;plan.chief=CLOB.chief;
   pres({cl:{id:CLOB.id,h:1,st:'go',town:CLOB.town,tm:coRaw(),mem:J.map(p=>p.peer),plan}});const hp=coMe();CLOB=null;if(COOP_IV){clearInterval(COOP_IV);COOP_IV=null}closeModal();
   // the lobby entry stays up a few seconds so every member sees the start
   setTimeout(()=>{if(!CLOB)pres({cl:null})},8000);coopStart(plan,hp)}
 
 // ---- Höhle: Raumübersicht zwischen den Kämpfen ----
-function coopStart(plan,hostPeer){COOP={id:plan.id,plan,hostPeer,host:hostPeer===coMe(),idx:0,started:-1,seen:Date.now()};P.lock=true;held.length=0;
+function coopStart(plan,hostPeer){COOP={id:plan.id,plan,hostPeer,host:hostPeer===coMe(),idx:0,started:-1,seen:Date.now(),seen0:Date.now(),td:-1,tk:{},ls:{}};P.lock=true;held.length=0;
   sysChat(`🚔 Koop-Einsatz gestartet: Höhle bei ${plan.tn} (${plan.mem.length} ${plan.mem.length===1?'Spieler':'Spieler'})`);coCave()}
 function coSq(){return RUN.team.map(m=>Math.round(100*m.hp/Math.max(1,stats(m).mhp)))}
-function coPubCave(go){if(!COOP)return;const o={r:COOP.id,i:COOP.idx,sq:coSq()};if(COOP.host&&go!=null)o.go=go;else if(COOP.host&&COOP.go!=null)o.go=COOP.go;pres({co:o})}
+function coPubCave(go){if(!COOP)return;const o={r:COOP.id,i:COOP.idx,sq:coSq(),td:COOP.td==null?-1:COOP.td,tk:COOP.tk?COOP.tk[COOP.idx]:null};if(COOP.host&&go!=null)o.go=go;else if(COOP.host&&COOP.go!=null)o.go=COOP.go;pres({co:o})}
 const CO_ICON={wild:'🐾',trainer:'🦹',boss:'👑'};
 function coCave(){if(!COOP)return;if(COOP_IV)clearInterval(COOP_IV);if(!B)arenaScale(1);coPubCave();
-  const draw=()=>{if(!COOP||B){return}
+  const draw=()=>{if(!COOP||B||COOP.testing){return}
     // guests: follow the host into the next room, notice a vanished host
     if(!COOP.host){const h=findPeer(COOP.hostPeer),c=h&&h.presence.co;if(c&&c.r===COOP.id)COOP.seen=Date.now();else if(Date.now()-COOP.seen>COOP_TIMEOUT){coopEnd('Der Streifenführer hat den Einsatz verlassen.');return}
       if(c&&c.r===COOP.id&&c.go===COOP.idx&&COOP.started!==COOP.idx){coopRoom(COOP.idx);return}}
     const P_=COOP.plan,rows=P_.rooms.map((r,i)=>`<div style="padding:3px 6px;margin:2px 0;border-radius:6px;background:${i===COOP.idx?'#ffcb3d30':'#ffffff0c'}">${i<COOP.idx?'✅':i===COOP.idx?'▶':'🔒'} ${CO_ICON[r[0]]} ${i<=COOP.idx?`<b>${esc(r[3])}</b> <span class="small">· ${i===COOP.idx||i<COOP.idx?esc(SPECIES[r[1]].n)+' ':''}Lv ${r[2]}</span>`:'<span class="small">unbekannt</span>'}</div>`).join('');
-    const team=P_.mem.map(id=>{let sq=null;if(id===coMe())sq=coSq();else{const p=findPeer(id),c=p&&p.presence.co;if(c&&c.r===COOP.id)sq=c.sq}
-      return`<div class="small">${id===COOP.hostPeer?'⭐ ':''}<b>${esc(coName(id))}</b> ${sq?sq.map(v=>`<span style="color:${v<=0?'#8a8ea6':v<35?'#ef4444':v<70?'#ffcb3d':'#3ddc6b'}">■</span>`).join(''):'<i>offline?</i>'}</div>`}).join('');
-    const html=`<h3>🕳 HÖHLE BEI ${esc(P_.tn.toUpperCase())}</h3><p class="small">${esc(P_.chief)}: „${COOP.idx===0?'Leise rein, zusammenbleiben. Ich bleibe am Eingang.':COOP.idx===4?'Da hinten sitzt der Boss. Jetzt alles geben!':'Gut gemacht. Weiter!'}“</p>
+    const needT=COOP.idx>0;let waitT=0;COOP.ls=COOP.ls||{};
+    const team=P_.mem.map(id=>{let sq=null,td=-1,tk=null;if(id===coMe()){sq=coSq();td=COOP.td==null?-1:COOP.td;tk=COOP.tk&&COOP.tk[COOP.idx]}else{const p=findPeer(id),c=p&&p.presence.co;if(c&&c.r===COOP.id){sq=c.sq;td=c.td;tk=c.tk;COOP.ls[id]=Date.now()}}
+      const gone=id!==coMe()&&Date.now()-(COOP.ls[id]||COOP.seen0||Date.now())>COOP_TIMEOUT;const ok=!needT||td===COOP.idx||gone;if(!ok)waitT++;
+      return`<div class="small">${id===COOP.hostPeer?'⭐ ':''}<b>${esc(coName(id))}</b> ${sq?sq.map(v=>`<span style="color:${v<=0?'#8a8ea6':v<35?'#ef4444':v<70?'#ffcb3d':'#3ddc6b'}">■</span>`).join(''):'<i>offline?</i>'}${needT?(gone?' · <i>weg</i>':ok?` · 📝 ${tk!=null?tk+'/3':'✓'}`:' · 📝 <i>prüft noch …</i>'):''}</div>`}).join('');
+    const html=`<h3>🕳 HÖHLE BEI ${esc(P_.tn.toUpperCase())}</h3><p class="small">Schwerpunkt: <b>${esc(COOP_LAWN[P_.law]||P_.law)}</b></p><p class="small">${esc(P_.chief)}: „${COOP.idx===0?'Leise rein, zusammenbleiben. Ich bleibe am Eingang.':COOP.idx===4?'Da hinten sitzt der Boss. Jetzt alles geben!':'Gut gemacht. Weiter!'}“</p>
       <div style="text-align:left">${rows}</div><div style="text-align:left;margin-top:6px">${team}</div>
-      <p class="small">${COOP.host?'Du führst die Streife – du entscheidest, wann es weitergeht.':'Warte, bis der Streifenführer den nächsten Raum betritt …'} Besiegte Monster werden zwischen den Räumen notdürftig versorgt (25 % KP).</p>
-      <div class="acts"><button class="btn ghost" id="cabort">EINSATZ ABBRECHEN</button>${COOP.host?'<button class="btn" id="cnext">▶ RAUM BETRETEN</button>':''}</div>`;
+      <p class="small">${COOP.host?'Du führst die Streife – du entscheidest, wann es weitergeht.':'Warte, bis der Streifenführer den nächsten Raum betritt …'} Unterwegs gibt es keine Heilung – wer keine Monster mehr hat, schaut nur noch zu.</p>
+      <div class="acts"><button class="btn ghost" id="cabort">EINSATZ ABBRECHEN</button>${COOP.host?`<button class="btn" id="cnext" ${waitT?'disabled':''}>${waitT?'⏳ WARTE AUF PRÜFUNG':'▶ RAUM BETRETEN'}</button>`:''}</div>`;
     if($('#mbox').dataset.co!==html||!$('#modal').classList.contains('on')){openModal(html);$('#mbox').dataset.co=html;
-      $('#cabort').onclick=()=>coopEnd('Du hast den Einsatz abgebrochen.');if($('#cnext'))$('#cnext').onclick=()=>{COOP.go=COOP.idx;coPubCave(COOP.idx);setTimeout(()=>{if(COOP&&!B)coopRoom(COOP.idx)},120)}}};
+      $('#cabort').onclick=()=>coopEnd('Du hast den Einsatz abgebrochen.');if($('#cnext')&&!waitT)$('#cnext').onclick=()=>{COOP.go=COOP.idx;coPubCave(COOP.idx);setTimeout(()=>{if(COOP&&!B)coopRoom(COOP.idx)},120)}}};
   draw();COOP_IV=setInterval(()=>{coPubCave();draw()},500)}
 function coopEnd(msg){if(COOP_IV){clearInterval(COOP_IV);COOP_IV=null}const was=COOP;COOP=null;pres({co:null,cb:null});if(B&&B.mode==='coop')closeBattle();arenaScale(1);
   try{closeModal()}catch(e){}P.lock=false;held.length=0;if(msg){toast(msg);sysChat('🚔 '+msg)}save();if(was&&!RUN.team.some(m=>m.hp>0))teamDown()}
@@ -100,13 +103,13 @@ function coFoe(room,n){const[k,s,l]=room;const mon=newMon(s,l);const b=battler(m
   b.mhp=b.hp=Math.round(b.mhp*hm);b.atk=Math.round(b.atk*am);b.def=Math.round(b.def*(k==='boss'?1.15:1));if(k==='boss')b.gw=3;return b}
 function coSlotX(i,n){return Math.round(ACX+(i-(n-1)/2)*Math.min(70,ARX*1.4/Math.max(1,n)))}
 function coopRoom(i){if(!COOP||B)return;const P_=COOP.plan,room=P_.rooms[i],n=P_.mem.length;COOP.started=i;if(COOP_IV){clearInterval(COOP_IV);COOP_IV=null}closeModal();
-  for(const m of RUN.team)if(m.hp<=0)m.hp=Math.max(1,Math.ceil(stats(m).mhp*0.25));
   arenaScale(COOP_K[clamp(n,1,4)-1]);
   const me=mkFighter('L',RUN.team.map(battler),ACX,'local');me.x=coSlotX(P_.mem.indexOf(coMe()),n);me.y=YB;
   const foe=mkFighter('R',[coFoe(room,n)],ACX,COOP.host?'ai':'remote');foe.y=YT;
   newBattle({mode:'coop',id:COOP.id+':'+i,zone:'coopcave',oppName:room[3],me,foe,state:'count',cntEnd:performance.now()+2600,allies:[],
     co:{i,room,n,last:null,F:{},seen:new Set(),seenT:{},fq:[],q:0,pubT:0,tgt:null,tgtT:0,fin:false,t0:performance.now()}});
   {const b=act(B.foe);if(b.gw)b._gwB=B}
+  {const tk=COOP.tk&&COOP.tk[i];B.co.buff=tk==null?null:tk>=3?{a:1}:tk<=1?{a:-1}:null;if(B.co.buff&&!B.me.out){const bf=B.co.buff;setTimeout(()=>{if(B&&B.mode==='coop'&&B.co.i===i){applyStages(B.me,bf);say(bf.a>0?'📝 Bestnote: Angriff ↑':'📝 Prüfung verhauen: Angriff ↓')}},3200)}}
   say(room[0]==='boss'?`👑 ${room[3]} schickt ${SPECIES[room[1]].n} (Lv ${room[2]})!`:room[0]==='trainer'?`🦹 ${room[3]} schickt ${SPECIES[room[1]].n} (Lv ${room[2]})!`:`🐾 Ein wildes ${SPECIES[room[1]].n} (Lv ${room[2]}) greift an!`);
   if(n>1)say(`Koop: ${n} Polizisten gegen einen Gegner`);G.dex[room[1]]=G.dex[room[1]]||0;
   coPubCave();coPub(true)}
@@ -155,6 +158,7 @@ aiUpdate=coSwap(aiUpdate);aiAimTick=coSwap(aiAimTick);
 {const _d=dealDamage;dealDamage=function(T){if(B&&B.mode==='coop'&&T&&T.ctrl==='remote')return;return _d.apply(this,arguments)}}
 {const _dh=drainHeal;drainHeal=function(s){if(B&&B.mode==='coop'&&s&&s.rm)return;return _dh.apply(this,arguments)}}
 {const _sb=startBreak;startBreak=function(F){if(B&&B.mode==='coop'){if(F===B.me){const n=nextAlive(F);if(n>=0){doSwitch(F,n);F.faint=0;F.inv=1.2;say(`Los, ${SPECIES[act(F).s].n}!`)}}return}return _sb.apply(this,arguments)}}
+{const _ds=doSwitch;doSwitch=function(F){const r=_ds.apply(this,arguments);if(B&&B.mode==='coop'&&F===B.me&&B.co&&B.co.buff)applyStages(F,B.co.buff);return r}}
 {const _ce=checkEnd;checkEnd=function(){if(B&&B.mode==='coop'){coCheck();return}return _ce.apply(this,arguments)}}
 {const _bu=bUpdate;bUpdate=function(dt){_bu.apply(this,arguments);if(B&&B.mode==='coop'&&COOP&&!B.closing){coSync(dt);coPub(false)}}}
 {const _uc=updateCam;updateCam=function(now){if(B&&B.mode==='coop'){const z=Math.min(AW/(2*ARX+70),(AH-58)/(2*ARY+75));return B.cam={x:ACX,y:ACY-20,z,t:now,init:1}}return _uc.apply(this,arguments)}}
@@ -183,7 +187,15 @@ async function coFinish(win,last){const C=B.co;if(C.fin)return;C.fin=true;B.stat
   save();await finSleep(2200);if(B!==myB)return;closeBattle();
   if(!COOP)return;if(!win){coopEnd('Einsatz gescheitert – die Streife musste sich zurückziehen.');return}
   if(C.i>=COOP.plan.rooms.length-1){coopEnd(`Einsatz erfolgreich! Die Bande in der Höhle bei ${COOP.plan.tn} ist zerschlagen.`);return}
-  COOP.idx=C.i+1;COOP.go=null;setTimeout(()=>{if(COOP&&!B)coCave()},400)}
+  COOP.idx=C.i+1;COOP.go=null;COOP.seen0=Date.now();setTimeout(()=>{if(COOP&&!B)coTest()},400)}
+// ---- Prüfung zwischen den Räumen: 3 Fragen zum Schwerpunkt der Höhle ----
+function coQs(law){const av=new Set(),qs=[];const pool=lawQuestions(law).map(x=>x.q);
+  for(let k=0;k<20&&qs.length<3;k++){const q=(k%2===0&&typeof caseFor==='function')?caseFor(law,av):pool.length?qFreshPick(pool,av):null;if(!q||av.has(q[0]))continue;av.add(q[0]);qs.push(qReal(q))}return qs}
+function coTest(){if(!COOP)return;const i=COOP.idx,law=COOP.plan.law,qs=coQs(law);if(COOP_IV){clearInterval(COOP_IV);COOP_IV=null}
+  if(!qs.length){COOP.td=i;COOP.tk[i]=null;coCave();return}
+  COOP.testing=true;coPubCave();
+  quickQuiz(`📝 ZWISCHENPRÜFUNG · ${law}`,`Vor Raum ${i+1}: 3 richtig → Angriff ↑ im nächsten Raum · 0–1 richtig → Angriff ↓`,qs,ok=>{if(!COOP)return;COOP.testing=false;COOP.td=i;COOP.tk[i]=ok;
+    toast(ok>=3?'📝 Bestnote! Deine Monster greifen im nächsten Raum stärker an.':ok<=1?'📝 Durchgefallen – deine Monster greifen im nächsten Raum schwächer an.':'📝 Bestanden.');try{closeModal()}catch(e){}coCave()})}
 
 // ---- Darstellung: Höhlenboden + Namensschilder der Mitspieler ----
 let CO_BG=null;
