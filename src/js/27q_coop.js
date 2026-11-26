@@ -303,3 +303,14 @@ async function coCatch(bonus){if(!B||B.mode!=='coop'||!B.co||B.co.k!=='wild'||B.
   const toTeam=RUN.team.length<teamMax();(toTeam?RUN.team:RUN.box).push(m);save();
   sysChat(`Du hast ${SPECIES[m.s].n} (Lv ${m.l}) im Koop-Kampf festgenommen!${toTeam?'':' (Box)'}`);if(newDex)setTimeout(()=>{if(!B&&!$('#modal').classList.contains('on'))dexReveal(m.s,m,'★ NEUER DEX-EINTRAG ★')},4200);
   if(C.host)coFinish(true,C.last||coMe(),coMe());else{C.capd=1;coPub(true);say(`${SPECIES[m.s].n} ist festgenommen!`)}}
+
+// ---- kompakte Anzeige der Mitspieler unter der eigenen KP-Box ----
+function coAllyHud(c){const L=Object.values(B.co.F||{});if(!L.length)return;const x=4,w=112,h=14;let y=51;
+  for(const F of L){const m=act(F);if(!m)continue;const out=F.out||F.gone,r=out?0:clamp(m.hp/Math.max(1,m.mhp),0,1);
+    c.fillStyle='#14141f';c.fillRect(x-1,y-1,w+2,h+2);c.fillStyle=out?'#2a2d3a':'#f6f1e1';c.fillRect(x,y,w,h);
+    let t=`${coName(F.peer)} · ${SPECIES[m.s].n}`;c.font='8px VT323,monospace';const lv=out?'K.O.':'Lv'+m.l,max=w-8-c.measureText(lv).width;if(c.measureText(t).width>max){while(t.length>3&&c.measureText(t+'…').width>max)t=t.slice(0,-1);t+='…'}
+    vtText(c,t,x+3,y+7,out?'#8a8ea6':'#14141f',8);vtText(c,lv,x+w-3,y+7,out?'#8a8ea6':'#14141f',8,'right');
+    c.fillStyle='#14141f';c.fillRect(x+3,y+9,w-6,4);c.fillStyle='#4b4f63';c.fillRect(x+4,y+10,w-8,2);if(r>0){c.fillStyle=hpColor(r);c.fillRect(x+4,y+10,Math.round((w-8)*r),2)}
+    // Kader-Punkte: wie viele Monster des Mitspielers noch stehen
+    F.team.forEach((q,i)=>{c.fillStyle=q.hp>0?'#3ddc6b':'#4b4f63';c.fillRect(x+w+3,y+1+i*2,2,1)});
+    y+=h+3}}
