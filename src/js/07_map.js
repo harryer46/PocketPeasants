@@ -6,7 +6,7 @@
 // tiles: 0 grass,1 tall grass,2 tree,3 water,4 path,5 sand,6 wall,7 PÄD door,8 roof,9 flowers,10 court roof,11 court wall/prison wall,12 court door,
 // 13 shrine,14 forest floor,15 hill ground,16 rock/cliff,17 ferns,18 reeds,19 rubble,20 cell floor,21 building,22 shop door,23 HfPol door,
 // 24 snow grass,25 desert scrub,26 jungle grass,27 bridge/pier,28 snow,29 desert sand,30 jungle floor,31 mountain peak
-const MW=300,MH=200,DH=192,MHT=MH+DH,MAP=new Uint8Array(MW*MHT);MAP.fill(31,MW*MH);const GATES=[];const BIOME=new Uint8Array(MW*MHT);  // rows MH..MHT: underground dungeons (story)
+const MW=300,MH=200,DH=256,MHT=MH+DH,MAP=new Uint8Array(MW*MHT);MAP.fill(31,MW*MH);const GATES=[];const BIOME=new Uint8Array(MW*MHT);  // rows MH..MHT: underground dungeons (story)
 const BKEYS=[null,'north','east','south','west','knast','snow','desert','jungle'];
 const WALK0=new Set([0,1,4,5,7,9,12,13,14,15,17,18,19,20,22,23,24,25,26,27,28,29,30]);
 const ENC=new Set([1,17,18,19,24,25,26]);const BASE_T=[0,0,14,0,15,20,28,29,30],ENC_T=[0,1,17,18,19,20,24,25,26];

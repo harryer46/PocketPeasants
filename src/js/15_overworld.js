@@ -182,7 +182,8 @@ function drawWorld(){
   for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){if(tget(x,y)!==3)continue;const h=th(x,y);const ph=(T*1.3+(h%100)/100)%1;if(ph<0.5){const X=x*16-camX+(h%11)+2,Y=y*16-camY+((h>>4)%11)+2;c.fillStyle=ph<0.25?'#d8f0ff':'#8fc8f0';c.fillRect(X,Y,ph<0.25?3:2,1)}}
   // cuttable trees / boulders
   for(const f of FIELD){if(FIELDGONE.has(f.id)||f.x<x0-1||f.x>x1||f.y<y0-1||f.y>y1)continue;const X=f.x*16-camX,Y=f.y*16-camY;
-    if(f.kind==='cut'){c.fillStyle='#00000040';c.fillRect(X+3,Y+13,10,2);c.fillStyle='#3a2410';c.fillRect(X+7,Y+10,2,5);c.fillStyle='#14301a';c.fillRect(X+2,Y+1,12,11);c.fillStyle='#2f7a2c';c.fillRect(X+3,Y+2,10,9);c.fillStyle='#56a83c';c.fillRect(X+4,Y+3,5,3);c.fillStyle='#1f5a22';c.fillRect(X+8,Y+7,4,3)}
+    if(f.kind==='tape'){c.fillStyle='#00000040';c.fillRect(X+1,Y+13,14,2);c.fillStyle='#3a3a44';c.fillRect(X+1,Y+4,2,10);c.fillRect(X+13,Y+4,2,10);for(let i=0;i<14;i+=4){c.fillStyle='#ffd23d';c.fillRect(X+1+i,Y+6,2,3);c.fillStyle='#14141f';c.fillRect(X+3+i,Y+6,2,3)}c.fillStyle='#ffd23d';c.fillRect(X+1,Y+10,14,1)}
+    else if(f.kind==='cut'){c.fillStyle='#00000040';c.fillRect(X+3,Y+13,10,2);c.fillStyle='#3a2410';c.fillRect(X+7,Y+10,2,5);c.fillStyle='#14301a';c.fillRect(X+2,Y+1,12,11);c.fillStyle='#2f7a2c';c.fillRect(X+3,Y+2,10,9);c.fillStyle='#56a83c';c.fillRect(X+4,Y+3,5,3);c.fillStyle='#1f5a22';c.fillRect(X+8,Y+7,4,3)}
     else{c.fillStyle='#00000040';c.fillRect(X+1,Y+12,14,3);c.fillStyle='#2a2a30';c.fillRect(X+1,Y+2,14,12);c.fillStyle='#8a8e96';c.fillRect(X+2,Y+3,12,10);c.fillStyle='#b8bcc4';c.fillRect(X+3,Y+4,6,3);c.fillStyle='#5c606b';c.fillRect(X+9,Y+9,4,3);c.fillRect(X+5,Y+8,1,3)}}
   // wooden signposts
   for(const sg of SIGNS){if(sg.x<x0-1||sg.x>x1||sg.y<y0-1||sg.y>y1)continue;const X=sg.x*16-camX,Y=sg.y*16-camY;
