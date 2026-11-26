@@ -282,15 +282,15 @@ function autoAimTarget(){const T=B.foe,M=B.me;const dx0=T.x-M.x,dy0=(T.y-12)-(M.
   const ms=act(M)?act(M).m.map(m=>shotParams(m)).filter(p=>p&&!p.mel&&!p.self&&!p.nm&&p.sp):[];const v=ms.length?ms.reduce((a,p)=>a+p.sp,0)/ms.length:260;
   const a=tv.x*tv.x+tv.y*tv.y-v*v,b=2*(dx0*tv.x+dy0*tv.y),c=dx0*dx0+dy0*dy0;let t=0;
   if(Math.abs(a)<1e-6)t=b?-c/b:0;else{const D=b*b-4*a*c;if(D>=0){const r1=(-b-Math.sqrt(D))/(2*a),r2=(-b+Math.sqrt(D))/(2*a);t=Math.min(...[r1,r2].filter(x=>x>0),9)}}
-  // lead grows with Präzision: low = no lead at all, high = a slight lead (minimal, not the full intercept)
-  const z=zielOf(act(M))/10;t=clamp(isFinite(t)?t:0,0,0.8)*(z*z*0.45);return Math.atan2(dy0+tv.y*t,dx0+tv.x*t)}
+  // partial lead from Präzision: 0 % (Präzision 1) … 70 % of the true intercept (Präzision 10); a bit less against players
+  const z=zielOf(act(M))/10;t=clamp(isFinite(t)?t:0,0,0.8)*(0.7*Math.pow(Math.max(0,(z-0.1)/0.9),1.3))*(B.mode==='duel'?0.8:1);return Math.atan2(dy0+tv.y*t,dx0+tv.x*t)}
 function myAim(){if(autoAimOn()&&B.foe){if(B.autoAng==null||!isFinite(B.autoAng)){B.autoAng=autoAimTarget();B.autoW=0}return{x:Math.cos(B.autoAng),y:Math.sin(B.autoAng)}}if(!B.aimV){const T=B.foe;setAim(T?T.x-B.me.x:0,T?T.y-B.me.y:-1)}return B.aimV}
 // aiming mode (lobby option / setting for free play): 0 = manual in 8 directions, 2 = free 360°, 1 = auto-aim
 function aimMode(){const c=RUN&&RUN.cfg;if(RUN&&!RUN.free&&c)return[0,1,2].includes(c.aim)?c.aim:0;return SET.aim==='1'?1:SET.aim==='2'?2:0}
 function autoAimOn(){return aimMode()===1}
 function setAim(x,y){if(Math.hypot(x,y)<0.001)return;let a=Math.atan2(y,x);if(aimMode()===0)a=Math.round(a/(Math.PI/4))*(Math.PI/4);B.aimV={x:Math.cos(a),y:Math.sin(a)}}
 function controlMe(dt){
-  if(autoAimOn()&&B.foe&&!B.tb){const T=B.foe,k=1-Math.exp(-dt*6);B.tv=B.tv||{x:0,y:0};B.tv.x+=((T.vx||0)-B.tv.x)*k;B.tv.y+=((T.vy||0)-B.tv.y)*k;
+  if(autoAimOn()&&B.foe&&!B.tb){const T=B.foe,k=1-Math.exp(-dt*6);B.tv=B.tv||{x:0,y:0};let vx=T.vx||0,vy=T.vy||0;if(T.ctrl==='remote'){const p=B.tpp;vx=p&&dt>0?(T.x-p.x)/dt:0;vy=p&&dt>0?(T.y-p.y)/dt:0;B.tpp={x:T.x,y:T.y};const L=Math.hypot(vx,vy);if(L>400){vx*=400/L;vy*=400/L}}B.tv.x+=(vx-B.tv.x)*k;B.tv.y+=(vy-B.tv.y)*k;
     // aim inertia: the crosshair follows like a damped spring (lags behind quick direction changes)
     const want=autoAimTarget();if(B.autoAng==null){B.autoAng=want;B.autoW=0}let d=want-B.autoAng;d=Math.atan2(Math.sin(d),Math.cos(d));
     // spring stiffness from Präzision: high = locked on almost instantly, low = trails behind
