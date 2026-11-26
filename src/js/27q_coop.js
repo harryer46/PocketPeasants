@@ -25,31 +25,41 @@ function coMyL(){return clamp(Math.max(1,...RUN.team.map(m=>m.l)),3,95)}
 // ---- Bandenhöhlen: vier begehbare Höhlen in einem eigenen Untergrund-Band ----
 const CODG=[];
 function coDgAt(x,y){if(y<MH)return null;return CODG.find(d=>x>=d.x0&&x<d.x0+d.w&&y>=d.y0&&y<d.y0+d.h)||null}
-(function genCoopDungeons(){const FL=29,EN=19,W=72,H=60,Y0=MH+194;if(Y0+H>MHT)return;
-  COOP_LAW.forEach((law,i)=>{const r=mulberry32(7300+i*97),ri=n=>Math.floor(r()*n);const dg={i,law,n:COOP_DGN[law],x0:3+i*74,y0:Y0,w:W,h:H,gates:[]};CODG.push(dg);
-    for(let y=dg.y0;y<dg.y0+H;y++)for(let x=dg.x0;x<dg.x0+W;x++){tset(x,y,r()<0.1?31:16);BIOME[y*MW+x]=7}
-    const C=3,R=2,cw=Math.floor((W-2)/C),ch=Math.floor((H-2)/R),cells=[];
-    for(let ry=0;ry<R;ry++)for(let rx=0;rx<C;rx++){const w=13+ri(Math.max(1,cw-16)),h=11+ri(Math.max(1,ch-16));const x=dg.x0+1+rx*cw+1+ri(Math.max(1,cw-w-2)),y=dg.y0+1+ry*ch+1+ri(Math.max(1,ch-h-2));cells[ry*C+rx]={x,y,w,h,cx:x+(w>>1),cy:y+(h>>1)}}
-    // snake: bottom row left→right, then up and back along the top row
-    const order=[3,4,5,2,1].map(k=>cells[k]);dg.rooms=order;
-    const inRoom=(x,y)=>order.some(Q=>x>=Q.x&&x<Q.x+Q.w&&y>=Q.y&&y<Q.y+Q.h),inC=(x,y)=>x>dg.x0&&x<dg.x0+W-1&&y>dg.y0&&y<dg.y0+H-1,floor=(x,y)=>{if(inC(x,y))tset(x,y,FL)};
-    for(const Q of order)for(let y=Q.y;y<Q.y+Q.h;y++)for(let x=Q.x;x<Q.x+Q.w;x++)floor(x,y);
-    for(let k=1;k<order.length;k++){const a=order[k-1],c=order[k];const segs=[];
-      if(r()<0.5){segs.push({h:1,a:a.cx,b:c.cx,at:a.cy},{h:0,a:a.cy,b:c.cy,at:c.cx})}else{segs.push({h:0,a:a.cy,b:c.cy,at:a.cx},{h:1,a:a.cx,b:c.cx,at:c.cy})}
-      let best=null;for(const sg of segs){const out=[];for(let v=Math.min(sg.a,sg.b);v<=Math.max(sg.a,sg.b);v++){const t=sg.h?[[v,sg.at],[v,sg.at+1]]:[[sg.at,v],[sg.at+1,v]];for(const[x,y]of t)floor(x,y);if(t.every(([x,y])=>!inRoom(x,y)))out.push(t)}
-        if(!best||out.length>best.length)best=out}
-      if(best&&best.length){const g={id:`cg${i}_${k}`,k,tiles:best[best.length>>1]};dg.gates.push(g);g.tiles.forEach(([x,y],j)=>FIELD.push({id:g.id+'_'+j,kind:'tape',gate:g.id,x,y}))}}
-    // rubble with wild monsters: lots in rooms 1 and 3, a little in the bandit rooms
-    order.forEach((Q,k)=>{const n=[3,1,3,1,0][k];for(let m=0;m<n;m++){const px=Q.x+2+ri(Math.max(1,Q.w-4)),py=Q.y+2+ri(Math.max(1,Q.h-4)),rr=2+ri(2);
-      for(let y=py-rr;y<=py+rr;y++)for(let x=px-rr-1;x<=px+rr+1;x++)if(x>Q.x&&x<Q.x+Q.w-1&&y>Q.y&&y<Q.y+Q.h-1&&((x-px)/(rr+1))**2+((y-py)/rr)**2<=1&&!(Math.abs(x-Q.cx)<=1&&Math.abs(y-Q.cy)<=1))tset(x,y,EN)}});
+(function genCoopDungeons(){const FL=29,EN=19,W=72,H=116,Y0=MH+194;if(Y0+H>MHT)return;
+  // five rooms stacked in the middle column (entrance at the bottom, boss at the top). Between two rooms:
+  // a short corridor with police tape (the exam opens it) and a long detour through a side cave with wild
+  // monsters and two gang members blocking the narrow passages.
+  COOP_LAW.forEach((law,i)=>{const r=mulberry32(7300+i*97),ri=n=>Math.floor(r()*n);const dg={i,law,n:COOP_DGN[law],x0:3+i*74,y0:Y0,w:W,h:H,gates:[],side:[]};CODG.push(dg);
+    const X=x=>dg.x0+x,Y=y=>dg.y0+y;
+    for(let y=0;y<H;y++)for(let x=0;x<W;x++){tset(X(x),Y(y),r()<0.1?31:16);BIOME[Y(y)*MW+X(x)]=7}
+    const floor=(x,y)=>{if(x>0&&x<W-1&&y>0&&y<H-1)tset(X(x),Y(y),FL)},rect=(x0,y0,w,h)=>{for(let y=y0;y<y0+h;y++)for(let x=x0;x<x0+w;x++)floor(x,y)};
+    const RH=15,GAP=8,rooms=[];for(let k=0;k<5;k++){const w=20+ri(7),h=RH,y=H-2-RH-k*(RH+GAP),x=36-(w>>1);rooms.push({x:X(x),y:Y(y),w,h,cx:X(36),cy:Y(y+(h>>1)),rx:x,ry:y});rect(x,y,w,h)}
+    dg.rooms=rooms;
+    const rub=(x0,y0,w,h,n)=>{for(let m=0;m<n;m++){const px=x0+2+ri(Math.max(1,w-4)),py=y0+2+ri(Math.max(1,h-4)),rr=2+ri(2);
+      for(let y=py-rr;y<=py+rr;y++)for(let x=px-rr-1;x<=px+rr+1;x++)if(x>x0&&x<x0+w-1&&y>y0&&y<y0+h-1&&((x-px)/(rr+1))**2+((y-py)/rr)**2<=1&&Math.abs(x-36)>1)tset(X(x),Y(y),EN)}};
+    let pool=lawSpecies(law).filter(s=>SPECIES[s]);if(!pool.length)pool=['owigon'];let q=0;
+    const band=(x,y,d,kind,extra)=>{const t=Object.assign({id:`cb${i}_${q}`,kind,gift:'coop',dg:i,sp:pool[(i*5+q*3)%pool.length],n:'Bandenmitglied '+COOP_GANG[(i*5+q)%COOP_GANG.length],x:X(x),y:Y(y),d,c:'#6a2a2a',team:[],reward:0,line:'',after:''},extra||{});
+      t.isGone=()=>!!(COOP&&COOP.beat.has(t.id));q++;TRAINERS.push(t);return t};
+    for(let k=1;k<5;k++){const lo=rooms[k-1],hi=rooms[k];
+      // short way: straight up the middle, police tape halfway
+      const y0=hi.ry+RH,y1=lo.ry-1;for(let y=y0;y<=y1;y++){floor(35,y);floor(36,y)}const my=(y0+y1)>>1;
+      const g={id:`cg${i}_${k}`,k,tiles:[[X(35),Y(my)],[X(36),Y(my)]]};dg.gates.push(g);g.tiles.forEach(([x,y],j)=>FIELD.push({id:g.id+'_'+j,kind:'tape',gate:g.id,x,y}));
+      // long way: side cave on alternating sides
+      const left=k%2===1,cw=13,cx0=left?3:W-3-cw,ct=hi.ry+4,cb=lo.ry+RH-4,ch=cb-ct;rect(cx0,ct,cw,ch);rub(cx0,ct,cw,ch,3);
+      const ey=lo.ry+RH-6,xy=hi.ry+6;   // entry (from the lower room) and exit (into the upper room) rows
+      const lx0=left?cx0+cw:lo.rx+lo.w,lx1=left?lo.rx-1:cx0-1;for(let x=lx0;x<=lx1;x++)floor(x,ey);
+      const hx0=left?cx0+cw:hi.rx+hi.w,hx1=left?hi.rx-1:cx0-1;for(let x=hx0;x<=hx1;x++)floor(x,xy);
+      dg.side.push({k,left,x:X(cx0),y:Y(ct),w:cw,h:ch});
+      // two gang members block the narrow passages of the detour
+      band(left?cx0+cw+1:cx0-2,ey,left?'left':'right','cobandit',{block:1,n:'Wache '+COOP_GANG[(i*3+k)%COOP_GANG.length]});
+      band(left?cx0+cw+1:cx0-2,xy,left?'left':'right','cobandit',{block:1,n:'Wache '+COOP_GANG[(i*3+k+5)%COOP_GANG.length]})}
+    // rubble in rooms 1 and 3 (and a little in the gang rooms), gang members off the middle path, boss at the top
+    rooms.forEach((Q,k)=>{const n=[2,1,3,1,0][k];for(let m=0;m<n;m++){const px=Q.rx+2+ri(Math.max(1,Q.w-4)),py=Q.ry+2+ri(Math.max(1,Q.h-4)),rr=2+ri(2);
+      for(let y=py-rr;y<=py+rr;y++)for(let x=px-rr-1;x<=px+rr+1;x++)if(x>Q.rx&&x<Q.rx+Q.w-1&&y>Q.ry&&y<Q.ry+Q.h-1&&((x-px)/(rr+1))**2+((y-py)/rr)**2<=1&&Math.abs(x-36)>2&&y!==Q.ry+6&&y!==Q.ry+RH-6)tset(X(x),Y(y),EN)}});
+    for(const k of[1,3]){const Q=rooms[k];band(Q.rx+3,Q.ry+3,'right','cobandit');band(Q.rx+Q.w-4,Q.ry+Q.h-4,'left','cobandit')}
+    {const Q=rooms[4];TRAINERS.push({id:`cbb${i}`,kind:'coboss',gift:'coop',dg:i,n:'Bandenboss '+COOP_BOSS[i%COOP_BOSS.length],x:X(36),y:Q.y+3,d:'down',c:'#2a1a3a',team:[],reward:0,line:'',after:''})}
     // way out: a hole in the bottom wall of the first room
-    const S=order[0];dg.sx=S.cx;dg.sy=S.y+S.h-2;tset(S.cx,S.y+S.h,T_CAVE);tset(S.cx,S.y+S.h-1,FL);tset(dg.sx,dg.sy,FL);dg.hx=S.cx;dg.hy=S.y+S.h;
-    const spot=(Q,ox,oy)=>{for(let rr=0;rr<7;rr++)for(let dy=-rr;dy<=rr;dy++)for(let dx=-rr;dx<=rr;dx++){const x=Q.cx+ox+dx,y=Q.cy+oy+dy;
-        if([[0,0],[1,0],[-1,0],[0,1],[0,-1]].every(([a,b])=>tget(x+a,y+b)===FL)&&!TRAINERS.some(t=>t.x===x&&t.y===y)&&!FIELD.some(f=>Math.abs(f.x-x)+Math.abs(f.y-y)<2))return{x,y}}return null};
-    let pool=lawSpecies(law).filter(s=>SPECIES[s]);if(!pool.length)pool=['owigon'];
-    [[1,-3,0],[1,3,1],[3,-3,0],[3,3,1]].forEach(([k,ox,j],q)=>{const s=spot(order[k],ox,0);if(!s)return;
-      TRAINERS.push({id:`cb${i}_${q}`,kind:'cobandit',gift:'coop',dg:i,sp:pool[(i*5+q*3)%pool.length],n:'Bandenmitglied '+COOP_GANG[(i*4+q)%COOP_GANG.length],x:s.x,y:s.y,d:['left','right'][j],c:'#6a2a2a',team:[],reward:0,line:'',after:''})});
-    {const s=spot(order[4],0,-1);if(s)TRAINERS.push({id:`cbb${i}`,kind:'coboss',gift:'coop',dg:i,n:'Bandenboss '+COOP_BOSS[i%COOP_BOSS.length],x:s.x,y:s.y,d:'down',c:'#2a1a3a',team:[],reward:0,line:'',after:''})}
+    const S=rooms[0];dg.sx=X(36);dg.sy=S.y+S.h-2;dg.hx=X(36);dg.hy=S.y+S.h;tset(dg.hx,dg.hy,T_CAVE);
   })})();
 {const _z=zoneAt;zoneAt=function(x,y){if(coDgAt(x,y))return'north';return _z.apply(this,arguments)}}
 {const _uh=updateHud;updateHud=function(){_uh.apply(this,arguments);try{const d=coDgAt(P.x,P.y);if(d)$('#hzone').textContent=`🕳 ${d.n} · ${d.law}`}catch(e){}}}
@@ -70,7 +80,7 @@ function coLobbies(town){return others().filter(p=>{const c=p.presence.cl;return
 function coopChief(t){if(!RUN||B||COOP)return;if(teamDown())return;
   const L=coLobbies(t.town);P.lock=true;
   openModal(`<h3>🚔 KOOP-EINSATZ · ${esc(COOP_DGN[t.law])}</h3><p><b>${esc(t.n)}</b>: „In der ${esc(COOP_DGN[t.law])} hat sich eine Bande verschanzt – ihr Revier ist das <b>${COOP_LAWN[t.law]}</b>. Allein schafft das keiner – bildet eine Streife (bis ${COOP_MAX} Leute), ich bringe euch hin.“</p>
-   <p class="small">Fünf Höhlenräume mit wilden Monstern im Geröll, Bandenmitgliedern und dem Bandenboss – alle aus dem ${esc(t.law)}. Zwischen den Räumen sperren Polizeiabsperrungen den Weg: Einer von euch legt dort eine Prüfung im ${esc(t.law)} ab – fällt er durch, wartet ein Strafkampf. Kämpft jemand, könnt ihr dazukommen (bis 4). Es gibt <b>keine Heilung</b> in der Höhle. Fangen darf, wer den letzten Treffer landet. Geld gibt es nur von der Bande.</p>
+   <p class="small">Fünf Höhlenräume mit wilden Monstern im Geröll, Bandenmitgliedern und dem Bandenboss – alle aus dem ${esc(t.law)}. Zwischen den Räumen gibt es eine kurze Abkürzung hinter einer Polizeiabsperrung – einer von euch legt dort eine Prüfung im ${esc(t.law)} ab. Fällt er durch, bleibt sie zu und ihr müsst den langen Umweg mit mehr Kämpfen nehmen. Kämpft jemand (<b>!</b> über dem Kopf), lauft zu ihm und kommt dazu (bis 4). Es gibt <b>keine Heilung</b> in der Höhle. Fangen darf, wer den letzten Treffer landet. Geld gibt es nur von der Bande.</p>
    ${L.length?`<p><b>Offene Streifen:</b></p>${L.map(p=>{const c=p.presence.cl;const n=1+((c.mem||[]).length);return`<button class="btn" style="width:100%;margin:3px 0" data-cj="${esc(p.peer)}" ${n>=COOP_MAX?'disabled':''}>Beitreten: ${esc(cleanName(p.presence.n))} (${n}/${COOP_MAX})</button>`}).join('')}`:'<p class="small">Gerade ist keine Streife offen.</p>'}
    <div class="acts"><button class="btn ghost" id="mno">ZURÜCK</button><button class="btn" id="cnew">NEUE STREIFE GRÜNDEN</button></div>`);
   $('#mno').onclick=()=>{closeModal();P.lock=false};
@@ -105,12 +115,12 @@ function coHostGo(){if(!CLOB||!CLOB.host)return;const J=coJoiners();const mem=[c
   pres({cl:{id:CLOB.id,h:1,st:'go',town:CLOB.town,tm:coRaw(),mem:J.map(p=>p.peer),plan}});CLOB=null;if(COOP_IV){clearInterval(COOP_IV);COOP_IV=null}closeModal();
   setTimeout(()=>{if(!CLOB)pres({cl:null})},8000);coopStart(plan)}
 function coopStart(plan){const dg=CODG.find(d=>d.law===plan.law);if(!dg){toast('Diese Höhle gibt es nicht.');P.lock=false;return}
-  COOP={id:plan.id,plan,dg:dg.i,L:plan.L,mem:plan.mem,gates:new Set(),beat:new Set(),ex:null};P.lock=true;held.length=0;
+  COOP={id:plan.id,plan,dg:dg.i,L:plan.L,mem:plan.mem,gates:new Set(),beat:new Set(),fail:new Set(),ex:null};P.lock=true;held.length=0;
   transition('fade',()=>{const sl=Math.max(0,plan.mem.indexOf(coMe())),off=[[0,0],[-1,0],[1,0],[0,-1]][sl%4];const ox=dg.sx+off[0],oy=dg.sy+off[1];teleport(WALK.has(tget(ox,oy))&&!fieldAt(ox,oy)?ox:dg.sx,WALK.has(tget(ox,oy))&&!fieldAt(ox,oy)?oy:dg.sy);P.d='up';P.lock=false;coPubParty();try{updateHud()}catch(e){}toast(`🕳 ${dg.n} – Schwerpunkt ${plan.law}`);
     sysChat(`🚔 Koop-Einsatz: ${dg.n} (${plan.law}) mit ${plan.mem.length} ${plan.mem.length===1?'Polizist':'Polizisten'} · Gegner um Lv ${plan.L}`)},300,350)}
 function coEnsure(){if(COOP)return COOP;const dg=coDgAt(P.x,P.y);if(!dg)return null;const plan={id:'r'+Math.random().toString(36).slice(2,9),L:coMyL(),mem:[coMe()],law:dg.law};
-  COOP={id:plan.id,plan,dg:dg.i,L:plan.L,mem:plan.mem,gates:new Set(),beat:new Set(),ex:null};coPubParty();return COOP}
-function coPubParty(){if(!COOP)return;pres({co:{r:COOP.id,g:[...COOP.gates],bt:[...COOP.beat],ex:COOP.ex||null}})}
+  COOP={id:plan.id,plan,dg:dg.i,L:plan.L,mem:plan.mem,gates:new Set(),beat:new Set(),fail:new Set(),ex:null};coPubParty();return COOP}
+function coPubParty(){if(!COOP)return;pres({co:{r:COOP.id,g:[...COOP.gates],bt:[...COOP.beat],fl:[...COOP.fail],ex:COOP.ex||null}})}
 function coApplyGates(){if(!COOP)return;for(const f of FIELD)if(f.kind==='tape'){if(COOP.gates.has(f.gate))FIELDGONE.add(f.id);else FIELDGONE.delete(f.id)}}
 function coopEnd(msg){if(COOP_IV){clearInterval(COOP_IV);COOP_IV=null}COOP=null;pres({co:null});for(const f of FIELD)if(f.kind==='tape')FIELDGONE.delete(f.id);if(msg){toast(msg);sysChat('🚔 '+msg)}save()}
 function coExit(dg){const ch=COOP_CHIEFS.find(c=>COOP&&COOP.plan.town&&c.town===COOP.plan.town)||COOP_CHIEFS.find(c=>c.law===dg.law)||COOP_CHIEFS[0];P.lock=true;
@@ -121,10 +131,11 @@ function coTick(){if(!RUN)return;if(!B&&ARENA_K!==1)arenaScale(1);
   const dg=coDgAt(P.x,P.y);if(COOP&&!dg&&!B&&!P.lock){coopEnd(null);return}
   if(COOP){let ch=false;for(const id of COOP.mem){if(id===coMe())continue;const p=findPeer(id),c=p&&p.presence.co;if(!c||c.r!==COOP.id)continue;
       for(const g of c.g||[])if(typeof g==='string'&&!COOP.gates.has(g)){COOP.gates.add(g);ch=true;toast(`🚧 ${coName(id)} hat eine Absperrung geöffnet.`)}
-      for(const t of c.bt||[])if(typeof t==='string'&&!COOP.beat.has(t)){COOP.beat.add(t);ch=true}}
+      for(const t of c.bt||[])if(typeof t==='string'&&!COOP.beat.has(t)){COOP.beat.add(t);ch=true}
+      for(const g of c.fl||[])if(typeof g==='string'&&!COOP.fail.has(g)&&!COOP.gates.has(g)){COOP.fail.add(g);ch=true;toast(`🚧 ${coName(id)} ist an einer Absperrung durchgefallen – Umweg nehmen!`)}}
     if(ch)coPubParty();coApplyGates()}
   if(!dg||B||P.lock||$('#modal').classList.contains('on')||TALK)return;
-  for(const p of others()){const c=p.presence.cb;if(!c||!c.open||!c.id||COOP_DECL.has(c.id)||!c.fo)continue;if(Math.abs(p.presence.x-P.x)+Math.abs(p.presence.y-P.y)>3)continue;
+  for(const p of others()){const c=p.presence.cb;if(!c||!c.open||!c.id||COOP_DECL.has(c.id)||!c.fo)continue;if(Math.abs(p.presence.x-P.x)+Math.abs(p.presence.y-P.y)>1)continue;
     coJoinAsk(p);break}}
 function coJoinAsk(p){const c=p.presence.cb,fo=c.fo;if(!SPECIES[fo.s])return;P.lock=true;
   openModal(`<h3>⚔ KAMPF IN DER NÄHE</h3><p><b>${esc(cleanName(p.presence.n))}</b> kämpft gegen ${fo.nm?esc(fo.nm)+' · ':''}<b>${esc(SPECIES[fo.s].n)}</b> (Lv ${fo.l|0}).</p><p class="small">${(c.n|0)} von ${COOP_MAX} Plätzen belegt. Der Gegner wird stärker, wenn du dazukommst.${fo.k==='wild'?' Fangen darf, wer den letzten Treffer landet.':''}</p>
@@ -154,18 +165,18 @@ function coBanditTalk(t){const C=coEnsure();if(!C||B)return;if(C.beat.has(t.id))
   if(t.kind==='coboss'){const l=C.L+6;const bs=s=>{const b=SPECIES[s].b;return b[0]+b[1]+b[2]+b[3]};const sp=pool.map(s=>newMon(s,l).s).sort((a,b)=>bs(b)-bs(a))[0]||'owigon';
     P.lock=true;talk(t.n,'Ihr seid also die Streife, die meine Leute hochgenommen hat. Jetzt bin ICH dran!',()=>{P.lock=false;coBattle('boss',{s:sp,l,nm:t.n,tid:t.id})});return}
   const l=C.L+3;P.lock=true;talk(t.n,['Bullen! Hier unten?!','Ihr kommt hier nicht weiter!','Das ist unser Revier!','Keinen Schritt weiter!'][t.id.length%4],()=>{P.lock=false;coBattle('trainer',{s:newMon(t.sp,l).s,l,nm:t.n,tid:t.id})})}
-// police tape between the rooms: one of the party takes the exam for everybody; a fail means a penalty fight
-function coGateTalk(f){const C=coEnsure();if(!C||B)return;const g=f.gate,dg=CODG[C.dg]||coDgAt(P.x,P.y);const law=(dg||{}).law||C.plan.law;
+// police tape = shortcut. One of the party takes the exam: pass → open for everybody; fail → closed for good, take the detour
+function coGateTalk(f){const C=coEnsure();if(!C||B)return;const g=f.gate,dg=CODG[C.dg]||coDgAt(P.x,P.y);const law=(dg||{}).law||C.plan.law;const sd=dg&&dg.side.find(s=>'cg'+dg.i+'_'+s.k===g);
   if(C.gates.has(g)){coApplyGates();return}
+  if(C.fail.has(g)){talk('Absperrung',`Hier kommt eure Streife nicht mehr durch – die Prüfung ist durchgefallen. Nehmt den Umweg über die Nebenhöhle ${sd?(sd.left?'links':'rechts'):''}.`);return}
   for(const id of C.mem){if(id===coMe())continue;const p=findPeer(id),c=p&&p.presence.co;if(c&&c.r===C.id&&c.ex===g){toast(`📝 ${coName(id)} legt hier gerade die Prüfung ab …`);return}}
-  P.lock=true;openModal(`<h3>🚧 POLIZEIABSPERRUNG</h3><p>Weiter kommt nur, wer sich im <b>${esc(COOP_LAWN[law]||law)}</b> auskennt.</p><p class="small">3 Fragen. Du prüfst für die ganze Streife: mindestens 2 richtig → die Absperrung ist für alle offen. Sonst wartet ein Strafkampf – nach dem Sieg ist die Absperrung trotzdem frei.</p>
-    <div class="acts"><button class="btn ghost" id="mno">ZURÜCK</button><button class="btn" id="myes">📝 PRÜFUNG ABLEGEN</button></div>`);
+  P.lock=true;openModal(`<h3>🚧 ABKÜRZUNG · POLIZEIABSPERRUNG</h3><p>Durch diese Absperrung kommt nur, wer sich im <b>${esc(COOP_LAWN[law]||law)}</b> auskennt.</p><p class="small">3 Fragen – du prüfst für die ganze Streife. Mindestens 2 richtig: die Abkürzung ist für alle offen. Sonst bleibt sie <b>für immer zu</b>, und ihr müsst den langen Umweg über die Nebenhöhle ${sd?(sd.left?'links':'rechts'):''} nehmen – mit wilden Monstern und Bandenwachen.</p>
+    <div class="acts"><button class="btn ghost" id="mno">LIEBER UMWEG</button><button class="btn" id="myes">📝 PRÜFUNG ABLEGEN</button></div>`);
   $('#mno').onclick=()=>{closeModal();P.lock=false};
   $('#myes').onclick=()=>{const qs=coQs(law);C.ex=g;coPubParty();if(!qs.length){C.ex=null;closeModal();P.lock=false;coOpenGate(g);return}
-    quickQuiz(`📝 ZWISCHENPRÜFUNG · ${law}`,`Du prüfst für die ganze Streife – mindestens 2 von 3 richtig`,qs,ok=>{C.ex=null;try{closeModal()}catch(e){}P.lock=false;
-      if(ok>=2){coOpenGate(g);toast(`📝 Bestanden (${ok}/3) – die Absperrung ist offen!`)}
-      else{coPubParty();const pool=lawSpecies(law).filter(s=>SPECIES[s]);const l=C.L+2;const s=pool[Math.floor(Math.random()*pool.length)]||'owigon';toast(`📝 Durchgefallen (${ok}/3) – Strafkampf!`);
-        setTimeout(()=>coBattle('extra',{s:newMon(s,l).s,l,nm:COOP_GANG[Math.floor(Math.random()*COOP_GANG.length)]+'s Bande',gate:g}),500)}})}}
+    quickQuiz(`📝 ABKÜRZUNG · ${law}`,`Du prüfst für die ganze Streife – mindestens 2 von 3 richtig`,qs,ok=>{C.ex=null;try{closeModal()}catch(e){}P.lock=false;
+      if(ok>=2){coOpenGate(g);toast(`📝 Bestanden (${ok}/3) – die Abkürzung ist offen!`)}
+      else{C.fail.add(g);coPubParty();toast(`📝 Durchgefallen (${ok}/3) – die Abkürzung bleibt zu. Ab durch den Umweg!`);sysChat('🚧 Prüfung nicht bestanden – die Abkürzung bleibt für eure Streife geschlossen.')}})}}
 function coOpenGate(g){const C=coEnsure();if(!C)return;C.gates.add(g);coApplyGates();coPubParty();sysChat('🚧 Absperrung geöffnet.')}
 function coQs(law){const av=new Set(),qs=[];const pool=lawQuestions(law).map(x=>x.q);
   for(let k=0;k<20&&qs.length<3;k++){const q=(k%2===0&&typeof caseFor==='function')?caseFor(law,av):pool.length?qFreshPick(pool,av):null;if(!q||av.has(q[0]))continue;av.add(q[0]);qs.push(qReal(q))}return qs}

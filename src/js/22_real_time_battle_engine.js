@@ -125,7 +125,7 @@ function newBattle(o){try{if(typing())document.activeElement.blur()}catch(e){}
   if(B.tb===undefined)B.tb=!!(RUN&&!RUN.free&&RUN.cfg&&RUN.cfg.tb);
   if(B.tb){B.me.x=ACX;B.me.y=YB;if(B.foe){B.foe.x=ACX;B.foe.y=YT}if(B.state==='fight'||B.state==='count')B.state='tbChoose';B.turn=1;B.tbActs={}}
   // obstacles (real-time only); a duel builds them from its shared id in the canonical view, the 'R' player sees them turned by 180°
-  B.obs=B.tb?[]:genObs(B.mode==='duel'||B.mode==='coop'?hashStr(String(B.id)):Math.random()*4e9,B.zone||'arena').map(o=>flipOn()?Object.assign(o,{x:2*ACX-o.x,y:2*ACY-o.y}):o);pres({bt:B.mode==='wild'||B.mode==='trainer'?'wild':'duel'});
+  B.obs=B.tb?[]:genObs(B.mode==='duel'||B.mode==='coop'?hashStr(String(B.id)):Math.random()*4e9,B.zone||'arena').map(o=>flipOn()?Object.assign(o,{x:2*ACX-o.x,y:2*ACY-o.y}):o);pres({bt:B.mode==='wild'||B.mode==='trainer'||B.mode==='coop'?'wild':'duel'});
   const kind=B.legend?'legend':B.mode==='wild'?'wild':'trainer';const myB=B;
   const realState=B.state;B.state='intro';
   transition(kind,()=>{if(B!==myB)return;$('#battle').classList.add('on');buildBattleUI();const now=performance.now();B.enterT=now;B.log.forEach(m=>m.at=now);
