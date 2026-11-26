@@ -106,7 +106,7 @@ function openBag(){if(!B||B.state==='over')return;if(B.tb&&B.mode==='duel'){say(
   for(const k of['potion','superp'])if(inv(k)&&a.hp>0&&a.hp<a.mhp)opts.push([k,`${ITEMS[k].n} → ${SPECIES[a.s].n}`]);
   if(inv('revive'))F.team.forEach((m,i)=>{if(i!==F.a&&m.hp<=0)opts.push(['revive:'+i,`Beleber → ${SPECIES[m.s].n}`])});
   if(inv('ether')&&!B.tb&&(F.ap??AP_MAX)<AP_MAX)opts.push(['ether','AP-Drink → volle AP']);
-  if(inv('great')&&B.mode==='wild'&&!B.capGreat)opts.push(['great','Super-Handschellen → für den nächsten Wurf']);
+  if(inv('great')&&(B.mode==='wild'||(B.mode==='coop'&&B.co&&B.co.k==='wild'))&&!B.capGreat)opts.push(['great','Super-Handschellen → für den nächsten Wurf']);
   if(!opts.length){say('Im Beutel ist gerade nichts Nutzbares.');return}
   openModal(`<h3>🎒 BEUTEL</h3><div style="display:flex;flex-direction:column;gap:6px">${opts.map(([k,t])=>`<button class="btn ghost" data-bag="${k}" style="font-family:VT323,monospace;font-size:19px">${ITEMS[k.split(':')[0]].i} ${esc(t)} (×${inv(k.split(':')[0])})</button>`).join('')}</div><div class="acts" style="margin-top:8px"><button class="btn" id="mok">SCHLIESSEN</button></div>`);
   document.querySelectorAll('[data-bag]').forEach(b=>b.onclick=()=>{closeModal();bagUse(b.dataset.bag)});$('#mok').onclick=closeModal}
@@ -115,7 +115,7 @@ function bagOpts(){if(!B||!B.me)return[];const F=B.me,a=act(F),opts=[];
   for(const k of['potion','superp'])if(inv(k)&&a.hp>0&&a.hp<a.mhp)opts.push([k,`${ITEMS[k].n} → ${SPECIES[a.s].n}`]);
   if(inv('revive'))F.team.forEach((m,i)=>{if(i!==F.a&&m.hp<=0)opts.push(['revive:'+i,`Beleber → ${SPECIES[m.s].n}`])});
   if(inv('ether')&&!B.tb&&(F.ap??AP_MAX)<AP_MAX)opts.push(['ether','AP-Drink → volle AP']);
-  if(inv('great')&&B.mode==='wild'&&!B.capGreat)opts.push(['great','Super-Handschellen → nächster Wurf']);
+  if(inv('great')&&(B.mode==='wild'||(B.mode==='coop'&&B.co&&B.co.k==='wild'))&&!B.capGreat)opts.push(['great','Super-Handschellen → nächster Wurf']);
   // the favourite item comes first, so it is pre-selected
   const fav=RUN&&RUN.favItem;if(fav)opts.sort((a,b)=>(b[0].split(':')[0]===fav)-(a[0].split(':')[0]===fav));
   return opts}

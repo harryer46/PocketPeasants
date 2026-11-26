@@ -4,7 +4,7 @@
    Bandenmitglieder, Polizeiabsperrungen mit Zwischenprüfung und am Ende der Bandenboss. Jede Höhle hat einen
    Gesetzesschwerpunkt (StGB, StPO, PolG, GG). Jeder Kampf in der Höhle ist ein Koop-Kampf: Wer in der Nähe eines Spielers
    steht, der gerade kämpft, kann dazukommen (bis 4). Der Spieler, der den Kampf begonnen hat, simuliert den Gegner
-   (Host); jeder ist für sein eigenes Monster zuständig. Fangen darf nur, wer den letzten Treffer gelandet hat. */
+   (Host); jeder ist für sein eigenes Monster zuständig. Festnehmen geht nur per Handschellen-Wurf. */
 const COOP_MAX=4,COOP_K=[1,1.25,1.38,1.5],COOP_TIMEOUT=9000;
 ZONE_OBS.coopcave=[['boulder',2,3],['rock',2,3],['crystal',2,3],['pillar',1,2]];
 BBG.coopcave=mk(2,2);
@@ -80,7 +80,7 @@ function coLobbies(town){return others().filter(p=>{const c=p.presence.cl;return
 function coopChief(t){if(!RUN||B||COOP)return;if(teamDown())return;
   const L=coLobbies(t.town);P.lock=true;
   openModal(`<h3>🚔 KOOP-EINSATZ · ${esc(COOP_DGN[t.law])}</h3><p><b>${esc(t.n)}</b>: „In der ${esc(COOP_DGN[t.law])} hat sich eine Bande verschanzt – ihr Revier ist das <b>${COOP_LAWN[t.law]}</b>. Allein schafft das keiner – bildet eine Streife (bis ${COOP_MAX} Leute), ich bringe euch hin.“</p>
-   <p class="small">Fünf Höhlenräume mit wilden Monstern im Geröll, Bandenmitgliedern und dem Bandenboss – alle aus dem ${esc(t.law)}. Zwischen den Räumen gibt es eine kurze Abkürzung hinter einer Polizeiabsperrung – einer von euch legt dort eine Prüfung im ${esc(t.law)} ab. Fällt er durch, bleibt sie zu und ihr müsst den langen Umweg mit mehr Kämpfen nehmen. Kämpft jemand (<b>!</b> über dem Kopf), lauft zu ihm und kommt dazu (bis 4). Es gibt <b>keine Heilung</b> in der Höhle. Fangen darf, wer den letzten Treffer landet. Geld gibt es nur von der Bande.</p>
+   <p class="small">Fünf Höhlenräume mit wilden Monstern im Geröll, Bandenmitgliedern und dem Bandenboss – alle aus dem ${esc(t.law)}. Zwischen den Räumen gibt es eine kurze Abkürzung hinter einer Polizeiabsperrung – einer von euch legt dort eine Prüfung im ${esc(t.law)} ab. Fällt er durch, bleibt sie zu und ihr müsst den langen Umweg mit mehr Kämpfen nehmen. Kämpft jemand (<b>!</b> über dem Kopf), lauft zu ihm und kommt dazu (bis 4). Es gibt <b>keine Heilung</b> in der Höhle. Festnehmen geht nur per Handschellen-Wurf im Kampf – wer zuerst trifft und die Frage beantwortet. Geld gibt es nur von der Bande.</p>
    ${L.length?`<p><b>Offene Streifen:</b></p>${L.map(p=>{const c=p.presence.cl;const n=1+((c.mem||[]).length);return`<button class="btn" style="width:100%;margin:3px 0" data-cj="${esc(p.peer)}" ${n>=COOP_MAX?'disabled':''}>Beitreten: ${esc(cleanName(p.presence.n))} (${n}/${COOP_MAX})</button>`}).join('')}`:'<p class="small">Gerade ist keine Streife offen.</p>'}
    <div class="acts"><button class="btn ghost" id="mno">ZURÜCK</button><button class="btn" id="cnew">NEUE STREIFE GRÜNDEN</button></div>`);
   $('#mno').onclick=()=>{closeModal();P.lock=false};
@@ -138,7 +138,7 @@ function coTick(){if(!RUN)return;if(!B&&ARENA_K!==1)arenaScale(1);
   for(const p of others()){const c=p.presence.cb;if(!c||!c.open||!c.id||COOP_DECL.has(c.id)||!c.fo)continue;if(Math.abs(p.presence.x-P.x)+Math.abs(p.presence.y-P.y)>1)continue;
     coJoinAsk(p);break}}
 function coJoinAsk(p){const c=p.presence.cb,fo=c.fo;if(!SPECIES[fo.s])return;P.lock=true;
-  openModal(`<h3>⚔ KAMPF IN DER NÄHE</h3><p><b>${esc(cleanName(p.presence.n))}</b> kämpft gegen ${fo.nm?esc(fo.nm)+' · ':''}<b>${esc(SPECIES[fo.s].n)}</b> (Lv ${fo.l|0}).</p><p class="small">${(c.n|0)} von ${COOP_MAX} Plätzen belegt. Der Gegner wird stärker, wenn du dazukommst.${fo.k==='wild'?' Fangen darf, wer den letzten Treffer landet.':''}</p>
+  openModal(`<h3>⚔ KAMPF IN DER NÄHE</h3><p><b>${esc(cleanName(p.presence.n))}</b> kämpft gegen ${fo.nm?esc(fo.nm)+' · ':''}<b>${esc(SPECIES[fo.s].n)}</b> (Lv ${fo.l|0}).</p><p class="small">${(c.n|0)} von ${COOP_MAX} Plätzen belegt. Der Gegner wird stärker, wenn du dazukommst.${fo.k==='wild'?' Festnehmen: Handschellen werfen – wer trifft und die Frage beantwortet, bekommt das Monster.':''}</p>
     <div class="acts"><button class="btn ghost" id="mno">NEIN</button><button class="btn" id="myes">⚔ BEITRETEN</button></div>`);
   $('#mno').onclick=()=>{COOP_DECL.add(c.id);closeModal();P.lock=false};
   $('#myes').onclick=()=>{closeModal();P.lock=false;const q=findPeer(p.peer);const cc=q&&q.presence.cb;if(!cc||cc.id!==c.id||!cc.open){toast('Der Kampf ist schon vorbei.');return}coJoin(q)}}
@@ -202,6 +202,7 @@ function coPub(force){if(!B||B.mode!=='coop'||!B.co)return;const now=performance
   if(nw.length){(C.out=C.out||[]).push(...nw);C.out=C.out.slice(-12);if(ROOM&&ROOM.fast)for(const id of coPeers())try{ROOM.fast({cs:{id:B.id,sh:nw}},id)}catch(e){}force=true}
   if(!force&&now-C.pubT<60)return;C.pubT=now;const F=B.me;C.q++;
   const o={id:B.id,q:C.q,t:Math.round(now),tm:coRaw(),a:F.a,x:Math.round(F.x),y:Math.round(F.y),f:F.face>0?1:-1,hp:F.team.map(m=>m.hp),out:F.out?1:0,fx:Object.keys(F.st).filter(k=>F.st[k]>0),sh:C.out||[]};
+  if(C.capd)o.cap=B.id;
   if(C.host){const T=B.foe,m=act(T);o.n=C.n;o.open=!C.fin&&C.n<COOP_MAX&&(B.state==='fight'||B.state==='count'||B.state==='intro')?1:0;
     o.fo={s:m.s,l:m.l,k:C.k,nm:C.spec.nm,tid:C.spec.tid,gate:C.spec.gate,run:C.spec.run,m:m.m,st:coNum(m)};
     o.b={x:Math.round(T.x),y:Math.round(T.y),f:T.face>0?1:-1,hp:m.hp,mh:m.mhp,fx:Object.keys(T.st).filter(k=>T.st[k]>0)};if(C.res)o.res=C.res}
@@ -225,13 +226,14 @@ function coSync(dt){const C=B.co,now=performance.now(),k=Math.min(1,dt*14);if(RO
     if(Array.isArray(c.hp))F.team.forEach((m,i)=>{const v=clamp(Math.floor(+c.hp[i]),0,m.mhp);if(Number.isFinite(v)){if(v<m.hp&&i===F.a){F.hurtT=now;F.flash=0.25}m.hp=v}});
     F.out=!!c.out||F.team.every(m=>m.hp<=0);F.faint=act(F).hp<=0?1:0;F.stShow=Array.isArray(c.fx)?c.fx.filter(q=>typeof q==='string'&&q in F.st):[];
     if(Array.isArray(c.sh))for(const e of c.sh)coSpawn(id,F,e);
+    if(C.host&&c.cap===B.id&&!C.fin&&C.k==='wild')coFinish(true,C.last||id,id);
     // the host also carries the opponent
     if(id===C.hp&&c.b&&B.foe.ctrl==='remote'){const T=B.foe,b=c.b;T.x+=((+b.x||T.x)-T.x)*k;T.y+=((+b.y||T.y)-T.y)*k;T.face=b.f<0?-1:1;const m=act(T);
       const mh=Math.floor(+b.mh);if(mh>0&&mh!==m.mhp)m.mhp=mh;const v=clamp(Math.floor(+b.hp),0,m.mhp);
       if(Number.isFinite(v)&&v<m.hp){T.hurtT=now;T.flash=0.25;B.nums.push({x:T.x+(Math.random()*8-4),y:T.y-34,t:'-'+(m.hp-v),c:'#ffffff',at:now});if(typeof effConfirm==='function')try{effConfirm(T)}catch(e){}}
       if(Number.isFinite(v))m.hp=v;T.stShow=Array.isArray(b.fx)?b.fx.filter(q=>typeof q==='string'&&q in T.st):[];if(m.hp<=0&&!T.koShown){T.koShown=1;T.faint=0.9;say(`${SPECIES[m.s].n} ist besiegt!`)}
       const n=clamp(c.n|0,1,COOP_MAX);if(n!==C.n){C.n=n;arenaScale(COOP_K[n-1])}
-      if(c.res&&!C.fin){if(c.res.ab){C.fin=true;B.state='over';say(`${coName(C.hp)} hat sich zurückgezogen – der Kampf ist vorbei.`);syncBack();setTimeout(()=>{if(B&&B.co===C)closeBattle()},2200)}else coFinish(!!c.res.w,c.res.last)}}}
+      if(c.res&&!C.fin){if(c.res.ab){C.fin=true;B.state='over';say(`${coName(C.hp)} hat sich zurückgezogen – der Kampf ist vorbei.`);syncBack();setTimeout(()=>{if(B&&B.co===C)closeBattle()},2200)}else coFinish(!!c.res.w,c.res.last,c.res.cap)}}}
   for(const[peer,list]of C.fq.splice(0))list.forEach(e=>coSpawn(peer,C.F[peer],e));
   B.allies=Object.values(C.F).filter(F=>!F.out&&act(F).hp>0)}
 
@@ -259,19 +261,14 @@ function coCheck(){if(B.state!=='fight'||B.co.fin)return;const C=B.co;
   const h=C.seenT[C.hp];if(h&&performance.now()-h>COOP_TIMEOUT){C.fin=true;B.state='over';finale(false);say('Verbindung zum Kampf verloren.');syncBack();setTimeout(()=>{if(B&&B.co===C)closeBattle()},2200)}}
 
 // ---- Kampfende: Belohnung, Fangen (nur letzter Treffer), Absperrung, Bandenstatus ----
-async function coFinish(win,last){const C=B.co;if(C.fin)return;C.fin=true;B.state='over';if(C.host){C.res={w:win?1:0,last:last||null};coPub(true)}
-  finale(win);const k=C.k,sp=C.spec,myB=B;say(win?(k==='boss'?'BANDE ZERSCHLAGEN!':k==='wild'?'Gegner besiegt!':'Festgenommen!'):'Ihr wurdet überwältigt…');syncBack();
+async function coFinish(win,last,cap){const C=B.co;if(C.fin)return;C.fin=true;B.state='over';if(C.host){C.res={w:win?1:0,last:last||null,cap:cap||null};coPub(true)}
+  finale(win);const k=C.k,sp=C.spec,myB=B;say(win?(k==='boss'?'BANDE ZERSCHLAGEN!':k==='wild'?(cap?'Festnahme!':'Gegner besiegt!'):'Festgenommen!'):'Ihr wurdet überwältigt…');syncBack();
   if(win){const idx=B.me.a,m=RUN.team[idx];if(m&&m.hp>0&&!B.me.out){const msgs=gainXp(m,Math.round(xpGain(sp.s,sp.l)*(k==='boss'?2.5:1.3)));Object.assign(B.me.team[idx],battler(m));for(const t of msgs){say(t);await finSleep(900);if(B!==myB)return}}
     const same=COOP&&sp.run&&COOP.id===sp.run;
     if(k==='trainer'){earn(Math.round(sp.l*14),'Bandenprämie');if(same&&sp.tid){COOP.beat.add(sp.tid);coPubParty()}}
     if(k==='boss'){earn(Math.round(sp.l*40),'Einsatzprämie');RUN.items=RUN.items||{};RUN.items.candy=(RUN.items.candy||0)+1;RUN.items.great=(RUN.items.great||0)+2;RUN.coopWins=(RUN.coopWins||0)+1;say('Belohnung: 1× Sonderbonbon und 2× '+ITEMS.great.n);if(same&&sp.tid){COOP.beat.add(sp.tid);coPubParty()}}
     if(k==='extra'&&sp.gate){if(same||C.host)coOpenGate(sp.gate);say('🚧 Die Absperrung ist frei.')}
-    if(k==='wild'){if(last===coMe()){say('Dein Treffer war der letzte – du darfst festnehmen!');await finSleep(900);if(B!==myB)return;
-        const ok=await new Promise(r=>catchQuiz(sp.s,r));if(B!==myB)return;
-        if(ok){const w=newMon(sp.s,sp.l);w.hp=Math.max(1,Math.round(stats(w).mhp*0.3));const newDex=!G.dex[w.s];G.dex[w.s]=1;if(typeof onCatch==='function')try{onCatch(w)}catch(e){}const toTeam=RUN.team.length<teamMax();(toTeam?RUN.team:RUN.box).push(w);
-          say(`Geschafft! ${SPECIES[w.s].n} wurde festgenommen!`);sysChat(`Du hast ${SPECIES[w.s].n} (Lv ${w.l}) im Koop-Kampf festgenommen!${toTeam?'':' (Box)'}`);if(newDex)setTimeout(()=>{if(!B&&!$('#modal').classList.contains('on'))dexReveal(w.s,w,'★ NEUER DEX-EINTRAG ★')},4200)}
-        else say(`${SPECIES[sp.s].n} reißt sich los und flieht!`)}
-      else if(last)say(`${coName(last)} hatte den letzten Treffer und darf festnehmen.`)}}
+    if(k==='wild'){if(cap===coMe())say(`${SPECIES[sp.s].n} ist festgenommen!`);else if(cap)say(`${coName(cap)} hat ${SPECIES[sp.s].n} festgenommen.`);else say(`${SPECIES[sp.s].n} flieht geschlagen in die Höhle.`)}}
   save();await finSleep(2200);if(B!==myB)return;closeBattle();
   if(!RUN.team.some(m=>m.hp>0)){setTimeout(()=>teamDown(),600);return}
   if(win&&k==='boss')setTimeout(()=>{if(B)return;P.lock=true;const dg=coDgAt(P.x,P.y);
@@ -294,3 +291,15 @@ function coDrawTags(c,now){for(const F of B.allies||[]){const m=act(F);if(!m)con
   const k=m.hp/Math.max(1,m.mhp);c.fillStyle='#14141f';c.fillRect(X-13,Y-46,26,4);c.fillStyle=k<0.25?'#ef4444':k<0.5?'#ffcb3d':'#3ddc6b';c.fillRect(X-12,Y-45,Math.round(24*k),2);
   vtText(c,coName(F.peer),X,Y-49,'#bfe2ff',10,'center')}
   if(B.co&&B.co.host&&B.co.tgt&&B.co.tgt!==B.me&&B.state==='fight'){const T=B.co.tgt;c.fillStyle='#ef444490';c.fillRect(Math.round(T.x)-2,Math.round(T.y)+4,4,2)}}
+
+// ---- Festnahme in der Koop-Höhle: nur per Handschellen-Wurf, nicht automatisch nach dem Sieg ----
+async function coCatch(bonus){if(!B||B.mode!=='coop'||!B.co||B.co.k!=='wild'||B.co.fin||B.co.catching)return;const C=B.co,myB=B,w=act(B.foe),sp=C.spec;
+  const chance=catchChance(w,(bonus||1)*(B.greatThrown?1.7:1));const q=Math.pow(chance,1/3);let sh=0;while(sh<3&&Math.random()<q)sh++;
+  burst(B.foe.x,B.foe.y-14,'#c8ccd8',10);if(sh<3){say(sh?`Die Handschellen klicken ${sh}× – ${SPECIES[w.s].n} reißt sich los!`:`${SPECIES[w.s].n} weicht den Handschellen aus!`);return}
+  C.catching=true;const inv0=B.me.inv;B.me.inv=999;say(`Die Handschellen halten! Jetzt die Frage …`);
+  const ok=await new Promise(r=>catchQuiz(sp.s,r));if(B!==myB){return}B.me.inv=inv0||0;C.catching=false;
+  if(!ok){say(`${SPECIES[w.s].n} reißt sich los!`);return}if(C.fin){say('Zu spät – der Kampf ist schon vorbei.');return}
+  const m=newMon(sp.s,sp.l);m.hp=Math.max(1,Math.round(stats(m).mhp*Math.max(0.1,w.hp/Math.max(1,w.mhp))));const newDex=!G.dex[m.s];G.dex[m.s]=1;if(typeof onCatch==='function')try{onCatch(m)}catch(e){}
+  const toTeam=RUN.team.length<teamMax();(toTeam?RUN.team:RUN.box).push(m);save();
+  sysChat(`Du hast ${SPECIES[m.s].n} (Lv ${m.l}) im Koop-Kampf festgenommen!${toTeam?'':' (Box)'}`);if(newDex)setTimeout(()=>{if(!B&&!$('#modal').classList.contains('on'))dexReveal(m.s,m,'★ NEUER DEX-EINTRAG ★')},4200);
+  if(C.host)coFinish(true,C.last||coMe(),coMe());else{C.capd=1;coPub(true);say(`${SPECIES[m.s].n} ist festgenommen!`)}}

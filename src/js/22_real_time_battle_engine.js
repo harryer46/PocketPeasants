@@ -361,7 +361,7 @@ function bUpdate(dt){if(B.mode==='spec'){specUpdate(dt);return}if(dt>0)B.fps=B.f
     if(!s.cap&&s.mid!=='surf'&&shotVsObs(s))continue;
     const T=s.side===B.me.side?B.foe:B.me;if(!T||T.out||T.faint>0)continue;
     if(Math.hypot(s.x-T.x,s.y-(T.y-12))<s.r+11){
-      if(s.cap){s.dead=1;if(B.mode==='wild')startCatch(throwBonus());continue}
+      if(s.cap){s.dead=1;if(B.mode==='wild')startCatch(throwBonus());else if(B.mode==='coop'&&typeof coCatch==='function')coCatch(throwBonus());continue}
       if(T.inv>0)continue;
       s.dead=1;shotHit(s,T)}}
   // opposing projectiles that meet cancel each other out (melee hits and capsules are unaffected)
@@ -506,7 +506,7 @@ function battleSwitch(){if(B&&B.tb){tbSwitchMenu();return}if(!B)return;if(B.stat
   if(!atEdge(F)){say('Zum Wechseln an den Rand des Kampffelds laufen!');return}B.qsel=true;B.reel=null;held.length=0;$('#bpick').dataset.k=''}
 function quickPick(i){const F=B.me;B.qsel=false;$('#bpick').dataset.k='';if(i===F.a||!F.team[i]||F.team[i].hp<=0)return;if(F.swCd>0){say('Wechsel gleich wieder möglich…');return}doSwitch(F,i)}
 // aiming: hold CAPSULE -> the aim line swings; release to throw. A pulsing ring on the target gives a throw bonus.
-function capPress(){if(!B||B.mode!=='wild'||B.aim)return;if(!(B.state==='fight'||(B.tb&&B.state==='tbChoose'))||B.capCd>0)return;if(RUN.kap<=0&&!B.capGreat){say('Keine Handschellen mehr!');return}B.aim={t0:performance.now()};say('Zielen… loslassen zum Werfen!')}
+function capPress(){if(!B||!(B.mode==='wild'||(B.mode==='coop'&&B.co&&B.co.k==='wild'&&!B.co.fin&&!B.co.catching))||B.aim)return;if(!(B.state==='fight'||(B.tb&&B.state==='tbChoose'))||B.capCd>0)return;if(RUN.kap<=0&&!B.capGreat){say('Keine Handschellen mehr!');return}B.aim={t0:performance.now()};say('Zielen… loslassen zum Werfen!')}
 function aimAngle(now){const F=B.me,T=B.foe;if(!B.tb){const a=myAim();return Math.atan2(a.y,a.x)}return Math.atan2((T.y-12)-(F.y-14),T.x-F.x)+Math.sin((now-B.aim.t0)/1000*3.4)*0.55}
 function ringR(now){return 5+11*(0.5+0.5*Math.sin(now/240))}
 function capRelease(){if(!B||!B.aim)return;const now=performance.now(),a=aimAngle(now);B.aim=null;if(B.capGreat){B.capGreat=0;B.greatThrown=1}else{RUN.kap--;B.greatThrown=0}B.capCd=1.2;updateHud();
@@ -734,7 +734,7 @@ function buildBattleUI(){
   const row=document.createElement('div');row.className='brow';
   const add=(t,cls,fn,id)=>{const b=document.createElement('button');b.className='btn '+cls;b.textContent=t;b.onclick=fn;if(id)b.id=id;row.appendChild(b)};
   if(!B.tb)add(DASH_AP?'SPRINT · '+DASH_AP+' AP':'SPRINT','ghost',battleDash);add('WECHSELN','ghost',battleSwitch,'bsw');
-  if(B.mode==='wild'){add('HALTEN: HANDSCHELLEN','',()=>{},'bcap');add('FLIEHEN','ghost',tryRun)}else if(B.mode!=='trainer')add('AUFGEBEN','red',forfeit);
+  if(B.mode==='wild'){add('HALTEN: HANDSCHELLEN','',()=>{},'bcap');add('FLIEHEN','ghost',tryRun)}else if(B.mode==='coop'&&B.co&&B.co.k==='wild'){add('HALTEN: HANDSCHELLEN','',()=>{},'bcap');add('AUFGEBEN','red',forfeit)}else if(B.mode!=='trainer')add('AUFGEBEN','red',forfeit);
   add('🎒 BEUTEL','ghost',()=>{},'bbag');add('ℹ ATTACKEN','ghost',()=>{if(B&&B.me)openMonInfo(act(B.me).s,act(B.me))});add('⚙','ghost',openSettings);
   el.appendChild(row);
   const K=SET.keys;
