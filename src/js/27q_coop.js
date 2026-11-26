@@ -5,7 +5,7 @@
    Gesetzesschwerpunkt (StGB, StPO, PolG, GG). Jeder Kampf in der Höhle ist ein Koop-Kampf: Wer in der Nähe eines Spielers
    steht, der gerade kämpft, kann dazukommen (bis 4). Der Spieler, der den Kampf begonnen hat, simuliert den Gegner
    (Host); jeder ist für sein eigenes Monster zuständig. Festnehmen geht nur per Handschellen-Wurf. */
-const COOP_MAX=4,COOP_K=[1,1.25,1.38,1.5],COOP_TIMEOUT=9000;
+const COOP_MAX=4,COOP_K=[1.35,1.55,1.7,1.85],COOP_TIMEOUT=9000;
 ZONE_OBS.coopcave=[['boulder',2,3],['rock',2,3],['crystal',2,3],['pillar',1,2]];
 BBG.coopcave=mk(2,2);
 let COOP=null,CLOB=null,COOP_IV=null;
@@ -28,42 +28,86 @@ function coMyL(){return coPartL([RUN.team.map(m=>m.l)])}
 // ---- Bandenhöhlen: vier begehbare Höhlen in einem eigenen Untergrund-Band ----
 const CODG=[];
 function coDgAt(x,y){if(y<MH)return null;return CODG.find(d=>x>=d.x0&&x<d.x0+d.w&&y>=d.y0&&y<d.y0+d.h)||null}
+// every cave grows differently: the concept decides room positions/sizes, tunnel style and extras.
+// Between two rooms: a police-tape shortcut (the exam opens it) and a winding detour through a side cave,
+// guarded by two gang members standing in its narrow tunnels. Each layout is checked by flood fill (retries otherwise).
+const CODG_CONCEPT=[
+  {k:'labyrinth',rooms:[[36,103],[24,81],[47,59],[24,37],[36,14]],rw:[15,19],rh:[10,13],wob:0.5,swob:0.45,pockets:5,amp:1.2},   // Diebeshöhle: small dens, many dead ends
+  {k:'stollen',rooms:[[36,104],[36,81],[36,58],[36,35],[36,13]],rw:[24,28],rh:[8,10],wob:0.08,swob:0.1,props:1,amp:0.5,box:1},  // Schmugglerstollen: long galleries, shafts, timber props
+  {k:'grotte',rooms:[[31,101],[43,79],[29,57],[43,35],[36,14]],rw:[22,26],rh:[14,17],wob:0.4,swob:0.35,pockets:2,amp:1.4,isl:3},// Krawallgrotte: huge caverns with rock islands
+  {k:'bunker',rooms:[[36,104],[27,82],[45,60],[27,38],[36,14]],rw:[17,20],rh:[10,12],wob:0,swob:0.2,pockets:2,amp:0.35,box:1}];  // Verfassungsfeindbunker: squared halls, straight passages
 (function genCoopDungeons(){const FL=29,EN=19,W=72,H=116,Y0=MH+194;if(Y0+H>MHT)return;
-  // five rooms stacked in the middle column (entrance at the bottom, boss at the top). Between two rooms:
-  // a short corridor with police tape (the exam opens it) and a long detour through a side cave with wild
-  // monsters and two gang members blocking the narrow passages.
-  COOP_LAW.forEach((law,i)=>{const r=mulberry32(7300+i*97),ri=n=>Math.floor(r()*n);const dg={i,law,n:COOP_DGN[law],x0:3+i*74,y0:Y0,w:W,h:H,gates:[],side:[]};CODG.push(dg);
-    const X=x=>dg.x0+x,Y=y=>dg.y0+y;
-    for(let y=0;y<H;y++)for(let x=0;x<W;x++){tset(X(x),Y(y),r()<0.1?31:16);BIOME[Y(y)*MW+X(x)]=7}
-    const floor=(x,y)=>{if(x>0&&x<W-1&&y>0&&y<H-1)tset(X(x),Y(y),FL)},rect=(x0,y0,w,h)=>{for(let y=y0;y<y0+h;y++)for(let x=x0;x<x0+w;x++)floor(x,y)};
-    const RH=15,GAP=8,rooms=[];for(let k=0;k<5;k++){const w=20+ri(7),h=RH,y=H-2-RH-k*(RH+GAP),x=36-(w>>1);rooms.push({x:X(x),y:Y(y),w,h,cx:X(36),cy:Y(y+(h>>1)),rx:x,ry:y});rect(x,y,w,h)}
-    dg.rooms=rooms;
-    const rub=(x0,y0,w,h,n)=>{for(let m=0;m<n;m++){const px=x0+2+ri(Math.max(1,w-4)),py=y0+2+ri(Math.max(1,h-4)),rr=2+ri(2);
-      for(let y=py-rr;y<=py+rr;y++)for(let x=px-rr-1;x<=px+rr+1;x++)if(x>x0&&x<x0+w-1&&y>y0&&y<y0+h-1&&((x-px)/(rr+1))**2+((y-py)/rr)**2<=1&&Math.abs(x-36)>1)tset(X(x),Y(y),EN)}};
+  COOP_LAW.forEach((law,i)=>{const CC=CODG_CONCEPT[i%CODG_CONCEPT.length];let L=null;
+    for(let tr=0;tr<40&&!L;tr++)L=coLayout(CC,mulberry32(7300+i*97+tr*7919),W,H);
+    if(!L){console.warn('coop dungeon layout failed',law);return}
+    const dg={i,law,n:COOP_DGN[law],k:CC.k,x0:3+i*74,y0:Y0,w:W,h:H,gates:[],side:[]};CODG.push(dg);
+    const X=x=>dg.x0+x,Y=y=>dg.y0+y,r=mulberry32(7301+i*97);
+    for(let y=0;y<H;y++)for(let x=0;x<W;x++){const t=L.g[y*W+x];tset(X(x),Y(y),t===1?FL:t===2?EN:t===3?16:(r()<0.1?31:16));BIOME[Y(y)*MW+X(x)]=7}
+    dg.rooms=L.rooms.map(R=>({x:X(R.x),y:Y(R.y),w:R.w,h:R.h,cx:X(R.cx),cy:Y(R.cy),rx:R.x,ry:R.y}));
     let pool=lawSpecies(law).filter(s=>SPECIES[s]);if(!pool.length)pool=['owigon'];let q=0;
     const band=(x,y,d,kind,extra)=>{const t=Object.assign({id:`cb${i}_${q}`,kind,gift:'coop',dg:i,sp:pool[(i*5+q*3)%pool.length],n:'Bandenmitglied '+COOP_GANG[(i*5+q)%COOP_GANG.length],x:X(x),y:Y(y),d,c:'#6a2a2a',team:[],reward:0,line:'',after:''},extra||{});
       t.isGone=()=>!!(COOP&&COOP.beat.has(t.id));q++;TRAINERS.push(t);return t};
-    for(let k=1;k<5;k++){const lo=rooms[k-1],hi=rooms[k];
-      // short way: straight up the middle, police tape halfway
-      const y0=hi.ry+RH,y1=lo.ry-1;for(let y=y0;y<=y1;y++){floor(35,y);floor(36,y)}const my=(y0+y1)>>1;
-      const g={id:`cg${i}_${k}`,k,tiles:[[X(35),Y(my)],[X(36),Y(my)]]};dg.gates.push(g);g.tiles.forEach(([x,y],j)=>FIELD.push({id:g.id+'_'+j,kind:'tape',gate:g.id,x,y}));
-      // long way: side cave on alternating sides
-      const left=k%2===1,cw=13,cx0=left?3:W-3-cw,ct=hi.ry+4,cb=lo.ry+RH-4,ch=cb-ct;rect(cx0,ct,cw,ch);rub(cx0,ct,cw,ch,3);
-      const ey=lo.ry+RH-6,xy=hi.ry+6;   // entry (from the lower room) and exit (into the upper room) rows
-      const lx0=left?cx0+cw:lo.rx+lo.w,lx1=left?lo.rx-1:cx0-1;for(let x=lx0;x<=lx1;x++)floor(x,ey);
-      const hx0=left?cx0+cw:hi.rx+hi.w,hx1=left?hi.rx-1:cx0-1;for(let x=hx0;x<=hx1;x++)floor(x,xy);
-      dg.side.push({k,left,x:X(cx0),y:Y(ct),w:cw,h:ch});
-      // two gang members block the narrow passages of the detour
-      band(left?cx0+cw+1:cx0-2,ey,left?'left':'right','cobandit',{block:1,n:'Wache '+COOP_GANG[(i*3+k)%COOP_GANG.length]});
-      band(left?cx0+cw+1:cx0-2,xy,left?'left':'right','cobandit',{block:1,n:'Wache '+COOP_GANG[(i*3+k+5)%COOP_GANG.length]})}
-    // rubble in rooms 1 and 3 (and a little in the gang rooms), gang members off the middle path, boss at the top
-    rooms.forEach((Q,k)=>{const n=[2,1,3,1,0][k];for(let m=0;m<n;m++){const px=Q.rx+2+ri(Math.max(1,Q.w-4)),py=Q.ry+2+ri(Math.max(1,Q.h-4)),rr=2+ri(2);
-      for(let y=py-rr;y<=py+rr;y++)for(let x=px-rr-1;x<=px+rr+1;x++)if(x>Q.rx&&x<Q.rx+Q.w-1&&y>Q.ry&&y<Q.ry+Q.h-1&&((x-px)/(rr+1))**2+((y-py)/rr)**2<=1&&Math.abs(x-36)>2&&y!==Q.ry+6&&y!==Q.ry+RH-6)tset(X(x),Y(y),EN)}});
-    for(const k of[1,3]){const Q=rooms[k];band(Q.rx+3,Q.ry+3,'right','cobandit');band(Q.rx+Q.w-4,Q.ry+Q.h-4,'left','cobandit')}
-    {const Q=rooms[4];TRAINERS.push({id:`cbb${i}`,kind:'coboss',gift:'coop',dg:i,n:'Bandenboss '+COOP_BOSS[i%COOP_BOSS.length],x:X(36),y:Q.y+3,d:'down',c:'#2a1a3a',team:[],reward:0,line:'',after:''})}
-    // way out: a hole in the bottom wall of the first room
-    const S=rooms[0];dg.sx=X(36);dg.sy=S.y+S.h-2;dg.hx=X(36);dg.hy=S.y+S.h;tset(dg.hx,dg.hy,T_CAVE);
-  })})();
+    L.gaps.forEach(G=>{const g={id:`cg${i}_${G.k}`,k:G.k,tiles:G.tape.map(([x,y])=>[X(x),Y(y)])};dg.gates.push(g);g.tiles.forEach(([x,y],j)=>FIELD.push({id:g.id+'_'+j,kind:'tape',gate:g.id,x,y}));
+      dg.side.push({k:G.k,left:G.left,x:X(G.side.x),y:Y(G.side.y),w:G.side.w,h:G.side.h});
+      G.guards.forEach((p,j)=>band(p[0],p[1],p[2],'cobandit',{block:1,n:'Wache '+COOP_GANG[(i*3+G.k+j*5)%COOP_GANG.length]}))});
+    for(const p of L.bandits)band(p[0],p[1],p[2],'cobandit');
+    TRAINERS.push({id:`cbb${i}`,kind:'coboss',gift:'coop',dg:i,n:'Bandenboss '+COOP_BOSS[i%COOP_BOSS.length],x:X(L.boss[0]),y:Y(L.boss[1]),d:'down',c:'#2a1a3a',team:[],reward:0,line:'',after:''});
+    dg.sx=X(L.start[0]);dg.sy=Y(L.start[1]);dg.hx=X(L.start[0]);dg.hy=Y(L.start[1]+1);tset(dg.hx,dg.hy,T_CAVE)})})();
+// one layout attempt on a local grid (0 rock, 1 floor, 2 rubble = wild monsters, 3 pillar); null if a check fails
+function coLayout(CC,r,W,H){const g=new Uint8Array(W*H),ri=n=>Math.floor(r()*n),rr=(a)=>a[0]+ri(a[1]-a[0]+1);
+  const inb=(x,y)=>x>1&&y>1&&x<W-2&&y<H-2,put=(x,y)=>{if(inb(x,y))g[y*W+x]=1},I=(x,y)=>y*W+x;
+  const rooms=[],roomSet=[];
+  CC.rooms.forEach(([cx,cy],k)=>{const w=rr(CC.rw)+(k===4?4:0),h=rr(CC.rh)+(k===4?2:0),jx=CC.k==='stollen'?0:ri(5)-2,jy=ri(3)-1;
+    const R={x:cx+jx-(w>>1),y:cy+jy-(h>>1),w,h};R.cx=R.x+(w>>1);R.cy=R.y+(h>>1);rooms.push(R);
+    const set=new Set();orgBlob(R,r,(x,y)=>{if(inb(x,y)){g[I(x,y)]=1;set.add(I(x,y))}},{amp:CC.amp,box:CC.box});roomSet.push(set)});
+  const S=rooms[0];for(let y=S.cy;y<H-3;y++)put(S.cx,y);const start=[S.cx,H-4];
+  const prot=new Set(),mark=cells=>{for(const[x,y]of cells)for(let dy=-1;dy<=2;dy++)for(let dx=-1;dx<=2;dx++)prot.add(I(x+dx,y+dy))};
+  const gaps=[];
+  for(let k=1;k<5;k++){const a=rooms[k-1],b=rooms[k];
+    // shortcut: 2 wide; straight up if the rooms line up, otherwise a Z with a level middle part
+    const aTop=a.y,bBot=b.y+b.h-1;let tape,sc;
+    if(Math.abs(a.cx-b.cx)<=1){sc=orgTunnel(a.cx,a.cy,a.cx,b.cy,r,put,{w:2,wob:0});const ty=(aTop+bBot+1)>>1;tape=[[a.cx,ty],[a.cx+1,ty]]}
+    else{const my=(aTop+bBot)>>1;sc=[...orgTunnel(a.cx,a.cy,a.cx,my,r,put,{w:2,wob:0}),...orgTunnel(a.cx,my,b.cx,my,r,put,{w:2,wob:0}),...orgTunnel(b.cx,my,b.cx,b.cy,r,put,{w:2,wob:0})];
+      const l1=aTop-1-(my+2),l2=(my-1)-(bBot+1);if(Math.max(l1,l2)<0)return null;tape=l1>=l2?[[a.cx,aTop-1-(l1>>1)],[a.cx+1,aTop-1-(l1>>1)]]:[[b.cx,bBot+1+(l2>>1)],[b.cx+1,bBot+1+(l2>>1)]]}
+    mark(sc);
+    // detour: side cave in the free lane left or right of both rooms
+    const lx1=Math.min(a.x,b.x)-3,rx0=Math.max(a.x+a.w,b.x+b.w)+2,lw=lx1-2,rw=W-3-rx0;
+    let left=lw>=rw;if(Math.min(lw,rw)>=7)left=(k%2===1)!==(CC.k==='grotte'&&k>2);if((left?lw:rw)<6)return null;
+    const sw=Math.min(left?lw:rw,8+ri(4)),sh=Math.min(20,(a.cy-b.cy)-2+ri(4)),sx=left?lx1-sw:rx0,sy=((a.cy+b.cy)>>1)-(sh>>1);
+    const SR={x:sx,y:sy,w:sw,h:sh};const sset=new Set();orgBlob(SR,r,(x,y)=>{if(inb(x,y)){g[I(x,y)]=1;sset.add(I(x,y))}},{amp:CC.amp});
+    const scx=sx+(sw>>1),scy=sy+(sh>>1);
+    const t1=orgTunnel(a.cx,a.cy+(CC.k==='stollen'?0:ri(3)-1),scx,scy+2,r,put,{w:1,wob:CC.swob,maxOff:2}),t2=orgTunnel(scx,scy-2,b.cx,b.cy+(CC.k==='stollen'?0:ri(3)-1),r,put,{w:1,wob:CC.swob,maxOff:2});
+    mark(t1);mark(t2);
+    const outA=t1.findIndex(([x,y])=>!roomSet[k-1].has(I(x,y))),inB=t2.findIndex(([x,y])=>roomSet[k].has(I(x,y)));
+    if(outA<0||inB<4)return null;const g1=t1[outA+1],g2=t2[inB-2];if(!g1||!g2||sset.has(I(g1[0],g1[1]))||sset.has(I(g2[0],g2[1])))return null;
+    gaps.push({k,left,tape,side:SR,sset,guards:[[g1[0],g1[1],left?'left':'right'],[g2[0],g2[1],left?'left':'right']]})}
+  // checks: tape and guards are the only ways on; each one alone is enough
+  const block=new Set();for(const G of gaps){for(const[x,y]of G.tape)block.add(I(x,y));for(const p of G.guards)block.add(I(p[0],p[1]))}
+  const ok=()=>{for(const G of gaps){const a=rooms[G.k-1],b=rooms[G.k],s=I(a.cx,a.cy),t=I(b.cx,b.cy);
+      if(orgReach(W,H,s,j=>g[j]&&!block.has(j))[t])return false;
+      const tp=new Set(G.tape.map(([x,y])=>I(x,y))),gd=new Set(G.guards.map(p=>I(p[0],p[1])));
+      if(!orgReach(W,H,s,j=>g[j]&&(!block.has(j)||tp.has(j)))[t])return false;
+      if(!orgReach(W,H,s,j=>g[j]&&(!block.has(j)||gd.has(j)))[t])return false}
+    return orgReach(W,H,I(start[0],start[1]),j=>g[j]&&!block.has(j))[I(rooms[0].cx,rooms[0].cy)]===1};
+  if(!ok())return null;
+  // dead-end pockets (kept only if they don't open a way around a tape or a guard)
+  for(let n=0;n<(CC.pockets||0);n++){const k=1+ri(3),R=rooms[k],left=r()<0.5,w=6+ri(4),h=5+ri(3),x=left?R.x-w-ri(3):R.x+R.w+ri(3),y=R.cy-(h>>1)+ri(5)-2;
+    if(x<2||x+w>W-2)continue;const keep=g.slice();const pc=orgBlob({x,y,w,h},r,put,{amp:CC.amp});orgTunnel(R.cx,R.cy,x+(w>>1),y+(h>>1),r,put,{w:1,wob:CC.swob});
+    if(!ok()){g.set(keep);continue}for(const[px,py]of pc)if(r()<0.55&&!prot.has(I(px,py)))g[I(px,py)]=2}
+  // rubble with wild monsters, rock islands, timber props
+  const freeFl=(x,y)=>g[I(x,y)]===1&&!prot.has(I(x,y));
+  const rub=(R,n)=>{for(let m=0;m<n;m++){const px=R.x+2+ri(Math.max(1,R.w-4)),py=R.y+2+ri(Math.max(1,R.h-4)),q=2+ri(2);
+    for(let y=py-q;y<=py+q;y++)for(let x=px-q-1;x<=px+q+1;x++)if(((x-px)/(q+1))**2+((y-py)/q)**2<=1&&freeFl(x,y)&&!(Math.abs(x-R.cx)<=2&&Math.abs(y-R.cy)<=2))g[I(x,y)]=2}};
+  rooms.forEach((R,k)=>rub(R,[0,1,2,1,0][k]+(CC.k==='grotte'?1:0)));for(const G of gaps)rub(G.side,3);
+  if(CC.isl)for(const R of rooms.slice(1,4))for(let m=0;m<CC.isl;m++){const px=R.x+3+ri(Math.max(1,R.w-6)),py=R.y+3+ri(Math.max(1,R.h-6));
+    const cl=[[0,0],[1,0],[0,1],[1,1]].filter(()=>r()<0.85);if(cl.every(([dx,dy])=>freeFl(px+dx,py+dy)&&Math.abs(px+dx-R.cx)>2)){const keep=g.slice();for(const[dx,dy]of cl)g[I(px+dx,py+dy)]=3;if(!ok())g.set(keep)}}
+  if(CC.props)for(const R of rooms)for(let x=R.x+3;x<R.x+R.w-3;x+=5)for(const y of[R.cy-3,R.cy+3])if(freeFl(x,y)&&Math.abs(x-R.cx)>2){const keep=g.slice();g[I(x,y)]=3;if(!ok())g.set(keep)}
+  // gang members in rooms 1 and 3, the boss at the top of the last room
+  const spot=(R,fx,fy)=>{let best=null,bd=1e9;for(let y=R.y;y<R.y+R.h;y++)for(let x=R.x;x<R.x+R.w;x++){if(g[I(x,y)]!==1||prot.has(I(x,y)))continue;
+      let open=true;for(let dy=-1;dy<=1&&open;dy++)for(let dx=-1;dx<=1;dx++)if(!g[I(x+dx,y+dy)]||g[I(x+dx,y+dy)]===3){open=false;break}if(!open)continue;const d=Math.hypot(x-fx,y-fy);if(d<bd){bd=d;best=[x,y]}}return best};
+  const bandits=[];for(const k of[1,3]){const R=rooms[k];const p1=spot(R,R.x+2,R.y+2),p2=spot(R,R.x+R.w-3,R.y+R.h-3);if(p1)bandits.push([p1[0],p1[1],'right']);if(p2&&(!p1||Math.abs(p2[0]-p1[0])+Math.abs(p2[1]-p1[1])>3))bandits.push([p2[0],p2[1],'left'])}
+  const T=rooms[4],boss=spot(T,T.cx,T.y+2)||[T.cx,T.cy];
+  return{g,rooms,gaps,bandits,boss,start}}
 {const _z=zoneAt;zoneAt=function(x,y){if(coDgAt(x,y))return'north';return _z.apply(this,arguments)}}
 {const _uh=updateHud;updateHud=function(){_uh.apply(this,arguments);try{const d=coDgAt(P.x,P.y);if(d)$('#hzone').textContent=`🕳 ${d.n} · ${d.law}`}catch(e){}}}
 {const _sw=startWild;startWild=function(zk){const d=coDgAt(P.x,P.y);if(d){coWild(d);return}return _sw.apply(this,arguments)}}
@@ -154,7 +198,8 @@ function coFoe(k,s,l){const mon=newMon(s,l);const b=battler(mon);const base=b.mh
 function coSlotX(){return Math.round(ACX+(Math.random()-0.5)*ARX*0.9)}
 function coNum(b){const o={};for(const k in b)if(typeof b[k]==='number'&&k!=='hp')o[k]=b[k];return o}
 // start a fight in the cave (as host)
-function coBattle(k,spec){if(B||teamDown())return;arenaScale(COOP_K[0]);const foeB=coFoe(k,spec.s,spec.l);
+function coArena(n,k){arenaScale(COOP_K[clamp(n|0,1,COOP_MAX)-1]*(k==='boss'?1.12:1))}
+function coBattle(k,spec){if(B||teamDown())return;coArena(1,k);const foeB=coFoe(k,spec.s,spec.l);
   const me=mkFighter('L',RUN.team.map(battler),ACX,'local');const foe=mkFighter('R',[foeB],ACX,'ai');
   newBattle({mode:'coop',id:'cb'+Math.random().toString(36).slice(2,9),zone:'coopcave',oppName:spec.nm||'',me,foe,allies:[],
     co:{host:true,hp:coMe(),k,off:spec.l-coMyL(),spec:{s:foeB.s,l:spec.l,nm:spec.nm||'',tid:spec.tid||null,gate:spec.gate||null,run:COOP?COOP.id:null},base:foeB._base,n:1,last:null,F:{},seen:new Set(),seenT:{},fq:[],q:0,pubT:0,tgt:null,tgtT:0,fin:false,t0:performance.now()}});
@@ -163,7 +208,11 @@ function coBattle(k,spec){if(B||teamDown())return;arenaScale(COOP_K[0]);const fo
   say('Mitspieler in der Nähe können dazukommen.');coPub(true)}
 function coWild(dg){coEnsure();const L=coMyL();const pool=lawSpecies(dg.law).filter(s=>SPECIES[s]);if(!pool.length)return;const l=L+1+Math.floor(Math.random()*3);
   const ok=pool.filter(s=>!(SPECIES[s].minLv>l));const s=(ok.length?ok:pool)[Math.floor(Math.random()*(ok.length||pool.length))];coBattle('wild',{s:newMon(s,l).s,l})}
+// one fight per gang member: if somebody of the party is already at it, you can only join
+function coFighting(tid){for(const p of others()){const c=p.presence.cb;if(c&&c.fo&&c.fo.tid===tid&&!c.res&&(!COOP||COOP.mem.includes(p.peer)||(p.presence.co&&p.presence.co.r===COOP.id)))return p}return null}
 function coBanditTalk(t){const C=coEnsure();if(!C||B)return;if(C.beat.has(t.id)){talk(t.n,t.kind==='coboss'?'Schon gut, schon gut … ich komme ja freiwillig mit.':'Ich ergebe mich! Die Handschellen bitte nicht so fest …');return}
+  {const p=coFighting(t.id);if(p){const c=p.presence.cb;if(c.open&&!COOP_DECL.has(c.id)&&Math.abs(p.presence.x-P.x)+Math.abs(p.presence.y-P.y)<=3){coJoinAsk(p);return}
+    toast(`⚔ ${cleanName(p.presence.n)} kämpft schon gegen ${t.n} – stell dich daneben, um beizutreten.`);return}}
   const dg=CODG[t.dg],pool=lawSpecies(dg.law).filter(s=>SPECIES[s]);
   if(t.kind==='coboss'){const l=coMyL()+6;const bs=s=>{const b=SPECIES[s].b;return b[0]+b[1]+b[2]+b[3]};const sp=pool.map(s=>newMon(s,l).s).sort((a,b)=>bs(b)-bs(a))[0]||'owigon';
     P.lock=true;talk(t.n,'Ihr seid also die Streife, die meine Leute hochgenommen hat. Jetzt bin ICH dran!',()=>{P.lock=false;coBattle('boss',{s:sp,l,nm:t.n,tid:t.id})});return}
@@ -188,7 +237,7 @@ function coQs(law){const av=new Set(),qs=[];const pool=lawQuestions(law).map(x=>
 function coJoin(p){const c=p.presence.cb,fo=c&&c.fo;if(!fo||!SPECIES[fo.s]||B||teamDown())return;
   const b=battler(newMon(fo.s,clamp(fo.l|0,1,100)));if(fo.st)for(const k in fo.st)if(typeof fo.st[k]==='number'&&Number.isFinite(fo.st[k]))b[k]=fo.st[k];
   if(Array.isArray(fo.m)){const mv=fo.m.filter(x=>MOVES[x]).slice(0,4);if(mv.length)b.m=mv}b.hp=clamp(Math.floor(+(c.b&&c.b.hp)||b.mhp),0,b.mhp);
-  const n=clamp((c.n|0)+1,1,COOP_MAX);arenaScale(COOP_K[n-1]);
+  const n=clamp((c.n|0)+1,1,COOP_MAX);coArena(n,fo.k);
   const me=mkFighter('L',RUN.team.map(battler),ACX,'local');me.x=coSlotX();me.y=YB;const foe=mkFighter('R',[b],ACX,'remote');foe.y=YT;if(c.b){foe.x=+c.b.x||ACX;foe.y=+c.b.y||YT}
   newBattle({mode:'coop',id:c.id,zone:'coopcave',oppName:fo.nm||'',me,foe,allies:[],
     co:{host:false,hp:p.peer,k:fo.k,spec:{s:fo.s,l:fo.l,nm:fo.nm||'',tid:fo.tid||null,gate:fo.gate||null,run:fo.run||null},n,last:null,F:{},seen:new Set(),seenT:{[p.peer]:performance.now()},fq:[],q:0,pubT:0,fin:false,t0:performance.now()}});
@@ -223,7 +272,7 @@ function coSync(dt){const C=B.co,now=performance.now(),k=Math.min(1,dt*14);if(RO
     C.seenT[id]=now;
     if(!F){if(C.host&&Object.keys(C.F).length>=COOP_MAX-1)continue;const tm=coTeam(c.tm);if(!tm)continue;F=C.F[id]=mkFighter('L',tm,ACX,'remote');F.spawnT=now;F.inv=0;F.peer=id;F.x=+c.x||ACX;F.y=+c.y||YB;
       if(B.state==='fight'||B.state==='count')say(`⚔ ${coName(id)} kommt dazu!`);
-      if(C.host){C.n=1+Object.keys(C.F).length;coRescale();arenaScale(COOP_K[clamp(C.n,1,4)-1]);coPub(true)}}
+      if(C.host){C.n=1+Object.keys(C.F).length;coRescale();coArena(C.n,C.k);coPub(true)}}
     F.tx=+c.x||F.x;F.ty=+c.y||F.y;F.x+=(F.tx-F.x)*k;F.y+=(F.ty-F.y)*k;F.face=c.f<0?-1:1;F.flash=Math.max(0,(F.flash||0)-dt);
     const a=Math.floor(+c.a);if(a>=0&&a<F.team.length&&a!==F.a){F.a=a;F.spawnT=now}
     if(Array.isArray(c.hp))F.team.forEach((m,i)=>{const v=clamp(Math.floor(+c.hp[i]),0,m.mhp);if(Number.isFinite(v)){if(v<m.hp&&i===F.a){F.hurtT=now;F.flash=0.25}m.hp=v}});
@@ -236,7 +285,7 @@ function coSync(dt){const C=B.co,now=performance.now(),k=Math.min(1,dt*14);if(RO
       const mh=Math.floor(+b.mh);if(mh>0&&mh!==m.mhp)m.mhp=mh;const v=clamp(Math.floor(+b.hp),0,m.mhp);
       if(Number.isFinite(v)&&v<m.hp){T.hurtT=now;T.flash=0.25;B.nums.push({x:T.x+(Math.random()*8-4),y:T.y-34,t:'-'+(m.hp-v),c:'#ffffff',at:now});if(typeof effConfirm==='function')try{effConfirm(T)}catch(e){}}
       if(Number.isFinite(v))m.hp=v;T.stShow=Array.isArray(b.fx)?b.fx.filter(q=>typeof q==='string'&&q in T.st):[];if(m.hp<=0&&!T.koShown){T.koShown=1;T.faint=0.9;say(`${SPECIES[m.s].n} ist besiegt!`)}
-      const n=clamp(c.n|0,1,COOP_MAX);if(n!==C.n){C.n=n;arenaScale(COOP_K[n-1])}
+      const n=clamp(c.n|0,1,COOP_MAX);if(n!==C.n){C.n=n;coArena(n,C.k)}
       if(c.res&&!C.fin){if(c.res.ab){C.fin=true;B.state='over';say(`${coName(C.hp)} hat sich zurückgezogen – der Kampf ist vorbei.`);syncBack();setTimeout(()=>{if(B&&B.co===C)closeBattle()},2200)}else coFinish(!!c.res.w,c.res.last,c.res.cap)}}}
   for(const[peer,list]of C.fq.splice(0))list.forEach(e=>coSpawn(peer,C.F[peer],e));
   B.allies=Object.values(C.F).filter(F=>!F.out&&act(F).hp>0)}
@@ -254,7 +303,15 @@ aiUpdate=coSwap(aiUpdate);aiAimTick=coSwap(aiAimTick);
 {const _sb=startBreak;startBreak=function(F){if(B&&B.mode==='coop'){if(F===B.me){const n=nextAlive(F);if(n>=0){doSwitch(F,n);F.faint=0;F.inv=1.2;say(`Los, ${SPECIES[act(F).s].n}!`)}}return}return _sb.apply(this,arguments)}}
 {const _ce=checkEnd;checkEnd=function(){if(B&&B.mode==='coop'){coCheck();return}return _ce.apply(this,arguments)}}
 {const _bu=bUpdate;bUpdate=function(dt){_bu.apply(this,arguments);if(B&&B.mode==='coop'&&B.co&&!B.closing){coSync(dt);coPub(false)}}}
-{const _uc=updateCam;updateCam=function(now){if(B&&B.mode==='coop'){const z=Math.min(AW/(2*ARX+70),(AH-58)/(2*ARY+75));return B.cam={x:ACX,y:ACY-20,z,t:now,init:1}}return _uc.apply(this,arguments)}}
+// big arena, normal pixel scale: the camera follows the fight (you + the foe, allies when they fit) instead of zooming out
+{const _uc=updateCam;updateCam=function(now){if(!(B&&B.mode==='coop'))return _uc.apply(this,arguments);
+  const C=B.cam||(B.cam={x:ACX,y:ACY-20,z:1,t:now});const dt=Math.min(0.1,(now-C.t)/1000);C.t=now;const ZMIN=0.86,ZMAX=camZMax();
+  const box=L=>{L=L.filter(F=>F&&!(F.out&&act(F)&&act(F).hp<=0));if(!L.length)return null;const x0=Math.min(...L.map(F=>F.x))-64,x1=Math.max(...L.map(F=>F.x))+64,y0=Math.min(...L.map(F=>F.y))-58,y1=Math.max(...L.map(F=>F.y))+16;
+    return{x:(x0+x1)/2,y:(y0+y1)/2,z:Math.min(AW/(x1-x0),(AH-58)/(y1-y0))}};
+  let b=box([B.me,B.foe,...(B.allies||[])]);if(!b||b.z<ZMIN)b=box([B.me,B.foe]);if(!b||b.z<ZMIN){const m=B.me;b={x:m.x*0.7+B.foe.x*0.3,y:m.y*0.7+B.foe.y*0.3,z:ZMIN}}
+  const tz=clamp(b.z,ZMIN,ZMAX);const k=C.init?Math.min(1,dt*3.2):1;C.init=1;C.z+=(tz-C.z)*k;C.x+=(b.x-C.x)*k;C.y+=(b.y-C.y)*k;
+  const hw=AW/2/C.z,ht=CAMY/C.z,hb=(AH-CAMY)/C.z,X0=ACX-ARX-70,X1=ACX+ARX+70,Y0=ACY-ARY-110,Y1=ACY+ARY+60;
+  C.x=X1-X0<2*hw?ACX:clamp(C.x,X0+hw,X1-hw);C.y=Y1-Y0<ht+hb?ACY-20:clamp(C.y,Y0+ht,Y1-hb);return C}}
 {const _dz=drawHazards;drawHazards=function(c,now){if(B&&B.mode==='coop'){const bg=coCaveBG();c.drawImage(bg.cv,bg.x,bg.y,bg.w,bg.h)}return _dz.apply(this,arguments)}}
 {const _de=drawArenaEv;drawArenaEv=function(c,now,top){const r=_de.apply(this,arguments);if(top&&B&&B.mode==='coop')coDrawTags(c,now);return r}}
 {const _ff=forfeit;forfeit=function(){if(B&&B.mode==='coop'){const host=B.co.host;openModal(`<h3>KAMPF VERLASSEN?</h3><p>${host&&B.allies.length?'Du ziehst dich zurück – der Kampf ist damit für alle vorbei.':'Du ziehst dich aus dem Kampf zurück.'}</p><div class="acts"><button class="btn ghost" id="mno">BLEIBEN</button><button class="btn red" id="myes">ZURÜCKZIEHEN</button></div>`);$('#mno').onclick=closeModal;$('#myes').onclick=()=>{closeModal();coLeaveBattle()};return}return _ff.apply(this,arguments)}}
@@ -281,16 +338,26 @@ async function coFinish(win,last,cap){const C=B.co;if(C.fin)return;C.fin=true;B.
 
 // ---- Darstellung: Höhlenboden + Namensschilder der Mitspieler ----
 let CO_BG=null;
-function coCaveBG(){if(CO_BG&&CO_BG.k===ARENA_K)return CO_BG;const pad=90,x0=ACX-ARX-pad,y0=ACY-ARY-pad-40,w=2*ARX+2*pad,h=2*ARY+2*pad+60,W=Math.ceil(w/2),H=Math.ceil(h/2);
+function coCaveBG(){const boss=!!(B&&B.co&&B.co.k==='boss');if(CO_BG&&CO_BG.k===ARENA_K&&CO_BG.boss===boss)return CO_BG;const pad=90,x0=ACX-ARX-pad,y0=ACY-ARY-pad-40,w=2*ARX+2*pad,h=2*ARY+2*pad+60,W=Math.ceil(w/2),H=Math.ceil(h/2);
   const cv=mk(W,H),c=cv.getContext('2d'),id=c.createImageData(W,H),d=id.data,nL=noise2(9127,18,W,H),nS=noise2(9128,5,W,H),rr=mulberry32(77);
   for(let y=0;y<H;y++)for(let x=0;x<W;x++){const wx=x0+x*2,wy=y0+y*2,ex=(wx-ACX)/(ARX+6),ey=(wy-ACY)/(ARY+8),e=Math.hypot(ex,ey),i=(y*W+x)*4,n=nL(x,y),s=nS(x,y)*0.6+rr()*0.4;
     let r,g,b;if(e<1){const v=0.78+n*0.18+(s>0.82?0.08:0)-(e>0.9?0.12:0);r=92*v;g=82*v;b=74*v;if(s<0.07){r*=0.75;g*=0.75;b*=0.75}}
     else{const v=0.5+n*0.3+(s>0.8?0.12:0)-Math.min(0.22,(e-1)*0.35);r=62*v;g=57*v;b=70*v;if(s>0.965&&e<1.4){r=90;g=150;b=200}}
     d[i]=r;d[i+1]=g;d[i+2]=b;d[i+3]=255}
   c.putImageData(id,0,0);
-  // torches on the cave wall
-  for(const fx of[-0.62,0.62]){const tx=Math.round((ACX+fx*ARX-x0)/2),ty=Math.round((ACY-ARY-18-y0)/2);c.fillStyle='#ffcb3d22';c.beginPath();c.arc(tx,ty,14,0,7);c.fill();c.fillStyle='#5a3a1a';c.fillRect(tx-1,ty,2,6);c.fillStyle='#ff8a3d';c.fillRect(tx-2,ty-3,4,3);c.fillStyle='#ffe14d';c.fillRect(tx-1,ty-4,2,2)}
-  return CO_BG={k:ARENA_K,cv,x:x0,y:y0,w:W*2,h:H*2}}
+  const P2=(wx,wy)=>[Math.round((wx-x0)/2),Math.round((wy-y0)/2)];
+  // boss hall: glowing cracks in the floor
+  if(boss){const rc=mulberry32(4411);for(let n=0;n<9;n++){let a=rc()*7,px=ACX+Math.cos(a)*ARX*0.25,py=ACY+Math.sin(a)*ARY*0.25;for(let k=0;k<26;k++){a+=(rc()-0.5)*0.9;px+=Math.cos(a)*5;py+=Math.sin(a)*3.4;
+      const e=Math.hypot((px-ACX)/ARX,(py-ACY)/ARY);if(e>0.93)break;const[qx,qy]=P2(px,py);c.fillStyle='#ff6a1a';c.fillRect(qx,qy,1,1);c.fillStyle='#ff6a1a33';c.fillRect(qx-1,qy-1,3,3)}}}
+  // stalagmites and crystal clusters around the rim
+  {const rs=mulberry32(5150),N=Math.round(14*ARENA_K);for(let n=0;n<N;n++){const a=n/N*Math.PI*2+rs()*0.25,e=1.12+rs()*0.22,wx=ACX+Math.cos(a)*(ARX+6)*e,wy=ACY+Math.sin(a)*(ARY+8)*e;if(wy<ACY-ARY-30)continue;
+    const[qx,qy]=P2(wx,wy),hh=5+Math.floor(rs()*7),cr=rs()<0.3;
+    for(let y=0;y<hh;y++){const hw=Math.max(0,Math.round((hh-y)/hh*3));c.fillStyle=cr?(y<2?'#cfe9ff':'#6fb6e8'):(y%3===0?'#4a4352':'#5c5466');c.fillRect(qx-hw,qy-y,hw*2+1,1)}
+    c.fillStyle='#00000033';c.fillRect(qx-3,qy+1,7,1);if(cr){c.fillStyle='#6fb6e822';c.beginPath();c.arc(qx,qy-3,7,0,7);c.fill()}}}
+  // torches along the cave wall (more in a bigger hall)
+  {const N=Math.max(2,Math.round(2*ARENA_K+(boss?2:0)));for(let n=0;n<N;n++){const fx=-0.75+1.5*(N===1?0.5:n/(N-1)),wx=ACX+fx*ARX,wy=ACY-ARY*Math.sqrt(Math.max(0,1-fx*fx))-16;const[tx,ty]=P2(wx,wy);
+    c.fillStyle='#ffcb3d22';c.beginPath();c.arc(tx,ty,14,0,7);c.fill();c.fillStyle='#5a3a1a';c.fillRect(tx-1,ty,2,6);c.fillStyle=boss?'#ff5a2a':'#ff8a3d';c.fillRect(tx-2,ty-3,4,3);c.fillStyle='#ffe14d';c.fillRect(tx-1,ty-4,2,2)}}
+  return CO_BG={k:ARENA_K,boss,cv,x:x0,y:y0,w:W*2,h:H*2}}
 function coDrawTags(c,now){for(const F of B.allies||[]){const m=act(F);if(!m)continue;const X=Math.round(F.x),Y=Math.round(F.y);
   const k=m.hp/Math.max(1,m.mhp);c.fillStyle='#14141f';c.fillRect(X-13,Y-46,26,4);c.fillStyle=k<0.25?'#ef4444':k<0.5?'#ffcb3d':'#3ddc6b';c.fillRect(X-12,Y-45,Math.round(24*k),2);
   vtText(c,coName(F.peer),X,Y-49,'#bfe2ff',10,'center')}
@@ -327,3 +394,17 @@ function coRescale(){const C=B.co,T=act(B.foe);if(!T)return;const teams=[B.me.te
     for(const q of['atk','def','spa','spd','sp','spe'])if(typeof nb[q]==='number'&&typeof T[q]==='number')T[q]=nb[q];
     T.atk=Math.round(T.atk*(k==='boss'?1.2:k==='wild'?1:1.08));T.def=Math.round(T.def*(k==='boss'?1.15:1));T.l=L;C.spec.l=L;say(`${SPECIES[T.s].n} passt sich an: Lv ${L}`)}
   const nm=Math.round(C.base*coHm(C.k,n));T.mhp=nm;T.hp=Math.max(1,Math.round(nm*ratio))}
+// Sprungstiefel springen nicht über Polizeiabsperrungen
+{const _bj=bootJump;bootJump=function(d,dx,dy,nx,ny){const f=fieldAt(nx,ny);if(f&&f.kind==='tape')return false;return _bj.apply(this,arguments)}}
+// ---- LOBBY tab while in a co-op cave: party overview + give up (back to the world map) ----
+{const _rl=renderLobbyPane;renderLobbyPane=function(){_rl.apply(this,arguments);const el=$('#pane-lobby');if(!el||curTab!=='lobby')return;
+  const old=el.querySelector('#colob');const dg=COOP&&coDgAt(P.x,P.y);if(!dg){if(old)old.remove();return}
+  const mem=COOP.mem.map(id=>{const p=id===coMe()?null:findPeer(id);const here=id===coMe()||(p&&p.presence.co&&p.presence.co.r===COOP.id);return`<div class="plr"><div class="who"><b>${esc(coName(id))}${id===coMe()?' (du)':''}</b><span class="small">${here?(p&&p.presence.cb&&!p.presence.cb.res?'⚔ im Kampf':'in der Höhle'):'nicht mehr dabei'}</span></div></div>`}).join('');
+  const done=dg.gates.filter(g=>COOP.gates.has(g.id)).length,fl=dg.gates.filter(g=>COOP.fail.has(g.id)).length;
+  const h=`<div class="sec">🚔 KOOP-EINSATZ: ${esc(dg.n.toUpperCase())}</div><div class="small" style="margin-bottom:6px">Schwerpunkt ${esc(dg.law)} · Gegner um Lv ${COOP.L} · Absperrungen offen ${done}/${dg.gates.length}${fl?` · ${fl} dauerhaft zu`:''}</div>${mem}
+    <button class="btn red" id="cogiveup" style="width:100%;margin:6px 0 10px">🏳 EINSATZ AUFGEBEN · ZUR WELTKARTE</button>`;
+  const key=h;if(old&&old.dataset.k===key)return;if(old)old.remove();const d=document.createElement('div');d.id='colob';d.dataset.k=key;d.innerHTML=h;el.prepend(d);
+  d.querySelector('#cogiveup').onclick=()=>{if(B){toast('Erst den Kampf beenden.');return}P.lock=true;
+    openModal(`<h3>🏳 EINSATZ AUFGEBEN?</h3><p>Du verlässt ${esc(dg.n)} und kehrst zum Polizeiführer auf der Weltkarte zurück. Dein Fortschritt in dieser Höhle geht verloren; deine Kollegen können weitermachen.</p><div class="acts"><button class="btn ghost" id="mno">WEITERMACHEN</button><button class="btn red" id="myes">AUFGEBEN</button></div>`);
+    $('#mno').onclick=()=>{closeModal();P.lock=false};$('#myes').onclick=()=>{closeModal();P.lock=false;sysChat(`🏳 ${coName(coMe())} hat den Einsatz aufgegeben.`);coExit(dg)}}}}
+setInterval(()=>{try{if(curTab==='lobby'&&(COOP||document.querySelector('#colob')))renderLobbyPane()}catch(e){}},1500);

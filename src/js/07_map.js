@@ -63,7 +63,7 @@ const KNAST_C={x:262,y:13};
   // ---- the prison in the desert crater
   {const{x:cx,y:cy}=KNAST_C;for(let y=cy-13;y<=cy+13;y++)for(let x=cx-15;x<=cx+15;x++){const d=Math.hypot((x-cx)/15,(y-cy)/12);if(d<1.12&&d>0.9)tset(x,y,16);if(d<=0.9){tset(x,y,29);BIOME[y*MW+x]=7}}
    for(let y=cy-7;y<=cy+7;y++)for(let x=cx-9;x<=cx+9;x++){const wall=y===cy-7||y===cy+7||x===cx-9||x===cx+9;tset(x,y,wall?11:20);BIOME[y*MW+x]=5}
-   for(let x=cx-8;x<=cx+8;x++)tset(x,cy-1,x===cx?20:11);for(let y=cy-6;y<cy-1;y++)tset(cx,y,11);tset(cx,cy-3,20)
+   for(let x=cx-8;x<=cx+8;x++)tset(x,cy-1,x===cx?20:11);for(let y=cy-6;y<cy-2;y++)tset(cx,y,11);tset(cx,cy-5,20)
    for(let y=cy+8;y<=cy+16;y++){tset(cx,y,4);if(tget(cx-1,y)===16)tset(cx-1,y,29);if(tget(cx+1,y)===16)tset(cx+1,y,29)}tset(cx,cy+7,20)}
   // ---- towns
   const fillRect=(x0,y0,x1,y1,t,b)=>{for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){tset(x,y,t);if(b!=null)BIOME[y*MW+x]=b}};
@@ -147,6 +147,8 @@ const KNAST_C={x:262,y:13};
   {const set=[];for(let y=2;y<MH-2;y++)for(let x=2;x<MW-2;x++){const i=y*MW+x,b=BIOME[i];if(!b||ROAD.has(i)||!WALK0.has(MAP[i])||MAP[i]===13)continue;
      for(const[dx,dy]of D4){const j=(y+dy)*MW+x+dx,nb=BIOME[j];if(!nb||nb===b)continue;set.push([i,b]);break}}
    for(const[i,b]of set)MAP[i]=BAR[b]}
+  // the prison gate and its approach must stay open across the crater border (v0.125)
+  {const{x:cx,y:cy}=KNAST_C;tset(cx,cy+7,20);for(let y=cy+8;y<=cy+16;y++)tset(cx,y,4)}
   for(let y=0;y<MH;y++)for(let x=0;x<MW;x++)if(x<2||y<2||x>=MW-2||y>=MH-2){const b=B(x,y);tset(x,y,b===3?3:b===6||b===4?31:b===7?16:2)}
   // ---- gates: first road tile inside an area that is entered from another area
   {const seen=new Set();for(const i of ROAD){const x=i%MW,y=(i-x)/MW,b=BIOME[i];if(b<=1)continue;

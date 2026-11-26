@@ -94,7 +94,7 @@ function caveDungeon(x,y){return DUNGEONS.find(d=>d.ex===x&&d.ey===y)||null}
   if(P.y<MH){const dg=caveDungeon(P.x,P.y);if(!dg||!storyOn()||!hasBesch(dg.law))return;P.lock=true;transition('fade',()=>{teleport(dg.sx,dg.sy);P.d='up';P.lock=false;toast(`🔦 ${dg.n} – Durchsuchung läuft!`)},300,350)}
   else{const dg=dungeonAt(P.x,P.y);if(!dg)return;P.lock=true;transition('fade',()=>{teleport(dg.ex,dg.ey+1);P.d='down';P.lock=false;toast('☀ Zurück an der frischen Luft.')},300,350)}}}
 // ---- darkness inside the dungeons: a light circle around the player
-{const _dw=drawWorld;drawWorld=function(){_dw.apply(this,arguments);if(!P||P.fy<MH||typeof wc==='undefined')return;try{const dpr=Math.min(3,devicePixelRatio||1),K=Math.max(1,Math.round(SC*dpr));const c=wc;c.setTransform(K,0,0,K,0,0);
+{const _dw=drawWorld;drawWorld=function(){_dw.apply(this,arguments);if(!P||P.fy<MH||typeof wc==='undefined')return;try{const dpr=worldDpr(),K=Math.max(1,Math.round(SC*dpr));const c=wc;c.setTransform(K,0,0,K,0,0);
   let camX=Math.round(P.fx*16+8-LW/2),camY=Math.round(P.fy*16+8-LH/2);camX=clamp(camX,0,MW*16-LW);camY=clamp(camY,MH*16,MHT*16-LH);const px=P.fx*16+8-camX,py=P.fy*16+8-camY;
   const g=c.createRadialGradient(px,py,40,px,py,150);g.addColorStop(0,'rgba(8,6,18,0)');g.addColorStop(0.55,'rgba(8,6,18,0.45)');g.addColorStop(1,'rgba(8,6,18,0.85)');c.fillStyle=g;c.fillRect(0,0,LW,LH)}catch(e){}}}
 // ---- rank + story box in the side panel; a promotion is celebrated once

@@ -20,7 +20,7 @@ function updatePlayer(dt){
     if(P.fly){if(flyable(nx,ny)){P.moving=true;P.mt=0;P.sx=P.x;P.sy=P.y;P.tx=nx;P.ty=ny;pres({x:nx,y:ny,d})}else if(turned)pres({d});else if(P.bumpCd<=0){P.bumpCd=1.2;const b=BIOME[ny*MW+nx];if(TOLL_LAW[b])toast('Dieses Gebiet ist noch gesperrt – erst am Prof. vorbei, dann darfst du es überfliegen.')}}
     else if(LEDGE_DIR[tget(nx,ny)]){const jx=nx+dx,jy=ny+dy;if(LEDGE_DIR[tget(nx,ny)]===d&&walkable(jx,jy)&&!trainerAt(jx,jy)&&!LEGENDS.some(L=>L.x===jx&&L.y===jy)){P.moving=true;P.jump=true;P.mt=0;P.sx=P.x;P.sy=P.y;P.tx=jx;P.ty=jy;P.fol.tx=P.x;P.fol.ty=P.y;trailPush(P,P.x,P.y);trailPush(P,nx,ny);pres({x:jx,y:jy,d})}else if(!bootJump(d,dx,dy,nx,ny)&&turned)pres({d})}
     else if(tget(nx,ny)===T_WF||(d==='up'&&tget(nx,ny)===3&&tget(P.x,P.y)===T_WF)){wfMove(d,dx,dy,nx,ny,turned)}
-    else if(walkable(nx,ny)&&!trainerAt(nx,ny)&&!LEGENDS.some(L=>L.x===nx&&L.y===ny)&&!tollBlock(nx,ny)){P.moving=true;P.mt=0;P.sx=P.x;P.sy=P.y;P.tx=nx;P.ty=ny;P.fol.tx=P.x;P.fol.ty=P.y;trailPush(P,P.x,P.y);pres({x:nx,y:ny,d})}else if(bootJump(d,dx,dy,nx,ny)){}else{if(trainerAt(nx,ny)||LEGENDS.some(L=>L.x===nx&&L.y===ny))bump(nx,ny);else if(tget(nx,ny)===3&&!P.surf)surfAsk();if(turned)pres({d})}}}
+    else if(walkable(nx,ny)&&!trainerAt(nx,ny)&&!LEGENDS.some(L=>L.x===nx&&L.y===ny)&&!tollBlock(nx,ny)){P.moving=true;P.mt=0;P.sx=P.x;P.sy=P.y;P.tx=nx;P.ty=ny;P.fol.tx=P.x;P.fol.ty=P.y;trailPush(P,P.x,P.y);pres({x:nx,y:ny,d})}else if(bootJump(d,dx,dy,nx,ny)){}else{if(trainerAt(nx,ny)||LEGENDS.some(L=>L.x===nx&&L.y===ny)||fieldAt(nx,ny))bump(nx,ny);else if(tget(nx,ny)===3&&!P.surf)surfAsk();if(turned)pres({d})}}}
   P.bumpCd=Math.max(0,(P.bumpCd||0)-dt);
   {const fd=dt*(P.bike?2:1);approach(P.fol,fd);if(P.fols)for(const f of P.fols)approach(f,fd)}
 }
@@ -143,6 +143,9 @@ function updateHud(){try{flyBtn()}catch(e){}
 }
 
 /* world render (low-res buffer, scaled up) */
+// v0.125: on 2×/3× screens the world canvas is drawn at 1/2 or 1/3 of the device pixels and the browser scales it up
+// pixel-exact (image-rendering: pixelated) – the same pixel art, a quarter of the fill work
+function worldDpr(){const d=Math.min(3,devicePixelRatio||1);return d>=2?d/Math.floor(d):d}
 const wcv=$('#world'),wc=wcv.getContext('2d');let SC=3,LW=0,LH=0;
 const NT_W=new Map();try{document.fonts&&document.fonts.addEventListener('loadingdone',()=>NT_W.clear())}catch(e){} // text widths of name tags (measureText every frame was a third of the world's script time)
 function nameTag(c,x,y,txt,col,icon){
@@ -165,7 +168,7 @@ function drawFlyer(c,e,X,Y){const a=e.alt,h=Math.round(a*16),bob=Math.round(Math
   c.drawImage(charSprite(e.col,e.d,0,e.sx),X,y0)}
 function drawSignCaptions(c,camX,camY){for(const sg of SIGNS){if(P.moving||Math.abs(sg.x-P.x)+Math.abs(sg.y-P.y)!==1)continue;nameTag(c,sg.x*16-camX+8,sg.y*16-camY-1,signShort(sg),'#d9a466','')}}
 function drawWorld(){
-  const cw=wcv.parentElement.clientWidth,ch=wcv.parentElement.clientHeight;const dpr=Math.min(3,devicePixelRatio||1);
+  const cw=wcv.parentElement.clientWidth,ch=wcv.parentElement.clientHeight;const dpr=worldDpr();
   SC=Math.max(2,Math.round(Math.min(cw/240,ch/160)));
   const W=Math.round(cw*dpr),H=Math.round(ch*dpr);
   if(wcv.width!==W||wcv.height!==H){wcv.width=W;wcv.height=H;wcv.style.width=cw+'px';wcv.style.height=ch+'px'}
@@ -196,12 +199,12 @@ function drawWorld(){
   for(const Bd of BLDG){const X=Bd.x*16-camX,Y=Bd.y*16-camY;if(X<-120||Y<-80||X>LW+40||Y>LH+40)continue;c.font='10px VT323,monospace';c.textAlign='center';c.fillStyle='#ffffff';if(Bd.old){c.font='8px VT323,monospace';c.fillText(Bd.id==='shop'?'COPSHOP':Bd.n,X+Bd.w*8,Bd.id==='shop'?Y+20:Y+40)}else c.fillText(Bd.n,X+Bd.w*8,Y+(Bd.id==='shop'?43:45.5))}
   c.textAlign='left';
   // entities
-  const ents=[];
-  for(const o of OTH.values()){if(o.fx==null)continue;ents.push({fx:o.fx,fy:o.fy,col:o.c,sx:o.sx,d:o.d,ph:o.ph,mv:o.moving,name:o.n,bt:o.bt,bub:o.bub,alt:o.fl?1:0,ride:o.rd||null,bike:!!o.bk});if(o.fl){}else if(o.lf)folEnts(o,o.lf,ents,o.fx,o.fy);else if(o.ld&&o.fol.fx!=null)ents.push({fx:o.fol.fx,fy:o.fol.fy,mon:o.ld})}
+  const ents=[];const vis=(fx,fy)=>fx>=x0-3&&fx<=x1+3&&fy>=y0-3&&fy<=y1+4;   // v0.125: only what is on screen (all trainers + their name tags every frame made the world lag)
+  for(const o of OTH.values()){if(o.fx==null||!vis(o.fx,o.fy))continue;ents.push({fx:o.fx,fy:o.fy,col:o.c,sx:o.sx,d:o.d,ph:o.ph,mv:o.moving,name:o.n,bt:o.bt,bub:o.bub,alt:o.fl?1:0,ride:o.rd||null,bike:!!o.bk});if(o.fl){}else if(o.lf)folEnts(o,o.lf,ents,o.fx,o.fy);else if(o.ld&&o.fol.fx!=null)ents.push({fx:o.fol.fx,fy:o.fol.fy,mon:o.ld})}
   if(G){ents.push({fx:P.fx,fy:P.fy,col:G.color,sx:G.sex,d:P.d,ph:P.ph,mv:P.moving,name:G.name+' (du)',bt:B?(B.mode==='wild'||B.mode==='coop'?'wild':'duel'):null,bub:myBubble,me:1,bike:!!P.bike,ride:rideSid(),alt:flyAlt(),hop:P.jump?Math.round(Math.sin(P.mt*Math.PI)*9):0});if(RUN&&!P.fly&&flyAlt()===0)folEnts(P,folInfo(),ents,P.fx,P.fy)}
-  for(const t of tollSpots()){const fx=t.x,fy=t.y;ents.push({fx,fy,col:t.c,sx:/Würde|Strafe/.test(t.n)?'f':'m',d:t.d,npc:t,name:t.n})}
-  for(const t of TRAINERS)if((!t.story||storyOn())&&!(t.isGone&&t.isGone()))ents.push({fx:t.x,fy:t.y,col:t.c,sx:/^\S+in\s/.test(t.n)?'f':'m',d:t.d,ph:0,mv:false,name:t.n,npc:t,bt:null});
-  for(const L of LEGENDS){const gone=(RUN&&RUN.leg&&RUN.leg[L.id])||!cfgOf().leg;if(!gone)ents.push({fx:L.x,fy:L.y,legend:L})}
+  for(const t of tollSpots()){const fx=t.x,fy=t.y;if(!vis(fx,fy))continue;ents.push({fx,fy,col:t.c,sx:/Würde|Strafe/.test(t.n)?'f':'m',d:t.d,npc:t,name:t.n})}
+  for(const t of TRAINERS)if(vis(t.x,t.y)&&(!t.story||storyOn())&&!(t.isGone&&t.isGone()))ents.push({fx:t.x,fy:t.y,col:t.c,sx:/^\S+in\s/.test(t.n)?'f':'m',d:t.d,ph:0,mv:false,name:t.n,npc:t,bt:null});
+  for(const L of LEGENDS){if(!vis(L.x,L.y))continue;const gone=(RUN&&RUN.leg&&RUN.leg[L.id])||!cfgOf().leg;if(!gone)ents.push({fx:L.x,fy:L.y,legend:L})}
   ents.sort((a,b)=>a.fy-b.fy);
   for(const e of ents){const X=Math.round(e.fx*16-camX);let Y=Math.round(e.fy*16-camY);
     if(e.alt>0)continue;

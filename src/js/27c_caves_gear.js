@@ -32,16 +32,18 @@ function caveFindDoor(cx,cy){let best=null,bs=1e9;const bad=[3,4,7,12,13,22,23,2
     const C=4,R=3,cw=Math.floor((cv.w-2)/C),ch=Math.floor((cv.h-2)/R),rooms=[];
     for(let ry=0;ry<R;ry++)for(let rx=0;rx<C;rx++){const w=10+ri(Math.max(1,cw-16)),h=7+ri(Math.max(1,ch-11));const x=cv.x0+1+rx*cw+1+ri(Math.max(1,cw-w-2)),y=cv.y0+1+ry*ch+1+ri(Math.max(1,ch-h-2));rooms[ry*C+rx]={x,y,w,h,cx:x+(w>>1),cy:y+(h>>1)}}
     // snake: bottom row left→right, middle row right→left, top row left→right
-    const order=[8,9,10,11,7,6,5,4,0,1,2,3].map(k=>rooms[k]);cv.rooms=order;
+    // v0.125: two different growths – the Speichengrotte snakes through wide galleries, the Sprungschacht climbs in columns through narrow cracks
+    const ORG=[{o:[8,9,10,11,7,6,5,4,0,1,2,3],amp:1,w:2,wob:0.3,mo:3},{o:[8,4,0,1,5,9,10,6,2,3,7,11],amp:1.4,w:1,wob:0.5,mo:2}][i%2];
+    const order=ORG.o.map(k=>rooms[k]);cv.rooms=order;
     const inC=(x,y)=>x>cv.x0&&x<cv.x0+cv.w-1&&y>cv.y0&&y<cv.y0+cv.h-1,floor=(x,y)=>{if(inC(x,y))tset(x,y,FL)};
-    for(const Q of order)for(let y=Q.y;y<Q.y+Q.h;y++)for(let x=Q.x;x<Q.x+Q.w;x++)floor(x,y);
+    for(const Q of order)orgBlob(Q,r,floor,{amp:ORG.amp});
     const lineH=(x0,x1,y)=>{for(let x=Math.min(x0,x1);x<=Math.max(x0,x1);x++){floor(x,y);floor(x,y+1)}},lineV=(y0,y1,x)=>{for(let y=Math.min(y0,y1);y<=Math.max(y0,y1);y++){floor(x,y);floor(x+1,y)}};
-    for(let k=1;k<order.length;k++){const a=order[k-1],c=order[k];if(r()<0.5){lineH(a.cx,c.cx,a.cy);lineV(a.cy,c.cy,c.cx)}else{lineV(a.cy,c.cy,a.cx);lineH(a.cx,c.cx,c.cy)}}
+    for(let k=1;k<order.length;k++){const a=order[k-1],c=order[k];orgTunnel(a.cx,a.cy,c.cx,c.cy,r,floor,{w:ORG.w,wob:ORG.wob,maxOff:ORG.mo})}
     // rubble with wild monsters (never on the room centre, so the way through stays free)
     for(let k=1;k<order.length-1;k++){const Q=order[k];for(let n=0;n<2;n++){const px=Q.x+1+ri(Math.max(1,Q.w-2)),py=Q.y+1+ri(Math.max(1,Q.h-2)),rr=2+ri(2);
-      for(let y=py-rr;y<=py+rr;y++)for(let x=px-rr-1;x<=px+rr+1;x++)if(x>Q.x&&x<Q.x+Q.w-1&&y>Q.y&&y<Q.y+Q.h-1&&((x-px)/(rr+1))**2+((y-py)/rr)**2<=1&&!(Math.abs(x-Q.cx)<=1&&Math.abs(y-Q.cy)<=1))tset(x,y,EN)}}
+      for(let y=py-rr;y<=py+rr;y++)for(let x=px-rr-1;x<=px+rr+1;x++)if(x>Q.x&&x<Q.x+Q.w-1&&y>Q.y&&y<Q.y+Q.h-1&&tget(x,y)===FL&&((x-px)/(rr+1))**2+((y-py)/rr)**2<=1&&!(Math.abs(x-Q.cx)<=1&&Math.abs(y-Q.cy)<=1))tset(x,y,EN)}}
     // way out: a hole in the bottom wall of the first room
-    const S=order[0];cv.sx=S.cx;cv.sy=S.y+S.h-1;tset(S.cx,S.y+S.h,T_CAVE);tset(cv.sx,cv.sy,FL);
+    const S=order[0];for(let y=S.cy;y<S.y+S.h;y++)floor(S.cx,y);cv.sx=S.cx;cv.sy=S.y+S.h-1;tset(S.cx,S.y+S.h,T_CAVE);tset(cv.sx,cv.sy,FL);
     // the gear giver in the last room
     const Gr=order[order.length-1];for(let y=Gr.cy-1;y<=Gr.cy+1;y++)for(let x=Gr.cx-1;x<=Gr.cx+1;x++)tset(x,y,FL);
     TRAINERS.push({id:'gift_'+cv.id,gift:cv.gear,cave:cv.id,n:cv.giver,c:cv.c,x:Gr.cx,y:Gr.cy,d:'down',team:[],reward:0,line:'',after:''});

@@ -38,17 +38,17 @@ function storyLv(x,y){const dg=dungeonAt(x,y);if(dg)return dg.lv[0]+((x*7+y*13)%
     for(let y=dg.y0;y<dg.y0+dg.h;y++)for(let x=dg.x0;x<dg.x0+dg.w;x++){tset(x,y,dg.wall!==31&&r()<0.07?16:dg.wall);BIOME[y*MW+x]=dg.b}
     const cw=Math.floor((dg.w-2)/3),ch=Math.floor((dg.h-2)/3),rooms=[];
     for(let ry=0;ry<3;ry++)for(let rx=0;rx<3;rx++){const w=8+ri(Math.max(1,cw-12)),h=6+ri(Math.max(1,ch-10));const x=dg.x0+1+rx*cw+1+ri(Math.max(1,cw-w-2)),y=dg.y0+1+ry*ch+1+ri(Math.max(1,ch-h-2));rooms[ry*3+rx]={x,y,w,h,cx:x+(w>>1),cy:y+(h>>1)}}
-    const order=[6,7,8,5,4,3,0,1,2].map(k=>rooms[k]);dg.rooms=order;
+    // v0.125: every dungeon grows its own way (order of the rooms, rim, tunnels)
+    const ORG=[{o:[6,7,8,5,4,3,0,1,2],amp:1.2,w:2,wob:0.4,mo:3},{o:[6,3,0,1,4,7,8,5,2],amp:1.1,w:1,wob:0.55,mo:2},{o:[6,7,8,5,2,1,0,3,4],amp:0.45,box:1,w:2,wob:0.06,mo:1},{o:[8,7,6,3,4,5,2,1,0],amp:0.35,box:1,w:2,wob:0,mo:0}][i%4];
+    const order=ORG.o.map(k=>rooms[k]);dg.rooms=order;
     const floor=(x,y)=>{if(dungeonAt(x,y)===dg||(x>=dg.x0&&x<dg.x0+dg.w&&y>=dg.y0&&y<dg.y0+dg.h))tset(x,y,dg.floor)};
-    for(const R of order)for(let y=R.y;y<R.y+R.h;y++)for(let x=R.x;x<R.x+R.w;x++)floor(x,y);
-    for(let k=1;k<order.length;k++){const a=order[k-1],b=order[k];const hFirst=r()<0.5;
-      const lineH=(x0,x1,y)=>{for(let x=Math.min(x0,x1);x<=Math.max(x0,x1);x++){floor(x,y);floor(x,y+1)}},lineV=(y0,y1,x)=>{for(let y=Math.min(y0,y1);y<=Math.max(y0,y1);y++){floor(x,y);floor(x+1,y)}};
-      if(hFirst){lineH(a.cx,b.cx,a.cy);lineV(a.cy,b.cy,b.cx)}else{lineV(a.cy,b.cy,a.cx);lineH(a.cx,b.cx,b.cy)}}
+    for(const R of order)orgBlob(R,r,floor,{amp:ORG.amp,box:ORG.box});
+    for(let k=1;k<order.length;k++){const a=order[k-1],b=order[k];orgTunnel(a.cx,a.cy,b.cx,b.cy,r,floor,{w:ORG.w,wob:ORG.wob,maxOff:ORG.mo})}
     // patches of tall grass (wild monsters) in the rooms between entrance and shrine
     for(let k=1;k<order.length-1;k++){const R=order[k];for(let n=0;n<2;n++){const px=R.x+1+ri(Math.max(1,R.w-2)),py=R.y+1+ri(Math.max(1,R.h-2)),rr=2+ri(2);
-      for(let y=py-rr;y<=py+rr;y++)for(let x=px-rr-1;x<=px+rr+1;x++)if(x>R.x&&x<R.x+R.w-1&&y>R.y&&y<R.y+R.h-1&&((x-px)/(rr+1))**2+((y-py)/rr)**2<=1&&!(Math.abs(x-R.cx)<=1&&Math.abs(y-R.cy)<=1))tset(x,y,dg.enc)}}
+      for(let y=py-rr;y<=py+rr;y++)for(let x=px-rr-1;x<=px+rr+1;x++)if(x>R.x&&x<R.x+R.w-1&&y>R.y&&y<R.y+R.h-1&&tget(x,y)===dg.floor&&((x-px)/(rr+1))**2+((y-py)/rr)**2<=1&&!(Math.abs(x-R.cx)<=1&&Math.abs(y-R.cy)<=1))tset(x,y,dg.enc)}}
     // entrance room: exit hole in its bottom wall, players arrive just above it
-    const S=order[0];dg.sx=S.cx;dg.sy=S.y+S.h-1;tset(S.cx,S.y+S.h,T_CAVE);tset(dg.sx,dg.sy,dg.floor);
+    const S=order[0];for(let y=S.cy;y<S.y+S.h;y++)floor(S.cx,y);dg.sx=S.cx;dg.sy=S.y+S.h-1;tset(S.cx,S.y+S.h,T_CAVE);tset(dg.sx,dg.sy,dg.floor);
     // shrine room with the legendary monster
     const Gr=order[8];for(let y=Gr.cy-1;y<=Gr.cy+1;y++)for(let x=Gr.cx-1;x<=Gr.cx+1;x++)tset(x,y,13);
     // cave entrance on the overworld where the shrine used to be

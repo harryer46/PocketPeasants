@@ -15,7 +15,7 @@ async def main():
             kind:(typeof KIND_TXT==='object'&&KIND_TXT[m.k||'shot'])?KIND_TXT[m.k||'shot'].split(' — ')[0]:'',desc:moveDesc(k),line:typeof moveLine==='function'?moveLine(k):'',
             cd:Math.round(cdOf(k)*10)/10,ap:apCost(k),tm:tms.has(k),by:(learn[k]||[]).sort((a,b)=>a[1]-b[1])}}).sort((a,b)=>a.t.localeCompare(b.t)||a.n.localeCompare(b.n));
           const cases=(typeof CASE_QZ!=='undefined'?CASE_QZ:[]).map(q=>[q[0],q[1][0],q[3]||'',q.book||'']),stvo=(typeof STVO_QZ!=='undefined'?STVO_QZ:[]).map(q=>[q[0],q[1][0],q[2]||'']);
-          return{sp,mv,cases,stvo,book:Object.fromEntries(Object.entries(VAULT_BOOK).map(([k,v])=>[k,v.map(q=>[q[0],q[1][0],q[3]||''])])),ver:VERSION}})()""")
+          return{sp,mv,cases,stvo,combos:typeof comboTable==="function"?comboTable():[],book:Object.fromEntries(Object.entries(VAULT_BOOK).map(([k,v])=>[k,v.map(q=>[q[0],q[1][0],q[3]||''])])),ver:VERSION}})()""")
         json.dump(d,open(''+os.path.join(os.path.dirname(os.path.abspath(__file__)),'..','uebersicht','data.json')+'','w'),ensure_ascii=False)
         print(len(d['sp']),sum(len(s['q']) for s in d['sp']),sum(1 for s in d['sp'] if s['img']),{k:len(v) for k,v in d['book'].items()})
         await b.close()
