@@ -501,7 +501,7 @@ const TURN_CONFIG = {
 
 /* ===================== VERSION ===================== */
 // bump with every release (MAJOR.MINOR.PATCH). Players can only share lobbies/duels with the same version.
-const VERSION='0.123.2';
+const VERSION='0.124.0';
 // access password: changes every Monday 00:00 (local time). Only the hashes are stored here (one per week from PW_W0);
 // the password itself also keys the P2P room, so clients without the current one cannot connect. The plain list lives offline.
 const PW_KEY='knast_pw',PW_W0=Date.UTC(2026,10,16),PW_WH=[3239358969,4147130060,2718625794,3495965776,1618054998,4028240764,3044289461,1207180107,4242648729,353861226,2672313786,600614717,407529519,2270237167,3207113251,1525244515,870970040,319006638,3847934078,944313310,2153038366,3950944742,2733334548,4002544240,2736690288,645338530,1884329338,4268902487,2483246182,3828308270,2182929315,3152020422,1311886195,3461060417,3407580460,2544240283,1017220184,1277844250,4288535363,461397931,853058720,2065298771,219387161,3215594984,1108518435,2250837220,3171827014,1035538317,1537090466,1716649754,2848461661,1266925999,653943759,1307642793,3319845926,629631788,4180878311,1080582197,4114403588,2360104553,3811730973,3337788437,695971354,2424950805],MAX_ROOM=10,MAX_LOBBY=5;
@@ -2210,6 +2210,7 @@ function begin(){
 
 /* ===================== CONTROL SETTINGS ===================== */
 const CHANGELOG=[
+["0.124.0","26.11.2026","Koop-Höhlen: Die Gegnerstufe richtet sich jetzt nach allen Spielern im Kampf – Schnitt der drei stärksten Monster jedes Beteiligten, plus Aufschlag je nach Gegner (wild +1–3, Bande +3, Boss +6). Kommt jemand dazu, passt sich der Gegner sofort an (Stufe, Werte und KP; der KP-Anteil bleibt)."],
 ["0.123.2","26.11.2026","Koop-Kämpfe: Unter der eigenen KP-Box stehen jetzt kompakt die Monster der Mitspieler – Spielername, Monster, Level, KP-Balken und wie viele Monster ihres Kaders noch stehen."],
 ["0.123.1","26.11.2026","Koop-Höhlen: Keine automatische Festnahme mehr nach dem Sieg über ein wildes Monster. Festnehmen geht nur per Handschellen-Wurf während des Kampfs (Knopf/Taste wie bei normalen wilden Kämpfen) – wer trifft und die Frage richtig beantwortet, bekommt das Monster, und der Kampf ist für alle vorbei. Besiegte wilde Monster fliehen."],
 ["0.123.0","26.11.2026","Neue Feldregeln: Wandaufprall (Rückstoß gegen Hindernis/Rand: +50 % und kurz betäubt), Eingefroren (Eis auf nasses Ziel, Feuer taut auf ×1,3), Splitterhagel (zerbrochene Stein-/Holzhindernisse treffen Gegner daneben), Ausgezählt (Kampf gegen Verwirrte ×1,3), Festgehalten (Koop). Nahkampf umgebaut – jede Attacke spielt sich jetzt anders: z. B. Schnellhieb unterbricht Aufladen, Tempohieb sprintet durchs Ziel, Kopfnuss nimmt Anlauf, Muskelfaust und Dreifachkick zertrümmern Hindernisse, Bohrschnabel und Knirscher gehen durch Schilde, Flügelschlag fegt Geschosse weg, Stahlflügel lenkt sie zurück, Biss und Nudelpeitsche halten fest, Stockhieb lässt stolpern, Karateschlag ist Finisher, Gegenschlag wird zur Parade, Eisenschweif trifft auch nach hinten, Geowurf schleudert weit."],
@@ -9375,7 +9376,10 @@ function coName(peer){if(peer===coMe())return(G&&G.name)||'Du';const p=findPeer(
 function coRaw(){return RUN.team.map(m=>[m.s,m.l,m.m.slice(0,4)])}
 function coTeam(arr){if(!Array.isArray(arr)||!arr.length||arr.length>6)return null;const out=[];
   for(const e of arr){if(!Array.isArray(e)||!SPECIES[e[0]])return null;const l=clamp(Math.floor(+e[1]||1),1,100);let mv=Array.isArray(e[2])?e[2].filter(x=>typeof x==='string'&&MOVES[x]).slice(0,4):[];if(!mv.length)mv=['bump'];const b=battler({s:e[0],l,hp:0,m:mv});b.hp=b.mhp;out.push(b)}return out}
-function coMyL(){return clamp(Math.max(1,...RUN.team.map(m=>m.l)),3,95)}
+// Stufe eines Kaders = Schnitt seiner drei stärksten Monster; mehrere Spieler = Schnitt über alle Beteiligten
+function coTeamL(levels){const a=(levels||[]).map(v=>+v||1).sort((x,y)=>y-x).slice(0,3);return a.length?a.reduce((p,q)=>p+q,0)/a.length:1}
+function coPartL(teams){const v=teams.filter(t=>t&&t.length).map(coTeamL);return clamp(Math.round(v.length?v.reduce((p,q)=>p+q,0)/v.length:1),3,95)}
+function coMyL(){return coPartL([RUN.team.map(m=>m.l)])}
 
 // ---- Bandenhöhlen: vier begehbare Höhlen in einem eigenen Untergrund-Band ----
 const CODG=[];
@@ -9509,17 +9513,17 @@ function coNum(b){const o={};for(const k in b)if(typeof b[k]==='number'&&k!=='hp
 function coBattle(k,spec){if(B||teamDown())return;arenaScale(COOP_K[0]);const foeB=coFoe(k,spec.s,spec.l);
   const me=mkFighter('L',RUN.team.map(battler),ACX,'local');const foe=mkFighter('R',[foeB],ACX,'ai');
   newBattle({mode:'coop',id:'cb'+Math.random().toString(36).slice(2,9),zone:'coopcave',oppName:spec.nm||'',me,foe,allies:[],
-    co:{host:true,hp:coMe(),k,spec:{s:foeB.s,l:spec.l,nm:spec.nm||'',tid:spec.tid||null,gate:spec.gate||null,run:COOP?COOP.id:null},base:foeB._base,n:1,last:null,F:{},seen:new Set(),seenT:{},fq:[],q:0,pubT:0,tgt:null,tgtT:0,fin:false,t0:performance.now()}});
+    co:{host:true,hp:coMe(),k,off:spec.l-coMyL(),spec:{s:foeB.s,l:spec.l,nm:spec.nm||'',tid:spec.tid||null,gate:spec.gate||null,run:COOP?COOP.id:null},base:foeB._base,n:1,last:null,F:{},seen:new Set(),seenT:{},fq:[],q:0,pubT:0,tgt:null,tgtT:0,fin:false,t0:performance.now()}});
   {const b=act(B.foe);if(b.gw)b._gwB=B}if(k==='wild')B.foe.inv=0.6;G.dex[foeB.s]=G.dex[foeB.s]||0;
   const nm=SPECIES[foeB.s].n;say(k==='boss'?`👑 ${spec.nm} schickt ${nm} (Lv ${spec.l})!`:k==='trainer'?`🦹 ${spec.nm} schickt ${nm} (Lv ${spec.l})!`:k==='extra'?`⚠️ Strafkampf! ${spec.nm} schickt ${nm} (Lv ${spec.l})!`:`🐾 Ein wildes ${nm} (Lv ${spec.l}) greift an!`);
   say('Mitspieler in der Nähe können dazukommen.');coPub(true)}
-function coWild(dg){const C=coEnsure();const L=C?C.L:coMyL();const pool=lawSpecies(dg.law).filter(s=>SPECIES[s]);if(!pool.length)return;const l=L+1+Math.floor(Math.random()*3);
+function coWild(dg){coEnsure();const L=coMyL();const pool=lawSpecies(dg.law).filter(s=>SPECIES[s]);if(!pool.length)return;const l=L+1+Math.floor(Math.random()*3);
   const ok=pool.filter(s=>!(SPECIES[s].minLv>l));const s=(ok.length?ok:pool)[Math.floor(Math.random()*(ok.length||pool.length))];coBattle('wild',{s:newMon(s,l).s,l})}
 function coBanditTalk(t){const C=coEnsure();if(!C||B)return;if(C.beat.has(t.id)){talk(t.n,t.kind==='coboss'?'Schon gut, schon gut … ich komme ja freiwillig mit.':'Ich ergebe mich! Die Handschellen bitte nicht so fest …');return}
   const dg=CODG[t.dg],pool=lawSpecies(dg.law).filter(s=>SPECIES[s]);
-  if(t.kind==='coboss'){const l=C.L+6;const bs=s=>{const b=SPECIES[s].b;return b[0]+b[1]+b[2]+b[3]};const sp=pool.map(s=>newMon(s,l).s).sort((a,b)=>bs(b)-bs(a))[0]||'owigon';
+  if(t.kind==='coboss'){const l=coMyL()+6;const bs=s=>{const b=SPECIES[s].b;return b[0]+b[1]+b[2]+b[3]};const sp=pool.map(s=>newMon(s,l).s).sort((a,b)=>bs(b)-bs(a))[0]||'owigon';
     P.lock=true;talk(t.n,'Ihr seid also die Streife, die meine Leute hochgenommen hat. Jetzt bin ICH dran!',()=>{P.lock=false;coBattle('boss',{s:sp,l,nm:t.n,tid:t.id})});return}
-  const l=C.L+3;P.lock=true;talk(t.n,['Bullen! Hier unten?!','Ihr kommt hier nicht weiter!','Das ist unser Revier!','Keinen Schritt weiter!'][t.id.length%4],()=>{P.lock=false;coBattle('trainer',{s:newMon(t.sp,l).s,l,nm:t.n,tid:t.id})})}
+  const l=coMyL()+3;P.lock=true;talk(t.n,['Bullen! Hier unten?!','Ihr kommt hier nicht weiter!','Das ist unser Revier!','Keinen Schritt weiter!'][t.id.length%4],()=>{P.lock=false;coBattle('trainer',{s:newMon(t.sp,l).s,l,nm:t.n,tid:t.id})})}
 // police tape = shortcut. One of the party takes the exam: pass → open for everybody; fail → closed for good, take the detour
 function coGateTalk(f){const C=coEnsure();if(!C||B)return;const g=f.gate,dg=CODG[C.dg]||coDgAt(P.x,P.y);const law=(dg||{}).law||C.plan.law;const sd=dg&&dg.side.find(s=>'cg'+dg.i+'_'+s.k===g);
   if(C.gates.has(g)){coApplyGates();return}
@@ -9575,7 +9579,7 @@ function coSync(dt){const C=B.co,now=performance.now(),k=Math.min(1,dt*14);if(RO
     C.seenT[id]=now;
     if(!F){if(C.host&&Object.keys(C.F).length>=COOP_MAX-1)continue;const tm=coTeam(c.tm);if(!tm)continue;F=C.F[id]=mkFighter('L',tm,ACX,'remote');F.spawnT=now;F.inv=0;F.peer=id;F.x=+c.x||ACX;F.y=+c.y||YB;
       if(B.state==='fight'||B.state==='count')say(`⚔ ${coName(id)} kommt dazu!`);
-      if(C.host){const T=act(B.foe),n=1+Object.keys(C.F).length,nm=Math.round(C.base*coHm(C.k,n));T.hp=Math.min(nm,T.hp+(nm-T.mhp));T.mhp=nm;C.n=n;arenaScale(COOP_K[clamp(n,1,4)-1]);coPub(true)}}
+      if(C.host){C.n=1+Object.keys(C.F).length;coRescale();arenaScale(COOP_K[clamp(C.n,1,4)-1]);coPub(true)}}
     F.tx=+c.x||F.x;F.ty=+c.y||F.y;F.x+=(F.tx-F.x)*k;F.y+=(F.ty-F.y)*k;F.face=c.f<0?-1:1;F.flash=Math.max(0,(F.flash||0)-dt);
     const a=Math.floor(+c.a);if(a>=0&&a<F.team.length&&a!==F.a){F.a=a;F.spawnT=now}
     if(Array.isArray(c.hp))F.team.forEach((m,i)=>{const v=clamp(Math.floor(+c.hp[i]),0,m.mhp);if(Number.isFinite(v)){if(v<m.hp&&i===F.a){F.hurtT=now;F.flash=0.25}m.hp=v}});
@@ -9584,6 +9588,7 @@ function coSync(dt){const C=B.co,now=performance.now(),k=Math.min(1,dt*14);if(RO
     if(C.host&&c.cap===B.id&&!C.fin&&C.k==='wild')coFinish(true,C.last||id,id);
     // the host also carries the opponent
     if(id===C.hp&&c.b&&B.foe.ctrl==='remote'){const T=B.foe,b=c.b;T.x+=((+b.x||T.x)-T.x)*k;T.y+=((+b.y||T.y)-T.y)*k;T.face=b.f<0?-1:1;const m=act(T);
+      const fo=c.fo;if(fo&&(fo.l|0)!==m.l&&fo.st){for(const q in fo.st)if(typeof fo.st[q]==='number'&&Number.isFinite(fo.st[q])&&q!=='hp')m[q]=fo.st[q];m.l=clamp(fo.l|0,1,100);C.spec.l=m.l;say(`${SPECIES[m.s].n} passt sich an: Lv ${m.l}`)}
       const mh=Math.floor(+b.mh);if(mh>0&&mh!==m.mhp)m.mhp=mh;const v=clamp(Math.floor(+b.hp),0,m.mhp);
       if(Number.isFinite(v)&&v<m.hp){T.hurtT=now;T.flash=0.25;B.nums.push({x:T.x+(Math.random()*8-4),y:T.y-34,t:'-'+(m.hp-v),c:'#ffffff',at:now});if(typeof effConfirm==='function')try{effConfirm(T)}catch(e){}}
       if(Number.isFinite(v))m.hp=v;T.stShow=Array.isArray(b.fx)?b.fx.filter(q=>typeof q==='string'&&q in T.st):[];if(m.hp<=0&&!T.koShown){T.koShown=1;T.faint=0.9;say(`${SPECIES[m.s].n} ist besiegt!`)}
@@ -9669,6 +9674,15 @@ function coAllyHud(c){const L=Object.values(B.co.F||{});if(!L.length)return;cons
     // Kader-Punkte: wie viele Monster des Mitspielers noch stehen
     F.team.forEach((q,i)=>{c.fillStyle=q.hp>0?'#3ddc6b':'#4b4f63';c.fillRect(x+w+3,y+1+i*2,2,1)});
     y+=h+3}}
+
+// Host: Gegner an die Stufe aller Beteiligten anpassen (beim Beitritt): Stufe = Schnitt der Kader + Raum-Aufschlag,
+// Werte neu aus der Stufe, KP mit dem Mitspieler-Faktor; der KP-Anteil bleibt erhalten
+function coRescale(){const C=B.co,T=act(B.foe);if(!T)return;const teams=[B.me.team.map(m=>m.l),...Object.values(C.F).filter(F=>!F.gone).map(F=>F.team.map(m=>m.l))];
+  const L=clamp(coPartL(teams)+(C.off||0),1,100),n=clamp(C.n||1,1,4),ratio=T.hp/Math.max(1,T.mhp);
+  if(L!==T.l){const nb=battler({s:T.s,l:L,hp:0,m:T.m.slice()});const k=C.k;C.base=nb.mhp;
+    for(const q of['atk','def','spa','spd','sp','spe'])if(typeof nb[q]==='number'&&typeof T[q]==='number')T[q]=nb[q];
+    T.atk=Math.round(T.atk*(k==='boss'?1.2:k==='wild'?1:1.08));T.def=Math.round(T.def*(k==='boss'?1.15:1));T.l=L;C.spec.l=L;say(`${SPECIES[T.s].n} passt sich an: Lv ${L}`)}
+  const nm=Math.round(C.base*coHm(C.k,n));T.mhp=nm;T.hp=Math.max(1,Math.round(nm*ratio))}
 /* ===================== BOOT ===================== */
 applyControls();
 G=loadSave();
